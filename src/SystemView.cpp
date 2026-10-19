@@ -37,6 +37,10 @@
 using namespace Graphics;
 
 static constexpr Uint16 N_VERTICES_MAX = 100;
+// polyline resolution for the planned pre-burn leg
+static constexpr int N_PLANNER_LEG_SEGMENTS = 96;
+// maximum fraction the per-burn segment colours are lerped toward white
+static constexpr float PLANNER_SEG_WHITEN = 0.6f;
 static const float MIN_ZOOM = 1e-30f; // Just to avoid having 0
 static const float MAX_ZOOM = 1e30f;
 static const float MIN_ATLAS_ZOOM = 0.5f; // Just to avoid having 0
@@ -282,17 +286,79 @@ void SystemView::Update()
 			const double planetRadius = playerAround->GetRadius();
 			m_map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLAYER, PlayerBody, offset }, &playerOrbit, m_map->svColor[Col::PLAYER_ORBIT], planetRadius);
 
-			const double plannerStartTime = m_planner->GetStartTime();
-			if (!m_planner->GetPosition().ExactlyEqual(vector3d::Zero)) {
-				Orbit plannedOrbit = Orbit::FromBodyState(m_planner->GetPosition(),
-					m_planner->GetVel(),
-					playerAround->GetMass());
+			const double mass = playerAround->GetMass();
+			if (m_planner->HasPlan() && m_planner->GetBurnCount() > 0) {
+				const size_t burnCount = m_planner->GetBurnCount();
 
-				m_map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLANNER, PlayerBody, offset }, &plannedOrbit, m_map->svColor[Col::PLANNER_ORBIT], planetRadius);
-				if (std::fabs(time - m_game->GetTime()) > 1. && (time - plannerStartTime) > 0.)
-					m_map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + plannedOrbit.OrbitalPosAtTime(time - plannerStartTime) });
+				// the leg flown before burn 0: the current orbit, clipped to the
+				// window between map time and the start time of burn 0
+				const double t0 = time - m_game->GetTime();
+				const double t1 = m_planner->GetStartTime(0) - m_game->GetTime();
+				if (t1 > t0 && !is_zero_general(playerOrbit.GetSemiMajorAxis())) {
+					std::vector<vector3f> leg;
+					leg.reserve(N_PLANNER_LEG_SEGMENTS + 1);
+					if (playerOrbit.GetEccentricity() < 1.0) {
+						// true-anomaly window between the two endpoints, computed
+						// through OrbitalTimeAtPos and sampled evenly with
+						// EvenSpacedPosTrajectory (t counts fractions of the window)
+						const double period = playerOrbit.Period();
+						const double tau0 = playerOrbit.OrbitalTimeAtPos(playerOrbit.OrbitalPosAtTime(t0), mass);
+						double tau1 = playerOrbit.OrbitalTimeAtPos(playerOrbit.OrbitalPosAtTime(t1), mass);
+						// OrbitalTimeAtPos is phase-wrapped to [0, period), so a
+						// window crossing periapsis reads as a negative span
+						if (period > 0. && tau1 < tau0)
+							tau1 += period;
+						const double frac = (period > 0.) ? Clamp((tau1 - tau0) / period, 0., 1.) : 0.;
+						if (frac > 0.) {
+							for (int i = 0; i <= N_PLANNER_LEG_SEGMENTS; ++i)
+								leg.push_back(vector3f(offset + playerOrbit.EvenSpacedPosTrajectory(frac * double(i) / double(N_PLANNER_LEG_SEGMENTS), t0)));
+						}
+					} else {
+						// hyperbolic escape: sample evenly in time instead
+						for (int i = 0; i <= N_PLANNER_LEG_SEGMENTS; ++i)
+							leg.push_back(vector3f(offset + playerOrbit.OrbitalPosAtTime(t0 + (t1 - t0) * double(i) / double(N_PLANNER_LEG_SEGMENTS))));
+					}
+					m_map->SetPlannerLeg(std::move(leg), m_map->svColor[Col::PLANNER_ORBIT]);
+				}
+
+				// one conic per burn, propagated from the burn point onwards, each
+				// lerped further toward white in the planner orbit colour
+				std::vector<Orbit> segOrbits;
+				segOrbits.reserve(burnCount);
+				for (size_t i = 0; i < burnCount; ++i) {
+					const int idx = int(i);
+					segOrbits.push_back(Orbit::FromBodyState(m_planner->GetPos(idx), m_planner->GetVel(idx), mass));
+
+					const float whiten = (burnCount > 1) ? (PLANNER_SEG_WHITEN * float(i) / float(burnCount - 1)) : 0.f;
+					Color segColor = m_map->svColor[Col::PLANNER_ORBIT];
+					m_map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLANNER, PlayerBody, offset }, &segOrbits.back(), segColor.Tint(whiten), planetRadius);
+
+					// marker at the exact burn point; the burn index rides along in
+					// orbitIdx (unused for object tracks) so the UI can label it.
+					// Submitted as an object track so it is projected in the draw
+					// pass with the live camera transform.
+					Projectable burn(Projectable::OBJECT, Projectable::PLANNER_BURN, PlayerBody, offset + m_planner->GetPos(idx));
+					burn.orbitIdx = idx;
+					m_map->AddObjectTrack(burn);
+				}
+
+				// ghost marker: propagate the conic of the segment whose burn window
+				// contains map time; before burn 0 (or in real time) show burn 0's position
+				const bool scrubbed = std::fabs(time - m_game->GetTime()) > 1.;
+				size_t seg = 0;
+				if (scrubbed) {
+					for (size_t i = burnCount; i-- > 0;) {
+						if (time >= m_planner->GetStartTime(int(i))) {
+							seg = i;
+							break;
+						}
+					}
+				}
+				const double segStart = m_planner->GetStartTime(int(seg));
+				if (scrubbed && time >= segStart)
+					m_map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + segOrbits[seg].OrbitalPosAtTime(time - segStart) });
 				else
-					m_map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + m_planner->GetPosition() });
+					m_map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + m_planner->GetPos(0) });
 			}
 		}
 	}
@@ -730,6 +796,16 @@ void SystemMapViewport::DrawOrreryView()
 		}
 	}
 
+	// the planned pre-burn leg, drawn as one line strip in view space
+	if (m_plannerLeg.size() > 1) {
+		std::vector<vector3f> legVerts(m_plannerLeg.size());
+		for (size_t i = 0; i < m_plannerLeg.size(); ++i)
+			legVerts[i] = m_plannerLeg[i] - vector3f(m_trans);
+		m_orbits.SetData(Uint32(legVerts.size()), legVerts.data(), m_plannerLegColor);
+		m_renderer->SetTransform(m_cameraSpace);
+		m_orbits.Draw(m_renderer, m_lineMat.get());
+	}
+
 	m_renderer->SetTransform(m_cameraSpace);
 
 	if (m_gridDrawing != GridDrawing::OFF) {
@@ -955,6 +1031,7 @@ void SystemMapViewport::Update(float ft)
 	m_objectTracks.clear();
 	m_orbitTracks.clear();
 	m_projected.clear();
+	m_plannerLeg.clear();
 
 	// TODO: add "true" lower/upper bounds to m_zoomTo / m_zoom
 	m_zoomTo = Clamp(m_zoomTo, MIN_ZOOM, MAX_ZOOM);

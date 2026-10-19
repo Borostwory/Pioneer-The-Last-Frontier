@@ -21,6 +21,8 @@
 
 #include <sigc++/signal.h>
 
+#include <utility>
+
 class GuiApplication;
 class StarSystem;
 class SystemBody;
@@ -99,7 +101,8 @@ struct Projectable {
 		BODY = 1,		// generic body
 		SHIP = 2,
 		PLAYER = 3, // player's ship
-		PLANNER = 4 // player's ship planned by transfer planner, refers to player's object
+		PLANNER = 4, // player's ship planned by transfer planner, refers to player's object
+		PLANNER_BURN = 5 // planned burn point, refers to the player's object
 	} base;
 	union {
 		const Body *body;
@@ -286,6 +289,15 @@ public:
 	// Orbit tracks are cleared every frame.
 	void AddOrbitTrack(Projectable p, const Orbit *orbit, Color color, double planetRadius);
 
+	// Submit the planned pre-burn leg as a dynamic vertex list (world space),
+	// drawn as a single line strip in the next orrery pass.
+	// The leg is cleared every frame.
+	void SetPlannerLeg(std::vector<vector3f> &&verts, Color color)
+	{
+		m_plannerLeg = std::move(verts);
+		m_plannerLegColor = color;
+	}
+
 	RefCountedPtr<StarSystem> GetCurrentSystem();
 	void SetCurrentSystem(RefCountedPtr<StarSystem> system);
 
@@ -317,10 +329,11 @@ public:
 		PLAYER_ORBIT = 4,
 		PLANNER_ORBIT = 5,
 		SELECTED_SHIP_ORBIT = 6,
-		SHIP_ORBIT = 7
+		SHIP_ORBIT = 7,
+		PLANNER_BURN = 8
 	};
 
-	Color svColor[8];
+	Color svColor[9];
 	void SetColor(ColorIndex color_index, Color *color_value) { svColor[color_index] = *color_value; }
 
 	sigc::slot<double(const SystemBody *)> GetStarportHeightAboveTerrain;
@@ -363,6 +376,9 @@ private:
 
 	std::vector<Projectable> m_objectTracks;
 	std::vector<ProjectedOrbit> m_orbitTracks;
+
+	std::vector<vector3f> m_plannerLeg;
+	Color m_plannerLegColor;
 
 	std::vector<Projectable> m_projected;
 

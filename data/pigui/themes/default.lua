@@ -311,6 +311,7 @@ theme.colors = {
 	systemMapObject			= styleColors.gray_300,
 	systemMapPlanner		= styleColors.primary_500,
 	systemMapPlannerOrbit	= styleColors.primary_500,
+	systemMapPlannerBurn	= styleColors.primary_200,
 	systemMapPlayer			= styleColors.accent_400,
 	systemMapPlayerOrbit	= styleColors.accent_400,
 	systemMapShip			= styleColors.gray_300,

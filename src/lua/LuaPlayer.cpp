@@ -12,6 +12,7 @@
 #include "Player.h"
 #include "SectorView.h"
 #include "TerrainBody.h"
+#include "TransferPlanner.h"
 #include "WorldView.h"
 #include "galaxy/Galaxy.h"
 #include "ship/PlayerShipController.h"
@@ -347,6 +348,20 @@ static int l_get_maneuver_velocity(lua_State *l)
 	Player *player = LuaObject<Player>::CheckFromLua(1);
 	vector3d pos = player->GetManeuverVelocity();
 	LuaPush(l, pos);
+	return 1;
+}
+
+/*
+ * Method: GetBurnCount
+ *
+ * Get the number of planned burns in the transfer planner
+ *
+ * > player:GetBurnCount()
+ */
+static int l_player_get_burn_count(lua_State *l)
+{
+	LuaObject<Player>::CheckFromLua(1);
+	LuaPush(l, static_cast<uint64_t>(Pi::planner->GetBurnCount()));
 	return 1;
 }
 
@@ -709,6 +724,7 @@ void LuaObject<Player>::RegisterClass()
 		{ "GetRemainingDeltaV", l_get_remaining_delta_v },
 		{ "GetManeuverVelocity", l_get_maneuver_velocity },
 		{ "GetManeuverTime", l_get_maneuver_time },
+		{ "GetBurnCount", l_player_get_burn_count },
 		{ "GetAcceleration", l_get_acceleration },
 		{ "IsMouseActive", l_get_is_mouse_active },
 		{ "GetMouseDirection", l_get_mouse_direction },

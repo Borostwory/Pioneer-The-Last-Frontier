@@ -206,6 +206,7 @@ local ProjectableBases = {
 	SHIP = 3,
 	PLAYER = 4,
 	PLANNER = 5,
+	PLANNER_BURN = 6,
 }
 
 ---@type ProjectableBases[]
@@ -242,6 +243,7 @@ local SystemViewColorIndex = {
 	PLANNER_ORBIT = 6,
 	SELECTED_SHIP_ORBIT = 7,
 	SHIP_ORBIT = 8,
+	PLANNER_BURN = 9,
 }
 
 ---@type SystemViewColorIndex[]

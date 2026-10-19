@@ -504,10 +504,15 @@ local function displayDetailData(target, data, radius, tooltip)
 end
 
 -- display current maneuver data below the reticule circle
+-- the maneuver readout always targets the earliest pending burn (burn 0):
+-- GetManeuverVelocity/GetManeuverTime already return that burn's Δv and start
+-- time, so the burn-duration estimate below is that single burn's, never a sum.
 local function displayManeuverData(radius)
+	local burnCount = player:GetBurnCount()
 	local maneuverVelocity = player:GetManeuverVelocity()
 	local maneuverSpeed = maneuverVelocity:length()
-	if maneuverSpeed > 0 and not (player:IsDocked() or player:IsLanded()) then
+	local showManeuver = maneuverSpeed > 0 and not (player:IsDocked() or player:IsLanded())
+	if showManeuver then
 		local onscreen,position,direction = Engine.ProjectRelDirection(maneuverVelocity)
 		gameView.displayIndicator(onscreen, position, direction, icons.bullseye, colors.maneuver, true, lui.HUD_INDICATOR_MANEUVER_PROGRADE)
 		local uiPos = ui.pointOnClock(center, radius, 6)
@@ -522,6 +527,15 @@ local function displayManeuverData(radius)
 			{ text=speed_unit,         color=colors.maneuverDark, font=pionillium.small,  tooltip=lui.HUD_DELTA_V_OF_MANEUVER_BURN },
 			{ text="  ~" .. burn_time, color=colors.maneuver,     font=pionillium.medium, tooltip=lui.HUD_DURATION_OF_MANEUVER_BURN }
 		}, colors.lightBlackBackground)
+	end
+	-- burn status line: k/n where k is the targeted (earliest pending) burn
+	if burnCount > 0 then
+		local uiPos = ui.pointOnClock(center, radius, 6)
+		if showManeuver then
+			-- stack below the maneuver readout when it is on screen
+			uiPos.y = uiPos.y + ui.getTextLineHeight() + 2
+		end
+		ui.addStyledText(uiPos, ui.anchor.center, ui.anchor.top, string.format("Burn %d/%d", 1, burnCount), colors.maneuver, pionillium.small, nil, colors.lightBlackBackground)
 	end
 end
 

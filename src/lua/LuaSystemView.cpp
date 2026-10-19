@@ -16,7 +16,7 @@
 
 LuaTable projectable_to_lua_row(const Projectable &p, lua_State *l)
 {
-	LuaTable proj_table(l, 0, 3);
+	LuaTable proj_table(l, 0, 4);
 	proj_table.Set("type", int(p.type));
 	if (p.type == Projectable::NONE) return proj_table;
 	proj_table.Set("base", int(p.base));
@@ -24,6 +24,9 @@ LuaTable projectable_to_lua_row(const Projectable &p, lua_State *l)
 		proj_table.Set("ref", const_cast<SystemBody *>(p.ref.sbody));
 	else
 		proj_table.Set("ref", const_cast<Body *>(p.ref.body));
+	// planned burn markers carry their (0-based) burn index in orbitIdx
+	if (p.base == Projectable::PLANNER_BURN)
+		proj_table.Set("burnIndex", p.orbitIdx + 1);
 	return proj_table;
 }
 
@@ -302,20 +305,46 @@ static int l_systemview_set_system_selection_mode(lua_State *l)
 	sv->SetSystemSelectionMode(SystemView::SystemSelectionMode(mode));
 	return 1;
 }
+// shared argument parsing for the transfer planner bindings:
+// TransferPlanner*(idx, key, ...) takes an optional leading burn index, while the
+// legacy TransferPlanner*(key, ...) form defaults to index 0 so existing call
+// sites behave exactly as before.
+namespace {
+struct TransferPlannerCallArgs {
+	int idx = 0;
+	bool hasIdx = false;
+	int keyArg = 2;
+	int valueArg = 3;
+};
+
+TransferPlannerCallArgs ParseTransferPlannerCallArgs(lua_State *l)
+{
+	TransferPlannerCallArgs args;
+	if (lua_isnumber(l, 2)) {
+		args.idx = static_cast<int>(luaL_checkinteger(l, 2));
+		args.hasIdx = true;
+		args.keyArg = 3;
+		args.valueArg = 4;
+	}
+	return args;
+}
+} // namespace
+
 static int l_systemview_transfer_planner_get(lua_State *l)
 {
 	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
-	std::string key = LuaPull<std::string>(l, 2);
+	TransferPlannerCallArgs args = ParseTransferPlannerCallArgs(l);
+	std::string key = LuaPull<std::string>(l, args.keyArg);
 
 	TransferPlanner *planner = sv->GetTransferPlanner();
 	if (key == "prograde") {
-		LuaPush<double>(l, planner->GetDv(TransferPlanner::PROGRADE));
+		LuaPush<double>(l, planner->GetDv(args.idx, TransferPlanner::PROGRADE));
 	} else if (key == "normal") {
-		LuaPush<double>(l, planner->GetDv(TransferPlanner::NORMAL));
+		LuaPush<double>(l, planner->GetDv(args.idx, TransferPlanner::NORMAL));
 	} else if (key == "radial") {
-		LuaPush<double>(l, planner->GetDv(TransferPlanner::RADIAL));
+		LuaPush<double>(l, planner->GetDv(args.idx, TransferPlanner::RADIAL));
 	} else if (key == "starttime") {
-		LuaPush<double>(l, planner->GetStartTime());
+		LuaPush<double>(l, planner->GetStartTime(args.idx));
 	} else if (key == "factor") {
 		LuaPush<double>(l, planner->GetFactor() * 10); // factor is shown as "x 10"
 	} else {
@@ -328,18 +357,24 @@ static int l_systemview_transfer_planner_get(lua_State *l)
 static int l_systemview_transfer_planner_add(lua_State *l)
 {
 	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
-	std::string key = LuaPull<std::string>(l, 2);
-	double delta = LuaPull<double>(l, 3);
+	TransferPlannerCallArgs args = ParseTransferPlannerCallArgs(l);
+	std::string key = LuaPull<std::string>(l, args.keyArg);
+	double delta = LuaPull<double>(l, args.valueArg);
 
 	TransferPlanner *planner = sv->GetTransferPlanner();
 	if (key == "prograde") {
-		planner->AddDv(TransferPlanner::PROGRADE, delta);
+		planner->AddDv(args.idx, TransferPlanner::PROGRADE, delta);
 	} else if (key == "normal") {
-		planner->AddDv(TransferPlanner::NORMAL, delta);
+		planner->AddDv(args.idx, TransferPlanner::NORMAL, delta);
 	} else if (key == "radial") {
-		planner->AddDv(TransferPlanner::RADIAL, delta);
+		planner->AddDv(args.idx, TransferPlanner::RADIAL, delta);
 	} else if (key == "starttime") {
-		planner->AddStartTime(delta);
+		// TransferPlanner::AddStartTime applies the factor internally, so pass
+		// the raw timeStep; the legacy overload keeps its plan-clearing semantics
+		if (args.hasIdx)
+			planner->AddStartTime(args.idx, delta);
+		else
+			planner->AddStartTime(delta);
 	} else if (key == "factor") {
 		if (delta > 0)
 			planner->IncreaseFactor();
@@ -354,15 +389,25 @@ static int l_systemview_transfer_planner_add(lua_State *l)
 static int l_systemview_transfer_planner_reset(lua_State *l)
 {
 	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
-	std::string key = LuaPull<std::string>(l, 2);
+	TransferPlannerCallArgs args = ParseTransferPlannerCallArgs(l);
+	std::string key = LuaPull<std::string>(l, args.keyArg);
 
 	TransferPlanner *planner = sv->GetTransferPlanner();
 	if (key == "prograde") {
-		planner->ResetDv(TransferPlanner::PROGRADE);
+		if (args.hasIdx)
+			planner->ResetDv(args.idx);
+		else
+			planner->ResetDv(TransferPlanner::PROGRADE);
 	} else if (key == "normal") {
-		planner->ResetDv(TransferPlanner::NORMAL);
+		if (args.hasIdx)
+			planner->ResetDv(args.idx);
+		else
+			planner->ResetDv(TransferPlanner::NORMAL);
 	} else if (key == "radial") {
-		planner->ResetDv(TransferPlanner::RADIAL);
+		if (args.hasIdx)
+			planner->ResetDv(args.idx);
+		else
+			planner->ResetDv(TransferPlanner::RADIAL);
 	} else if (key == "starttime") {
 		planner->ResetStartTime();
 	} else if (key == "factor") {
@@ -371,6 +416,29 @@ static int l_systemview_transfer_planner_reset(lua_State *l)
 		Warning("Unknown transfer planner key %s\n", key.c_str());
 	}
 
+	return 0;
+}
+
+static int l_systemview_transfer_planner_get_burn_count(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	LuaPush(l, static_cast<uint64_t>(sv->GetTransferPlanner()->GetBurnCount()));
+	return 1;
+}
+
+static int l_systemview_transfer_planner_insert_burn(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	int afterIdx = LuaPull<int>(l, 2);
+	LuaPush(l, sv->GetTransferPlanner()->InsertBurn(afterIdx));
+	return 1;
+}
+
+static int l_systemview_transfer_planner_remove_burn(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	int idx = LuaPull<int>(l, 2);
+	sv->GetTransferPlanner()->RemoveBurn(idx);
 	return 0;
 }
 
@@ -407,6 +475,9 @@ void LuaObject<SystemView>::RegisterClass()
 		{ "TransferPlannerAdd", l_systemview_transfer_planner_add },
 		{ "TransferPlannerGet", l_systemview_transfer_planner_get },
 		{ "TransferPlannerReset", l_systemview_transfer_planner_reset },
+		{ "TransferPlannerGetBurnCount", l_systemview_transfer_planner_get_burn_count },
+		{ "TransferPlannerInsertBurn", l_systemview_transfer_planner_insert_burn },
+		{ "TransferPlannerRemoveBurn", l_systemview_transfer_planner_remove_burn },
 
 		{ NULL, NULL }
 	};

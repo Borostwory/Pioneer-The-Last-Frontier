@@ -15,6 +15,7 @@
 #include "SpaceStation.h"
 #include "StringF.h"
 #include "SystemView.h" // for the transfer planner
+#include "TransferPlanner.h"
 #include "WorldView.h"
 #include "lua/LuaEvent.h"
 #include "lua/LuaObject.h"
@@ -333,10 +334,11 @@ void Player::StaticUpdate(const float timeStep)
 
 int Player::GetManeuverTime() const
 {
-	if (Pi::planner->GetOffsetVel().ExactlyEqual(vector3d::Zero)) {
+	// burns are stored strictly ordered by startTime, so index 0 is the earliest pending burn
+	if (!Pi::planner->HasPlan()) {
 		return 0;
 	}
-	return Pi::planner->GetStartTime();
+	return Pi::planner->GetStartTime(0);
 }
 
 vector3d Player::GetManeuverVelocity() const
@@ -346,14 +348,14 @@ vector3d Player::GetManeuverVelocity() const
 		frame = Frame::GetFrame(frame->GetNonRotFrame());
 	const SystemBody *systemBody = frame->GetSystemBody();
 
-	if (Pi::planner->GetOffsetVel().ExactlyEqual(vector3d::Zero)) {
+	if (!Pi::planner->HasPlan()) {
 		return vector3d::Zero;
 	} else if (systemBody) {
 		Orbit playerOrbit = ComputeOrbit();
 		if (!is_zero_exact(playerOrbit.GetSemiMajorAxis())) {
 			double mass = systemBody->GetMass();
 			// XXX The best solution would be to store the mass(es) on Orbit
-			const vector3d velocity = (Pi::planner->GetVel() - playerOrbit.OrbitalVelocityAtTime(mass, playerOrbit.OrbitalTimeAtPos(Pi::planner->GetPosition(), mass)));
+			const vector3d velocity = (Pi::planner->GetVel(0) - playerOrbit.OrbitalVelocityAtTime(mass, playerOrbit.OrbitalTimeAtPos(Pi::planner->GetPos(0), mass)));
 			return velocity;
 		}
 	}

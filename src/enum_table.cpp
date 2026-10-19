@@ -162,6 +162,7 @@ const struct EnumItem ENUM_ProjectableBases[] = {
 	{ "SHIP", int(Projectable::SHIP) },
 	{ "PLAYER", int(Projectable::PLAYER) },
 	{ "PLANNER", int(Projectable::PLANNER) },
+	{ "PLANNER_BURN", int(Projectable::PLANNER_BURN) },
 	{ 0, 0 },
 };
 
@@ -186,6 +187,7 @@ const struct EnumItem ENUM_SystemViewColorIndex[] = {
 	{ "PLANNER_ORBIT", int(SystemMapViewport::PLANNER_ORBIT) },
 	{ "SELECTED_SHIP_ORBIT", int(SystemMapViewport::SELECTED_SHIP_ORBIT) },
 	{ "SHIP_ORBIT", int(SystemMapViewport::SHIP_ORBIT) },
+	{ "PLANNER_BURN", int(SystemMapViewport::PLANNER_BURN) },
 	{ 0, 0 },
 };
 

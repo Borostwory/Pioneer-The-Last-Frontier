@@ -61,6 +61,7 @@ local svColor = {
 	NAV_TARGET = colors.navTarget,
 	OBJECT = colors.systemMapObject,
 	PLANNER = colors.systemMapPlanner,
+	PLANNER_BURN = colors.systemMapPlannerBurn,
 	PLANNER_ORBIT = colors.systemMapPlannerOrbit,
 	PLAYER = colors.systemMapPlayer,
 	PLAYER_ORBIT = colors.systemMapPlayerOrbit,
@@ -292,35 +293,60 @@ local function textIcon(icon, tooltip)
 	ui.sameLine()
 end
 
-local function showDvLine(leftIcon, resetIcon, rightIcon, key, Formatter, leftTooltip, resetTooltip, rightTooltip)
+-- Draw one transfer planner stepper: decrease / reset / increase and its value.
+-- idx is the burn the control edits. idx == nil keeps the index-less legacy calls,
+-- which the global factor control relies on (factor ignores the index entirely).
+local function showDvLine(idx, key, leftIcon, resetIcon, rightIcon, Formatter, leftTooltip, resetTooltip, rightTooltip, buttonSize)
+	local add = function(delta)
+		if idx ~= nil then
+			systemView:TransferPlannerAdd(idx, key, delta)
+		else
+			systemView:TransferPlannerAdd(key, delta)
+		end
+	end
+	local reset = function()
+		if idx ~= nil then
+			systemView:TransferPlannerReset(idx, key)
+		else
+			systemView:TransferPlannerReset(key)
+		end
+	end
+	local read = function()
+		if idx ~= nil then
+			return systemView:TransferPlannerGet(idx, key)
+		end
+		return systemView:TransferPlannerGet(key)
+	end
 	local wheel = function()
 		if ui.isItemHovered() then
 			local w = ui.getMouseWheel()
 			if w ~= 0 then
-				systemView:TransferPlannerAdd(key, w * 10)
+				add(w * 10)
 			end
 		end
 	end
-	local id =  "##" .. key
+	-- per-burn rows need ids of their own; the legacy factor row keeps its existing id
+	local id =  "##" .. key .. (idx ~= nil and ("_" .. idx) or "")
+	local size = buttonSize and Vector2(buttonSize, buttonSize)
 
-	local press = ui.mainMenuButton(leftIcon, leftTooltip..id)
+	local press = ui.mainMenuButton(leftIcon, leftTooltip..id, nil, size)
 	if press or (key ~= "factor" and ui.isItemActive()) then
-		systemView:TransferPlannerAdd(key, -10)
+		add(-10)
 	end
 	wheel()
 	ui.sameLine()
-	if ui.mainMenuButton(resetIcon, resetTooltip..id) then
-		systemView:TransferPlannerReset(key)
+	if ui.mainMenuButton(resetIcon, resetTooltip..id, nil, size) then
+		reset()
 	end
 	wheel()
 	ui.sameLine()
-	press = ui.mainMenuButton(rightIcon, rightTooltip..id)
+	press = ui.mainMenuButton(rightIcon, rightTooltip..id, nil, size)
 	if press or (key ~= "factor" and ui.isItemActive()) then
-		systemView:TransferPlannerAdd(key, 10)
+		add(10)
 	end
 	wheel()
 	ui.sameLine()
-	local speed, speed_unit = Formatter(systemView:TransferPlannerGet(key))
+	local speed, speed_unit = Formatter(read())
 	ui.text(speed .. " " .. speed_unit)
 	return 0
 end
@@ -521,7 +547,7 @@ local function getBodyIcon(obj, forWorld, isOrrery)
 	elseif obj.type == Projectable.PERIAPSIS then return icons.periapsis
 	elseif obj.type == Projectable.L4 then return icons.lagrange_marker
 	elseif obj.type == Projectable.L5 then return icons.lagrange_marker
-	elseif obj.base == Projectable.PLAYER or obj.base == Projectable.PLANNER then
+	elseif obj.base == Projectable.PLAYER or obj.base == Projectable.PLANNER or obj.base == Projectable.PLANNER_BURN then
 		local shipClass = obj.ref:GetShipClass()
 		if icons[shipClass] then
 			return icons[shipClass]
@@ -681,6 +707,20 @@ local infoView = {
 	end
 }
 
+-- the burn the plan's controls are currently aimed at
+local selectedBurn = 0
+
+-- keep the selection inside the plan whenever the number of burns changes
+local function clampSelectedBurn(count)
+	local maxIdx = math.max(0, count - 1)
+	if selectedBurn > maxIdx then
+		selectedBurn = maxIdx
+	end
+	if selectedBurn < 0 then
+		selectedBurn = 0
+	end
+end
+
 ---@type UI.Sidebar.Module
 local plannerView = {
 	icon = icons.semi_major_axis,
@@ -689,21 +729,101 @@ local plannerView = {
 	disabled = false,
 
 	drawBody = function(self)
-		showDvLine(icons.decrease, icons.delta, icons.increase, "factor", function(i) return i, "x" end, luc.DECREASE, lc.PLANNER_RESET_FACTOR, luc.INCREASE)
-		showDvLine(icons.decrease, icons.clock, icons.increase, "starttime",
-			function(_)
-				local now = Game.time
-				local start = systemView:GetOrbitPlannerStartTime()
-				if start then
-					return ui.Format.Duration(math.floor(start - now)), ""
-				else
-					return lc.NOW, ""
+		-- the factor is global, so it stays a single index-less row above the table
+		showDvLine(nil, "factor", icons.decrease, icons.delta, icons.increase, function(i) return i, "x" end, luc.DECREASE, lc.PLANNER_RESET_FACTOR, luc.INCREASE)
+
+		local count = systemView:TransferPlannerGetBurnCount()
+		clampSelectedBurn(count)
+
+		if count > 0 then
+			-- the controls of a single burn: its start time and its three Δv axes
+			local burnRows = {
+				{key = "starttime", icons = {icons.decrease, icons.clock, icons.increase},
+					resetTooltip = lc.PLANNER_RESET_START,
+					formatter = function(start)
+						if start and start > 0 then
+							return ui.Format.Duration(math.floor(start - Game.time)), ""
+						else
+							return lc.NOW, ""
+						end
+					end},
+				{key = "prograde", icons = {icons.decrease, icons.orbit_prograde, icons.increase},
+					resetTooltip = lc.PLANNER_RESET_PROGRADE, formatter = ui.Format.SpeedUnit},
+				{key = "normal", icons = {icons.decrease, icons.orbit_normal, icons.increase},
+					resetTooltip = lc.PLANNER_RESET_NORMAL, formatter = ui.Format.SpeedUnit},
+				{key = "radial", icons = {icons.decrease, icons.orbit_radial, icons.increase},
+					resetTooltip = lc.PLANNER_RESET_RADIAL, formatter = ui.Format.SpeedUnit},
+			}
+
+			-- the table places the controls of a burn on the left and its summary on the
+			-- right, so every string is built and measured before the first row is drawn
+			local plan = {}
+			local valueWidth = ui.calcTextSize(ui.Format.Speed(100000)).x
+			local summaryWidth = 0
+			for idx = 0, count - 1 do
+				local prograde = systemView:TransferPlannerGet(idx, "prograde")
+				local normal = systemView:TransferPlannerGet(idx, "normal")
+				local radial = systemView:TransferPlannerGet(idx, "radial")
+				for _, burnRow in ipairs(burnRows) do
+					local speed, unit = burnRow.formatter(systemView:TransferPlannerGet(idx, burnRow.key))
+					valueWidth = math.max(valueWidth, ui.calcTextSize(speed .. " " .. unit).x)
 				end
-			end,
-			luc.DECREASE, lc.PLANNER_RESET_START, luc.INCREASE)
-		showDvLine(icons.decrease, icons.orbit_prograde, icons.increase, "prograde", ui.Format.SpeedUnit, luc.DECREASE, lc.PLANNER_RESET_PROGRADE, luc.INCREASE)
-		showDvLine(icons.decrease, icons.orbit_normal, icons.increase, "normal", ui.Format.SpeedUnit, luc.DECREASE, lc.PLANNER_RESET_NORMAL, luc.INCREASE)
-		showDvLine(icons.decrease, icons.orbit_radial, icons.increase, "radial", ui.Format.SpeedUnit, luc.DECREASE, lc.PLANNER_RESET_RADIAL, luc.INCREASE)
+				-- total Δv magnitude of the burn and the offset of its start time
+				local magnitude = ui.Format.Speed(math.sqrt(prograde * prograde + normal * normal + radial * radial))
+				local start = systemView:TransferPlannerGet(idx, "starttime")
+				local offset = (start and start > 0) and ui.Format.Duration(math.floor(start - Game.time)) or lc.NOW
+				plan[idx + 1] = {magnitude = magnitude, offset = offset}
+				summaryWidth = math.max(summaryWidth, ui.calcTextSize(magnitude).x, ui.calcTextSize(offset).x)
+			end
+
+			local spacing = ui.getItemSpacing().x
+			summaryWidth = summaryWidth + ui.getTextLineHeight() + spacing * 2
+			-- three stepper buttons, the gaps between them and the value text have to fit
+			-- to the left of the summary column, so scale the buttons down to what is left
+			local buttonSize = math.floor((ui.getContentRegion().x - summaryWidth - valueWidth - spacing * 3) / 3)
+			buttonSize = math.min(math.max(buttonSize, ui.rescaleUI(14)), styles.MainButtonSize.x)
+			local controlsWidth = buttonSize * 3 + spacing * 3 + valueWidth
+
+			ui.columns(2, "##plannerBurns", false)
+			ui.setColumnWidth(0, controlsWidth)
+			ui.setColumnWidth(1, summaryWidth)
+
+			for idx = 0, count - 1 do
+				-- deleting a burn shifts every later index, so stop at the live count
+				if idx >= systemView:TransferPlannerGetBurnCount() then break end
+				local row = plan[idx + 1]
+
+				-- clicking the header selects this burn, the highlight marks the selection
+				if ui.selectable("Burn " .. (idx + 1) .. "##plannerBurnHeader" .. idx, idx == selectedBurn, {"SpanAllColumns"}) then
+					selectedBurn = idx
+				end
+
+				for _, burnRow in ipairs(burnRows) do
+					showDvLine(idx, burnRow.key, burnRow.icons[1], burnRow.icons[2], burnRow.icons[3],
+						burnRow.formatter, luc.DECREASE, burnRow.resetTooltip, luc.INCREASE, buttonSize)
+				end
+
+				ui.nextColumn()
+				textIcon(icons.deltav, luc.DELTA_V)
+				ui.text(row.magnitude)
+				textIcon(icons.clock, lc.TIME_POINT)
+				ui.text(row.offset)
+				if ui.inlineIconButton("##plannerBurnDelete" .. idx, icons.cross, luc.DELETE) then
+					systemView:TransferPlannerRemoveBurn(idx)
+					clampSelectedBurn(systemView:TransferPlannerGetBurnCount())
+				end
+				ui.nextColumn()
+			end
+
+			-- reset columns
+			ui.columns(1)
+		end
+
+		-- footer: insert a burn after the selected one, then select the new burn
+		if ui.button("+ Add Burn##plannerAddBurn") then
+			selectedBurn = systemView:TransferPlannerInsertBurn(selectedBurn)
+			clampSelectedBurn(systemView:TransferPlannerGetBurnCount())
+		end
 	end
 }
 
@@ -790,6 +910,7 @@ local function getLabel(obj)
 	if obj.type == Projectable.OBJECT then
 		if obj.base == Projectable.SYSTEMBODY then return obj.ref.name
 		elseif obj.base == Projectable.PLANNER then return ""
+		elseif obj.base == Projectable.PLANNER_BURN then return "Burn " .. tostring(obj.burnIndex or 1)
 		else return obj.ref:GetLabel() end
 	--elseif obj.type == Projectable.L4 and show_lagrange == "LAG_ICONTEXT" then return "L4"
 	elseif obj.type == Projectable.L4 and l4l5DisplayMode:getMode() == "LAG_ICONTEXT" then return "L4"
@@ -805,6 +926,7 @@ local function getColor(obj)
 		elseif obj.base == Projectable.SHIP then return svColor.SHIP
 		elseif obj.base == Projectable.PLAYER then return svColor.PLAYER
 		elseif obj.base == Projectable.PLANNER then return svColor.PLANNER
+		elseif obj.base == Projectable.PLANNER_BURN then return svColor.PLANNER_BURN
 		else return svColor.OBJECT
 		end
 	elseif obj.type == Projectable.APOAPSIS or obj.type == Projectable.PERIAPSIS then
