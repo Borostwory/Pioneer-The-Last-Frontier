@@ -741,7 +741,7 @@ local plannerView = {
 				{key = "starttime", icons = {icons.decrease, icons.clock, icons.increase},
 					resetTooltip = lc.PLANNER_RESET_START,
 					formatter = function(start)
-						if start and start > 0 then
+						if start and start > Game.time then
 							return ui.Format.Duration(math.floor(start - Game.time)), ""
 						else
 							return lc.NOW, ""
@@ -771,7 +771,7 @@ local plannerView = {
 				-- total Δv magnitude of the burn and the offset of its start time
 				local magnitude = ui.Format.Speed(math.sqrt(prograde * prograde + normal * normal + radial * radial))
 				local start = systemView:TransferPlannerGet(idx, "starttime")
-				local offset = (start and start > 0) and ui.Format.Duration(math.floor(start - Game.time)) or lc.NOW
+				local offset = (start and start > Game.time) and ui.Format.Duration(math.floor(start - Game.time)) or lc.NOW
 				plan[idx + 1] = {magnitude = magnitude, offset = offset}
 				summaryWidth = math.max(summaryWidth, ui.calcTextSize(magnitude).x, ui.calcTextSize(offset).x)
 			end

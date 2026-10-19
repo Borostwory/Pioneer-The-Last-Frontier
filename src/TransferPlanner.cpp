@@ -121,12 +121,18 @@ int TransferPlanner::InsertBurn(int afterIdx)
 		return -1;
 
 	Burn burn;
-	if (!m_burns.empty()) {
+	if (m_burns.empty()) {
+		// an empty plan seeds at the present so the first burn is anchored, not epoch 0
+		burn.startTime = Pi::game->GetTime();
+	} else {
 		const int anchor = (afterIdx < 0) ? int(m_burns.size()) - 1
 										  : std::min(afterIdx, int(m_burns.size()) - 1);
-		// appending seeds one hour after the last burn; inserting seeds at the
-		// start time of the burn it follows (EnforceOrder spreads collisions)
-		burn.startTime = m_burns[anchor].startTime + (afterIdx < 0 ? 3600.0 : 0.0);
+		// seed at the anchor's start time never before the present: appending seeds
+		// one hour later, inserting at the anchor (EnforceOrder spreads collisions).
+		// clamping to GetTime() keeps any new burn strictly after now, so its
+		// start-time stepper is immediately adjustable instead of stuck at NOW
+		burn.startTime = std::max(m_burns[anchor].startTime, Pi::game->GetTime()) +
+			(afterIdx < 0 ? 3600.0 : 0.0);
 	}
 
 	m_burns.push_back(burn);
