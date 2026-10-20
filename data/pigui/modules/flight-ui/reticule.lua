@@ -546,6 +546,16 @@ local aicommand_info = {
 	CMD_FLYAROUND = { icon = icons.autopilot_medium_orbit, tooltip = lui.HUD_BUTTON_AUTOPILOT_ENTERING_ORBIT },
 }
 
+-- strings the game ships no lang key for: the plan-heading control state
+-- (Phase 3) is labelled in the same local table pattern as
+-- flight-ui/burn-hud.lua, so no data/lang entries are added here. The engine
+-- side of the planner is not a flight control state at all - Auto Burn is an
+-- independent enable-flag (player:GetPlanBurnEnabled), so it has no entry here.
+local L = {
+	PLAN_HEADING = "Plan Heading: hold the ship at the active burn's direction",
+	UNKNOWN_STATE = "Unknown flight control state",
+}
+
 local flightstate_info = {
 	CONTROL_MANUAL = { icon = icons.empty, tooltip = lui.HUD_BUTTON_MANUAL_CONTROL },
 	-- "CONTROL_AUTOPILOT" - depends on the current command
@@ -557,8 +567,19 @@ local flightstate_info = {
 	CONTROL_FIXHEADING_RADIALLY_INWARD = { icon = icons.radial_in_thin, tooltip = lui.HUD_BUTTON_FIX_RADIAL_IN },
 	CONTROL_FIXHEADING_RADIALLY_OUTWARD = { icon = icons.radial_out_thin, tooltip = lui.HUD_BUTTON_FIX_RADIAL_OUT },
 	-- "CONTROL_FIXHEADING_KILLROT" uses the same icon as rotation damping on
-	CONTROL_FIXHEADING_KILLROT = { icon = icons.rotation_damping_on , tooltip = lui.HUD_BUTTON_KILL_ROTATION }
+	CONTROL_FIXHEADING_KILLROT = { icon = icons.rotation_damping_on , tooltip = lui.HUD_BUTTON_KILL_ROTATION },
+	-- the transfer-planner orientation state (flight-ui/burn-hud.lua's Auto
+	-- Orientation toggle); the icon matches the panel's button icon
+	CONTROL_PLAN_HEADING = { icon = icons.prograde_thin, tooltip = L.PLAN_HEADING }
 }
+
+-- Defensive lookup: a control-state string outside the table must never abort
+-- the HUD draw — an unknown state falls back to the neutral entry. A raise
+-- inside the draw disables the whole reticule module (gameView:draw's pcall),
+-- which is how selecting Auto Orientation made the flight UI disappear.
+local function flightStateInfo(state)
+	return flightstate_info[state] or { icon = icons.empty, tooltip = L.UNKNOWN_STATE }
+end
 
 local radial_menu_actions_orbital = {
 	{icon = ui.theme.icons.normal_thin,
@@ -654,8 +675,9 @@ local function flightAssistButton(pos)
 		main_icon = cruisedir == "CRUISE_FWD" and icons.cruise_fwd or icons.cruise_up
 		tooltip = cruisedir == "CRUISE_FWD" and lui.HUD_BUTTON_CRUISE_FORWARD or lui.HUD_BUTTON_CRUISE_UP
 	else
-		main_icon = flightstate_info[flightcontrolstate].icon
-		tooltip = flightstate_info[flightcontrolstate].tooltip
+		local state_info = flightStateInfo(flightcontrolstate)
+		main_icon = state_info.icon
+		tooltip = state_info.tooltip
 	end
 
 	-- background

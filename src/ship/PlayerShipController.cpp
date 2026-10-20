@@ -14,6 +14,7 @@
 #include "Ship.h"
 #include "Space.h"
 #include "SystemView.h"
+#include "TransferPlanner.h"
 #include "WorldView.h"
 #include "lua/LuaObject.h"
 #include "ship/GunManager.h"
@@ -21,6 +22,15 @@
 #include "Sensors.h"
 
 #include <algorithm>
+
+// plan-burn autopilot: face tolerance inside which the main engine may fire, the
+// slack allowed against a burn's scheduled start before the engine is considered
+// late, the delta-v below which a burn counts as spent, and the epsilon guard
+// used when dividing by an acceleration or a remaining time
+static constexpr double PLAN_BURN_FACE_TOLERANCE = DEG2RAD(5.0);
+static constexpr double PLAN_BURN_START_TOLERANCE = 1.0; // s
+static constexpr double PLAN_BURN_DV_EPSILON = 1e-3; // m/s
+static constexpr double PLAN_BURN_EPS = 1e-9;
 
 // so that we can summarize the controller action from all subsystems
 struct PlayerShipController::TotalDesiredAction {
@@ -91,6 +101,15 @@ struct PlayerShipController::Util {
 			speed = shipVel.Dot(c.m_ship->GetOrient().VectorY());
 		}
 		ChangeCruiseSpeedConstrained(c, speed - c.m_cruiseSpeed);
+	}
+
+	// the angle between the ship's nose and the given direction (both in the
+	// ship's current frame); a read-only alignment test used by the plan-burn
+	// engine control, which must not command the ship's attitude at all
+	static double AngleToFaceDirection(const PlayerShipController &c, const vector3d &dir)
+	{
+		const vector3d ship_dir = -c.m_ship->GetOrient().VectorZ();
+		return abs(acos(Clamp(dir.Dot(ship_dir), -1.0, 1.0)));
 	}
 
 	// substitute for AIFaceDirection, if we want to combine this action with other rotational needs
@@ -584,8 +603,29 @@ void PlayerShipController::StaticUpdate(const float timeStep)
 				SetFlightControlState(CONTROL_MANUAL);
 			m_cruiseSpeed = 0.0;
 			break;
+		case CONTROL_PLAN_HEADING: {
+			// orient towards the active planned burn, no thrust commanded
+			if (m_ship->Properties().Get("autopilot_cap").get_integer() < 1) {
+				// no autopilot installed - control is released, never retained
+				m_ship->GetPropulsion()->ClearLinThrusterState();
+				SetFlightControlState(CONTROL_MANUAL);
+				break;
+			}
+			PollControls(timeStep, mouseMotion, act);
+			Util::LimitActualSpeed(*this, timeStep, act);
+			if (ResolvePlanBurnDirection(v) < 0) // releases control when there is no active burn
+				break;
+			act.desiredAngular += Util::NeededAngVelocityToFaceDirection(*this, timeStep, v, act.angPower);
+			ApplyTotalAction(act);
+			break;
+		}
 		default: assert(0); break;
 		}
+
+		// engine control is orthogonal to the orientation control above: it runs
+		// after the state machine, on top of whichever orientation control is
+		// active (manual, plan heading, a fix-heading state, plain flying)
+		UpdatePlanBurnThrust();
 	} else {
 		SetFlightControlState(CONTROL_MANUAL);
 
@@ -595,6 +635,116 @@ void PlayerShipController::StaticUpdate(const float timeStep)
 			Pi::input->SetCapturingMouse(false);
 			m_mouseActive = false;
 		}
+	}
+}
+
+// orientation-side resolution for the CONTROL_PLAN_HEADING state: resolve the
+// direction of the burn the planner is working towards. Returns the burn index
+// and writes the direction into outWorldDir, expressed in the ship's current
+// frame - the frame Util::NeededAngVelocityToFaceDirection takes its input in.
+// Releases control to manual and returns -1 when there is no burn to point at.
+int PlayerShipController::ResolvePlanBurnDirection(vector3d &outWorldDir)
+{
+	const int idx = Pi::player->GetActiveBurnIndex();
+	if (!ResolvePlanBurnDirection(idx, outWorldDir)) {
+		SetFlightControlState(CONTROL_MANUAL);
+		return -1;
+	}
+	return idx;
+}
+
+// engine-side resolution: the pure direction of a known burn index, with no
+// side effects on the flight control state (the engine control is orthogonal to
+// orientation and must not release it). Returns false for an invalid index - no
+// plan, every planned burn complete - or for an inert plan with no direction.
+bool PlayerShipController::ResolvePlanBurnDirection(int idx, vector3d &outWorldDir) const
+{
+	if (idx < 0) { // no plan, or every planned burn is complete
+		return false;
+	}
+
+	// the plan's offset velocity lives in the burn's non-rotating system frame,
+	// so convert it with the same rotation Player::TimeStepUpdate uses for progress
+	const vector3d planDv = Pi::player->GetManeuverVelocity(idx);
+	if (planDv.LengthSqr() < 1e-18) { // an inert plan has no direction to face
+		return false;
+	}
+
+	const matrix3x3d rot = Frame::GetFrame(Frame::GetFrame(m_ship->GetFrame())->GetNonRotFrame())->GetOrientRelTo(m_ship->GetFrame());
+	outWorldDir = (rot * planDv).NormalizedSafe();
+	return true;
+}
+
+// the plan-burn engine control, run from StaticUpdate after the orientation
+// state machine: fires the main engine for the active planned burn while the
+// ship is aligned with the burn direction, independently of whichever
+// orientation control is active. Commanding the ship's attitude is never part
+// of this: unaligned, it simply produces no thrust.
+void PlayerShipController::UpdatePlanBurnThrust()
+{
+	if (!m_planBurnEnabled) return;
+
+	if (m_ship->Properties().Get("autopilot_cap").get_integer() < 1) {
+		// no autopilot installed - the control is never retained, and the
+		// plan-heading orientation it was built on goes with it
+		m_ship->GetPropulsion()->ClearLinThrusterState();
+		m_planBurnEnabled = false;
+		if (m_flightControlState == CONTROL_PLAN_HEADING) {
+			SetFlightControlState(CONTROL_MANUAL);
+		}
+		return;
+	}
+
+	// progress accounting lives in the planner (Player::TimeStepUpdate); this
+	// control keeps no delta-v total of its own
+	const int burnIdx = Pi::player->GetActiveBurnIndex();
+	vector3d burnDir;
+	if (!ResolvePlanBurnDirection(burnIdx, burnDir)) {
+		m_ship->GetPropulsion()->ClearLinThrusterState();
+		return;
+	}
+
+	// alignment gate: only the angle to the burn direction is read, never a
+	// commanded attitude - the orientation control owns the ship's pointing
+	if (Util::AngleToFaceDirection(*this, burnDir) > PLAN_BURN_FACE_TOLERANCE) {
+		// the main engine is fore-firing: rotate into the burn direction first
+		m_ship->GetPropulsion()->ClearLinThrusterState();
+		return;
+	}
+
+	const double remainingDv = Pi::planner->GetBurnRemainingDeltaV(burnIdx);
+	if (remainingDv <= PLAN_BURN_DV_EPSILON) {
+		m_ship->GetPropulsion()->ClearLinThrusterState();
+		Pi::planner->CompleteBurn(burnIdx);
+		return;
+	}
+
+	// schedule-aware control law: fire at full thrust for as long as the
+	// remaining delta-v can still be spent by the burn's scheduled start
+	// (plus tolerance); taper proportionally only when the time left is
+	// shorter than what the remaining delta-v needs, so the burn trails off
+	// at the scheduled start; and hold thrust off entirely before the burn's
+	// window opens, i.e. before a full-thrust burn would land on that start.
+	// The burn completes once the remaining delta-v is under epsilon.
+	const double start = Pi::planner->GetStartTime(burnIdx);
+	const double now = Pi::game->GetTime();
+	const double accel = m_ship->GetPropulsion()->GetAccel(THRUSTER_FORWARD);
+	const double timeToSpend = remainingDv / std::max(PLAN_BURN_EPS, accel);
+	// the window opens when full thrust would spend the rest exactly at the start
+	if (timeToSpend + PLAN_BURN_START_TOLERANCE < (start - now)) {
+		m_ship->GetPropulsion()->ClearLinThrusterState();
+		return;
+	}
+	const double timeLeft = start + PLAN_BURN_START_TOLERANCE - now;
+	// axis 2 is the main engine and its level is inverted: a negative
+	// level fires THRUSTER_FORWARD, so a planned burn is always executed
+	// prograde - the ship faces the burn direction and accelerates into it
+	if (timeToSpend <= timeLeft) {
+		// there is slack time: no reason to burn below full thrust
+		m_ship->GetPropulsion()->SetLinThrusterState(2, -1.0);
+	} else {
+		const double throttle = Clamp(remainingDv / std::max(PLAN_BURN_EPS, accel * std::max(PLAN_BURN_EPS, timeLeft)), 0.0, 1.0);
+		m_ship->GetPropulsion()->SetLinThrusterState(2, -throttle);
 	}
 }
 
@@ -766,6 +916,16 @@ void PlayerShipController::SetFlightControlState(FlightControlState s)
 	}
 
 	onChangeFlightControlState.emit();
+}
+
+void PlayerShipController::SetPlanBurnEnabled(bool enabled)
+{
+	// the flag is orthogonal to the flight control state: enabling it never
+	// touches orientation, and disabling it stops the commanded thrust at once
+	if (!enabled) {
+		m_ship->GetPropulsion()->ClearLinThrusterState();
+	}
+	m_planBurnEnabled = enabled;
 }
 
 void PlayerShipController::SetLowThrustPower(float power)

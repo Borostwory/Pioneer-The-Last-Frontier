@@ -447,6 +447,7 @@ local ShipControllerFlightControlState = {
 	CONTROL_FIXHEADING_RADIALLY_OUTWARD = 8,
 	CONTROL_FIXHEADING_KILLROT = 9,
 	CONTROL_AUTOPILOT = 10,
+	CONTROL_PLAN_HEADING = 11,
 }
 
 ---@type ShipControllerFlightControlState[]

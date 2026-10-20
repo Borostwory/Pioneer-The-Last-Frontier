@@ -45,6 +45,14 @@ vector3d TransferPlanner::GetOffsetVel() const
 	return GetOffsetVel(EnsureBurn(0));
 }
 
+vector3d TransferPlanner::GetOffsetVel(int idx) const
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return vector3d(0., 0., 0.);
+
+	return GetOffsetVel(m_burns[idx]);
+}
+
 vector3d TransferPlanner::GetOffsetVel(const Burn &burn) const
 {
 	// a plan with no position is inert
@@ -105,8 +113,13 @@ void TransferPlanner::AddStartTime(int idx, double timeStep)
 void TransferPlanner::ResetStartTime()
 {
 	const double gameTime = Pi::game->GetTime();
-	for (Burn &burn : m_burns)
+	for (Burn &burn : m_burns) {
 		burn.startTime = gameTime;
+		// the full-plan reset is a new plan: flown progress and completion
+		// belong to the old one
+		burn.status = PENDING;
+		burn.appliedDeltaV = 0.0;
+	}
 
 	// identical start times collapse the chain; EnforceOrder re-spreads them
 	// at >= prev + 1s so the m_burns-by-startTime invariant holds on this path too
@@ -218,6 +231,7 @@ void TransferPlanner::ResetDv(int idx)
 
 void TransferPlanner::ResetDv()
 {
+	// drops the whole plan, statuses and executed delta-v included
 	m_burns.clear();
 }
 
@@ -226,6 +240,74 @@ void TransferPlanner::SetPosition(const vector3d &position)
 	Burn &burn = EnsureBurn(0);
 	burn.pos = position;
 	RecomputeChain();
+}
+
+int TransferPlanner::GetActiveIndex() const
+{
+	// m_burns is strictly ordered by startTime, so the earliest burn that has not
+	// been completed is the first non-completed entry; -1 when every burn is flown
+	for (size_t i = 0; i < m_burns.size(); ++i) {
+		if (m_burns[i].status != COMPLETED)
+			return int(i);
+	}
+	return -1;
+}
+
+int TransferPlanner::GetBurnStatus(int idx) const
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return PENDING;
+	return m_burns[idx].status;
+}
+
+void TransferPlanner::CompleteBurn(int idx)
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return;
+
+	// deliberately no EnforceOrder()/RecomputeChain(): completing a burn is
+	// bookkeeping only, so it cannot move any other burn's geometry or start time
+	m_burns[idx].status = COMPLETED;
+}
+
+void TransferPlanner::ResetBurnStatus(int idx)
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return;
+
+	m_burns[idx].status = PENDING;
+	m_burns[idx].appliedDeltaV = 0.0;
+}
+
+double TransferPlanner::GetBurnDeltaV(int idx) const
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return 0.0;
+	return GetOffsetVel(m_burns[idx]).Length();
+}
+
+double TransferPlanner::GetBurnRemainingDeltaV(int idx) const
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return 0.0;
+	// appliedDeltaV is accumulated as the projection of actual acceleration onto
+	// the burn's unit vector, so the projected magnitude is that scalar itself
+	return std::max(0.0, GetBurnDeltaV(idx) - m_burns[idx].appliedDeltaV);
+}
+
+void TransferPlanner::AddBurnProgress(int idx, double dv)
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return;
+
+	Burn &burn = m_burns[idx];
+	// a completed burn is closed: late thrust belongs to the next one, not this
+	if (burn.status == COMPLETED)
+		return;
+
+	// keep progress within [0, planned delta-v]; thrust against the planned
+	// direction claws progress back but never below "nothing flown"
+	burn.appliedDeltaV = std::min(std::max(burn.appliedDeltaV + dv, 0.0), GetBurnDeltaV(idx));
 }
 
 TransferPlanner::Burn &TransferPlanner::EnsureBurn(int idx) const

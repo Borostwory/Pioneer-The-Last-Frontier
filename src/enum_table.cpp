@@ -343,6 +343,7 @@ const struct EnumItem ENUM_ShipControllerFlightControlState[] = {
 	{ "CONTROL_FIXHEADING_RADIALLY_OUTWARD", int(FlightControlState::CONTROL_FIXHEADING_RADIALLY_OUTWARD) },
 	{ "CONTROL_FIXHEADING_KILLROT", int(FlightControlState::CONTROL_FIXHEADING_KILLROT) },
 	{ "CONTROL_AUTOPILOT", int(FlightControlState::CONTROL_AUTOPILOT) },
+	{ "CONTROL_PLAN_HEADING", int(FlightControlState::CONTROL_PLAN_HEADING) },
 	{ 0, 0 },
 };
 

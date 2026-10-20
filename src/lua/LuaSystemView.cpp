@@ -442,6 +442,46 @@ static int l_systemview_transfer_planner_remove_burn(lua_State *l)
 	return 0;
 }
 
+static int l_systemview_transfer_planner_complete_burn(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	int idx = LuaPull<int>(l, 2);
+	sv->GetTransferPlanner()->CompleteBurn(idx);
+	return 0;
+}
+
+static int l_systemview_transfer_planner_get_burn_status(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	int idx = LuaPull<int>(l, 2);
+	LuaPush(l, sv->GetTransferPlanner()->GetBurnStatus(idx));
+	return 1;
+}
+
+static int l_systemview_transfer_planner_get_burn_delta_v(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	int idx = LuaPull<int>(l, 2);
+	LuaPush<double>(l, sv->GetTransferPlanner()->GetBurnDeltaV(idx));
+	return 1;
+}
+
+static int l_systemview_transfer_planner_get_burn_remaining_delta_v(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	int idx = LuaPull<int>(l, 2);
+	LuaPush<double>(l, sv->GetTransferPlanner()->GetBurnRemainingDeltaV(idx));
+	return 1;
+}
+
+static int l_systemview_transfer_planner_get_active_index(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	// -1 once every planned burn has been completed
+	LuaPush(l, sv->GetTransferPlanner()->GetActiveIndex());
+	return 1;
+}
+
 template <>
 const char *LuaObject<SystemView>::s_type = "SystemView";
 
@@ -478,6 +518,11 @@ void LuaObject<SystemView>::RegisterClass()
 		{ "TransferPlannerGetBurnCount", l_systemview_transfer_planner_get_burn_count },
 		{ "TransferPlannerInsertBurn", l_systemview_transfer_planner_insert_burn },
 		{ "TransferPlannerRemoveBurn", l_systemview_transfer_planner_remove_burn },
+		{ "TransferPlannerCompleteBurn", l_systemview_transfer_planner_complete_burn },
+		{ "TransferPlannerGetBurnStatus", l_systemview_transfer_planner_get_burn_status },
+		{ "TransferPlannerGetBurnDeltaV", l_systemview_transfer_planner_get_burn_delta_v },
+		{ "TransferPlannerGetBurnRemainingDeltaV", l_systemview_transfer_planner_get_burn_remaining_delta_v },
+		{ "TransferPlannerGetActiveIndex", l_systemview_transfer_planner_get_active_index },
 
 		{ NULL, NULL }
 	};

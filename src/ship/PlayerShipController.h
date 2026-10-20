@@ -32,6 +32,11 @@ public:
 	vector3d GetMouseViewDir() const;
 	void SetMouseForRearView(bool enable) { m_invertMouse = enable; }
 	void SetFlightControlState(FlightControlState s) override;
+	// plan-burn engine control: an independent, orthogonal enabled-flag, applied
+	// on top of whatever orientation control (m_flightControlState) is active.
+	// The FlightControlState machine is exclusive; this flag is not part of it.
+	void SetPlanBurnEnabled(bool enabled);
+	bool GetPlanBurnEnabled() const { return m_planBurnEnabled; }
 	float GetLowThrustPower() const { return m_lowThrustPower; }
 	void SetLowThrustPower(float power);
 
@@ -132,6 +137,23 @@ private:
 	void FlightAssist(const float timeStep, TotalDesiredAction &outParams);
 	// send a control request to propulsion
 	void ApplyTotalAction(const TotalDesiredAction &params);
+	// shared by the plan-heading orientation control and the plan-burn engine
+	// control: the unit direction of the active planned burn in the ship's
+	// current frame, which the attitude helpers take as input. returns the burn
+	// index, or -1 when there is no burn to point at, in which case the flight
+	// control state is released to manual
+	int ResolvePlanBurnDirection(vector3d &outWorldDir);
+	// pure direction resolution for a known burn index: writes the unit
+	// direction of planned burn idx into the ship's current frame, returns false
+	// when the index is invalid or the plan has no direction to point at - in
+	// contrast to the single-argument form above it never touches the flight
+	// control state, which the engine control must not do
+	bool ResolvePlanBurnDirection(int idx, vector3d &outWorldDir) const;
+	// the plan-burn engine control law, run from StaticUpdate after the
+	// orientation switch: fires the main engine for the active planned burn
+	// while the ship is aligned with the burn direction, on top of whatever
+	// orientation control is active. never touches m_flightControlState.
+	void UpdatePlanBurnThrust();
 
 	void OnToggleLandingGear();
 	void UpdateLandingGear();
@@ -159,6 +181,8 @@ private:
 	double m_mouseY;
 	double m_cruiseSpeed;
 	FlightControlState m_flightControlState;
+	// plan-burn engine control enable: orthogonal to m_flightControlState
+	bool m_planBurnEnabled = false;
 	float m_fovY; //for mouse acceleration adjustment
 	float m_joystickDeadzone;
 	float m_lowThrustPower;

@@ -335,6 +335,13 @@ theme.colors = {
 
 	compareBetter = styleColors.accent_300,
 	compareWorse  = styleColors.warning_300,
+
+	-- flight HUD multi-burn widget (modules/flight-ui/burn-hud.lua)
+	burnHudActiveRowBg      = styleColors.primary_800:opacity(0.85),
+	burnHudActiveRowBorder  = styleColors.primary_500,
+	burnHudCompletedText    = styleColors.gray_600,
+	burnHudToggleOnText     = styleColors.success_300,
+	burnHudToggleOffText    = styleColors.gray_500,
 }
 
 -- ImGui global theming styles

@@ -25,6 +25,9 @@ enum FlightControlState { // <enum scope='FlightControlState' name=ShipControlle
 	CONTROL_FIXHEADING_KILLROT,
 	CONTROL_AUTOPILOT,
 
+	// orient towards the active planned burn's direction; no thrust is commanded
+	CONTROL_PLAN_HEADING,
+
 	CONTROL_STATE_COUNT // <enum skip>
 };
 

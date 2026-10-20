@@ -325,29 +325,59 @@ static int l_get_distance_to_zero_v(lua_State *l)
 /*
  * Method: GetManeuverTime
  *
- * Get the time remaining until start of maneuver in seconds
+ * Get the absolute game time at which the maneuver starts, in seconds
  *
  * > player:GetManeuverTime()
+ * > player:GetManeuverTime(idx)
+ *
+ * Parameters:
+ *
+ *   idx - the (0-based) index of the planned burn; defaults to the active burn
  */
 static int l_get_maneuver_time(lua_State *l)
 {
 	Player *player = LuaObject<Player>::CheckFromLua(1);
-	LuaPush(l, player->GetManeuverTime());
+	if (lua_isnumber(l, 2))
+		LuaPush(l, player->GetManeuverTime(LuaPull<int>(l, 2)));
+	else
+		LuaPush(l, player->GetManeuverTime());
 	return 1;
 }
 
 /*
  * Method: GetManeuverVelocity
  *
- * Get the current maneuver velocity in m/s
+ * Get the maneuver velocity in m/s
  *
  * > player:GetManeuverVelocity()
+ * > player:GetManeuverVelocity(idx)
+ *
+ * Parameters:
+ *
+ *   idx - the (0-based) index of the planned burn; defaults to the active burn
  */
 static int l_get_maneuver_velocity(lua_State *l)
 {
 	Player *player = LuaObject<Player>::CheckFromLua(1);
-	vector3d pos = player->GetManeuverVelocity();
-	LuaPush(l, pos);
+	vector3d vel = lua_isnumber(l, 2)
+		? player->GetManeuverVelocity(LuaPull<int>(l, 2))
+		: player->GetManeuverVelocity();
+	LuaPush(l, vel);
+	return 1;
+}
+
+/*
+ * Method: GetActiveBurnIndex
+ *
+ * Get the index of the planned burn the transfer planner is currently working
+ * towards, or -1 when there is no plan, or every planned burn is complete
+ *
+ * > player:GetActiveBurnIndex()
+ */
+static int l_player_get_active_burn_index(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	LuaPush(l, player->GetActiveBurnIndex());
 	return 1;
 }
 
@@ -362,6 +392,53 @@ static int l_player_get_burn_count(lua_State *l)
 {
 	LuaObject<Player>::CheckFromLua(1);
 	LuaPush(l, static_cast<uint64_t>(Pi::planner->GetBurnCount()));
+	return 1;
+}
+
+/*
+ * Function: SetPlanBurnEnabled
+ *
+ * Enable or disable the planned-burn engine control: when enabled the main
+ * engine fires for the active planned burn, but only while the ship is
+ * aligned with the burn direction. Independent of the flight control state:
+ * it composes with any orientation control (SetFlightControlState), and never
+ * changes one. Disabling it stops the commanded thrust immediately.
+ *
+ * Example:
+ *
+ * > player:SetPlanBurnEnabled(enable)
+ *
+ * Parameters:
+ *
+ *   enable - boolean
+ *
+ */
+static int l_player_set_plan_burn_enabled(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	bool enable = LuaPull<bool>(l, 2);
+	player->SetPlanBurnEnabled(enable);
+	return 0;
+}
+
+/*
+ * Function: GetPlanBurnEnabled
+ *
+ * Get the planned-burn engine control state
+ *
+ * Example:
+ *
+ * > enabled = player:GetPlanBurnEnabled()
+ *
+ * Returns:
+ *
+ *   enabled - bool
+ *
+ */
+static int l_player_get_plan_burn_enabled(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	LuaPush(l, player->GetPlanBurnEnabled());
 	return 1;
 }
 
@@ -725,6 +802,9 @@ void LuaObject<Player>::RegisterClass()
 		{ "GetManeuverVelocity", l_get_maneuver_velocity },
 		{ "GetManeuverTime", l_get_maneuver_time },
 		{ "GetBurnCount", l_player_get_burn_count },
+		{ "GetActiveBurnIndex", l_player_get_active_burn_index },
+		{ "SetPlanBurnEnabled", l_player_set_plan_burn_enabled },
+		{ "GetPlanBurnEnabled", l_player_get_plan_burn_enabled },
 		{ "GetAcceleration", l_get_acceleration },
 		{ "IsMouseActive", l_get_is_mouse_active },
 		{ "GetMouseDirection", l_get_mouse_direction },
