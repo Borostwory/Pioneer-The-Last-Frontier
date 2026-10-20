@@ -71,30 +71,8 @@ local UNAVAILABLE = "-"
 -- (flight-ui/reticule.lua: displayDetailData).
 local RETICLE_WIDEST_SAMPLE = "999,999,999.9 m/s"
 
--- the plan cap, mirrored from src/TransferPlanner.cpp (kMaxBurns). The column
--- widths are measured for a full plan, so the layout never depends on how many
--- burns the current plan happens to hold
+-- The plan cap, mirrored from src/TransferPlanner.cpp (kMaxBurns).
 local MAX_BURN_COUNT = 8
-
--- Representative worst-case inputs for the formatters the cells use. The
--- columns are measured on the strings the formatters actually produce for these
--- inputs (see measureLayout) - unit suffix, separators and decimal digits are
--- part of the measurement, not hand-written samples.
-local WORST_CASE_SPEEDS = {
-	999.9,             -- the m/s branch (floored, no decimals)
-	999999.9,          -- the km/s branch (%0.2f)
-	999999999.9,       -- the Mm/s branch
-	1234567890123.4,   -- past the largest branch the formatter has (no au/s)
-	-999999.9,         -- signed, the formatter keeps the sign
-}
-
-local WORST_CASE_DURATIONS_S = {
-	999 * 3600 + 59 * 60 + 59,                                -- "999h 59m 59s"
-	6 * 86400 + 23 * 3600 + 59 * 60 + 59,                     -- "6d 23h 59m 59s"
-	9999 * 604800 + 6 * 86400 + 23 * 3600 + 59 * 60 + 59,    -- "9999w 6d 23h 59m 59s"
-	-999 * 3600,                                              -- the "-" prefixed form
-	0,                                                        -- the "0s" fallback
-}
 
 -- strings the game ships no lang key for; Phase 4 is scoped to this module,
 -- the HUD registration and the theme, so no data/lang entries are added here
@@ -474,18 +452,10 @@ local COL_COUNT = COL_ACTIONS + 1
 -- buttons have an explicit label-font text height, also reserved by the row;
 -- their glyphs are measured at that height less the inline padding.
 --
--- None of it depends on the current plan, only on the font sizes, which are
--- fixed per screen size (libs/text.lua scales them with the resolution), so it
--- is cached per screen size, the same pattern as the reticle keepout cache
--- below.
+-- Numeric widths follow the current rows; labels and controls retain their
+-- measured minimum sizes.
 --
-local layoutCache = {}
-
-local function measureLayout()
-	local key = tostring(ui.screenWidth) .. "x" .. tostring(ui.screenHeight)
-	local cached = layoutCache[key]
-	if cached then return cached end
-
+local function measureLayout(rows)
 	-- widths are indexed by column (0..COL_ACTIONS)
 	local widths = {}
 	for i = COL_LABEL, COL_ACTIONS do widths[i] = 0 end
@@ -534,30 +504,19 @@ local function measureLayout()
 		end
 	end)
 
-	-- the strings the cell formatters actually produce on the worst-case
-	-- inputs: unit suffix, separators and decimal digits are part of the
-	-- measurement (formatSpeed / formatDuration are the very functions the
-	-- rows are built with, so the measured string is the drawn string)
-	local worstSpeedCells = { UNAVAILABLE }
-	for _, dv in ipairs(WORST_CASE_SPEEDS) do
-		worstSpeedCells[#worstSpeedCells + 1] = formatSpeed(dv)
-	end
-
-	-- the start column also renders "NOW"; duration/time-left also render "-"
-	local worstTimeCells = { UNAVAILABLE, lc.NOW }
-	for _, seconds in ipairs(WORST_CASE_DURATIONS_S) do
-		worstTimeCells[#worstTimeCells + 1] = formatDuration(seconds)
-	end
-
+	-- Fit each numeric column to its actual formatted values, not hypothetical
+	-- extreme burns. Measure in the same font used by drawCell.
 	ui.withFont(dataFont.name, dataFont.size, function()
-		for _, cell in ipairs(worstSpeedCells) do
-			widths[COL_DV] = math.max(widths[COL_DV], ui.calcTextSize(cell).x)
-			widths[COL_REMAINING] = math.max(widths[COL_REMAINING], ui.calcTextSize(cell).x)
-		end
-		for _, cell in ipairs(worstTimeCells) do
-			widths[COL_START] = math.max(widths[COL_START], ui.calcTextSize(cell).x)
-			widths[COL_DURATION] = math.max(widths[COL_DURATION], ui.calcTextSize(cell).x)
-			widths[COL_TIME_LEFT] = math.max(widths[COL_TIME_LEFT], ui.calcTextSize(cell).x)
+		for _, row in ipairs(rows) do
+			for col, text in pairs({
+				[COL_DV] = row.dv,
+				[COL_REMAINING] = row.remainingDv,
+				[COL_START] = row.countdown,
+				[COL_DURATION] = row.duration,
+				[COL_TIME_LEFT] = row.timeLeft,
+			}) do
+				widths[col] = math.max(widths[col], ui.calcTextSize(text).x)
+			end
 		end
 	end)
 
@@ -599,7 +558,6 @@ local function measureLayout()
 		warpCancelWidth = cancelWidth,
 		actionSlotSize = actionSlotSize,
 	}
-	layoutCache[key] = layout
 	return layout
 end
 
@@ -947,9 +905,8 @@ local function displayBurnHudPanel(min, max, player, systemView)
 	local rows, activeIndex = collectRows(systemView, acceleration)
 	local hasRows = #rows > 0
 
-	-- worst-case, font-context-matched column widths and row heights, cached
-	-- per screen size: the layout is identical whatever the plan's contents are
-	local layout = measureLayout()
+	-- Keep the table compact while allowing longer live values to fit.
+	local layout = measureLayout(rows)
 	local widths = layout.widths
 
 	-- the rows below the table: the autopilot row, the offset stepper, and
@@ -996,12 +953,10 @@ local function displayBurnHudPanel(min, max, player, systemView)
 	-- OFFSET_ROW_HEIGHT = getFrameHeight() under the caption font, the warp
 	-- strip at layout.warpStripLine (the data-font line its inline cancel
 	-- control is sized to) — each followed by its line spacing, plus the
-	-- window's top and bottom padding, plus one line of slack covering the
-	-- trailing layout advance after the last row. The panel is fixed-size
+	-- window's top and bottom padding. The panel is fixed-size
 	-- (NoResize, NoScrollbar), so anything past the bottom edge of the window
 	-- is hidden: the window must cover the full content, including the offset
 	-- stepper and the toggles.
-	local rowLine = hasRows and layout.rowLine or layout.emptyLine
 	local contentHeight = captionLine + spacing.y
 	contentHeight = contentHeight + #rows * (layout.rowLine + spacing.y)
 	contentHeight = contentHeight + autopilotHeight + spacing.y
@@ -1012,7 +967,7 @@ local function displayBurnHudPanel(min, max, player, systemView)
 		-- data-font line (see drawWarpStrip); the control sets the line height
 		contentHeight = contentHeight + layout.warpStripLine + spacing.y
 	end
-	local height = math.max(contentHeight + padding.y * 2 + (rowLine + spacing.y), 1)
+	local height = math.max(contentHeight + padding.y * 2, 1)
 
 	-- the panel's right edge is the right edge of this side's HUD column, and
 	-- its bottom edge is the bottom of the available area, just above the time
