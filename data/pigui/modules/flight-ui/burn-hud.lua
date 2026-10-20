@@ -471,12 +471,8 @@ local COL_COUNT = COL_ACTIONS + 1
 --
 -- The vertical metrics come from the same measurement: a text item's height is
 -- the font's text height, and a row is as tall as its tallest item. The action
--- column's inline icon buttons are drawn in the label-font context at the
--- current line height (ui.inlineIconButton passes Vector2(0, getLineHeight())
--- and Draw::GlyphButton takes that size verbatim), and the row's label cell is
--- laid out on the same line in the label font, so a row's advance is the
--- label-font text height; the action glyph is measured at exactly that height
--- (less the inline padding) to size the column.
+-- buttons have an explicit label-font text height, also reserved by the row;
+-- their glyphs are measured at that height less the inline padding.
 --
 -- None of it depends on the current plan, only on the font sizes, which are
 -- fixed per screen size (libs/text.lua scales them with the resolution), so it
@@ -565,14 +561,9 @@ local function measureLayout()
 		end
 	end)
 
-	-- the action column holds two inline icon buttons (Complete, Warp), drawn
-	-- in the label-font context (see the row drawing): inlineIconButton passes
-	-- Vector2(0, getLineHeight()) — the line height the row's label cell just
-	-- set, i.e. exactly rowLine — and Draw::GlyphButton sizes the button to the
-	-- glyph plus the frame padding the helper pushes (InlineIconPadding).
-	-- Measure the same glyphs in the same context at that exact height, so the
-	-- column is never narrower than the two buttons plus the ui.sameLine gap
-	-- between them.
+	-- Explicit action sizes must not depend on the line height, which resets
+	-- at nextColumn. Match iconButton's glyph font height and padding, and
+	-- reserve the label-line height for both buttons and the completed dummy.
 	local iconGlyphWidth = 0
 	ui.withFont(glyphFont.name, rowLine - styles.InlineIconPadding.y * 2, function()
 		for _, icon in ipairs({ icons.map_checkmark, icons.time_accel_10000x }) do
@@ -580,11 +571,8 @@ local function measureLayout()
 		end
 	end)
 	local iconWidth = iconGlyphWidth + styles.InlineIconPadding.x * 2
-	widths[COL_ACTIONS] = (iconWidth * 2) + ui.getItemSpacing().x
-	-- the width of ONE action control, kept so the row loop can reserve the
-	-- Complete slot with a dummy on a row that draws no Complete control
-	-- (a completed row): the Warp control then keeps the same x on every row.
-	local actionSlotWidth = iconWidth
+	widths[COL_ACTIONS] = math.max(widths[COL_ACTIONS], (iconWidth * 2) + ui.getItemSpacing().x)
+	local actionSlotSize = Vector2(iconWidth, rowLine)
 
 	-- the warp strip's height and its cancel control. The strip is one
 	-- data-font text line (the status text and the inline cancel control share
@@ -609,7 +597,7 @@ local function measureLayout()
 		emptyLine = emptyLine,
 		warpStripLine = warpStripLine,
 		warpCancelWidth = cancelWidth,
-		actionSlotWidth = actionSlotWidth,
+		actionSlotSize = actionSlotSize,
 	}
 	layoutCache[key] = layout
 	return layout
@@ -977,14 +965,13 @@ local function displayBurnHudPanel(min, max, player, systemView)
 	-- the same font-context measurement the drawing uses
 	local captionLine = hasRows and layout.captionLine or layout.emptyLine
 
-	-- measured content widths of the three row families: the table is the sum
-	-- of its measured columns plus the column gaps, the rows below the table
-	-- are measured as they are drawn. The window's content width is the
-	-- widest of them. The table sum is the hard floor: the window is never
-	-- narrower than the columns it draws, so no cell, header, label ("Burn 8")
-	-- or action control is ever clipped by the column boundary.
-	local tableWidth = spacing.x * (COL_COUNT - 1)
-	for i = COL_LABEL, COL_ACTIONS do tableWidth = tableWidth + widths[i] end
+	-- Legacy columns inset the cursor by ItemSpacing.x and clip one pixel
+	-- before the next boundary. Use these same spans for columns and window.
+	local columnSpans, tableWidth = {}, 0
+	for i = COL_LABEL, COL_ACTIONS do
+		columnSpans[i] = widths[i] + spacing.x + 1
+		tableWidth = tableWidth + columnSpans[i]
+	end
 	local contentWidth = math.max(tableWidth, extraWidth, autopilotWidth)
 	-- the un-scalable floor, used only when the panel is drawn without a table
 	-- (an empty plan): the widest row that cannot shrink. With the table drawn
@@ -1107,7 +1094,7 @@ local function displayBurnHudPanel(min, max, player, systemView)
 
 		ui.columns(COL_COUNT, "##burnHudTable", false)
 		for i = COL_LABEL, COL_ACTIONS do
-			ui.setColumnWidth(i, widths[i])
+			ui.setColumnWidth(i, columnSpans[i])
 		end
 
 		-- column captions
@@ -1184,10 +1171,9 @@ local function displayBurnHudPanel(min, max, player, systemView)
 			--   (start − offset) is at or before now - the exact rule
 			--   startWarp() applies, evaluated on the row data. Its tooltip names
 			--   the configured offset.
-			-- The buttons are inline icon buttons, so they are drawn in the label
-			-- font context the row is measured in: their height is that text
-			-- line, never taller than the row.
-			-- inlineIconButton takes its ID from its own id argument (below), so
+			-- Explicit button sizes and padding match measurement; their height
+			-- is the label line reserved by layout.rowLine, even in a fresh column.
+			-- iconButton takes its ID from its own id argument (below), so
 			-- the tooltip is plain text — a "##id" suffix would be printed
 			-- verbatim by the tooltip helper
 			local warpTip = row.warppable
@@ -1203,17 +1189,19 @@ local function displayBurnHudPanel(min, max, player, systemView)
 			end
 			ui.withFont(labelFont.name, labelFont.size, function()
 				if row.completable then
-					if ui.inlineIconButton("##burnHudComplete" .. row.idx, icons.map_checkmark, L.COMPLETE) then
+					if ui.iconButton("##burnHudComplete" .. row.idx, icons.map_checkmark, L.COMPLETE,
+						nil, layout.actionSlotSize, styles.InlineIconPadding) then
 						systemView:TransferPlannerCompleteBurn(row.idx)
 					end
 				else
 					-- completed row: no Complete control, but the slot stays
 					-- reserved (the measured single-control width) so Warp keeps
 					-- the same x on every row
-					ui.dummy(Vector2(layout.actionSlotWidth, 0))
+					ui.dummy(layout.actionSlotSize)
 				end
 				ui.sameLine()
-				if ui.inlineIconButton("##burnHudWarp" .. row.idx, icons.time_accel_10000x, warpTip, warpVariant) then
+				if ui.iconButton("##burnHudWarp" .. row.idx, icons.time_accel_10000x, warpTip,
+					warpVariant, layout.actionSlotSize, styles.InlineIconPadding) and row.warppable then
 					startWarp(row.idx)
 				end
 			end)
