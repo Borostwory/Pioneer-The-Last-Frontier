@@ -504,11 +504,14 @@ local function displayDetailData(target, data, radius, tooltip)
 end
 
 -- display current maneuver data below the reticule circle
--- the maneuver readout always targets the earliest pending burn (burn 0):
--- GetManeuverVelocity/GetManeuverTime already return that burn's Δv and start
--- time, so the burn-duration estimate below is that single burn's, never a sum.
+-- the maneuver readout always targets the active burn (the earliest burn that
+-- has not been completed): GetManeuverVelocity/GetManeuverTime with no index
+-- return that burn's Δv and start time, so the burn-duration estimate below is
+-- that single burn's, never a sum.
 local function displayManeuverData(radius)
 	local burnCount = player:GetBurnCount()
+	-- -1 = no plan, or every planned burn is complete: no burn to aim at
+	local activeBurn = player:GetActiveBurnIndex()
 	local maneuverVelocity = player:GetManeuverVelocity()
 	local maneuverSpeed = maneuverVelocity:length()
 	local showManeuver = maneuverSpeed > 0 and not (player:IsDocked() or player:IsLanded())
@@ -528,14 +531,17 @@ local function displayManeuverData(radius)
 			{ text="  ~" .. burn_time, color=colors.maneuver,     font=pionillium.medium, tooltip=lui.HUD_DURATION_OF_MANEUVER_BURN }
 		}, colors.lightBlackBackground)
 	end
-	-- burn status line: k/n where k is the targeted (earliest pending) burn
-	if burnCount > 0 then
+	-- burn status line: k/n where k is the active burn (GetActiveBurnIndex) - the
+	-- same burn the maneuver readout above targets. Nothing is drawn when the
+	-- index is -1: an empty plan and an all-completed plan both read as "no
+	-- plan", which also keeps a "Burn 0/n" label from ever appearing.
+	if activeBurn >= 0 then
 		local uiPos = ui.pointOnClock(center, radius, 6)
 		if showManeuver then
 			-- stack below the maneuver readout when it is on screen
 			uiPos.y = uiPos.y + ui.getTextLineHeight() + 2
 		end
-		ui.addStyledText(uiPos, ui.anchor.center, ui.anchor.top, string.format("Burn %d/%d", 1, burnCount), colors.maneuver, pionillium.small, nil, colors.lightBlackBackground)
+		ui.addStyledText(uiPos, ui.anchor.center, ui.anchor.top, string.format("Burn %d/%d", activeBurn + 1, burnCount), colors.maneuver, pionillium.small, nil, colors.lightBlackBackground)
 	end
 end
 

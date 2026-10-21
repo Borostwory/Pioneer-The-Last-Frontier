@@ -89,7 +89,9 @@ void TransferPlanner::AddStartTime(double timeStep)
 {
 	AddStartTime(0, timeStep);
 
-	// legacy behaviour: a plan dragged back to (or before) the present is cleared
+	// legacy behaviour: a plan dragged back to (or before) the present is cleared.
+	// Dropping the plan drops its completion state with it: m_burns.clear()
+	// destroys every Burn struct, so no status or appliedDeltaV survives it.
 	if (HasPlan() && GetStartTime(0) <= Pi::game->GetTime())
 		m_burns.clear();
 }
@@ -207,6 +209,11 @@ void TransferPlanner::ResetDv(BurnDirection d)
 		return;
 	}
 
+	// same rule as ResetDv(int): a reset axis has flown nothing. No-op for a
+	// plan with nothing completed, so the legacy index-less path is unchanged
+	m_burns[0].status = PENDING;
+	m_burns[0].appliedDeltaV = 0.0;
+
 	RecomputeChain();
 }
 
@@ -225,6 +232,12 @@ void TransferPlanner::ResetDv(int idx)
 		RemoveBurn(idx);
 		return;
 	}
+
+	// a burn whose planned delta-v is reset has flown nothing: its executed
+	// progress is bookkeeping for the old plan, and completion is decided by the
+	// player, so a reset drops it along with the values the burn was made of
+	burn.status = PENDING;
+	burn.appliedDeltaV = 0.0;
 
 	RecomputeChain();
 }
@@ -330,6 +343,9 @@ void TransferPlanner::EnforceOrder()
 			m_burns[i].startTime = minTime;
 	}
 
+	// sorts whole Burn structs, so a burn's status and appliedDeltaV move with
+	// it: re-anchoring start times can reorder the plan, never split a burn from
+	// its completion state
 	std::sort(m_burns.begin(), m_burns.end(),
 		[](const Burn &a, const Burn &b) { return a.startTime < b.startTime; });
 }

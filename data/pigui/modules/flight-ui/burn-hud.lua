@@ -386,13 +386,21 @@ local status_name = {
 -- Read-only snapshot of the plan for this frame; every value comes from a
 -- planner call and nothing here is kept between frames.
 --
+-- The planner stores only COMPLETED. The displayed status is derived exactly as
+-- the map sidebar derives it (modules/system-view-ui.lua: statusOf): COMPLETED
+-- as stored, ACTIVE for the planner's active burn (TransferPlannerGetActiveIndex),
+-- PENDING for every other burn - so the status label, its glyph, the active-row
+-- highlight and the sidebar's row status can never disagree.
+--
 local function collectRows(systemView, acceleration)
 	local count = systemView:TransferPlannerGetBurnCount()
 	local activeIndex = systemView:TransferPlannerGetActiveIndex()
 	local rows = {}
 
 	for idx = 0, count - 1 do
-		local status = systemView:TransferPlannerGetBurnStatus(idx)
+		local stored = systemView:TransferPlannerGetBurnStatus(idx)
+		local status = (stored == BURN_STATUS_COMPLETED) and BURN_STATUS_COMPLETED
+			or ((idx == activeIndex) and BURN_STATUS_ACTIVE or BURN_STATUS_PENDING)
 		local dv = systemView:TransferPlannerGetBurnDeltaV(idx)
 		local remaining = systemView:TransferPlannerGetBurnRemainingDeltaV(idx)
 		local start = systemView:TransferPlannerGet(idx, "starttime")
@@ -410,7 +418,7 @@ local function collectRows(systemView, acceleration)
 			countdown = formatCountdown(start),
 			duration = formatDuration(estimateDuration(dv, acceleration)),
 			timeLeft = formatDuration(estimateDuration(remaining, acceleration)),
-			completable = status ~= BURN_STATUS_COMPLETED,
+			completable = stored ~= BURN_STATUS_COMPLETED,
 			warppable = (warpTarget ~= nil) and (warpTarget > Game.time),
 		})
 	end

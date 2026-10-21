@@ -62,6 +62,7 @@ local svColor = {
 	OBJECT = colors.systemMapObject,
 	PLANNER = colors.systemMapPlanner,
 	PLANNER_BURN = colors.systemMapPlannerBurn,
+	PLANNER_BURN_DONE = colors.fontDisabled,
 	PLANNER_ORBIT = colors.systemMapPlannerOrbit,
 	PLAYER = colors.systemMapPlayer,
 	PLAYER_ORBIT = colors.systemMapPlayerOrbit,
@@ -707,6 +708,51 @@ local infoView = {
 	end
 }
 
+-- strings the game ships no lang key for: the burn list's status labels and its
+-- Complete control. The wording mirrors the flight HUD's burn list
+-- (flight-ui/burn-hud.lua) so the map sidebar and the HUD read identically, and
+-- no data/lang entries are added here.
+local L = {
+	STATUS_PENDING = "Planned burn",
+	STATUS_ACTIVE = "Active burn",
+	STATUS_COMPLETED = "Completed burn",
+	REMAINING_DV = "Remaining delta-v of this burn",
+	COMPLETE = "Mark this burn complete",
+}
+
+-- cells render "-" when a value is unavailable
+local UNAVAILABLE = "-"
+
+-- TransferPlanner burn status values, as returned by
+-- SystemView:TransferPlannerGetBurnStatus (see src/TransferPlanner.h)
+local BURN_STATUS_PENDING = 0
+local BURN_STATUS_ACTIVE = 1
+local BURN_STATUS_COMPLETED = 2
+
+-- the row's status label, icon and colour. The planner only stores COMPLETED;
+-- ACTIVE is the planner's active burn (TransferPlannerGetActiveIndex), so the
+-- sidebar derives it from the index and never caches it
+local burn_status = {
+	[BURN_STATUS_PENDING] = {text = L.STATUS_PENDING, icon = icons.square_dashed, color = svColor.FONT},
+	[BURN_STATUS_ACTIVE] = {text = L.STATUS_ACTIVE, icon = icons.maneuver, color = svColor.PLANNER_BURN},
+	[BURN_STATUS_COMPLETED] = {text = L.STATUS_COMPLETED, icon = icons.map_checkmark, color = svColor.PLANNER_BURN_DONE},
+}
+
+local function statusOf(status, isActive)
+	if status == BURN_STATUS_COMPLETED then
+		return burn_status[BURN_STATUS_COMPLETED]
+	end
+	return isActive and burn_status[BURN_STATUS_ACTIVE] or burn_status[BURN_STATUS_PENDING]
+end
+
+local function formatRemainingDv(dv)
+	if not dv or dv ~= dv then
+		return UNAVAILABLE
+	end
+	local speed, unit = ui.Format.SpeedUnit(dv)
+	return speed .. " " .. unit
+end
+
 -- the burn the plan's controls are currently aimed at
 local selectedBurn = 0
 
@@ -760,6 +806,40 @@ local plannerView = {
 			local plan = {}
 			local valueWidth = ui.calcTextSize(ui.Format.Speed(100000)).x
 			local summaryWidth = 0
+
+			-- the row descriptors are drawn in this window's ambient font, so the
+			-- measurement below runs in the same context (no font is pushed)
+			local spacing = ui.getItemSpacing().x
+			-- ui.icon draws at exactly the text line height, so the glyph items of
+			-- the first two lines are measured as one line height
+			local iconWidth = ui.getTextLineHeight()
+			-- The action line is its own line, so the inline icon button has no
+			-- preceding line to size itself from: ui.inlineIconButton passes
+			-- Vector2(0, ui.getLineHeight()) (libs/buttons.lua:257), an empty line
+			-- reports 0, and so ui.iconButton draws its glyph at ui.getFrameHeight()
+			-- less the inline padding (libs/buttons.lua:176) and Draw::GlyphButton
+			-- sizes the item from the measured glyph plus that padding
+			-- (src/pigui/Widgets.cpp:516). The action items are measured as exactly
+			-- that box. A line-height measure does not describe it: the box is derived
+			-- from the glyph, not from the caller's text height.
+			local actionWidth = (ui.getFrameHeight() - styles.InlineIconPadding.y * 2)
+				+ styles.InlineIconPadding.x * 2
+			-- sum one drawn summary line: its items plus the item gaps between them
+			local function measureLine(items)
+				local width = 0
+				for i, item in ipairs(items) do
+					width = width + ((i > 1) and spacing or 0) + item
+				end
+				return width
+			end
+			local function textWidth(text)
+				return ui.calcTextSize(text).x
+			end
+
+			-- the active burn comes from the planner every frame, so the sidebar, the
+			-- flight HUD and the reticle can never disagree about it
+			local activeIndex = systemView:TransferPlannerGetActiveIndex()
+
 			for idx = 0, count - 1 do
 				local prograde = systemView:TransferPlannerGet(idx, "prograde")
 				local normal = systemView:TransferPlannerGet(idx, "normal")
@@ -768,16 +848,33 @@ local plannerView = {
 					local speed, unit = burnRow.formatter(systemView:TransferPlannerGet(idx, burnRow.key))
 					valueWidth = math.max(valueWidth, ui.calcTextSize(speed .. " " .. unit).x)
 				end
-				-- total Δv magnitude of the burn and the offset of its start time
+				-- total Δv magnitude of the burn, the offset of its start time, its
+				-- remaining Δv and its status label
 				local magnitude = ui.Format.Speed(math.sqrt(prograde * prograde + normal * normal + radial * radial))
 				local start = systemView:TransferPlannerGet(idx, "starttime")
 				local offset = (start and start > Game.time) and ui.Format.Duration(math.floor(start - Game.time)) or lc.NOW
-				plan[idx + 1] = {magnitude = magnitude, offset = offset}
-				summaryWidth = math.max(summaryWidth, ui.calcTextSize(magnitude).x, ui.calcTextSize(offset).x)
+				local status = systemView:TransferPlannerGetBurnStatus(idx)
+				local statusInfo = statusOf(status, idx == activeIndex)
+				local remaining = formatRemainingDv(systemView:TransferPlannerGetBurnRemainingDeltaV(idx))
+				-- only a completed row has no Complete control, so the widest status
+				-- line is one that carries both buttons
+				local completable = status ~= BURN_STATUS_COMPLETED
+				plan[idx + 1] = {
+					magnitude = magnitude, offset = offset, remaining = remaining,
+					status = statusInfo, completable = completable,
+				}
+
+				-- the widest of the row's three summary lines sizes the column; the
+				-- lines are measured exactly as they are drawn below (same items,
+				-- same item gaps), so no line can overflow its column
+				summaryWidth = math.max(summaryWidth,
+					measureLine({iconWidth, textWidth(magnitude), iconWidth, textWidth(offset)}),
+					measureLine({iconWidth, textWidth(statusInfo.text), iconWidth, textWidth(remaining)}),
+					completable and measureLine({actionWidth, actionWidth}) or actionWidth)
 			end
 
-			local spacing = ui.getItemSpacing().x
-			summaryWidth = summaryWidth + ui.getTextLineHeight() + spacing * 2
+			-- slack so the last item of a line is never clipped by a column boundary
+			summaryWidth = summaryWidth + spacing * 2
 			-- three stepper buttons, the gaps between them and the value text have to fit
 			-- to the left of the summary column, so scale the buttons down to what is left
 			local buttonSize = math.floor((ui.getContentRegion().x - summaryWidth - valueWidth - spacing * 3) / 3)
@@ -804,14 +901,47 @@ local plannerView = {
 				end
 
 				ui.nextColumn()
+
+				-- line 1: total Δv and the offset of the burn's start time
 				textIcon(icons.deltav, luc.DELTA_V)
 				ui.text(row.magnitude)
 				textIcon(icons.clock, lc.TIME_POINT)
 				ui.text(row.offset)
+
+				-- line 2: the burn's status. The planner stores COMPLETED; ACTIVE is
+				-- the planner's active burn, taken from TransferPlannerGetActiveIndex
+				-- above, so this row and the flight HUD cannot diverge
+				textIcon(row.status.icon, row.status.text)
+				ui.withStyleColors({Text = row.status.color}, function()
+					ui.text(row.status.text)
+				end)
+				textIcon(icons.delta, L.REMAINING_DV)
+				ui.text(row.remaining)
+
+				-- line 3: the row's actions. Complete is offered for the active and
+				-- the pending burns only - a completed row shows its status alone.
+				-- ui.inlineIconButton is the form this column drew before, and the one
+				-- the flight HUD's action controls use: it hands ui.iconButton
+				-- Vector2(0, ui.getLineHeight()) with the inline padding, so the button
+				-- box is derived from the measured glyph (Draw::GlyphButton sizes the
+				-- item from glyph size + FramePadding when no size is given) and the
+				-- glyph is rasterised from the same line context the box is sized from
+				-- (libs/buttons.lua). Passing an explicit size instead fixes the box
+				-- from the caller's text line height while the glyph is drawn at that
+				-- height less the inline padding, which is not a size this window
+				-- rasterises its icon font at.
+				ui.newLine()
+				if row.completable then
+					if ui.inlineIconButton("##plannerBurnComplete" .. idx, icons.map_checkmark, L.COMPLETE) then
+						systemView:TransferPlannerCompleteBurn(idx)
+					end
+					ui.sameLine()
+				end
 				if ui.inlineIconButton("##plannerBurnDelete" .. idx, icons.cross, luc.DELETE) then
 					systemView:TransferPlannerRemoveBurn(idx)
 					clampSelectedBurn(systemView:TransferPlannerGetBurnCount())
 				end
+
 				ui.nextColumn()
 			end
 
