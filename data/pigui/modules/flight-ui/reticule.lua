@@ -529,12 +529,21 @@ local function displayManeuverData(radius)
 		gameView.displayIndicator(onscreen, position, direction, icons.bullseye, colors.maneuver, true, lui.HUD_INDICATOR_MANEUVER_PROGRADE)
 		local uiPos = ui.pointOnClock(center, radius, 6)
 		local speed, speed_unit = ui.Format.SpeedUnit(maneuverSpeed)
-		local duration = ui.Format.Duration(player:GetManeuverTime() - Game.time)
+		-- the burn is split 50:50 around the planned node time: it starts half
+		-- its duration before the node. Use the planned (not remaining) Δv for
+		-- that, so the start does not drift as the burn progresses.
 		local acceleration = player:GetAcceleration("forward")
 		local burn_duration = maneuverSpeed / acceleration
+		local plannedDv = Game.systemView and Game.systemView:TransferPlannerGetBurnDeltaV(activeBurn) or maneuverSpeed
+		local halfBurn = (acceleration > 0) and (plannedDv / acceleration / 2) or 0
+		local untilNode = player:GetManeuverTime() - Game.time
+		local untilStart = untilNode - halfBurn
+		local startText = untilStart > 0 and ui.Format.Duration(untilStart) or lc.NOW
+		local duration = ui.Format.Duration(math.max(untilNode, 0))
 		local burn_time = ui.Format.Duration(burn_duration)
 		ui.addFancyText(uiPos, ui.anchor.center, ui.anchor.top, {
-			{ text=duration,           color=colors.maneuver,     font=pionillium.medium, tooltip=lui.HUD_DURATION_UNTIL_MANEUVER_BURN },
+			{ text=startText,          color=colors.maneuver,     font=pionillium.medium, tooltip=lui.HUD_DURATION_UNTIL_MANEUVER_BURN },
+			{ text=" / " .. duration,  color=colors.maneuverDark, font=pionillium.small,  tooltip=lui.HUD_DURATION_UNTIL_MANEUVER_BURN },
 			{ text="  " .. speed,      color=colors.maneuver,     font=pionillium.medium, tooltip=lui.HUD_DELTA_V_OF_MANEUVER_BURN },
 			{ text=speed_unit,         color=colors.maneuverDark, font=pionillium.small,  tooltip=lui.HUD_DELTA_V_OF_MANEUVER_BURN },
 			{ text="  ~" .. burn_time, color=colors.maneuver,     font=pionillium.medium, tooltip=lui.HUD_DURATION_OF_MANEUVER_BURN }

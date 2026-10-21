@@ -83,7 +83,10 @@ local L = {
 	CAPTION_STATUS = "",
 	CAPTION_DV = "Δv",
 	CAPTION_REMAINING_DV = "Left",
-	CAPTION_START = "Start",
+	CAPTION_START = "Start / Node",
+	START_NODE_SEPARATOR = " / ",
+	BURN_OVERLAP = "Burn %d!",
+	OVERLAP_TIP = ": overlaps the previous burn (its start is before the previous burn ends)",
 	CAPTION_DURATION = "Est.",
 	CAPTION_TIME_LEFT = "Time left",
 	CAPTION_ACTIONS = "",
@@ -94,13 +97,13 @@ local L = {
 	-- the Warp tooltip names the configured stop-before-burn offset, so the row
 	-- control states exactly what it will do; the greyed form states why it
 	-- cannot (the target is at or before now, exactly startWarp's own rule)
-	WARP = "Warp: time acceleration to stop %ds before this burn",
+	WARP = "Warp: time acceleration to stop %ds before this burn starts (half its duration before the planned time)",
 	WARP_REACHED = "Target is already reached",
 	WARP_STRIP = "Warp to Burn %d - stop %ds before, %s",
 	WARP_LIMITED = " (limited)",
 	CANCEL_WARP = "Cancel warp: restore the previous time acceleration",
 	OFFSET_LABEL = "Stop Before Burn (s)",
-	OFFSET_TIP = "Pause this far before the burn start; shared by all burns",
+	OFFSET_TIP = "Pause this far before the burn start (half the burn duration before the planned time); shared by all burns",
 	-- each tooltip states only what its own control does. The two controls are
 	-- genuinely independent: Auto Orientation is a flight control state, Auto
 	-- Burn an engine flag applied on top of it; setting one never sets the
@@ -135,12 +138,13 @@ end
 --
 -- Function: loadStopBeforeBurn, saveStopBeforeBurn
 --
--- The "Stop Before Burn" offset: whole seconds, shared by all burns, default
--- 30, persisted in the game settings. GetConfigInt has no "unset" signal (it
+-- The "Stop Before Burn" margin: whole seconds, shared by all burns, default
+-- 10, measured from the burn START (half a burn duration before the planned
+-- node time, see burnStartTime), persisted in the game settings. GetConfigInt has no "unset" signal (it
 -- answers 0 for a missing key), so the value is stored biased by 1: an unset
 -- key reads 0 and falls back to the default, while a stored 0 round-trips.
 --
-local DEFAULT_STOP_BEFORE_BURN_S = 30
+local DEFAULT_STOP_BEFORE_BURN_S = 10
 local OFFSET_MAX = 3600
 local stopBeforeBurnS = DEFAULT_STOP_BEFORE_BURN_S
 
@@ -152,6 +156,30 @@ end
 local function saveStopBeforeBurn()
 	Game.SetConfigInt("MultiBurnHud", "stopBeforeBurnS", stopBeforeBurnS + 1)
 	Engine.SaveSettings()
+end
+
+--
+-- Burn centring: a planned burn is applied at its node time, but a real burn
+-- takes d = Δv / acceleration seconds. The burn is split 50:50 around the node,
+-- so it starts d/2 before and ends d/2 after the node time. The planned
+-- (not remaining) Δv is used so the start does not drift as Δv is consumed;
+-- with no usable acceleration the burn start falls back to the node time.
+--
+local function halfBurnDuration(dv, acceleration)
+	if not dv or not acceleration or acceleration <= 0 then return 0 end
+	return dv / acceleration / 2
+end
+
+local function burnStartTime(nodeTime, dv, acceleration)
+	return nodeTime - halfBurnDuration(dv, acceleration)
+end
+
+-- warp target: the burn start minus the configured margin
+local function warpTargetFor(systemView, idx, acceleration)
+	local node = systemView:TransferPlannerGet(idx, "starttime")
+	if not node then return nil end
+	local dv = systemView:TransferPlannerGetBurnDeltaV(idx)
+	return burnStartTime(node, dv, acceleration) - stopBeforeBurnS
 end
 
 --
@@ -282,8 +310,8 @@ local function startWarp(idx)
 	local start = systemView:TransferPlannerGet(idx, "starttime")
 	if not start then return false end
 
-	local target = start - stopBeforeBurnS
-	if target <= Game.time then return false end
+	local target = warpTargetFor(systemView, idx, Game.player and Game.player:GetAcceleration("forward"))
+	if not target or target <= Game.time then return false end
 
 	if warp then
 		cancelWarp()
@@ -396,6 +424,7 @@ local function collectRows(systemView, acceleration)
 	local count = systemView:TransferPlannerGetBurnCount()
 	local activeIndex = systemView:TransferPlannerGetActiveIndex()
 	local rows = {}
+	local prevEnd = nil
 
 	for idx = 0, count - 1 do
 		local stored = systemView:TransferPlannerGetBurnStatus(idx)
@@ -406,16 +435,21 @@ local function collectRows(systemView, acceleration)
 		local start = systemView:TransferPlannerGet(idx, "starttime")
 		-- the Warp control's availability is startWarp's own rule, computed from
 		-- the same planner value: a target at or before now never warps
-		local warpTarget = start and (start - stopBeforeBurnS) or nil
+		local warpTarget = warpTargetFor(systemView, idx, acceleration)
+		local burnStart = start and burnStartTime(start, dv, acceleration) or nil
+		-- chained burns: this burn's window overlaps the previous one's when it
+		-- starts before the previous burn ends (node + half duration)
+		local overlap = prevEnd ~= nil and burnStart ~= nil and burnStart < prevEnd
+		prevEnd = start and (start + halfBurnDuration(dv, acceleration)) or prevEnd
 
 		table.insert(rows, {
 			idx = idx,
 			status = status,
-			label = string.format(L.BURN, idx + 1),
-			statusText = status_name[status] or UNAVAILABLE,
+			label = string.format(overlap and L.BURN_OVERLAP or L.BURN, idx + 1),
+			statusText = (status_name[status] or UNAVAILABLE) .. (overlap and L.OVERLAP_TIP or ""),
 			dv = formatSpeed(dv),
 			remainingDv = formatSpeed(remaining),
-			countdown = formatCountdown(start),
+			countdown = formatCountdown(burnStart) .. L.START_NODE_SEPARATOR .. formatCountdown(start),
 			duration = formatDuration(estimateDuration(dv, acceleration)),
 			timeLeft = formatDuration(estimateDuration(remaining, acceleration)),
 			completable = stored ~= BURN_STATUS_COMPLETED,
@@ -489,7 +523,7 @@ local function measureLayout()
 	-- here too.
 	local worstLabels = { L.NO_BURNS }
 	for n = 1, MAX_BURN_COUNT do
-		worstLabels[n + 1] = string.format(L.BURN, n)
+		worstLabels[n + 1] = string.format(L.BURN_OVERLAP, n)
 	end
 	local rowLine, emptyLine = 0, 0
 	ui.withFont(labelFont.name, labelFont.size, function()
@@ -529,6 +563,8 @@ local function measureLayout()
 		for _, col in ipairs({ COL_DV, COL_REMAINING }) do
 			widths[col] = math.max(widths[col], speedWidth)
 		end
+		-- the Start cell reads "burn start / node"
+		widths[COL_START] = math.max(widths[COL_START], timeWidth * 2 + ui.calcTextSize(L.START_NODE_SEPARATOR).x)
 		for _, col in ipairs({ COL_START, COL_DURATION, COL_TIME_LEFT }) do
 			widths[col] = math.max(widths[col], timeWidth)
 		end
@@ -1140,7 +1176,7 @@ local function displayBurnHudPanel(min, max, player, systemView)
 			--   occupy is reserved with a dummy of the measured width instead.
 			--   Warp starts the Phase 5 warp state machine for every row, and is
 			--   greyed with "Target is already reached" when its target
-			--   (start − offset) is at or before now - the exact rule
+			--   (burn start − margin) is at or before now - the exact rule
 			--   startWarp() applies, evaluated on the row data. Its tooltip names
 			--   the configured offset.
 			-- Explicit button sizes and padding match measurement; their height
