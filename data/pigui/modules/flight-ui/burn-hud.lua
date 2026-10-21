@@ -953,7 +953,7 @@ end
 -- measured width of the un-scalable rows (offset stepper, autopilot row, warp
 -- strip), so no control is clipped.
 --
-local function displayBurnHudPanel(min, max, player, systemView)
+local function displayBurnHudPanel(min, max, player, systemView, toggleSize)
 	local acceleration = player:GetAcceleration("forward")
 	local rows, activeIndex = collectRows(systemView, acceleration)
 	local hasRows = #rows > 0
@@ -1022,22 +1022,13 @@ local function displayBurnHudPanel(min, max, player, systemView)
 	end
 	local height = math.max(contentHeight + padding.y * 2, 1)
 
-	-- the panel's right edge is the right edge of this side's HUD column, and
-	-- its bottom edge is the bottom of the available area, just above the time
-	-- window (whose height displayBurnHud clips out of max); rectcut's bottom
-	-- side does not touch x, and it moves max.y to the top of the strip it
-	-- cuts, so both edges have to be read before the reserve.
-	local rightEdge = max.x
+	-- the panel is anchored horizontally to the left of the right-edge button
+	-- column so the toggle buttons stay in place when the panel is opened or
+	-- closed, and its bottom edge aligns with the bottom of the HUD area.
+	local spacing = ui.getItemSpacing()
+	local buttonWidth = toggleSize and toggleSize.x or (styles.MainButtonSize.x + padding.x * 2)
+	local rightEdge = max.x - buttonWidth - spacing.x
 	local bottom = max.y
-
-	-- reserve the vertical space from the bottom of the HUD area so the modules
-	-- sharing this column are pushed up, never overlapped from below; the claim
-	-- is capped at the available space, and a fixed-size window is never
-	-- shorter than its measured content: when the available space is smaller
-	-- than the measured height the window keeps the measured height and grows
-	-- upward from the bottom anchor, so the time-skip, offset and cancel
-	-- controls stay inside it. The only limit is the top of the screen.
-	ui.rectcut(min, max, math.min(height, max.y - min.y), ui.sides.bottom)
 	if bottom < 1 then bottom = 1 end
 	height = math.min(height, bottom)
 	local top = bottom - height
@@ -1063,9 +1054,9 @@ local function displayBurnHudPanel(min, max, player, systemView)
 	-- never wider than the screen, which also keeps the anchored x non-negative
 	width = math.min(width, ui.screenWidth)
 
-	-- anchor to the right edge of the HUD column; the vertical extent is the
-	-- reserved space, grown upward to the measured height above
-	local winPos = Vector2(rightEdge - width, top)
+	-- anchor to the left of the button column; the vertical extent is grown
+	-- upward to the measured height from the bottom anchor
+	local winPos = Vector2(math.max(0, rightEdge - width), top)
 
 	-- the panel is the only HUD window with a background: views/game.lua
 	-- wraps the whole HUD in WindowBg = colors.transparent (line 276), which
@@ -1252,6 +1243,8 @@ local function displayVisibilityToggle(min, max)
 			Engine.SaveSettings()
 		end
 	end)
+
+	return size
 end
 
 -- min/max is the HUD area for this side of the screen, with the space used by
@@ -1278,11 +1271,12 @@ local function displayBurnHud(min, max)
 	-- Timer is the primary arrival detector
 	updateWarp()
 
-	if visible then
-		displayBurnHudPanel(min, max, player, systemView)
-	end
+	local initialMax = Vector2(max.x, max.y)
+	local toggleSize = displayVisibilityToggle(min, max)
 
-	displayVisibilityToggle(min, max)
+	if visible then
+		displayBurnHudPanel(min, initialMax, player, systemView, toggleSize)
+	end
 end
 
 local function onDebugReload()
