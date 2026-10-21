@@ -362,6 +362,7 @@ void TransferPlanner::RecomputeChain()
 
 	const double mass = frame->GetSystemBody()->GetMass();
 	const double gameTime = Pi::game->GetTime();
+	double segmentTime = gameTime;
 
 	// seed the first segment from the live player state
 	Orbit segment = Orbit::FromBodyState(
@@ -375,10 +376,11 @@ void TransferPlanner::RecomputeChain()
 		// hyperbolic solver as Orbit.cpp's MeanAnomalyFromTrueAnomaly branch),
 		// so no special casing is needed here - same mass, non-negative deltaT
 		// only, which std::max(0.0, ...) guarantees.
-		const double deltaT = std::max(0.0, burn.startTime - gameTime);
+		const double deltaT = std::max(0.0, burn.startTime - segmentTime);
 
 		burn.pos = segment.OrbitalPosAtTime(deltaT);
 		burn.vel = segment.OrbitalVelocityAtTime(mass, deltaT);
+		segmentTime += deltaT;
 
 		// the burn's offset velocity bends the next segment
 		segment = Orbit::FromBodyState(burn.pos, burn.vel + GetOffsetVel(burn), mass);
