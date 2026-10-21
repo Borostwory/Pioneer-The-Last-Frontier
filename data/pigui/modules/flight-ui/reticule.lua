@@ -516,7 +516,16 @@ local function displayManeuverData(radius)
 	local maneuverSpeed = maneuverVelocity:length()
 	local showManeuver = maneuverSpeed > 0 and not (player:IsDocked() or player:IsLanded())
 	if showManeuver then
-		local onscreen,position,direction = Engine.ProjectRelDirection(maneuverVelocity)
+		-- while Auto Orientation holds a direction lock, project along the
+		-- locked direction (scaled by the live residual) so the indicator stays
+		-- where the ship is pointed; otherwise follow the live residual. The
+		-- live magnitude still drives visibility, text and burn duration.
+		local projectedVelocity = maneuverVelocity
+		local lockedDirection = player:GetLockedManeuverDirection()
+		if lockedDirection:lengthSqr() > 0 then
+			projectedVelocity = lockedDirection * maneuverSpeed
+		end
+		local onscreen,position,direction = Engine.ProjectRelDirection(projectedVelocity)
 		gameView.displayIndicator(onscreen, position, direction, icons.bullseye, colors.maneuver, true, lui.HUD_INDICATOR_MANEUVER_PROGRADE)
 		local uiPos = ui.pointOnClock(center, radius, 6)
 		local speed, speed_unit = ui.Format.SpeedUnit(maneuverSpeed)

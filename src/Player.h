@@ -68,6 +68,9 @@ public:
 	// controller, orthogonal to the flight control state
 	void SetPlanBurnEnabled(bool enabled);
 	bool GetPlanBurnEnabled() const;
+	// effective Auto Orientation direction lock: normalized, in the non-rotating
+	// planner frame; zero when no valid lock is active. Read-only forwarder
+	vector3d GetLockedManeuverDirection() const;
 
 protected:
 	virtual void SaveToJson(Json &jsonObj, Space *space) override;

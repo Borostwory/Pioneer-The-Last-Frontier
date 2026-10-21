@@ -92,8 +92,10 @@ void TransferPlanner::AddStartTime(double timeStep)
 	// legacy behaviour: a plan dragged back to (or before) the present is cleared.
 	// Dropping the plan drops its completion state with it: m_burns.clear()
 	// destroys every Burn struct, so no status or appliedDeltaV survives it.
-	if (HasPlan() && GetStartTime(0) <= Pi::game->GetTime())
+	if (HasPlan() && GetStartTime(0) <= Pi::game->GetTime()) {
 		m_burns.clear();
+		AdvanceDirectionLockSerial();
+	}
 }
 
 void TransferPlanner::AddStartTime(int idx, double timeStep)
@@ -127,6 +129,8 @@ void TransferPlanner::ResetStartTime()
 	// at >= prev + 1s so the m_burns-by-startTime invariant holds on this path too
 	EnforceOrder();
 	RecomputeChain();
+	// every burn's status was reset: any cached burn direction is stale
+	AdvanceDirectionLockSerial();
 }
 
 int TransferPlanner::InsertBurn(int afterIdx)
@@ -155,6 +159,8 @@ int TransferPlanner::InsertBurn(int afterIdx)
 
 	EnforceOrder();
 	RecomputeChain();
+	// the new burn may now occupy an index another burn held before
+	AdvanceDirectionLockSerial();
 	return newIdx;
 }
 
@@ -165,6 +171,8 @@ void TransferPlanner::RemoveBurn(int idx)
 
 	m_burns.erase(m_burns.begin() + idx);
 	RecomputeChain();
+	// a later burn now occupies idx (and every index after it)
+	AdvanceDirectionLockSerial();
 }
 
 double TransferPlanner::GetDv(BurnDirection d)
@@ -215,6 +223,7 @@ void TransferPlanner::ResetDv(BurnDirection d)
 	m_burns[0].appliedDeltaV = 0.0;
 
 	RecomputeChain();
+	AdvanceDirectionLockSerial();
 }
 
 void TransferPlanner::ResetDv(int idx)
@@ -240,12 +249,14 @@ void TransferPlanner::ResetDv(int idx)
 	burn.appliedDeltaV = 0.0;
 
 	RecomputeChain();
+	AdvanceDirectionLockSerial();
 }
 
 void TransferPlanner::ResetDv()
 {
 	// drops the whole plan, statuses and executed delta-v included
 	m_burns.clear();
+	AdvanceDirectionLockSerial();
 }
 
 void TransferPlanner::SetPosition(const vector3d &position)
@@ -281,6 +292,7 @@ void TransferPlanner::CompleteBurn(int idx)
 	// deliberately no EnforceOrder()/RecomputeChain(): completing a burn is
 	// bookkeeping only, so it cannot move any other burn's geometry or start time
 	m_burns[idx].status = COMPLETED;
+	AdvanceDirectionLockSerial();
 }
 
 void TransferPlanner::ResetBurnStatus(int idx)
@@ -290,6 +302,7 @@ void TransferPlanner::ResetBurnStatus(int idx)
 
 	m_burns[idx].status = PENDING;
 	m_burns[idx].appliedDeltaV = 0.0;
+	AdvanceDirectionLockSerial();
 }
 
 double TransferPlanner::GetBurnDeltaV(int idx) const
@@ -346,8 +359,12 @@ void TransferPlanner::EnforceOrder()
 	// sorts whole Burn structs, so a burn's status and appliedDeltaV move with
 	// it: re-anchoring start times can reorder the plan, never split a burn from
 	// its completion state
-	std::sort(m_burns.begin(), m_burns.end(),
-		[](const Burn &a, const Burn &b) { return a.startTime < b.startTime; });
+	const auto byStartTime = [](const Burn &a, const Burn &b) { return a.startTime < b.startTime; };
+	if (!std::is_sorted(m_burns.begin(), m_burns.end(), byStartTime)) {
+		std::sort(m_burns.begin(), m_burns.end(), byStartTime);
+		// an actual reorder moves burns between indices
+		AdvanceDirectionLockSerial();
+	}
 }
 
 void TransferPlanner::RecomputeChain()

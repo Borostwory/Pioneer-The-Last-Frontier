@@ -367,6 +367,27 @@ static int l_get_maneuver_velocity(lua_State *l)
 }
 
 /*
+ * Method: GetLockedManeuverDirection
+ *
+ * Get the effective Auto Orientation direction lock: the normalized direction
+ * of the active planned burn in the non-rotating planner frame, as acquired
+ * when plan heading locked onto it. Returns a zero vector when no valid lock
+ * is active (plan heading off, burn completed or reset, no active burn).
+ *
+ * > dir = player:GetLockedManeuverDirection()
+ *
+ * Returns:
+ *
+ *   dir - a unit vector, or a zero vector when there is no valid lock
+ */
+static int l_player_get_locked_maneuver_direction(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	LuaPush(l, player->GetLockedManeuverDirection());
+	return 1;
+}
+
+/*
  * Method: GetActiveBurnIndex
  *
  * Get the index of the planned burn the transfer planner is currently working
@@ -800,6 +821,7 @@ void LuaObject<Player>::RegisterClass()
 		{ "GetCurrentDeltaV", l_get_current_delta_v },
 		{ "GetRemainingDeltaV", l_get_remaining_delta_v },
 		{ "GetManeuverVelocity", l_get_maneuver_velocity },
+		{ "GetLockedManeuverDirection", l_player_get_locked_maneuver_direction },
 		{ "GetManeuverTime", l_get_maneuver_time },
 		{ "GetBurnCount", l_player_get_burn_count },
 		{ "GetActiveBurnIndex", l_player_get_active_burn_index },

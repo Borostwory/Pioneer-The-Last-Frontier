@@ -426,6 +426,12 @@ bool Player::GetPlanBurnEnabled() const
 	return con ? con->GetPlanBurnEnabled() : false;
 }
 
+vector3d Player::GetLockedManeuverDirection() const
+{
+	auto con = GetPlayerController();
+	return con ? con->GetLockedManeuverDirection() : vector3d(0.0, 0.0, 0.0);
+}
+
 void Player::DoFixspeedTakeoff(SpaceStation *from)
 {
 	auto con = GetPlayerController();

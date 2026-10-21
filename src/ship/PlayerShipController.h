@@ -10,6 +10,8 @@
 #include "vector3.h"
 #include "matrix3x3.h"
 
+#include <cstdint>
+
 // autopilot AI + input
 class PlayerShipController : public ShipController {
 public:
@@ -37,6 +39,11 @@ public:
 	// The FlightControlState machine is exclusive; this flag is not part of it.
 	void SetPlanBurnEnabled(bool enabled);
 	bool GetPlanBurnEnabled() const { return m_planBurnEnabled; }
+	// the effective Auto Orientation direction lock: the normalized direction of
+	// the active planned burn in the non-rotating planner frame, cached when
+	// CONTROL_PLAN_HEADING acquired it. Zero when plan heading is not active, or
+	// the active burn index or planner lock serial no longer match the cache.
+	vector3d GetLockedManeuverDirection() const;
 	float GetLowThrustPower() const { return m_lowThrustPower; }
 	void SetLowThrustPower(float power);
 
@@ -141,14 +148,31 @@ private:
 	// control: the unit direction of the active planned burn in the ship's
 	// current frame, which the attitude helpers take as input. returns the burn
 	// index, or -1 when there is no burn to point at, in which case the flight
-	// control state is released to manual
+	// control state is released to manual. The direction comes from the
+	// Auto Orientation lock, acquired once per active burn and kept stable
 	int ResolvePlanBurnDirection(vector3d &outWorldDir);
-	// pure direction resolution for a known burn index: writes the unit
-	// direction of planned burn idx into the ship's current frame, returns false
-	// when the index is invalid or the plan has no direction to point at - in
-	// contrast to the single-argument form above it never touches the flight
-	// control state, which the engine control must not do
+	// pure live direction resolution for a known burn index: writes the unit
+	// direction of the live residual maneuver velocity of burn idx into the
+	// ship's current frame, returns false when the index is invalid or the plan
+	// has no direction to point at - in contrast to the single-argument form
+	// above it never touches the flight control state or the lock, which the
+	// engine control must not do. Used by the engine control while plan
+	// heading is not active
 	bool ResolvePlanBurnDirection(int idx, vector3d &outWorldDir) const;
+	// transform a planner-frame (non-rotating system frame) direction into the
+	// ship's current frame; recomputed every call, never cached
+	vector3d PlannerToShipFrame(const vector3d &plannerDir) const;
+	// Auto Orientation direction lock lifecycle (derived runtime state only)
+	void InvalidatePlanBurnDirectionLock();
+	// acquire the lock for burn idx from the planner's offset velocity; returns
+	// false (lock left invalid) when the burn has no direction
+	bool AcquirePlanBurnDirectionLock(int idx);
+	// keep the lock in step with the planner's active burn: re-acquire when the
+	// active index or planner lock serial changed. Returns the active burn index
+	// with a valid lock, or -1 when there is no direction to point at
+	int SyncPlanBurnDirectionLock();
+	// true when the cache is valid for the planner's current active burn/serial
+	bool IsPlanBurnDirectionLockCurrent() const;
 	// the plan-burn engine control law, run from StaticUpdate after the
 	// orientation switch: fires the main engine for the active planned burn
 	// while the ship is aligned with the burn direction, on top of whatever
@@ -183,6 +207,12 @@ private:
 	FlightControlState m_flightControlState;
 	// plan-burn engine control enable: orthogonal to m_flightControlState
 	bool m_planBurnEnabled = false;
+	// Auto Orientation direction lock: derived runtime state, never serialized.
+	// unit direction in the non-rotating planner frame, not the ship frame
+	vector3d m_lockedPlanBurnDir = vector3d(0.0, 0.0, 0.0);
+	int m_lockedPlanBurnIdx = -1;
+	uint32_t m_lockedPlanBurnSerial = 0;
+	bool m_lockedPlanBurnValid = false;
 	float m_fovY; //for mouse acceleration adjustment
 	float m_joystickDeadzone;
 	float m_lowThrustPower;

@@ -31,6 +31,8 @@ static constexpr double PLAN_BURN_FACE_TOLERANCE = DEG2RAD(5.0);
 static constexpr double PLAN_BURN_START_TOLERANCE = 1.0; // s
 static constexpr double PLAN_BURN_DV_EPSILON = 1e-3; // m/s
 static constexpr double PLAN_BURN_EPS = 1e-9;
+// squared-length threshold below which a planned burn has no direction to face
+static constexpr double PLAN_BURN_DIR_MIN_SQR = 1e-18;
 
 // so that we can summarize the controller action from all subsystems
 struct PlayerShipController::TotalDesiredAction {
@@ -643,20 +645,25 @@ void PlayerShipController::StaticUpdate(const float timeStep)
 // and writes the direction into outWorldDir, expressed in the ship's current
 // frame - the frame Util::NeededAngVelocityToFaceDirection takes its input in.
 // Releases control to manual and returns -1 when there is no burn to point at.
+// The planner-frame direction is the Auto Orientation lock, acquired once for
+// the active burn and held until a lock-lifecycle event; only its transform
+// into the ship frame is recomputed every call.
 int PlayerShipController::ResolvePlanBurnDirection(vector3d &outWorldDir)
 {
-	const int idx = Pi::player->GetActiveBurnIndex();
-	if (!ResolvePlanBurnDirection(idx, outWorldDir)) {
+	const int idx = SyncPlanBurnDirectionLock();
+	if (idx < 0) {
 		SetFlightControlState(CONTROL_MANUAL);
 		return -1;
 	}
+	outWorldDir = PlannerToShipFrame(m_lockedPlanBurnDir);
 	return idx;
 }
 
-// engine-side resolution: the pure direction of a known burn index, with no
-// side effects on the flight control state (the engine control is orthogonal to
-// orientation and must not release it). Returns false for an invalid index - no
-// plan, every planned burn complete - or for an inert plan with no direction.
+// engine-side resolution: the pure live direction of a known burn index, with
+// no side effects on the flight control state (the engine control is
+// orthogonal to orientation and must not release it). Returns false for an
+// invalid index - no plan, every planned burn complete - or for an inert plan
+// with no direction.
 bool PlayerShipController::ResolvePlanBurnDirection(int idx, vector3d &outWorldDir) const
 {
 	if (idx < 0) { // no plan, or every planned burn is complete
@@ -666,13 +673,72 @@ bool PlayerShipController::ResolvePlanBurnDirection(int idx, vector3d &outWorldD
 	// the plan's offset velocity lives in the burn's non-rotating system frame,
 	// so convert it with the same rotation Player::TimeStepUpdate uses for progress
 	const vector3d planDv = Pi::player->GetManeuverVelocity(idx);
-	if (planDv.LengthSqr() < 1e-18) { // an inert plan has no direction to face
+	if (planDv.LengthSqr() < PLAN_BURN_DIR_MIN_SQR) { // an inert plan has no direction to face
 		return false;
 	}
 
-	const matrix3x3d rot = Frame::GetFrame(Frame::GetFrame(m_ship->GetFrame())->GetNonRotFrame())->GetOrientRelTo(m_ship->GetFrame());
-	outWorldDir = (rot * planDv).NormalizedSafe();
+	outWorldDir = PlannerToShipFrame(planDv);
 	return true;
+}
+
+vector3d PlayerShipController::PlannerToShipFrame(const vector3d &plannerDir) const
+{
+	const matrix3x3d rot = Frame::GetFrame(Frame::GetFrame(m_ship->GetFrame())->GetNonRotFrame())->GetOrientRelTo(m_ship->GetFrame());
+	return (rot * plannerDir).NormalizedSafe();
+}
+
+void PlayerShipController::InvalidatePlanBurnDirectionLock()
+{
+	m_lockedPlanBurnValid = false;
+	m_lockedPlanBurnDir = vector3d(0.0, 0.0, 0.0);
+	m_lockedPlanBurnIdx = -1;
+	m_lockedPlanBurnSerial = 0;
+}
+
+bool PlayerShipController::AcquirePlanBurnDirectionLock(int idx)
+{
+	InvalidatePlanBurnDirectionLock();
+	if (idx < 0)
+		return false;
+
+	// the planned delta-v of the burn, in the non-rotating planner frame
+	const vector3d planDv = Pi::planner->GetOffsetVel(idx);
+	if (planDv.LengthSqr() < PLAN_BURN_DIR_MIN_SQR) // an inert burn has no direction
+		return false;
+
+	m_lockedPlanBurnDir = planDv.NormalizedSafe();
+	m_lockedPlanBurnIdx = idx;
+	m_lockedPlanBurnSerial = Pi::planner->GetDirectionLockSerial();
+	m_lockedPlanBurnValid = true;
+	return true;
+}
+
+bool PlayerShipController::IsPlanBurnDirectionLockCurrent() const
+{
+	if (!m_lockedPlanBurnValid || !Pi::player || !Pi::planner)
+		return false;
+	return m_lockedPlanBurnIdx >= 0 &&
+		m_lockedPlanBurnIdx == Pi::player->GetActiveBurnIndex() &&
+		m_lockedPlanBurnSerial == Pi::planner->GetDirectionLockSerial();
+}
+
+int PlayerShipController::SyncPlanBurnDirectionLock()
+{
+	if (IsPlanBurnDirectionLockCurrent())
+		return m_lockedPlanBurnIdx;
+
+	// active burn changed, the planner invalidated the lock, or none was held
+	const int idx = Pi::player->GetActiveBurnIndex();
+	return AcquirePlanBurnDirectionLock(idx) ? idx : -1;
+}
+
+vector3d PlayerShipController::GetLockedManeuverDirection() const
+{
+	// re-validated on every read, so a completion or reset from Lua or the
+	// system view never exposes a stale direction before the next update
+	if (m_flightControlState != CONTROL_PLAN_HEADING || !IsPlanBurnDirectionLockCurrent())
+		return vector3d(0.0, 0.0, 0.0);
+	return m_lockedPlanBurnDir;
 }
 
 // the plan-burn engine control, run from StaticUpdate after the orientation
@@ -697,9 +763,21 @@ void PlayerShipController::UpdatePlanBurnThrust()
 
 	// progress accounting lives in the planner (Player::TimeStepUpdate); this
 	// control keeps no delta-v total of its own
-	const int burnIdx = Pi::player->GetActiveBurnIndex();
+	int burnIdx = -1;
 	vector3d burnDir;
-	if (!ResolvePlanBurnDirection(burnIdx, burnDir)) {
+	if (m_flightControlState == CONTROL_PLAN_HEADING) {
+		// Auto Orientation owns the direction: fire along the same locked
+		// direction the ship is being pointed at
+		burnIdx = SyncPlanBurnDirectionLock();
+		if (burnIdx >= 0)
+			burnDir = PlannerToShipFrame(m_lockedPlanBurnDir);
+	} else {
+		// no Auto Orientation: gate on the live residual maneuver direction
+		burnIdx = Pi::player->GetActiveBurnIndex();
+		if (!ResolvePlanBurnDirection(burnIdx, burnDir))
+			burnIdx = -1;
+	}
+	if (burnIdx < 0) {
 		m_ship->GetPropulsion()->ClearLinThrusterState();
 		return;
 	}
@@ -716,6 +794,9 @@ void PlayerShipController::UpdatePlanBurnThrust()
 	if (remainingDv <= PLAN_BURN_DV_EPSILON) {
 		m_ship->GetPropulsion()->ClearLinThrusterState();
 		Pi::planner->CompleteBurn(burnIdx);
+		// drop the lock now; the next update acquires the next active burn or
+		// releases plan heading to manual when none remains
+		InvalidatePlanBurnDirectionLock();
 		return;
 	}
 
@@ -903,6 +984,13 @@ void PlayerShipController::SetFlightControlState(FlightControlState s)
 {
 	if (m_flightControlState == s)
 		return;
+
+	// the Auto Orientation direction lock lives only as long as plan heading:
+	// leaving it (UI toggle, kill rotation, another heading or autopilot mode,
+	// missing autopilot, docking/landing, resolver failure) - or re-entering
+	// it - always starts from a fresh acquisition
+	if (m_flightControlState == CONTROL_PLAN_HEADING || s == CONTROL_PLAN_HEADING)
+		InvalidatePlanBurnDirectionLock();
 
 	m_flightControlState = s;
 	m_ship->AIClearInstructions();

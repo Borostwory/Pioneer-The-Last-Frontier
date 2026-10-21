@@ -6,6 +6,7 @@
 #include "vector3.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 class TransferPlanner {
@@ -76,15 +77,25 @@ public:
 	double GetBurnRemainingDeltaV(int idx) const;
 	void AddBurnProgress(int idx, double dv);
 
+	// runtime-only lock-lifecycle serial: advances whenever a burn completes,
+	// is reset, or may be replaced at an existing index (insert/remove/reorder,
+	// plan resets). Consumers caching a burn direction compare it for equality
+	// only, so wraparound is harmless. Ordinary delta-v edits do not advance it.
+	// Never serialized.
+	uint32_t GetDirectionLockSerial() const { return m_directionLockSerial; }
+
 private:
 	vector3d GetOffsetVel(const Burn &burn) const;
 	void RecomputeChain();
 	void EnforceOrder();
 	Burn &EnsureBurn(int idx) const;
+	// the single mutation point for m_directionLockSerial
+	void AdvanceDirectionLockSerial() { ++m_directionLockSerial; }
 
 	// mutable: read accessors auto-create burn 0 on first touch, mirroring the
 	// legacy lazy-seeding behaviour
 	mutable std::vector<Burn> m_burns; // strictly ordered by startTime
 	double m_factor;				   // dv multiplier
 	const double m_factorFactor = 5.0; // m_factor multiplier
+	uint32_t m_directionLockSerial = 0; // derived runtime state, not serialized
 };
