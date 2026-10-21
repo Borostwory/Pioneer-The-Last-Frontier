@@ -229,15 +229,15 @@ end
 local function displayControlsToggle(min, max, systemView)
 	local spacing = ui.getItemSpacing()
 	local padding = ui.getWindowPadding()
-	local width = styles.MainButtonSize.x * 2 + spacing.x + padding.x * 2
-	local height = styles.MainButtonSize.y + padding.y * 2
+	local width = styles.MainButtonSize.x + padding.x * 2
+	local height = styles.MainButtonSize.y * 2 + spacing.y + padding.y * 2
 
 	local size = Vector2(
 		math.min(width, math.max(0, max.x - min.x)),
 		math.min(height, math.max(0, max.y - min.y))
 	)
 	local pos = Vector2(max.x - size.x, max.y - size.y)
-	max.x = max.x - size.x
+	max.y = max.y - size.y
 
 	ui.setNextWindowSize(size, "Always")
 	ui.setNextWindowPos(pos, "Always")
@@ -249,8 +249,6 @@ local function displayControlsToggle(min, max, systemView)
 			Game.SetConfigBool("MultiBurnHud", "orbitViewVisible", visible)
 			Engine.SaveSettings()
 		end
-
-		ui.sameLine()
 
 		local focusIcon = focusPlayer and icons.ship or icons.rocky_planet
 		local focusTip = (focusPlayer and L.FOCUS_PLAYER or L.FOCUS_BODY) .. "##orbitViewHudFocus"

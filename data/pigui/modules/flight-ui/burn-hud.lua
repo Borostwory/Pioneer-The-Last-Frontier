@@ -1240,7 +1240,7 @@ local function displayVisibilityToggle(min, max)
 	size.y = math.min(size.y, max.y - min.y)
 
 	local pos = Vector2(max.x - size.x, max.y - size.y)
-	max.x = max.x - size.x
+	max.y = max.y - size.y
 	ui.setNextWindowSize(size, "Always")
 	ui.setNextWindowPos(pos, "Always")
 
