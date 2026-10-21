@@ -252,6 +252,40 @@ void TransferPlanner::ResetDv(int idx)
 	AdvanceDirectionLockSerial();
 }
 
+void TransferPlanner::ResetDv(int idx, BurnDirection d)
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return;
+
+	// targeted reset: only the selected axis changes; status, progress and
+	// the burn's identity are preserved
+	m_burns[idx].dv[d] = 0.0;
+
+	RecomputeChain();
+	AdvanceDirectionLockSerial();
+}
+
+void TransferPlanner::ResetStartTime(int idx)
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return;
+
+	// clamp "now" into the slot between the neighbours so the ordering
+	// invariant holds without moving any other burn
+	double t = Pi::game->GetTime();
+	if (idx > 0)
+		t = std::max(t, m_burns[idx - 1].startTime + 1.0);
+	if (idx + 1 < int(m_burns.size()))
+		t = std::min(t, m_burns[idx + 1].startTime - 1.0);
+
+	m_burns[idx].startTime = t;
+	m_burns[idx].status = PENDING;
+	m_burns[idx].appliedDeltaV = 0.0;
+
+	RecomputeChain();
+	AdvanceDirectionLockSerial();
+}
+
 void TransferPlanner::ResetDv()
 {
 	// drops the whole plan, statuses and executed delta-v included

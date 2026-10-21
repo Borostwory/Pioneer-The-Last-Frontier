@@ -395,21 +395,24 @@ static int l_systemview_transfer_planner_reset(lua_State *l)
 	TransferPlanner *planner = sv->GetTransferPlanner();
 	if (key == "prograde") {
 		if (args.hasIdx)
-			planner->ResetDv(args.idx);
+			planner->ResetDv(args.idx, TransferPlanner::PROGRADE);
 		else
 			planner->ResetDv(TransferPlanner::PROGRADE);
 	} else if (key == "normal") {
 		if (args.hasIdx)
-			planner->ResetDv(args.idx);
+			planner->ResetDv(args.idx, TransferPlanner::NORMAL);
 		else
 			planner->ResetDv(TransferPlanner::NORMAL);
 	} else if (key == "radial") {
 		if (args.hasIdx)
-			planner->ResetDv(args.idx);
+			planner->ResetDv(args.idx, TransferPlanner::RADIAL);
 		else
 			planner->ResetDv(TransferPlanner::RADIAL);
 	} else if (key == "starttime") {
-		planner->ResetStartTime();
+		if (args.hasIdx)
+			planner->ResetStartTime(args.idx);
+		else
+			planner->ResetStartTime();
 	} else if (key == "factor") {
 		planner->ResetFactor();
 	} else {

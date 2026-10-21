@@ -59,6 +59,10 @@ public:
 	double GetDv(int idx, BurnDirection d) const;
 	void AddDv(int idx, BurnDirection d, double dv);
 	void ResetDv(int idx);
+	// resets a single axis of one burn, leaving its other axes untouched
+	void ResetDv(int idx, BurnDirection d);
+	// resets only the start time of one burn, leaving its neighbours untouched
+	void ResetStartTime(int idx);
 	double GetStartTime(int idx) const;
 	void AddStartTime(int idx, double timeStep);
 	vector3d GetPos(int idx) const;
