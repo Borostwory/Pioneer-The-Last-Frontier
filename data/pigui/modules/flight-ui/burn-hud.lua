@@ -460,10 +460,10 @@ local COL_COUNT = COL_ACTIONS + 1
 -- buttons have an explicit label-font text height, also reserved by the row;
 -- their glyphs are measured at that height less the inline padding.
 --
--- Numeric widths follow the current rows; labels and controls retain their
--- measured minimum sizes.
+-- Numeric widths use stable representative envelopes; labels and controls
+-- retain their measured minimum sizes.
 --
-local function measureLayout(rows)
+local function measureLayout()
 	-- widths are indexed by column (0..COL_ACTIONS)
 	local widths = {}
 	for i = COL_LABEL, COL_ACTIONS do widths[i] = 0 end
@@ -512,19 +512,25 @@ local function measureLayout(rows)
 		end
 	end)
 
-	-- Fit each numeric column to its actual formatted values, not hypothetical
-	-- extreme burns. Measure in the same font used by drawCell.
+	-- Stable display envelopes for changing numeric values. These deliberately
+	-- cover the normal readable range without allowing an extreme value to make
+	-- the whole right-anchored panel jump left; unusually large values clip in
+	-- their cell and remain available through the planner itself.
 	ui.withFont(dataFont.name, dataFont.size, function()
-		for _, row in ipairs(rows) do
-			for col, text in pairs({
-				[COL_DV] = row.dv,
-				[COL_REMAINING] = row.remainingDv,
-				[COL_START] = row.countdown,
-				[COL_DURATION] = row.duration,
-				[COL_TIME_LEFT] = row.timeLeft,
-			}) do
-				widths[col] = math.max(widths[col], ui.calcTextSize(text).x)
-			end
+		local speedWidth = math.max(
+			ui.calcTextSize(formatSpeed(-999999)).x,
+			ui.calcTextSize(formatSpeed(999000000)).x)
+		local durationSample = ui.Format.Duration(
+			99 * 7 * 24 * 60 * 60 + 6 * 24 * 60 * 60 + 23 * 60 * 60)
+		local timeWidth = math.max(
+			ui.calcTextSize(durationSample).x,
+			ui.calcTextSize(lc.NOW).x,
+			ui.calcTextSize(UNAVAILABLE).x)
+		for _, col in ipairs({ COL_DV, COL_REMAINING }) do
+			widths[col] = math.max(widths[col], speedWidth)
+		end
+		for _, col in ipairs({ COL_START, COL_DURATION, COL_TIME_LEFT }) do
+			widths[col] = math.max(widths[col], timeWidth)
 		end
 	end)
 
@@ -548,10 +554,12 @@ local function measureLayout(rows)
 	-- padding). Measured on the widest string the strip can print — the
 	-- highest burn number, the largest offset, the widest level name, the
 	-- clamped suffix — so the layout does not depend on a warp running.
-	local warpStripLine, cancelWidth = 0, 0
+	local warpStripLine, warpStripWidth, cancelWidth = 0, 0, 0
 	local worstStrip = string.format(L.WARP_STRIP, MAX_BURN_COUNT, OFFSET_MAX, "10000x") .. L.WARP_LIMITED
 	ui.withFont(dataFont.name, dataFont.size, function()
-		warpStripLine = ui.calcTextSize(worstStrip).y
+		local size = ui.calcTextSize(worstStrip)
+		warpStripLine = size.y
+		warpStripWidth = size.x
 	end)
 	ui.withFont(glyphFont.name, warpStripLine - styles.InlineIconPadding.y * 2, function()
 		cancelWidth = ui.calcTextSize(ui.get_icon_glyph(icons.cross)).x
@@ -563,6 +571,7 @@ local function measureLayout(rows)
 		captionLine = captionLine,
 		emptyLine = emptyLine,
 		warpStripLine = warpStripLine,
+		warpStripWidth = warpStripWidth,
 		warpCancelWidth = cancelWidth,
 		actionSlotSize = actionSlotSize,
 	}
@@ -668,7 +677,7 @@ end
 -- measured on the widest string the strip can print, from the cached layout,
 -- so the panel width does not change when a warp starts.
 --
-local function measurePanelExtraWidth(showWarpStrip, layout)
+local function measurePanelExtraWidth(layout)
 	local spacing = ui.getItemSpacing()
 	local width = 0
 
@@ -677,17 +686,10 @@ local function measurePanelExtraWidth(showWarpStrip, layout)
 	end)
 	width = width + spacing.x + OFFSET_DRAG_WIDTH
 
-	if showWarpStrip then
-		-- the strip's own text plus its inline cancel control, which sits on
-		-- the same line as an inline icon button: the cached glyph width
-		-- (measured in the icon font at the strip line's height, in the
-		-- layout pass) plus the inline padding the button pushes
-		local stripWidth = ui.withFont(dataFont.name, dataFont.size, function()
-			return ui.calcTextSize(warpStripText()).x
-		end)
-		width = math.max(width, stripWidth + spacing.x
-			+ layout.warpCancelWidth + styles.InlineIconPadding.x * 2)
-	end
+	-- Reserve the strip even while hidden so starting / stopping a warp never
+	-- changes the panel width.
+	width = math.max(width, layout.warpStripWidth + spacing.x
+		+ layout.warpCancelWidth + styles.InlineIconPadding.x * 2)
 
 	return width
 end
@@ -741,7 +743,14 @@ end
 -- pushes the font itself), keeping a completed row's geometry identical to a
 -- live row.
 --
-local function drawCell(text, font, dimColor)
+local function drawCell(text, font, dimColor, slotWidth)
+	if slotWidth then
+		local cursor = ui.getCursorPos()
+		local textWidth = ui.withFont(font.name, font.size, function()
+			return ui.calcTextSize(text).x
+		end)
+		ui.setCursorPos(Vector2(cursor.x + math.max(0, slotWidth - textWidth), cursor.y))
+	end
 	if not dimColor then
 		ui.withFont(font.name, font.size, function()
 			ui.text(text)
@@ -914,13 +923,13 @@ local function displayBurnHudPanel(min, max, player, systemView)
 	local hasRows = #rows > 0
 
 	-- Keep the table compact while allowing longer live values to fit.
-	local layout = measureLayout(rows)
+	local layout = measureLayout()
 	local widths = layout.widths
 
 	-- the rows below the table: the autopilot row, the offset stepper, and
 	-- while a warp is running the warp status line with its cancel control
 	local showWarpStrip = warp ~= nil
-	local extraWidth = measurePanelExtraWidth(showWarpStrip, layout)
+	local extraWidth = measurePanelExtraWidth(layout)
 	local autopilotWidth, autopilotHeight = measureAutopilotRow()
 
 	local spacing = ui.getItemSpacing()
@@ -1111,15 +1120,15 @@ local function displayBurnHudPanel(min, max, player, systemView)
 			ui.nextColumn()
 
 			ui.withFont(dataFont.name, dataFont.size, function()
-				drawCell(row.dv, dataFont, dimColor)
+				drawCell(row.dv, dataFont, dimColor, widths[COL_DV])
 				ui.nextColumn()
-				drawCell(row.remainingDv, dataFont, dimColor)
+				drawCell(row.remainingDv, dataFont, dimColor, widths[COL_REMAINING])
 				ui.nextColumn()
-				drawCell(row.countdown, dataFont, dimColor)
+				drawCell(row.countdown, dataFont, dimColor, widths[COL_START])
 				ui.nextColumn()
-				drawCell(row.duration, dataFont, dimColor)
+				drawCell(row.duration, dataFont, dimColor, widths[COL_DURATION])
 				ui.nextColumn()
-				drawCell(row.timeLeft, dataFont, dimColor)
+				drawCell(row.timeLeft, dataFont, dimColor, widths[COL_TIME_LEFT])
 				ui.nextColumn()
 			end)
 

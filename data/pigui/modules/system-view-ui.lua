@@ -804,38 +804,18 @@ local plannerView = {
 			-- the table places the controls of a burn on the left and its summary on the
 			-- right, so every string is built and measured before the first row is drawn
 			local plan = {}
-			local valueWidth = ui.calcTextSize(ui.Format.Speed(100000)).x
-			local summaryWidth = 0
+			-- Stable geometry comes from the sidebar's content region and fixed
+			-- display envelopes, never from the values changing every frame.
+			local durationSample = ui.Format.Duration(
+				6 * 24 * 60 * 60 + 23 * 60 * 60 + 59 * 60)
+			local valueWidth = math.max(
+				ui.calcTextSize(ui.Format.Speed(-999999)).x,
+				ui.calcTextSize(durationSample).x,
+				ui.calcTextSize(lc.NOW).x)
 
 			-- the row descriptors are drawn in this window's ambient font, so the
 			-- measurement below runs in the same context (no font is pushed)
 			local spacing = ui.getItemSpacing().x
-			-- ui.icon draws at exactly the text line height, so the glyph items of
-			-- the first two lines are measured as one line height
-			local iconWidth = ui.getTextLineHeight()
-			-- The action line is its own line, so the inline icon button has no
-			-- preceding line to size itself from: ui.inlineIconButton passes
-			-- Vector2(0, ui.getLineHeight()) (libs/buttons.lua:257), an empty line
-			-- reports 0, and so ui.iconButton draws its glyph at ui.getFrameHeight()
-			-- less the inline padding (libs/buttons.lua:176) and Draw::GlyphButton
-			-- sizes the item from the measured glyph plus that padding
-			-- (src/pigui/Widgets.cpp:516). The action items are measured as exactly
-			-- that box. A line-height measure does not describe it: the box is derived
-			-- from the glyph, not from the caller's text height.
-			local actionWidth = (ui.getFrameHeight() - styles.InlineIconPadding.y * 2)
-				+ styles.InlineIconPadding.x * 2
-			-- sum one drawn summary line: its items plus the item gaps between them
-			local function measureLine(items)
-				local width = 0
-				for i, item in ipairs(items) do
-					width = width + ((i > 1) and spacing or 0) + item
-				end
-				return width
-			end
-			local function textWidth(text)
-				return ui.calcTextSize(text).x
-			end
-
 			-- the active burn comes from the planner every frame, so the sidebar, the
 			-- flight HUD and the reticle can never disagree about it
 			local activeIndex = systemView:TransferPlannerGetActiveIndex()
@@ -864,22 +844,15 @@ local plannerView = {
 					status = statusInfo, completable = completable,
 				}
 
-				-- the widest of the row's three summary lines sizes the column; the
-				-- lines are measured exactly as they are drawn below (same items,
-				-- same item gaps), so no line can overflow its column
-				summaryWidth = math.max(summaryWidth,
-					measureLine({iconWidth, textWidth(magnitude), iconWidth, textWidth(offset)}),
-					measureLine({iconWidth, textWidth(statusInfo.text), iconWidth, textWidth(remaining)}),
-					completable and measureLine({actionWidth, actionWidth}) or actionWidth)
 			end
 
-			-- slack so the last item of a line is never clipped by a column boundary
-			summaryWidth = summaryWidth + spacing * 2
-			-- three stepper buttons, the gaps between them and the value text have to fit
-			-- to the left of the summary column, so scale the buttons down to what is left
-			local buttonSize = math.floor((ui.getContentRegion().x - summaryWidth - valueWidth - spacing * 3) / 3)
+			local contentWidth = ui.getContentRegion().x
+			local controlsBudget = math.floor(contentWidth * 0.46)
+			-- Three stable square controls plus a fixed value slot.
+			local buttonSize = math.floor((controlsBudget - valueWidth - spacing * 3) / 3)
 			buttonSize = math.min(math.max(buttonSize, ui.rescaleUI(14)), styles.MainButtonSize.x)
 			local controlsWidth = buttonSize * 3 + spacing * 3 + valueWidth
+			local summaryWidth = math.max(contentWidth - controlsWidth, 1)
 
 			ui.columns(2, "##plannerBurns", false)
 			ui.setColumnWidth(0, controlsWidth)
@@ -902,13 +875,14 @@ local plannerView = {
 
 				ui.nextColumn()
 
-				-- line 1: total Δv and the offset of the burn's start time
+				-- One summary item per line keeps every icon and value at a stable x
+				-- while leaving the full summary-column width available to its text.
 				textIcon(icons.deltav, luc.DELTA_V)
 				ui.text(row.magnitude)
 				textIcon(icons.clock, lc.TIME_POINT)
 				ui.text(row.offset)
 
-				-- line 2: the burn's status. The planner stores COMPLETED; ACTIVE is
+				-- The planner stores COMPLETED; ACTIVE is
 				-- the planner's active burn, taken from TransferPlannerGetActiveIndex
 				-- above, so this row and the flight HUD cannot diverge
 				textIcon(row.status.icon, row.status.text)
@@ -930,7 +904,6 @@ local plannerView = {
 				-- from the caller's text line height while the glyph is drawn at that
 				-- height less the inline padding, which is not a size this window
 				-- rasterises its icon font at.
-				ui.newLine()
 				if row.completable then
 					if ui.inlineIconButton("##plannerBurnComplete" .. idx, icons.map_checkmark, L.COMPLETE) then
 						systemView:TransferPlannerCompleteBurn(idx)
