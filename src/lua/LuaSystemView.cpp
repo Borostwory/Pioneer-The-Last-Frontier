@@ -36,6 +36,7 @@ static int l_systemview_set_color(lua_State *l)
 	auto color_index = static_cast<SystemMapViewport::ColorIndex>(EnumStrings::GetValue("SystemViewColorIndex", LuaPull<const char *>(l, 2)));
 	auto color_value = LuaColor::CheckFromLua(l, 3);
 	sv->GetMap()->SetColor(color_index, color_value);
+	sv->GetHudMap()->SetColor(color_index, color_value);
 	return 0;
 }
 
@@ -101,14 +102,11 @@ static int l_systemview_set_selected_object(lua_State *l)
  *
  */
 
-static int l_systemview_get_projected_grouped(lua_State *l)
+static int push_projected_grouped(lua_State *l, SystemMapViewport *map, const vector2d &gap)
 {
 	using GroupInfo = Projectable::GroupInfo;
 
-	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
-	const vector2d gap = LuaPull<vector2d>(l, 2);
-
-	auto &projected = sv->GetMap()->GetProjected();
+	auto &projected = map->GetProjected();
 
 	const Body *nav_target = Pi::game->GetPlayer()->GetNavTarget();
 	const Body *combat_target = Pi::game->GetPlayer()->GetCombatTarget();
@@ -129,7 +127,7 @@ static int l_systemview_get_projected_grouped(lua_State *l)
 	//no need to sort, because the bodies are so recorded in good order
 	//because they are written recursively starting from the root
 	//body of the system, and ships go after the system bodies
-	std::vector<GroupInfo> groups = sv->GetMap()->GroupProjectables(vector2f(gap), specials);
+	std::vector<GroupInfo> groups = map->GroupProjectables(vector2f(gap), specials);
 
 	LuaTable result(l, groups.size(), 0);
 	int index = 1;
@@ -162,6 +160,20 @@ static int l_systemview_get_projected_grouped(lua_State *l)
 
 	LuaPush(l, result);
 	return 1;
+}
+
+static int l_systemview_get_projected_grouped(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	const vector2d gap = LuaPull<vector2d>(l, 2);
+	return push_projected_grouped(l, sv->GetMap(), gap);
+}
+
+static int l_systemview_get_hud_map_projected_grouped(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	const vector2d gap = LuaPull<vector2d>(l, 2);
+	return push_projected_grouped(l, sv->GetHudMap(), gap);
 }
 
 static int l_systemview_get_system(lua_State *l)
@@ -203,8 +215,46 @@ static int l_systemview_reset_viewpoint(lua_State *l)
 static int l_systemview_set_visibility(lua_State *l)
 {
 	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
-	sv->GetMap()->SetVisibility(LuaPull<std::string>(l, 2));
+	std::string param = LuaPull<std::string>(l, 2);
+	sv->GetMap()->SetVisibility(param);
+	if (param == "LAG_OFF" || param == "LAG_ICON" || param == "LAG_ICONTEXT") {
+		sv->GetHudMap()->SetVisibility(param);
+	}
 	return 0;
+}
+
+static int l_systemview_set_hud_map_size(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	const vector2d size = LuaPull<vector2d>(l, 2);
+	sv->SetHudMapSize(size);
+	return 0;
+}
+
+static int l_systemview_draw_hud_map(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	sv->DrawHudMapPiGui();
+	return 0;
+}
+
+static int l_systemview_set_hud_map_focus(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	std::string mode = LuaPull<std::string>(l, 2);
+	if (mode == "PLAYER")
+		sv->SetHudMapFocus(SystemView::HudMapFocus::PLAYER);
+	else
+		sv->SetHudMapFocus(SystemView::HudMapFocus::FRAME_BODY);
+	return 0;
+}
+
+static int l_systemview_get_hud_map_focus(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	const char *mode = (sv->GetHudMapFocus() == SystemView::HudMapFocus::PLAYER) ? "PLAYER" : "FRAME_BODY";
+	LuaPush(l, mode);
+	return 1;
 }
 
 static int l_systemview_get_orbit_planner_start_time(lua_State *l)
@@ -496,6 +546,11 @@ void LuaObject<SystemView>::RegisterClass()
 		{ "GetSystem", l_systemview_get_system },
 		{ "ClearSelectedObject", l_systemview_clear_selected_object },
 		{ "GetProjectedGrouped", l_systemview_get_projected_grouped },
+		{ "GetHudMapProjectedGrouped", l_systemview_get_hud_map_projected_grouped },
+		{ "SetHudMapSize", l_systemview_set_hud_map_size },
+		{ "DrawHudMap", l_systemview_draw_hud_map },
+		{ "SetHudMapFocus", l_systemview_set_hud_map_focus },
+		{ "GetHudMapFocus", l_systemview_get_hud_map_focus },
 		{ "GetSelectedObject", l_systemview_get_selected_object },
 		{ "GetOrbitPlannerStartTime", l_systemview_get_orbit_planner_start_time },
 		{ "GetOrbitPlannerTime", l_systemview_get_orbit_planner_time },

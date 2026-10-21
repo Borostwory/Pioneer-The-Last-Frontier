@@ -36,6 +36,10 @@ namespace Background {
 	class Container;
 }
 
+namespace Graphics {
+	class RenderTarget;
+}
+
 enum ShipDrawing {
 	BOXES,
 	ORBITS,
@@ -184,6 +188,11 @@ public:
 		SELECTED_SYSTEM = 1,
 	};
 
+	enum class HudMapFocus {
+		PLAYER = 0,
+		FRAME_BODY = 1,
+	};
+
 	SystemView(Game *game);
 	~SystemView() override;
 	void Update() override;
@@ -200,6 +209,13 @@ public:
 	double GetOrbitPlannerStartTime() const { return m_planner->GetStartTime(); }
 
 	SystemMapViewport *GetMap() { return m_map.get(); }
+	SystemMapViewport *GetHudMap() { return m_hudMap.get(); }
+
+	void SetHudMapSize(vector2d size);
+	void RenderHudMap();
+	void DrawHudMapPiGui();
+	HudMapFocus GetHudMapFocus() const { return m_hudMapFocus; }
+	void SetHudMapFocus(HudMapFocus focus);
 
 private:
 	void RefreshShips(void);
@@ -207,6 +223,10 @@ private:
 
 	void RefreshClouds(void);
 	void AddCloudTracks(double atTime);
+
+	void PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double atTime);
+	void UpdateHudMap(float deltaTime);
+	void CreateHudRenderTarget();
 
 	void CalculateShipPositionAtTime(const Ship *s, const Orbit &o, double t, vector3d &pos);
 	void CalculateFramePositionAtTime(FrameId frameId, double t, vector3d &pos);
@@ -217,6 +237,15 @@ private:
 	Game *m_game;
 
 	std::unique_ptr<SystemMapViewport> m_map;
+	std::unique_ptr<SystemMapViewport> m_hudMap;
+	std::unique_ptr<Graphics::RenderTarget> m_hudRenderTarget;
+	std::unique_ptr<Graphics::RenderTarget> m_hudResolveTarget;
+	vector2f m_hudMapSize = vector2f(0.f, 0.f);
+	bool m_hudMapNeedsResize = false;
+	HudMapFocus m_hudMapFocus = HudMapFocus::FRAME_BODY;
+	bool m_hudMapRotating = false;
+	bool m_hudMapInitialZoomSet = false;
+
 	TransferPlanner *m_planner;
 	std::list<std::pair<Ship *, Orbit>> m_contacts;
 	std::list<HyperspaceCloud *> m_clouds;
@@ -319,6 +348,10 @@ public:
 	float AtlasViewPixelPerUnit();
 
 	float GetZoom() const;
+	void RotateCameraByMouse(float dx, float dy);
+	void ZoomCameraByWheel(float wheel, float speedMod = 1.0f);
+	void SetZoomDirect(float zoom);
+	void SnapTransitionToViewedObject();
 
 	// all used colors. defined in system-view-ui.lua
 	enum ColorIndex { // <enum name=SystemViewColorIndex scope='SystemMapViewport' public>

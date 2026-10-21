@@ -27,6 +27,8 @@
 #include "graphics/Material.h"
 #include "graphics/Renderer.h"
 #include "graphics/RenderState.h"
+#include "graphics/RenderTarget.h"
+#include "graphics/Texture.h"
 #include "graphics/TextureBuilder.h"
 #include "graphics/Types.h"
 
@@ -80,6 +82,13 @@ SystemView::SystemView(Game *game) :
 	m_map.reset(new SystemMapViewport(Pi::GetApp()));
 	m_map->GetStarportHeightAboveTerrain = sigc::mem_fun(this, &SystemView::CalculateStarportHeight);
 
+	m_hudMap.reset(new SystemMapViewport(Pi::GetApp()));
+	m_hudMap->GetStarportHeightAboveTerrain = sigc::mem_fun(this, &SystemView::CalculateStarportHeight);
+	m_hudMap->SetVisibility("LAG_ICONTEXT");
+	m_hudMap->SetVisibility("SHIPS_OFF");
+	m_hudMap->SetVisibility("CLOUDS_OFF");
+	m_hudMap->SetVisibility("GRID_OFF");
+
 	RefreshShips();
 	m_planner = Pi::planner;
 }
@@ -127,9 +136,13 @@ void SystemView::CalculateFramePositionAtTime(FrameId frameId, double t, vector3
 double SystemView::CalculateStarportHeight(const SystemBody *body)
 {
 	// if we look at the current system, the relief is known, we take the height from the physical body
-	if (m_viewingCurrentSystem && m_game->IsNormalSpace()) {
+	if (m_game->IsNormalSpace()) {
 		assert(body != NULL);
-		return m_game->GetSpace()->FindBodyForPath(&(body->GetPath()))->GetPosition().Length();
+		if (m_viewingCurrentSystem || m_game->GetSpace()->GetStarSystem()->GetPath().IsSameSystem(body->GetPath())) {
+			Body *physBody = m_game->GetSpace()->FindBodyForPath(&(body->GetPath()));
+			if (physBody)
+				return physBody->GetPosition().Length();
+		}
 	}
 
 	// if the remote system - take the radius of the planet
@@ -253,8 +266,6 @@ void SystemView::Update()
 	}
 
 	if (m_game->IsNormalSpace() && m_viewingCurrentSystem) {
-		using Col = SystemMapViewport::ColorIndex;
-
 		double time = m_map->GetTime();
 
 		// draw ships
@@ -267,99 +278,106 @@ void SystemView::Update()
 			AddCloudTracks(time);
 		}
 
-		// draw player and planner
-		vector3d ppos(0.0);
-		Orbit playerOrbit = Pi::player->ComputeOrbit();
-		Body *PlayerBody = static_cast<Body *>(Pi::player);
+		PopulatePlayerAndPlannerTracks(m_map.get(), time);
+	}
+}
 
-		CalculateShipPositionAtTime(static_cast<Ship *>(Pi::player), playerOrbit, time, ppos);
-		m_map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLAYER, PlayerBody, ppos });
+void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double time)
+{
+	using Col = SystemMapViewport::ColorIndex;
 
-		FrameId playerNonRotFrameId = Frame::GetFrame(PlayerBody->GetFrame())->GetNonRotFrame();
-		Frame *playerNonRotFrame = Frame::GetFrame(playerNonRotFrameId);
-		SystemBody *playerAround = playerNonRotFrame->GetSystemBody();
+	// draw player and planner
+	vector3d ppos(0.0);
+	Orbit playerOrbit = Pi::player->ComputeOrbit();
+	Body *PlayerBody = static_cast<Body *>(Pi::player);
 
-		vector3d offset(0.0);
-		CalculateFramePositionAtTime(playerNonRotFrameId, time, offset);
+	CalculateShipPositionAtTime(static_cast<Ship *>(Pi::player), playerOrbit, time, ppos);
+	map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLAYER, PlayerBody, ppos });
 
-		if (Pi::player->GetFlightState() == Ship::FlightState::FLYING) {
-			const double planetRadius = playerAround->GetRadius();
-			m_map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLAYER, PlayerBody, offset }, &playerOrbit, m_map->svColor[Col::PLAYER_ORBIT], planetRadius);
+	FrameId playerNonRotFrameId = Frame::GetFrame(PlayerBody->GetFrame())->GetNonRotFrame();
+	Frame *playerNonRotFrame = Frame::GetFrame(playerNonRotFrameId);
+	SystemBody *playerAround = playerNonRotFrame->GetSystemBody();
 
-			const double mass = playerAround->GetMass();
-			if (m_planner->HasPlan() && m_planner->GetBurnCount() > 0) {
-				const size_t burnCount = m_planner->GetBurnCount();
+	vector3d offset(0.0);
+	CalculateFramePositionAtTime(playerNonRotFrameId, time, offset);
 
-				// the leg flown before burn 0: the current orbit, clipped to the
-				// window between map time and the start time of burn 0
-				const double t0 = time - m_game->GetTime();
-				const double t1 = m_planner->GetStartTime(0) - m_game->GetTime();
-				if (t1 > t0 && !is_zero_general(playerOrbit.GetSemiMajorAxis())) {
-					std::vector<vector3f> leg;
-					leg.reserve(N_PLANNER_LEG_SEGMENTS + 1);
-					if (playerOrbit.GetEccentricity() < 1.0) {
-						// true-anomaly window between the two endpoints, computed
-						// through OrbitalTimeAtPos and sampled evenly with
-						// EvenSpacedPosTrajectory (t counts fractions of the window)
-						const double period = playerOrbit.Period();
-						const double tau0 = playerOrbit.OrbitalTimeAtPos(playerOrbit.OrbitalPosAtTime(t0), mass);
-						double tau1 = playerOrbit.OrbitalTimeAtPos(playerOrbit.OrbitalPosAtTime(t1), mass);
-						// OrbitalTimeAtPos is phase-wrapped to [0, period), so a
-						// window crossing periapsis reads as a negative span
-						if (period > 0. && tau1 < tau0)
-							tau1 += period;
-						const double frac = (period > 0.) ? Clamp((tau1 - tau0) / period, 0., 1.) : 0.;
-						if (frac > 0.) {
-							for (int i = 0; i <= N_PLANNER_LEG_SEGMENTS; ++i)
-								leg.push_back(vector3f(offset + playerOrbit.EvenSpacedPosTrajectory(frac * double(i) / double(N_PLANNER_LEG_SEGMENTS), t0)));
-						}
-					} else {
-						// hyperbolic escape: sample evenly in time instead
+	if (Pi::player->GetFlightState() == Ship::FlightState::FLYING) {
+		const double planetRadius = playerAround->GetRadius();
+		map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLAYER, PlayerBody, offset }, &playerOrbit, map->svColor[Col::PLAYER_ORBIT], planetRadius);
+
+		const double mass = playerAround->GetMass();
+		if (m_planner->HasPlan() && m_planner->GetBurnCount() > 0) {
+			const size_t burnCount = m_planner->GetBurnCount();
+
+			// the leg flown before burn 0: the current orbit, clipped to the
+			// window between map time and the start time of burn 0
+			const double t0 = time - m_game->GetTime();
+			const double t1 = m_planner->GetStartTime(0) - m_game->GetTime();
+			if (t1 > t0 && !is_zero_general(playerOrbit.GetSemiMajorAxis())) {
+				std::vector<vector3f> leg;
+				leg.reserve(N_PLANNER_LEG_SEGMENTS + 1);
+				if (playerOrbit.GetEccentricity() < 1.0) {
+					// true-anomaly window between the two endpoints, computed
+					// through OrbitalTimeAtPos and sampled evenly with
+					// EvenSpacedPosTrajectory (t counts fractions of the window)
+					const double period = playerOrbit.Period();
+					const double tau0 = playerOrbit.OrbitalTimeAtPos(playerOrbit.OrbitalPosAtTime(t0), mass);
+					double tau1 = playerOrbit.OrbitalTimeAtPos(playerOrbit.OrbitalPosAtTime(t1), mass);
+					// OrbitalTimeAtPos is phase-wrapped to [0, period), so a
+					// window crossing periapsis reads as a negative span
+					if (period > 0. && tau1 < tau0)
+						tau1 += period;
+					const double frac = (period > 0.) ? Clamp((tau1 - tau0) / period, 0., 1.) : 0.;
+					if (frac > 0.) {
 						for (int i = 0; i <= N_PLANNER_LEG_SEGMENTS; ++i)
-							leg.push_back(vector3f(offset + playerOrbit.OrbitalPosAtTime(t0 + (t1 - t0) * double(i) / double(N_PLANNER_LEG_SEGMENTS))));
+							leg.push_back(vector3f(offset + playerOrbit.EvenSpacedPosTrajectory(frac * double(i) / double(N_PLANNER_LEG_SEGMENTS), t0)));
 					}
-					m_map->SetPlannerLeg(std::move(leg), m_map->svColor[Col::PLANNER_ORBIT]);
+				} else {
+					// hyperbolic escape: sample evenly in time instead
+					for (int i = 0; i <= N_PLANNER_LEG_SEGMENTS; ++i)
+						leg.push_back(vector3f(offset + playerOrbit.OrbitalPosAtTime(t0 + (t1 - t0) * double(i) / double(N_PLANNER_LEG_SEGMENTS))));
 				}
-
-				// one conic per burn, propagated from the burn point onwards, each
-				// lerped further toward white in the planner orbit colour
-				std::vector<Orbit> segOrbits;
-				segOrbits.reserve(burnCount);
-				for (size_t i = 0; i < burnCount; ++i) {
-					const int idx = int(i);
-					segOrbits.push_back(Orbit::FromBodyState(m_planner->GetPos(idx), m_planner->GetVel(idx), mass));
-
-					const float whiten = (burnCount > 1) ? (PLANNER_SEG_WHITEN * float(i) / float(burnCount - 1)) : 0.f;
-					Color segColor = m_map->svColor[Col::PLANNER_ORBIT];
-					m_map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLANNER, PlayerBody, offset }, &segOrbits.back(), segColor.Tint(whiten), planetRadius);
-
-					// marker at the exact burn point; the burn index rides along in
-					// orbitIdx (unused for object tracks) so the UI can label it.
-					// Submitted as an object track so it is projected in the draw
-					// pass with the live camera transform.
-					Projectable burn(Projectable::OBJECT, Projectable::PLANNER_BURN, PlayerBody, offset + m_planner->GetPos(idx));
-					burn.orbitIdx = idx;
-					m_map->AddObjectTrack(burn);
-				}
-
-				// ghost marker: propagate the conic of the segment whose burn window
-				// contains map time; before burn 0 (or in real time) show burn 0's position
-				const bool scrubbed = std::fabs(time - m_game->GetTime()) > 1.;
-				size_t seg = 0;
-				if (scrubbed) {
-					for (size_t i = burnCount; i-- > 0;) {
-						if (time >= m_planner->GetStartTime(int(i))) {
-							seg = i;
-							break;
-						}
-					}
-				}
-				const double segStart = m_planner->GetStartTime(int(seg));
-				if (scrubbed && time >= segStart)
-					m_map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + segOrbits[seg].OrbitalPosAtTime(time - segStart) });
-				else
-					m_map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + m_planner->GetPos(0) });
+				map->SetPlannerLeg(std::move(leg), map->svColor[Col::PLANNER_ORBIT]);
 			}
+
+			// one conic per burn, propagated from the burn point onwards, each
+			// lerped further toward white in the planner orbit colour
+			std::vector<Orbit> segOrbits;
+			segOrbits.reserve(burnCount);
+			for (size_t i = 0; i < burnCount; ++i) {
+				const int idx = int(i);
+				segOrbits.push_back(Orbit::FromBodyState(m_planner->GetPos(idx), m_planner->GetVel(idx), mass));
+
+				const float whiten = (burnCount > 1) ? (PLANNER_SEG_WHITEN * float(i) / float(burnCount - 1)) : 0.f;
+				Color segColor = map->svColor[Col::PLANNER_ORBIT];
+				map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLANNER, PlayerBody, offset }, &segOrbits.back(), segColor.Tint(whiten), planetRadius);
+
+				// marker at the exact burn point; the burn index rides along in
+				// orbitIdx (unused for object tracks) so the UI can label it.
+				// Submitted as an object track so it is projected in the draw
+				// pass with the live camera transform.
+				Projectable burn(Projectable::OBJECT, Projectable::PLANNER_BURN, PlayerBody, offset + m_planner->GetPos(idx));
+				burn.orbitIdx = idx;
+				map->AddObjectTrack(burn);
+			}
+
+			// ghost marker: propagate the conic of the segment whose burn window
+			// contains map time; before burn 0 (or in real time) show burn 0's position
+			const bool scrubbed = std::fabs(time - m_game->GetTime()) > 1.;
+			size_t seg = 0;
+			if (scrubbed) {
+				for (size_t i = burnCount; i-- > 0;) {
+					if (time >= m_planner->GetStartTime(int(i))) {
+						seg = i;
+						break;
+					}
+				}
+			}
+			const double segStart = m_planner->GetStartTime(int(seg));
+			if (scrubbed && time >= segStart)
+				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + segOrbits[seg].OrbitalPosAtTime(time - segStart) });
+			else
+				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + m_planner->GetPos(0) });
 		}
 	}
 }
@@ -393,6 +411,176 @@ void SystemView::SetSystemSelectionMode(SystemSelectionMode systemMode)
 {
 	if (m_systemSelectionMode != systemMode) {
 		m_systemSelectionMode = systemMode;
+	}
+}
+
+void SystemView::SetHudMapFocus(HudMapFocus focus)
+{
+	m_hudMapFocus = focus;
+}
+
+void SystemView::SetHudMapSize(vector2d size)
+{
+	vector2f newSize(std::max(1.f, float(std::floor(size.x))), std::max(1.f, float(std::floor(size.y))));
+	if (newSize == m_hudMapSize)
+		return;
+
+	m_hudMapSize = newSize;
+	m_hudMapNeedsResize = true;
+}
+
+void SystemView::CreateHudRenderTarget()
+{
+	if (m_hudRenderTarget)
+		m_hudRenderTarget.reset();
+	if (m_hudResolveTarget)
+		m_hudResolveTarget.reset();
+
+	if (m_hudMapSize.x < 1.f || m_hudMapSize.y < 1.f)
+		return;
+
+	Graphics::RenderTargetDesc rtDesc{
+		uint16_t(m_hudMapSize.x), uint16_t(m_hudMapSize.y),
+		Graphics::TextureFormat::TEXTURE_RGBA_8888,
+		Graphics::TextureFormat::TEXTURE_DEPTH, true,
+		uint16_t(Pi::GetApp()->GetGraphicsSettings().requestedSamples)
+	};
+
+	m_hudRenderTarget.reset(Pi::renderer->CreateRenderTarget(rtDesc));
+	if (!m_hudRenderTarget)
+		Error("Error creating render target for HUD system map.");
+
+	Graphics::RenderTargetDesc resolveDesc{
+		uint16_t(m_hudMapSize.x), uint16_t(m_hudMapSize.y),
+		Graphics::TextureFormat::TEXTURE_RGBA_8888,
+		Graphics::TextureFormat::TEXTURE_NONE, true
+	};
+
+	m_hudResolveTarget.reset(Pi::renderer->CreateRenderTarget(resolveDesc));
+	if (!m_hudResolveTarget)
+		Error("Error creating MSAA resolve render target for HUD system map.");
+
+	m_hudMapNeedsResize = false;
+}
+
+void SystemView::UpdateHudMap(float deltaTime)
+{
+	if (!m_game->IsNormalSpace() || !Pi::player)
+		return;
+
+	m_hudMap->SetRealTime();
+	m_hudMap->SetReferenceTime(m_game->GetTime());
+
+	RefCountedPtr<StarSystem> currentSys = m_game->GetSpace()->GetStarSystem();
+	RefCountedPtr<StarSystem> mapSys = m_hudMap->GetCurrentSystem();
+	if (!mapSys || !mapSys->GetPath().IsSameSystem(currentSys->GetPath()) || mapSys->GetUnexplored() != currentSys->GetUnexplored()) {
+		m_hudMap->SetCurrentSystem(currentSys);
+		m_hudMapInitialZoomSet = false;
+	}
+
+	Body *playerBody = static_cast<Body *>(Pi::player);
+	FrameId nonRotFrameId = Frame::GetFrame(playerBody->GetFrame())->GetNonRotFrame();
+	Frame *nonRotFrame = Frame::GetFrame(nonRotFrameId);
+	SystemBody *frameBody = nonRotFrame ? nonRotFrame->GetSystemBody() : nullptr;
+
+	Projectable desiredFocus;
+	if (m_hudMapFocus == HudMapFocus::PLAYER || !frameBody) {
+		desiredFocus = Projectable(Projectable::OBJECT, Projectable::PLAYER, playerBody);
+	} else {
+		desiredFocus = Projectable(Projectable::OBJECT, Projectable::SYSTEMBODY, frameBody);
+	}
+
+	bool focusChanged = false;
+	if (!(*m_hudMap->GetViewedObject() == desiredFocus)) {
+		m_hudMap->SetViewedObject(desiredFocus);
+		focusChanged = true;
+	}
+
+	if (!m_hudMapInitialZoomSet && frameBody) {
+		double dist = playerBody->GetPositionRelTo(nonRotFrameId).Length();
+		double refSpan = std::max(dist * 3.0, frameBody->GetRadius() * 6.0);
+		if (refSpan > 0.0) {
+			m_hudMap->SetZoomDirect(float(DEFAULT_VIEW_DISTANCE / refSpan));
+		}
+		m_hudMapInitialZoomSet = true;
+	}
+
+	m_hudMap->Update(deltaTime);
+
+	double time = m_hudMap->GetTime();
+	PopulatePlayerAndPlannerTracks(m_hudMap.get(), time);
+
+	if (focusChanged) {
+		m_hudMap->SnapTransitionToViewedObject();
+	}
+}
+
+void SystemView::RenderHudMap()
+{
+	PROFILE_SCOPED()
+	if (!m_game->IsNormalSpace())
+		return;
+
+	if (m_hudMapNeedsResize)
+		CreateHudRenderTarget();
+	if (!m_hudRenderTarget || !m_hudResolveTarget)
+		return;
+
+	for (int i = 0; i < 9; ++i) {
+		if (m_hudMap->svColor[i].a == 0 && m_map->svColor[i].a != 0)
+			m_hudMap->svColor[i] = m_map->svColor[i];
+	}
+
+	UpdateHudMap(Pi::GetFrameTime());
+
+	Graphics::Renderer *r = Pi::renderer;
+	Graphics::Renderer::StateTicket ticket(r);
+
+	const auto &desc = m_hudRenderTarget->GetDesc();
+	Graphics::ViewportExtents extents = { 0, 0, desc.width, desc.height };
+
+	r->SetRenderTarget(m_hudRenderTarget.get());
+	r->SetViewport(extents);
+	r->ClearScreen(Color(0, 0, 0, 255));
+
+	auto *background = m_game->GetSpace()->GetBackground();
+	Uint32 cachedFlags = background->GetDrawFlags();
+	m_hudMap->SetBackground(background);
+	m_hudMap->SetDisplayMode(Mode::Orrery);
+	m_hudMap->Draw3D();
+	background->SetDrawFlags(cachedFlags);
+
+	r->ResolveRenderTarget(m_hudRenderTarget.get(), m_hudResolveTarget.get(), extents);
+}
+
+void SystemView::DrawHudMapPiGui()
+{
+	RenderHudMap();
+
+	ImVec2 size(m_hudMapSize.x, m_hudMapSize.y);
+	if (m_hudResolveTarget) {
+		ImGui::Image(reinterpret_cast<ImTextureID>(m_hudResolveTarget->GetColorTexture()), size, ImVec2(0, 1), ImVec2(1, 0));
+	} else {
+		ImGui::Dummy(size);
+	}
+
+	const ImGuiIO &io = ImGui::GetIO();
+	const bool hovered = ImGui::IsItemHovered();
+
+	if (hovered && (ImGui::IsMouseClicked(ImGuiMouseButton_Right) || ImGui::IsMouseClicked(ImGuiMouseButton_Middle))) {
+		m_hudMapRotating = true;
+	}
+	if (m_hudMapRotating) {
+		if (ImGui::IsMouseDown(ImGuiMouseButton_Right) || ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
+			m_hudMap->RotateCameraByMouse(io.MouseDelta.x, io.MouseDelta.y);
+			ImGui::SetNextFrameWantCaptureMouse(true);
+		} else {
+			m_hudMapRotating = false;
+		}
+	}
+
+	if (hovered && io.MouseWheel != 0.0f) {
+		m_hudMap->ZoomCameraByWheel(io.MouseWheel);
 	}
 }
 
@@ -445,6 +633,16 @@ SystemMapViewport::SystemMapViewport(GuiApplication *app) :
 
 	m_orbitVts.reset(new vector3f[N_VERTICES_MAX + 1]);
 	m_orbitColors.reset(new Color[N_VERTICES_MAX + 1]);
+
+	svColor[GRID] = Color(40, 40, 80, 255);
+	svColor[GRID_LEG] = Color(128, 128, 128, 255);
+	svColor[SYSTEMBODY] = Color(100, 140, 220, 255);
+	svColor[SYSTEMBODY_ORBIT] = Color(50, 140, 90, 255);
+	svColor[PLAYER_ORBIT] = Color(220, 180, 40, 255);
+	svColor[PLANNER_ORBIT] = Color(40, 200, 220, 255);
+	svColor[SELECTED_SHIP_ORBIT] = Color(220, 80, 40, 255);
+	svColor[SHIP_ORBIT] = Color(140, 140, 140, 255);
+	svColor[PLANNER_BURN] = Color(255, 160, 40, 255);
 }
 
 SystemMapViewport::~SystemMapViewport()
@@ -1306,6 +1504,33 @@ double SystemMapViewport::ProjectedSize(double size, vector3d pos)
 float SystemMapViewport::GetZoom() const
 {
 	return m_displayMode == SystemView::Mode::Orrery ? 1.0 / m_zoom : m_atlasZoom;
+}
+
+void SystemMapViewport::RotateCameraByMouse(float dx, float dy)
+{
+	m_rot_x_to = Clamp(m_rot_x_to + dy * 0.35f, -80.0f, 80.0f);
+	m_rot_y_to += dx * 0.35f;
+}
+
+void SystemMapViewport::ZoomCameraByWheel(float wheel, float speedMod)
+{
+	if (wheel < 0.0f)
+		m_zoomTo *= 1.0f / ((ZOOM_OUT_SPEED - 1.0f) * WHEEL_SENSITIVITY * speedMod + 1.0f);
+	else if (wheel > 0.0f)
+		m_zoomTo *= ((ZOOM_IN_SPEED - 1.0f) * WHEEL_SENSITIVITY * speedMod + 1.0f);
+	m_zoomTo = Clamp(m_zoomTo, MIN_ZOOM, MAX_ZOOM);
+}
+
+void SystemMapViewport::SetZoomDirect(float zoom)
+{
+	m_zoom = m_zoomTo = Clamp(zoom, MIN_ZOOM, MAX_ZOOM);
+}
+
+void SystemMapViewport::SnapTransitionToViewedObject()
+{
+	m_trans = m_viewedObject.worldpos;
+	m_transTo = m_viewedObject.worldpos;
+	m_animateTransition = 0;
 }
 
 float SystemMapViewport::AtlasViewPixelPerUnit()
