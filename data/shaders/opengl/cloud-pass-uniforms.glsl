@@ -14,6 +14,6 @@ layout(std140) uniform CloudPassData {
 	vec4 cloudPassPrevAxisX;  // previous frame: planet axes in view space
 	vec4 cloudPassPrevAxisY;
 	vec4 cloudPassPrevAxisZ;
-	vec4 cloudPassPrevProj;	  // previous frame: x P[0], y P[5]
+	vec4 cloudPassPrevProj;	  // previous frame: x P[0], y P[5], zw: history size [pixels]
 	vec4 cloudPassHistSize;	  // xy: history buffer size, zw: shadow buffer size
 };

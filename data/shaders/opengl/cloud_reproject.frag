@@ -55,9 +55,11 @@ void main(void)
 	}
 
 	// spatial estimate: bilinear between the fresh samples, which sit at
-	// history pixel 2m + offset
-	vec2 sp = (vec2(hp) - vec2(off)) * 0.5;
-	vec4 spatial = texture(marchTex, (sp + 0.5) / cloudPassMarch.xy);
+	// history pixel 2m + offset. The buffers are larger than the part in use
+	// (the resolution varies with altitude), so texture coordinates use the
+	// texture size and stay inside the used part.
+	vec2 sp = clamp((vec2(hp) - vec2(off)) * 0.5, vec2(0.0), cloudPassMarch.xy - 1.0);
+	vec4 spatial = texture(marchTex, (sp + 0.5) / vec2(textureSize(marchTex, 0)));
 
 	if (cloudPassFrame.z < 0.5) {
 		frag_color = spatial;
@@ -96,6 +98,9 @@ void main(void)
 		return;
 	}
 
-	vec4 history = texture(historyTex, uvPrev);
+	// last frame's history used cloudPassPrevProj.zw pixels of the buffer
+	vec2 prevSize = cloudPassPrevProj.zw;
+	vec2 hpPrev = clamp(uvPrev * prevSize, vec2(0.5), prevSize - 0.5);
+	vec4 history = texture(historyTex, hpPrev / vec2(textureSize(historyTex, 0)));
 	frag_color = clamp(history, nmin - CLOUD_HISTORY_CLAMP_MARGIN, nmax + CLOUD_HISTORY_CLAMP_MARGIN);
 }

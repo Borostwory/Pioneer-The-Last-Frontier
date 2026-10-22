@@ -65,7 +65,33 @@ void main(void)
 	frag_color = wsum > 1e-4 ? sum / wsum : best;
 
 	if (cloudPassFrame.w > 0.5 && z < 1e20) {
-		float light = texture(shadowTex, gl_FragCoord.xy / cloudPassSize.zw).r;
+		// depth-aware bilinear upsample of the half-resolution shadow buffer
+		// (size cloudPassHistSize.zw): texels on the sky or on a different
+		// surface (a nearer ridge, a ship) do not bleed across silhouettes
+		vec2 shSize = cloudPassHistSize.zw;
+		vec2 sp = gl_FragCoord.xy * shSize / cloudPassSize.zw - 0.5;
+		vec2 sb = floor(sp);
+		vec2 sf = sp - sb;
+		float lsum = 0.0;
+		float lw = 0.0;
+		float lbest = 1.0;
+		float lbestDiff = 1e30;
+		for (int k = 0; k < 4; k++) {
+			vec2 o = vec2(float(k & 1), float(k >> 1));
+			ivec2 si = clamp(ivec2(sb + o), ivec2(0), ivec2(shSize) - 1);
+			ivec2 fi = clamp(ivec2((vec2(si) + 0.5) * cloudPassSize.zw / shSize), ivec2(0), fullMax);
+			float zi = texelFetch(sceneDist, fi, 0).r;
+			float diff = abs(zi - z) / max(min(zi, z), 1.0);
+			float l = texelFetch(shadowTex, si, 0).r;
+			float w = (o.x > 0.5 ? sf.x : 1.0 - sf.x) * (o.y > 0.5 ? sf.y : 1.0 - sf.y) * exp(-16.0 * diff);
+			lsum += w * l;
+			lw += w;
+			if (diff < lbestDiff) {
+				lbestDiff = diff;
+				lbest = l;
+			}
+		}
+		float light = lw > 1e-4 ? lsum / lw : lbest;
 		float m = mix(1.0, light, CLOUD_SHADOW_STRENGTH);
 		frag_color.a = 1.0 - (1.0 - frag_color.a) * m;
 	}
