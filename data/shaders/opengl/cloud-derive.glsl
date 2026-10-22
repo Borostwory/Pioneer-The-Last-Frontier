@@ -36,6 +36,8 @@ struct CloudLayer {
 	float lobeMix;     // weight of the forward lobe
 	float period;      // evolution period [s], divides 2^20
 	float fNorm;       // area-weighted mean of the latitude factor
+	float systemSize;  // weather pattern (cloud system) size multiplier
+	float fillBase;    // fraction of a cloud system filled by cloud (clustering); 1 = no split
 };
 
 struct CloudPlanet {
@@ -170,6 +172,8 @@ CloudPlanet cloudDerive()
 		cp.L[i].lobeMix = 0.7;
 		cp.L[i].period = 32768.0;
 		cp.L[i].fNorm = 1.0;
+		cp.L[i].systemSize = 1.0;
+		cp.L[i].fillBase = 1.0;
 	}
 
 	float rho0 = cloudAtmos.z;
@@ -354,15 +358,28 @@ CloudPlanet cloudDerive()
 		cMid = 0.0;
 	}
 
-	// user tuning (video settings): amount scales coverage and, more gently,
-	// the optical thickness; size scales the individual cells / fibres;
-	// transparency divides the optical thickness only
+	// User tuning (video settings), one independent control per property:
+	//  cover        total sky fraction, as 1 - (1 - c)^m: smooth, reaches
+	//               overcast only gradually
+	//  size         individual cells / fibres
+	//  system size  the weather pattern: size of cloud groups and the clear
+	//               areas between them
+	//  clustering   for the same cover: few solid decks with large clear areas
+	//               (closed cells) or clouds scattered evenly (open cells)
+	//  transparency optical thickness only
 	vec3 amount = max(cloudTuneDensity.xyz, vec3(0.0));
 	vec3 size = max(cloudTuneSize.xyz, vec3(0.05));
-	vec3 opacity = sqrt(amount) / max(cloudTuneTransparency.xyz, vec3(0.05));
-	cloudSetLayer(cp.L[0], lowBase, lowTopA, cLow * amount.x, qLow * opacity.x / sH, CLOUD_CELL_LOW_M * sH * size.x, 32768.0);
-	cloudSetLayer(cp.L[1], midBase, midTopA, cMid * amount.y, qMid * opacity.y / sH, CLOUD_CELL_MID_M * sH * size.y, 32768.0);
-	cloudSetLayer(cp.L[2], hiBase, hiTopA, cHigh * amount.z, qHigh * opacity.z / sH, CLOUD_CELL_HIGH_M * sH * size.z, 65536.0);
+	vec3 opacity = 1.0 / max(cloudTuneTransparency.xyz, vec3(0.05));
+	vec3 cover = vec3(1.0) - pow(vec3(1.0) - clamp(vec3(cLow, cMid, cHigh), 0.0, 0.999), amount);
+	cloudSetLayer(cp.L[0], lowBase, lowTopA, cover.x, qLow * opacity.x / sH, CLOUD_CELL_LOW_M * sH * size.x, 32768.0);
+	cloudSetLayer(cp.L[1], midBase, midTopA, cover.y, qMid * opacity.y / sH, CLOUD_CELL_MID_M * sH * size.y, 32768.0);
+	cloudSetLayer(cp.L[2], hiBase, hiTopA, cover.z, qHigh * opacity.z / sH, CLOUD_CELL_HIGH_M * sH * size.z, 65536.0);
+	for (int i = 0; i < 3; i++)
+		cp.L[i].systemSize = max(cloudTuneSystem[i], 0.05);
+	// cloud fraction inside a cloud system: 0.35 (scattered) .. 0.95 (solid deck)
+	cp.L[0].fillBase = mix(0.35, 0.95, clamp(cloudTuneCluster.x, 0.0, 1.0));
+	cp.L[1].fillBase = mix(0.35, 0.95, clamp(cloudTuneCluster.y, 0.0, 1.0));
+	cp.L[2].fillBase = 1.0; // cirrus: clustering acts on its wisp groups instead
 
 	// normalise the latitude factor to an area-weighted mean of 1 (9-point quadrature)
 	for (int l = 0; l < 3; l++) {

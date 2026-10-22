@@ -52,6 +52,12 @@ GameConfig::GameConfig(const map_string &override_)
 	map["CloudTransparencyLow"] = "100"; // percent, per cloud layer
 	map["CloudTransparencyMedium"] = "100";
 	map["CloudTransparencyHigh"] = "100";
+	map["CloudSystemSizeLow"] = "100"; // percent, per cloud layer
+	map["CloudSystemSizeMedium"] = "100";
+	map["CloudSystemSizeHigh"] = "100";
+	map["CloudClusteringLow"] = "75";  // percent: 0 scattered .. 100 solid decks
+	map["CloudClusteringMedium"] = "50";
+	map["CloudClusteringHigh"] = "50";
 	map["DefaultLowThrustPower"] = "0.25";
 	map["VSync"] = "1";
 	map["UseTextureCompression"] = "1";

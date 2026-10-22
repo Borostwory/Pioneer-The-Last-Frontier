@@ -54,9 +54,11 @@ namespace {
 	//   CloudTemporal    0/1: temporal reconstruction (each frame traces 1 of 4 pixels)
 	//   CloudSoftness    0..2: upsampling kernel radius
 	//   CloudSpeed       1..100: cloud motion and evolution relative to the real wind
-	//   CloudDensityLow/Medium/High  0..300 %: amount of cloud per layer
+	//   CloudDensityLow/Medium/High  0..300 %: cloud cover per layer (as 1 - (1 - c)^m)
 	//   CloudSizeLow/Medium/High     25..400 %: size of individual clouds per layer
 	//   CloudTransparencyLow/Medium/High  25..1000 %: 200 = half the optical thickness
+	//   CloudSystemSizeLow/Medium/High    25..400 %: size of cloud systems and the gaps between them
+	//   CloudClusteringLow/Medium/High    0..100 %: scattered clouds .. solid decks, at the same cover
 	static const int CLOUD_RESOLUTION_LINES[] = { 360, 540, 720, 1080, 0 };
 
 	// planets further away than this (planet radii) are not given a pass
@@ -410,6 +412,10 @@ namespace PlanetClouds {
 		SetVec4(out.tuneDensity, LayerPercent("CloudDensityLow", 0, 300), LayerPercent("CloudDensityMedium", 0, 300), LayerPercent("CloudDensityHigh", 0, 300), 0.0);
 		SetVec4(out.tuneSize, LayerPercent("CloudSizeLow", 25, 400), LayerPercent("CloudSizeMedium", 25, 400), LayerPercent("CloudSizeHigh", 25, 400), 0.0);
 		SetVec4(out.tuneTransparency, LayerPercent("CloudTransparencyLow", 25, 1000), LayerPercent("CloudTransparencyMedium", 25, 1000), LayerPercent("CloudTransparencyHigh", 25, 1000), 0.0);
+		SetVec4(out.tuneSystem, LayerPercent("CloudSystemSizeLow", 25, 400), LayerPercent("CloudSystemSizeMedium", 25, 400), LayerPercent("CloudSystemSizeHigh", 25, 400), 0.0);
+		SetVec4(out.tuneCluster, Clamp(Pi::config->Int("CloudClusteringLow", 75), 0, 100) / 100.0,
+			Clamp(Pi::config->Int("CloudClusteringMedium", 50), 0, 100) / 100.0,
+			Clamp(Pi::config->Int("CloudClusteringHigh", 50), 0, 100) / 100.0, 0.0);
 	}
 
 	void SetMaterialCloudData(Graphics::Material *mat, CloudDataBlock &data, CloudHeightMap *heightMap)

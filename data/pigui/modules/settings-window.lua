@@ -314,12 +314,12 @@ local function showVideoOptions()
 			{ key = "Medium", label = "medium altitude (altocumulus)" },
 			{ key = "Low", label = "low altitude (stratus / stratocumulus)" },
 		}
-		ui.text("Cloud density multiplier (%)")
+		ui.text("Cloud cover multiplier (%)")
 		for _, layer in ipairs(cloudLayers) do
 			local key = "CloudDensity" .. layer.key
 			local value = Engine.SettingsGetInt(key)
-			c,value = slider("Density, " .. layer.label, value, 0, 300,
-				"How much of the sky this cloud layer covers, and how thick it is. 100 = physically derived amount, 0 = layer off.")
+			c,value = slider("Cover, " .. layer.label, value, 0, 300,
+				"How much of the sky this cloud layer covers. 100 = physically derived cover, 0 = layer off. Approaches overcast gradually.")
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
@@ -330,6 +330,26 @@ local function showVideoOptions()
 			local value = Engine.SettingsGetInt(key)
 			c,value = slider("Size, " .. layer.label, value, 25, 400,
 				"Size of the individual clouds in this layer. 100 = default size.")
+			if c then
+				Engine.SettingsSetInt(key, value)
+			end
+		end
+		ui.text("Cloud system size multiplier (%)")
+		for _, layer in ipairs(cloudLayers) do
+			local key = "CloudSystemSize" .. layer.key
+			local value = Engine.SettingsGetInt(key)
+			c,value = slider("System size, " .. layer.label, value, 25, 400,
+				"Size of the cloud systems (groups of clouds) and of the clear areas between them. Does not change the total cover.")
+			if c then
+				Engine.SettingsSetInt(key, value)
+			end
+		end
+		ui.text("Cloud clustering (%)")
+		for _, layer in ipairs(cloudLayers) do
+			local key = "CloudClustering" .. layer.key
+			local value = Engine.SettingsGetInt(key)
+			c,value = slider("Clustering, " .. layer.label, value, 0, 100,
+				"At the same cover: 0 = clouds scattered evenly over the sky, 100 = few solid cloud decks with large clear areas between them.")
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end

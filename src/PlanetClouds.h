@@ -48,8 +48,10 @@ namespace PlanetClouds {
 		float tuneDensity[4]; // user amount multiplier: low, medium, high layer
 		float tuneSize[4];	  // user cloud size multiplier: low, medium, high layer
 		float tuneTransparency[4]; // user transparency multiplier: low, medium, high layer
+		float tuneSystem[4];	   // user cloud system (weather pattern) size multiplier: low, medium, high
+		float tuneCluster[4];	   // user clustering 0 (scattered) .. 1 (solid decks): low, medium, high
 	};
-	static_assert(sizeof(CloudDataBlock) == 176, "CloudDataBlock must match the std140 CloudData block");
+	static_assert(sizeof(CloudDataBlock) == 208, "CloudDataBlock must match the std140 CloudData block");
 
 	// Coarse equirectangular terrain-height map (metres above sea level),
 	// baked once on the async job queue.

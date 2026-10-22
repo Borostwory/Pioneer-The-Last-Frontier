@@ -15,6 +15,8 @@ layout(std140) uniform CloudData {
 	vec4 cloudTuneDensity; // xyz: user amount multiplier for the low, medium, high layer
 	vec4 cloudTuneSize;	   // xyz: user cloud size multiplier for the low, medium, high layer
 	vec4 cloudTuneTransparency; // xyz: user transparency multiplier for the low, medium, high layer
+	vec4 cloudTuneSystem;		// xyz: user cloud system (weather pattern) size multiplier per layer
+	vec4 cloudTuneCluster;		// xyz: user clustering 0 (scattered) .. 1 (solid decks) per layer
 };
 
 // Equirectangular terrain height in metres (u = longitude, v = latitude)
