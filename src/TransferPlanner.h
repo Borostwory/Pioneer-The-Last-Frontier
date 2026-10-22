@@ -147,9 +147,11 @@ public:
 	// ship on a transfer meeting the target (burns = 1, intercept), and with
 	// burns = 2 a second one on arrival that matches the target's velocity
 	// (rendezvous). Departure and flight time are chosen for the least total
-	// delta-v. A planet or moon is passed at two of its radii from its
-	// centre, never aimed at. On failure error says why.
-	bool PlanApproach(const Body *target, int burns, std::string &error);
+	// delta-v. A ship or station is met standOff metres behind it on its own
+	// orbit, so a rendezvous parks the ship there instead of running into it;
+	// a planet or moon is passed at two of its radii from its centre, never
+	// aimed at. On failure error says why.
+	bool PlanApproach(const Body *target, int burns, double standOff, std::string &error);
 
 	struct ClosestApproach {
 		double time = 0.0;			// game time of the closest approach

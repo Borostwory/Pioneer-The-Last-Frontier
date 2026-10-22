@@ -68,18 +68,22 @@ struct TargetTrack {
 	double mass = 0.0;	 // of the central body
 	double radius = 0.0; // a planet's or moon's, 0 for ships and stations
 	double period = 0.0; // 0 when not periodic
+	// a stand-off: the track runs this many seconds behind the target, so it
+	// follows the target's own orbit at a distance behind it
+	double lag = 0.0;
 
 	vector3d PosAt(double t) const
 	{
 		// the rails are what Frame::UpdateOrbitRails places the body's frame by
-		return rails ? rails->GetOrbit().OrbitalPosAtTime(t) : orbit.OrbitalPosAtTime(t - epoch);
+		const double when = t - lag;
+		return rails ? rails->GetOrbit().OrbitalPosAtTime(when) : orbit.OrbitalPosAtTime(when - epoch);
 	}
 
 	vector3d VelAt(double t) const
 	{
 		if (rails)
 			return (PosAt(t + 1.0) - PosAt(t - 1.0)) * 0.5;
-		return orbit.OrbitalVelocityAtTime(mass, t - epoch);
+		return orbit.OrbitalVelocityAtTime(mass, t - lag - epoch);
 	}
 };
 
@@ -294,7 +298,7 @@ bool TransferPlanner::GetFinalOrbit(Orbit &orbit, vector3d &pos, vector3d &vel, 
 	return !is_zero_general(orbit.GetSemiMajorAxis());
 }
 
-bool TransferPlanner::PlanApproach(const Body *target, int burns, std::string &error)
+bool TransferPlanner::PlanApproach(const Body *target, int burns, double standOff, std::string &error)
 {
 	burns = std::min(std::max(burns, 1), 2);
 	if (m_burns.size() + burns > MAX_BURNS) {
@@ -313,6 +317,14 @@ bool TransferPlanner::PlanApproach(const Body *target, int burns, std::string &e
 	TargetTrack track;
 	if (!MakeTargetTrack(target, frame, track, error))
 		return false;
+	// a ship or station is met standOff behind it on its own orbit, where a
+	// matched velocity keeps the gap; a planet or moon is passed at a
+	// distance from its centre instead (kBodyAimFactor)
+	if (track.radius <= 0.0 && standOff > 0.0) {
+		const double speed = track.VelAt(Pi::game->GetTime()).Length();
+		if (speed > 0.0)
+			track.lag = standOff / speed;
+	}
 
 	Orbit departure;
 	vector3d pos0, vel0;

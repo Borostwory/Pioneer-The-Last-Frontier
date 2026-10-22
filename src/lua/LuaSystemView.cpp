@@ -697,19 +697,21 @@ static int l_systemview_transfer_planner_circularize(lua_State *l)
 /*
  * Method: TransferPlannerPlanApproach
  *
- * > ok, error = systemView:TransferPlannerPlanApproach(target, burns)
+ * > ok, error = systemView:TransferPlannerPlanApproach(target, burns, standOff)
  *
  * Append burns that take the ship to the target body: burns = 1 intercepts
- * it, burns = 2 also matches its velocity on arrival. On failure ok is false
- * and error says why.
+ * it, burns = 2 also matches its velocity on arrival. A ship or station is
+ * met standOff metres (optional, default 0) behind it on its orbit. On
+ * failure ok is false and error says why.
  */
 static int l_systemview_transfer_planner_plan_approach(lua_State *l)
 {
 	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
 	const Body *target = LuaObject<Body>::GetFromLua(2);
 	const int burns = LuaPull<int>(l, 3);
+	const double standOff = luaL_optnumber(l, 4, 0.0);
 	std::string error;
-	if (sv->GetTransferPlanner()->PlanApproach(target, burns, error)) {
+	if (sv->GetTransferPlanner()->PlanApproach(target, burns, standOff, error)) {
 		LuaPush(l, true);
 		return 1;
 	}

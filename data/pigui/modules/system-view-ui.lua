@@ -746,6 +746,9 @@ local L = {
 	APPROACH_PLAN_TIP = "Add %s after the last planned burn, timed for the least Δv.\nA planet or moon is passed at two of its radii from its centre.",
 	APPROACH_ONE_BURN = "1 burn",
 	APPROACH_TWO_BURNS = "2 burns",
+	APPROACH_STAND_OFF = "Stand-off",
+	APPROACH_STAND_OFF_FORMAT = "%.1f km behind",
+	APPROACH_STAND_OFF_TIP = "Meet a ship or station this far behind it, on its own orbit, instead of at its centre. After a rendezvous the ship keeps this gap, since both fly the same orbit. Planets and moons are always passed at two of their radii from the centre.",
 	APPROACH_RESULT = "%s in %s",
 	APPROACH_ALTITUDE = "%s above the surface",
 	APPROACH_IMPACT = "Impact with the target in %s",
@@ -873,6 +876,25 @@ end
 local approachBurns = 1
 local approachError, approachErrorTarget = nil, nil
 
+-- the stand-off: how far behind a ship or station, on its own orbit, the
+-- approach ends - in metres, persisted in the game settings. GetConfigInt
+-- answers 0 for a missing key, so the value is stored biased by 1
+local DEFAULT_STAND_OFF_M = 1000
+local STAND_OFF_MAX_M = 100000
+local approachStandOff = DEFAULT_STAND_OFF_M
+
+local function loadApproachSettings()
+	local stored = Game.GetConfigInt("OrbitPlanner", "approachStandOffM")
+	approachStandOff = (stored > 0) and math.min(stored - 1, STAND_OFF_MAX_M) or DEFAULT_STAND_OFF_M
+end
+
+local function saveApproachSettings()
+	Game.SetConfigInt("OrbitPlanner", "approachStandOffM", approachStandOff + 1)
+	Engine.SaveSettings()
+end
+
+loadApproachSettings()
+
 -- the approach target: the object selected on the map when it has a physical
 -- body in this system, otherwise the navigation target; with where it came from
 local function approachTarget()
@@ -924,9 +946,24 @@ local function drawApproachSection()
 		approachBurns = 2
 	end
 
+	-- the stand-off, in kilometres
+	ui.alignTextToFramePadding()
+	ui.text(L.APPROACH_STAND_OFF)
+	ui.setItemTooltip(L.APPROACH_STAND_OFF_TIP)
+	ui.sameLine()
+	ui.pushItemWidth(ui.getContentRegion().x)
+	local km, changed = ui.incrementDrag("##plannerApproachStandOff", approachStandOff / 1000, 0.1,
+		0, STAND_OFF_MAX_M / 1000, L.APPROACH_STAND_OFF_FORMAT, false)
+	ui.popItemWidth()
+	ui.setItemTooltip(L.APPROACH_STAND_OFF_TIP)
+	if changed then
+		approachStandOff = math.min(math.max(math.floor(km * 1000 + 0.5), 0), STAND_OFF_MAX_M)
+		saveApproachSettings()
+	end
+
 	local planTip = string.format(L.APPROACH_PLAN_TIP, approachBurns == 1 and L.APPROACH_ONE_BURN or L.APPROACH_TWO_BURNS)
 	if ui.button(L.APPROACH_PLAN .. "##plannerApproachPlan", Vector2(width, 0), nil, planTip) then
-		local ok, err = systemView:TransferPlannerPlanApproach(target, approachBurns)
+		local ok, err = systemView:TransferPlannerPlanApproach(target, approachBurns, approachStandOff)
 		approachError = not ok and err or nil
 		approachErrorTarget = targetName
 	end
