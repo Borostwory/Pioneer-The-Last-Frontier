@@ -48,7 +48,7 @@ void main(void)
 
 	float surfaceDist = dist * geosphereInvRadius;
 
-#ifdef ATMOSPHERE
+#if defined(ATMOSPHERE) && (CLOUD_TERRAIN_SHADOWS == 1)
 	// cloud shadows; the clouds themselves are drawn by the cloud pass
 	CloudPlanet clouds = cloudDerive();
 #endif

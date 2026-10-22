@@ -5,6 +5,7 @@ Shader cloud_composite
 
 Texture sampler2D cloudTex
 Texture sampler2D sceneDist
+Texture sampler2D shadowTex
 
 Buffer DrawData binding=1
 Buffer CloudPassData binding=2

@@ -70,7 +70,9 @@
 #define CLOUD_MIN_TRANSMITTANCE 0.02
 
 // Cloud shadows on terrain (0/1)
-#define CLOUD_TERRAIN_SHADOWS 1
+// cloud shadows in the terrain shaders (replaced by the screen-space shadow
+// pass, cloud_shadow.frag, which is far cheaper)
+#define CLOUD_TERRAIN_SHADOWS 0
 // typical angle of a screen pixel [rad], for the terrain shadow detail level
 #define CLOUD_SHADOW_PIXEL_ANGLE 0.0008
 

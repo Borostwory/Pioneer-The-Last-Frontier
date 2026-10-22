@@ -32,6 +32,7 @@ namespace {
 	static const size_t s_cloudTexName = "cloudTex"_hash;
 	static const size_t s_marchTexName = "marchTex"_hash;
 	static const size_t s_historyTexName = "historyTex"_hash;
+	static const size_t s_shadowTexName = "shadowTex"_hash;
 
 	// height map resolution, must match the clamp in cloudTerrainHeight (cloud-march.glsl)
 	static const int HEIGHTMAP_WIDTH = 512;
@@ -51,6 +52,8 @@ namespace {
 	// Settings (config.ini, also in the video settings window):
 	//   CloudsEnabled    0/1
 	//   CloudResolution  0..4: effective cloud resolution 360, 540, 720, 1080 lines, or full
+	//   CloudResolutionSpace  0..4: the same, used when the camera is well above the clouds
+	//   CloudQuality     0..3: raymarch steps (CLOUD_QUALITY_STEPS)
 	//   CloudTemporal    0/1: temporal reconstruction (each frame traces 1 of 4 pixels)
 	//   CloudSoftness    0..2: upsampling kernel radius
 	//   CloudShadows     0 off, 1 soft (cloud-field average), 2 detailed (per cloud)
@@ -61,6 +64,16 @@ namespace {
 	//   CloudSystemSizeLow/Medium/High    25..400 %: size of cloud systems and the gaps between them
 	//   CloudClusteringLow/Medium/High    0..100 %: scattered clouds .. solid decks, at the same cover
 	static const int CLOUD_RESOLUTION_LINES[] = { 360, 540, 720, 1080, 0 };
+	static const int CLOUD_QUALITY_STEPS[] = { 16, 24, 32, 48 };
+
+	// Above the clouds every pixel shows sharp cloud detail, but costs little
+	// (one sample per layer), so the "space" resolution applies there. The
+	// camera counts as above the clouds beyond this multiple of the cloud-top
+	// height (the tropopause, at least SPACE_MIN_TOP_M), and leaves that mode
+	// below the second multiple (hysteresis: switching reallocates buffers).
+	static const double SPACE_ENTER_FACTOR = 3.0;
+	static const double SPACE_LEAVE_FACTOR = 2.0;
+	static const double SPACE_MIN_TOP_M = 8000.0;
 
 	// planets further away than this (planet radii) are not given a pass
 	static const float CLOUD_PASS_MAX_DISTANCE = 2000.0f;
@@ -72,13 +85,13 @@ namespace {
 		float size[4];		 // xy: size of the buffer the composite reads, zw: full size [pixels]
 		float atmos[4];		 // rgb: atmosphere colour, w: softness 0..2
 		float march[4];		 // xy: march buffer size, z: full pixels per history pixel, w: sample footprint [full pixels]
-		float frame[4];		 // xy: checkerboard offset in history pixels (0.5 = block centre), z: history valid (0/1)
+		float frame[4];		 // xy: checkerboard offset in history pixels (0.5 = block centre), z: history valid (0/1), w: apply shadows (0/1)
 		float prevCenter[4]; // previous frame: planet centre in view space [planet radii]
 		float prevAxisX[4];	 // previous frame: planet axes in view space
 		float prevAxisY[4];
 		float prevAxisZ[4];
 		float prevProj[4];	 // previous frame: x P[0], y P[5]
-		float histSize[4];	 // xy: history buffer size
+		float histSize[4];	 // xy: history buffer size, zw: shadow buffer size
 	};
 	static_assert(sizeof(CloudPassBlock) == 192, "CloudPassBlock must match the std140 CloudPassData block");
 
@@ -102,10 +115,12 @@ namespace {
 		std::unique_ptr<Graphics::RenderTarget> distTarget;		  // full size, R32F view distance
 		std::unique_ptr<Graphics::RenderTarget> marchTarget;	  // half the history size, freshly traced clouds
 		std::unique_ptr<Graphics::RenderTarget> historyTarget[2]; // effective resolution, ping-pong
+		std::unique_ptr<Graphics::RenderTarget> shadowTarget;	  // march size, cloud shadow light factor
 		RefCountedPtr<Graphics::Material> distMaterial;
 		RefCountedPtr<Graphics::Material> passMaterial;
 		RefCountedPtr<Graphics::Material> reprojectMaterial;
 		RefCountedPtr<Graphics::Material> compositeMaterial;
+		RefCountedPtr<Graphics::Material> shadowMaterial;
 		std::unique_ptr<Graphics::VertexArray> triangle;
 		int width = 0, height = 0, divisor = 0;
 		int histW = 0, histH = 0, marchW = 0, marchH = 0;
@@ -129,6 +144,7 @@ namespace {
 	static bool s_warnedMSAA = false;
 	static TemporalState s_temporal;
 	static Uint64 s_frameIndex = 0;
+	static bool s_spaceMode = false;
 
 	// cloud clock
 	static const Game *s_clockGame = nullptr;
@@ -269,9 +285,9 @@ namespace {
 		return Pi::config->Int("CloudsEnabled", 1) != 0;
 	}
 
-	int ChooseDivisor(int height)
+	int ChooseDivisor(int height, bool space)
 	{
-		const int level = Clamp(Pi::config->Int("CloudResolution", 1), 0, 4);
+		const int level = space ? Clamp(Pi::config->Int("CloudResolutionSpace", 4), 0, 4) : Clamp(Pi::config->Int("CloudResolution", 1), 0, 4);
 		const int lines = CLOUD_RESOLUTION_LINES[level];
 		if (lines <= 0)
 			return 1;
@@ -279,9 +295,9 @@ namespace {
 		return Clamp(div, 1, 8);
 	}
 
-	void EnsurePassResources(Graphics::Renderer *r, int width, int height)
+	void EnsurePassResources(Graphics::Renderer *r, int width, int height, bool space)
 	{
-		const int divisor = ChooseDivisor(height);
+		const int divisor = ChooseDivisor(height, space);
 		if (s_pass && s_pass->width == width && s_pass->height == height && s_pass->divisor == divisor)
 			return;
 
@@ -304,6 +320,7 @@ namespace {
 			s_pass->passMaterial.Reset(r->CreateMaterial("cloud_pass", litDesc, rsd, vfmt));
 
 			s_pass->reprojectMaterial.Reset(r->CreateMaterial("cloud_reproject", plainDesc, rsd, vfmt));
+			s_pass->shadowMaterial.Reset(r->CreateMaterial("cloud_shadow", litDesc, rsd, vfmt));
 
 			Graphics::RenderStateDesc blendRsd = rsd;
 			blendRsd.blendMode = Graphics::BLEND_ALPHA_PREMULT;
@@ -334,6 +351,7 @@ namespace {
 		const Graphics::RenderTargetDesc histDesc(Uint16(pass.histW), Uint16(pass.histH), Graphics::TEXTURE_RGBA_8888, Graphics::TEXTURE_NONE, false, 0);
 		for (auto &t : pass.historyTarget)
 			t.reset(r->CreateRenderTarget(histDesc));
+		pass.shadowTarget.reset(r->CreateRenderTarget(marchDesc));
 		s_temporal.valid = false;
 
 		Log::Info("Cloud pass: {}x{} effective cloud resolution ({}x{} traced per frame) for {}x{} screen\n",
@@ -412,7 +430,8 @@ namespace PlanetClouds {
 
 		SetVec4(out.tuneDensity, LayerPercent("CloudDensityLow", 0, 300), LayerPercent("CloudDensityMedium", 0, 300), LayerPercent("CloudDensityHigh", 0, 300),
 			Clamp(Pi::config->Int("CloudShadows", 2), 0, 2));
-		SetVec4(out.tuneSize, LayerPercent("CloudSizeLow", 25, 1600), LayerPercent("CloudSizeMedium", 25, 1600), LayerPercent("CloudSizeHigh", 25, 1600), 0.0);
+		SetVec4(out.tuneSize, LayerPercent("CloudSizeLow", 25, 1600), LayerPercent("CloudSizeMedium", 25, 1600), LayerPercent("CloudSizeHigh", 25, 1600),
+			CLOUD_QUALITY_STEPS[Clamp(Pi::config->Int("CloudQuality", 2), 0, 3)]);
 		SetVec4(out.tuneTransparency, LayerPercent("CloudTransparencyLow", 25, 1000), LayerPercent("CloudTransparencyMedium", 25, 1000), LayerPercent("CloudTransparencyHigh", 25, 1000), 0.0);
 		SetVec4(out.tuneSystem, LayerPercent("CloudSystemSizeLow", 25, 400), LayerPercent("CloudSystemSizeMedium", 25, 400), LayerPercent("CloudSystemSizeHigh", 25, 400), 0.0);
 		SetVec4(out.tuneCluster, Clamp(Pi::config->Int("CloudClusteringLow", 75), 0, 100) / 100.0,
@@ -473,8 +492,24 @@ namespace PlanetClouds {
 
 		const int width = mainDesc.width;
 		const int height = mainDesc.height;
-		EnsurePassResources(r, width, height);
+
+		// above the clouds of the nearest planet: the "space" resolution
+		{
+			const PassEntry *nearest = &s_queue[0];
+			for (const PassEntry &e : s_queue)
+				if (e.center.Length() < nearest->center.Length())
+					nearest = &e;
+			const double radius = nearest->cloudData.geom[0];
+			const double alt = (double(nearest->center.Length()) - 1.0) * radius;
+			const double top = std::max(double(nearest->cloudData.geom[1]), SPACE_MIN_TOP_M);
+			if (!s_spaceMode && alt > SPACE_ENTER_FACTOR * top)
+				s_spaceMode = true;
+			else if (s_spaceMode && alt < SPACE_LEAVE_FACTOR * top)
+				s_spaceMode = false;
+		}
+		EnsurePassResources(r, width, height, s_spaceMode);
 		PassResources &pass = *s_pass;
+		const bool shadows = Pi::config->Int("CloudShadows", 2) > 0;
 
 		// restores the render target, viewport and matrices on scope exit
 		Graphics::Renderer::StateTicket ticket(r);
@@ -484,7 +519,7 @@ namespace PlanetClouds {
 
 		CloudPassBlock passData {};
 		const int softness = Clamp(Pi::config->Int("CloudSoftness", 1), 0, 2);
-		SetVec4(passData.histSize, pass.histW, pass.histH, 0.0, 0.0);
+		SetVec4(passData.histSize, pass.histW, pass.histH, pass.marchW, pass.marchH);
 
 		// the nearest planet (largest on screen) gets temporal reconstruction
 		int temporalEntry = -1;
@@ -513,7 +548,9 @@ namespace PlanetClouds {
 			const bool temporal = int(i) == temporalEntry;
 
 			SetVec4(passData.center, e.center.x, e.center.y, e.center.z, 0.0);
-			SetVec4(passData.atmos, e.atmosColor.r, e.atmosColor.g, e.atmosColor.b, softness);
+			// softening hides upscaling; a buffer at screen resolution needs none
+			const int compositeDivisor = temporal ? pass.divisor : 2 * pass.divisor;
+			SetVec4(passData.atmos, e.atmosColor.r, e.atmosColor.g, e.atmosColor.b, compositeDivisor > 1 ? softness : 0);
 
 			if (temporal) {
 				// trace one pixel of every 2x2 block, rotating over 4 frames
@@ -522,7 +559,7 @@ namespace PlanetClouds {
 					s_temporal.lastFrame + 1 == s_frameIndex &&
 					(e.center - s_temporal.center).Length() < HISTORY_MAX_CENTER_JUMP &&
 					std::abs(s_cloudTime - s_temporal.cloudTime) < HISTORY_MAX_CLOCK_JUMP;
-				SetVec4(passData.frame, off[0], off[1], historyValid ? 1.0 : 0.0, 0.0);
+				SetVec4(passData.frame, off[0], off[1], historyValid ? 1.0 : 0.0, shadows ? 1.0 : 0.0);
 				SetVec4(passData.march, pass.marchW, pass.marchH, pass.divisor, pass.divisor);
 				SetVec4(passData.prevCenter, s_temporal.center.x, s_temporal.center.y, s_temporal.center.z, 0.0);
 				std::copy(s_temporal.axisX, s_temporal.axisX + 4, passData.prevAxisX);
@@ -531,7 +568,7 @@ namespace PlanetClouds {
 				SetVec4(passData.prevProj, s_temporal.proj[0], s_temporal.proj[1], 0.0, 0.0);
 			} else {
 				// no history: trace the centre of every 2x2 block
-				SetVec4(passData.frame, 0.5, 0.5, 0.0, 0.0);
+				SetVec4(passData.frame, 0.5, 0.5, 0.0, shadows ? 1.0 : 0.0);
 				SetVec4(passData.march, pass.marchW, pass.marchH, pass.divisor, 2.0 * pass.divisor);
 			}
 
@@ -544,6 +581,17 @@ namespace PlanetClouds {
 			pass.passMaterial->SetTexture(s_sceneDistName, pass.distTarget->GetColorTexture());
 			pass.passMaterial->SetTexture(s_cloudHeightTexName, e.heightTex.Get());
 			r->DrawBuffer(pass.triangle.get(), pass.passMaterial.Get());
+
+			// 2b. cloud shadows on the scene (applied by the composite)
+			if (shadows) {
+				r->SetRenderTarget(pass.shadowTarget.get());
+				r->SetViewport({ 0, 0, pass.marchW, pass.marchH });
+				pass.shadowMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
+				pass.shadowMaterial->SetBufferDynamic(s_cloudDataName, &e.cloudData);
+				pass.shadowMaterial->SetTexture(s_sceneDistName, pass.distTarget->GetColorTexture());
+				pass.shadowMaterial->SetTexture(s_cloudHeightTexName, e.heightTex.Get());
+				r->DrawBuffer(pass.triangle.get(), pass.shadowMaterial.Get());
+			}
 
 			Graphics::Texture *cloudTex = pass.marchTarget->GetColorTexture();
 			if (temporal) {
@@ -585,6 +633,7 @@ namespace PlanetClouds {
 			pass.compositeMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
 			pass.compositeMaterial->SetTexture(s_cloudTexName, cloudTex);
 			pass.compositeMaterial->SetTexture(s_sceneDistName, pass.distTarget->GetColorTexture());
+			pass.compositeMaterial->SetTexture(s_shadowTexName, pass.shadowTarget->GetColorTexture());
 			r->DrawBuffer(pass.triangle.get(), pass.compositeMaterial.Get());
 		}
 

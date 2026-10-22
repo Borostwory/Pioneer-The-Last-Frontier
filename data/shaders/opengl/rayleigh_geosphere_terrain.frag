@@ -58,9 +58,9 @@ void main(void)
 #endif
 
 #ifdef ATMOSPHERE
+#if (CLOUD_TERRAIN_SHADOWS == 1) && (NUM_LIGHTS > 0)
 	// cloud shadows; the clouds themselves are drawn by the cloud pass
 	CloudPlanet clouds = cloudDerive();
-#if (CLOUD_TERRAIN_SHADOWS == 1) && (NUM_LIGHTS > 0)
 	// lighting is per-vertex in this shader; dim the direct-light share only
 	vec3 surfPos = varyingEyepos * geosphereInvRadius - geosphereCenter;
 	float shadow = cloudShadowTerrain(clouds, surfPos, normalize(uLight[0].position.xyz), max(dist * CLOUD_SHADOW_PIXEL_ANGLE, 1.0));

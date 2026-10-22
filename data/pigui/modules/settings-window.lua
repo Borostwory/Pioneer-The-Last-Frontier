@@ -281,9 +281,24 @@ local function showVideoOptions()
 		local cloudResolutionLabels = { "Low (360 lines)", "Medium (540 lines)", "High (720 lines)", "Very high (1080 lines)", "Full screen resolution" }
 		local cloudResolution = Engine.SettingsGetInt("CloudResolution")
 		c,cloudResolution = combo("Cloud resolution", cloudResolution, cloudResolutionLabels,
-			"Resolution the clouds are rendered at before being scaled to the screen. Higher is sharper and slower.")
+			"Resolution the clouds are rendered at near the ground and in the air, before being scaled to the screen. Higher is sharper and slower.")
 		if c then
 			Engine.SettingsSetInt("CloudResolution", cloudResolution)
+		end
+
+		local cloudResolutionSpace = Engine.SettingsGetInt("CloudResolutionSpace")
+		c,cloudResolutionSpace = combo("Cloud resolution from space", cloudResolutionSpace, cloudResolutionLabels,
+			"Resolution used when the camera is high above the clouds (from about 40 km on Earth). Seen from above, clouds are cheap to draw but show fine detail, so a higher resolution than near the ground is affordable.")
+		if c then
+			Engine.SettingsSetInt("CloudResolutionSpace", cloudResolutionSpace)
+		end
+
+		local cloudQualityLabels = { "Low (16 steps)", "Medium (24 steps)", "High (32 steps)", "Very high (48 steps)" }
+		local cloudQuality = Engine.SettingsGetInt("CloudQuality")
+		c,cloudQuality = combo("Cloud quality", cloudQuality, cloudQualityLabels,
+			"Samples taken along each view ray through the clouds near the ground and in the air. Fewer is faster; the difference is mostly in fine detail close to the clouds.")
+		if c then
+			Engine.SettingsSetInt("CloudQuality", cloudQuality)
 		end
 
 		local cloudTemporal = Engine.SettingsGetInt("CloudTemporal") ~= 0
@@ -304,7 +319,7 @@ local function showVideoOptions()
 		local cloudShadowLabels = { "Off", "Soft", "Detailed" }
 		local cloudShadows = Engine.SettingsGetInt("CloudShadows")
 		c,cloudShadows = combo("Cloud shadows", cloudShadows, cloudShadowLabels,
-			"Shadows of the clouds on the ground. Soft: dimming under cloud fields, almost free. Detailed: the shadow of each cloud, costs some GPU time when close to the ground.")
+			"Shadows of the clouds on the ground, cities and ships. Soft: dimming under cloud fields. Detailed: the shadow of each cloud. Both are computed at the cloud resolution, so they cost little.")
 		if c then
 			Engine.SettingsSetInt("CloudShadows", cloudShadows)
 		end

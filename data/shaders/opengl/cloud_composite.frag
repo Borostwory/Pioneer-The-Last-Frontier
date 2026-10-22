@@ -6,12 +6,20 @@
 // this pixel's get the weight, so clouds do not bleed across the silhouettes
 // of buildings, ships or mountains. Softness (cloudPassAtmos.w, 0-2) widens
 // the Gaussian kernel to hide the reduced resolution.
+// Cloud shadows (cloudPassFrame.w = 1): the scene under this pixel is
+// darkened by the shadow buffer through the same blend: dst * (1 - a') with
+// 1 - a' = (1 - a) * light.
 
 #include "attributes.glsl"
 #include "cloud-pass-uniforms.glsl"
 
 uniform sampler2D cloudTex;
 uniform sampler2D sceneDist;
+uniform sampler2D shadowTex;
+
+// share of the scene's light that cloud shadows can remove (the rest is sky
+// light and haze)
+#define CLOUD_SHADOW_STRENGTH 0.75
 
 out vec4 frag_color;
 
@@ -55,4 +63,10 @@ void main(void)
 		}
 	}
 	frag_color = wsum > 1e-4 ? sum / wsum : best;
+
+	if (cloudPassFrame.w > 0.5 && z < 1e20) {
+		float light = texture(shadowTex, gl_FragCoord.xy / cloudPassSize.zw).r;
+		float m = mix(1.0, light, CLOUD_SHADOW_STRENGTH);
+		frag_color.a = 1.0 - (1.0 - frag_color.a) * m;
+	}
 }

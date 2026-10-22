@@ -747,7 +747,9 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 				CloudResult m = res;
 				// enough steps to resolve the layer geometry and its optical depth
 				float tauEst = cloudSigmaMax(li, 1.0) * ly.sigmaScale * marchLen;
-				int steps = int(clamp(max(marchLen / (0.15 * max(d, 1.0)), 1.5 * tauEst), 8.0, float(CLOUD_STEPS)));
+				// at most the quality setting's step count (cloudTuneSize.w), at most CLOUD_STEPS
+				float maxSteps = cloudTuneSize.w > 0.5 ? min(cloudTuneSize.w, float(CLOUD_STEPS)) : float(CLOUD_STEPS);
+				int steps = int(clamp(max(marchLen / (0.15 * max(d, 1.0)), 1.5 * tauEst), 8.0, maxSteps));
 				float ds = marchLen / float(steps);
 				float dt = ds / cp.a;
 				for (int i = 0; i < CLOUD_STEPS; i++) {
