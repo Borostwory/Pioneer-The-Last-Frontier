@@ -319,7 +319,7 @@ local function showVideoOptions()
 			local key = "CloudDensity" .. layer.key
 			local value = Engine.SettingsGetInt(key)
 			c,value = slider("Cover, " .. layer.label, value, 0, 300,
-				"How much of the sky this cloud layer covers. 100 = physically derived cover, 0 = layer off. Approaches overcast gradually.")
+				"Global cover: the share of the whole planet this layer covers. 100 = physically derived (Earth: low ~40%, medium ~27%, high ~30%), 50 = about half of that, 0 = layer off. Above 100 it approaches overcast gradually.")
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
@@ -329,7 +329,7 @@ local function showVideoOptions()
 			local key = "CloudSize" .. layer.key
 			local value = Engine.SettingsGetInt(key)
 			c,value = slider("Size, " .. layer.label, value, 25, 400,
-				"Size of the individual clouds in this layer. 100 = default size.")
+				"Size of the individual clouds in this layer. 100 = default size. Does not change the cover.")
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
@@ -339,7 +339,7 @@ local function showVideoOptions()
 			local key = "CloudSystemSize" .. layer.key
 			local value = Engine.SettingsGetInt(key)
 			c,value = slider("System size, " .. layer.label, value, 25, 400,
-				"Size of the cloud systems (groups of clouds) and of the clear areas between them. Does not change the total cover.")
+				"Size of the cloud systems (groups of clouds) and of the clear areas between them. Does not change the cover.")
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
@@ -349,7 +349,7 @@ local function showVideoOptions()
 			local key = "CloudClustering" .. layer.key
 			local value = Engine.SettingsGetInt(key)
 			c,value = slider("Clustering, " .. layer.label, value, 0, 100,
-				"At the same cover: 0 = clouds scattered evenly over the sky, 100 = few solid cloud decks with large clear areas between them.")
+				"Local cover: how much of the sky is cloud where this layer has clouds. Does not change the global cover. 0 = broken clouds spread over most of the planet (~40% of the sky inside them), 100 = nearly overcast decks with large clear areas between them (~85-90%).")
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
@@ -359,7 +359,7 @@ local function showVideoOptions()
 			local key = "CloudTransparency" .. layer.key
 			local value = Engine.SettingsGetInt(key)
 			c,value = slider("Transparency, " .. layer.label, value, 25, 1000,
-				"How much light passes through the clouds of this layer. 100 = physically derived, 200 = half as thick, 50 = twice as thick.")
+				"How much light passes through the clouds of this layer. 100 = physically derived, 200 = half as thick, 50 = twice as thick. Does not change the cover, but very high values make thin clouds (cirrus) hard to see.")
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end

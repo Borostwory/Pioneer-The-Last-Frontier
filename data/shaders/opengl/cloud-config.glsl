@@ -35,13 +35,16 @@
 // Samples through the cirrus sheet per view ray (1-4)
 #define CLOUD_CIRRUS_SAMPLES 3
 
-// Cirrus fibre threshold (the fibre noise averages 0.22, sd 0.15): raise LO
-// for thinner, sparser fibres. FAR_FILL is the measured mean fill inside
-// wisp groups, used where the fibres are too thin to resolve; update it
-// when changing LO/HI.
-#define CLOUD_CIRRUS_FIB_LO 0.3
-#define CLOUD_CIRRUS_FIB_HI 0.52
-#define CLOUD_CIRRUS_FAR_FILL 0.24
+// Weight of the wisp groups / streak bands against the fibres in the cirrus
+// pattern, and the measured distribution (mean, sd) of the combined field
+#define CLOUD_CIRRUS_WISP_WEIGHT 1.5
+#define CLOUD_CIRRUS_G_MEAN 0.22
+#define CLOUD_CIRRUS_G_SD 0.193
+
+// Mean density inside a cloud cell, and the mean of the height profiles;
+// used to give unresolved (distant / tiny) cells the same transparency
+#define CLOUD_CELL_DENSITY 0.8
+#define CLOUD_PROF_MEAN 0.45
 
 // Cells smaller than this many pixels on screen fade to the mean density of
 // the field (avoids speckled "freckle" clouds seen from far away)

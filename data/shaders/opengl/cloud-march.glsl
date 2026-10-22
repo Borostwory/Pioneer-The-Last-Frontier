@@ -125,8 +125,9 @@ vec3 cloudCoverage(CloudPlanet cp, int li, vec3 pAdv, vec3 pfDir, float lat, vec
 	float c = clamp(cp.L[li].coverage * cloudLatFactor(cp, li, lat, pfDir, sunPf) * CLOUD_COVERAGE_SCALE, 0.0, 1.0);
 	float fill = max(cp.L[li].fillBase, c);
 	float rg = c / max(fill, 1e-3);
-	// soft edges, narrowing as the layer approaches overcast
-	float e = 0.3 * clamp(2.0 * (1.0 - rg) + 0.1, 0.1, 1.0);
+	// soft edges, narrowing as the layer approaches overcast; never wider than
+	// the system itself, or small systems would be all edge and lose cover
+	float e = min(0.3 * clamp(2.0 * (1.0 - rg) + 0.1, 0.1, 1.0), rg);
 	float st = li == 0 ? max(smoothstep(0.85, 0.95, c), smoothstep(0.975, 0.995, U)) : 0.0;
 	return vec3(smoothstep(1.0 - rg - 0.5 * e, 1.0 - rg + 0.5 * e, U), st, fill);
 }
@@ -155,7 +156,9 @@ float cloudSlabAlt(CloudLayer ly, int li)
 
 float cloudSigmaMax(int li, float st)
 {
-	if (li == 0) return mix(0.025, 0.10, st);
+	// stratus: half the envelope, so twice the extinction keeps the optical
+	// depth continuous with stratocumulus as cover approaches overcast
+	if (li == 0) return mix(0.025, 0.05, st);
 	if (li == 1) return 0.02;
 	return 0.0005; // cirrus: mostly translucent veils, vertical optical depth ~0.1-0.6
 }
@@ -201,19 +204,17 @@ vec3 cloudCirrusDomain(CloudPlanet cp, vec3 p, vec3 off)
 	return q;
 }
 
-// Large-scale cirrus structure, 0..1: broad streak bands along the wind
-// (~250 km across) seen from afar, and groups of wisps within them
-// (~25 km across) closer in. fp: pixel footprint [m].
-float cloudCirrusWisps(CloudPlanet cp, vec3 q, float fp)
+// Large-scale cirrus structure: broad streak bands along the wind (~250 km
+// across) seen from afar, and groups of wisps within them (~25 km across)
+// closer in. Raw fBm value, roughly normal(0.5, 0.09). fp: pixel footprint [m].
+float cloudCirrusWispField(CloudPlanet cp, vec3 q, float fp)
 {
-	// clustering 0.5 = default; higher = fewer, denser wisp groups
-	float shift = (clamp(cloudTuneCluster.z, 0.0, 1.0) - 0.5) * 0.3;
-	float bands = smoothstep(0.35 + shift, 0.65 + shift, cloudFbm(vec3(q.xy * 0.08, q.z * 0.006) + vec3(9.7), 2, 1.0));
+	float bands = cloudFbm(vec3(q.xy * 0.08, q.z * 0.006) + vec3(9.7), 2, 1.0);
 	float groupAcross = CLOUD_CIRRUS_WIDTH_M * cp.cirrusScale / 0.06;
 	float nearW = smoothstep(1.5, 4.0, groupAcross / max(fp, 1.0));
 	if (nearW <= 0.0) return bands;
-	float groups = smoothstep(0.38 + shift, 0.62 + shift, cloudFbm(vec3(q.xy * 0.6, q.z * 0.06) + vec3(3.1), 2, 1.0));
-	return mix(bands, clamp(bands * groups * 2.0, 0.0, 1.0), nearW);
+	float groups = cloudFbm(vec3(q.xy * 0.6, q.z * 0.06) + vec3(3.1), 2, 1.0);
+	return mix(bands, 0.5 * (bands + groups), nearW);
 }
 
 // number of resolvable fibre octaves for a pixel footprint fp [m] (0..3):
@@ -245,7 +246,23 @@ float cloudCirrusFibres(vec3 q, float oct)
 	return norm > 0.0 ? sum / norm * (0.35 + 0.65 * bundle) : 0.0;
 }
 
+// Density of a field of unresolved cells (too small for the pixel): a
+// uniform medium with the same mean transmittance as the broken field, so
+// the visible amount of cloud does not change with distance or cell size.
+// fLoc: local cloud area fraction, d: layer thickness [m].
+float cloudUnresolvedRho(CloudPlanet cp, int li, float st, float fLoc, float prof, float d)
+{
+	float sig = cloudSigmaMax(li, st) * cp.L[li].sigmaScale;
+	float colTau = sig * CLOUD_CELL_DENSITY * CLOUD_PROF_MEAN * d; // vertical optical depth through a cell
+	float tEff = 1.0 - fLoc + fLoc * exp(-colTau);
+	return prof * -log(max(tEff, 1e-4)) / max(sig * CLOUD_PROF_MEAN * d, 1e-6);
+}
+
 // Density at a point given its column properties.
+// Whether a cloud exists in a column is decided by a horizontal, uniformly
+// distributed noise against the local cloud fraction, so the covered area
+// equals the requested cover exactly; the height profile, domed tops and
+// erosion only shape the clouds, they never remove them.
 // Returns x = density 0..1, y = stratus weight, z = height in layer 0..1.
 vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float hTerr,
 	float t, vec3 off, vec4 col, float lod, float detailW, bool full, float fp)
@@ -268,57 +285,75 @@ vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat,
 	if (floorF <= 0.0) return vec3(0.0, st, h);
 
 	float prof = cloudProfile(li, h, st);
+	// local cloud area fraction: inside-system weight x fraction within a system
+	float fLoc = cLoc * mix(col.w, 1.0, st);
+	// cheap path (slabs, shadows, debug): area fraction x profile
+	if (!full) return vec3(fLoc * prof * floorF, st, h);
 
 	if (li == 2) {
-		// cirrus: fibrous streaks along the wind, with their own distance LOD
+		// cirrus: fibrous streaks along the wind
 		vec3 p = cloudAdvect(cp, li, pfDir, lat, t);
 		// fall streaks: the lower, falling ice trails the wind (cirrus uncinus hooks)
 		p = cloudRotY(p, (1.0 - h) * CLOUD_CIRRUS_FALL_M * cp.cirrusScale / cp.a);
 		vec3 q = cloudCirrusDomain(cp, p, off);
-		float wisps = cloudCirrusWisps(cp, q, fp);
-		// unresolved fibres (far away, slabs, shadows) use their mean fill
-		float oct = full ? cloudCirrusOctaves(cp, fp) : 0.0;
-		float fill = CLOUD_CIRRUS_FAR_FILL;
-		if (oct > 0.0)
-			fill = mix(CLOUD_CIRRUS_FAR_FILL, smoothstep(CLOUD_CIRRUS_FIB_LO, CLOUD_CIRRUS_FIB_HI, cloudCirrusFibres(q, oct) + 0.25 * (wisps - 0.5)), clamp(oct, 0.0, 1.0));
-		return vec3(cLoc * prof * wisps * fill * floorF, st, h);
+		float wraw = cloudCirrusWispField(cp, q, fp);
+		// unresolved fibres: a haze that keeps the wisp structure and the mean transmittance
+		float rhoU = cloudUnresolvedRho(cp, li, st, fLoc, prof, d) * clamp(1.0 + 4.0 * (wraw - 0.5), 0.0, 2.0);
+		float oct = cloudCirrusOctaves(cp, fp);
+		if (oct <= 0.0) return vec3(rhoU * floorF, st, h);
+		float U = cloudUniformize(cloudCirrusFibres(q, oct) + CLOUD_CIRRUS_WISP_WEIGHT * (wraw - 0.5), CLOUD_CIRRUS_G_MEAN, CLOUD_CIRRUS_G_SD);
+		float thr = 1.0 - fLoc;
+		float core = clamp((U - thr) / max(fLoc, 1e-3), 0.0, 1.0);
+		float rhoR = smoothstep(thr - 0.03, thr + 0.03, U) * prof * (0.6 + 0.4 * core) / 0.8 * CLOUD_CELL_DENSITY;
+		return vec3(mix(rhoU, rhoR, clamp(oct, 0.0, 1.0)) * floorF, st, h);
 	}
 
-	// cells smaller than a few pixels would only show as speckles: fade the
-	// shape noise to the mean density of the field instead
-	float shapeFade = full ? smoothstep(CLOUD_MIN_CELL_PIXELS, 3.0 * CLOUD_MIN_CELL_PIXELS, ly.featureSize / max(fp, 1.0)) : 0.0;
-	// cheap / unresolved density: the cloud fraction times the mean in-cloud density
-	float cellFill = mix(col.w, 1.0, st);
-	float meanRho = cLoc * cellFill * prof * 0.7;
-	if (shapeFade <= 0.0) return vec3((full ? meanRho : cLoc * cellFill * prof) * floorF, st, h);
+	// cells smaller than a few pixels would only show as speckles: use the
+	// transmittance-equivalent uniform medium instead
+	float shapeFade = smoothstep(CLOUD_MIN_CELL_PIXELS, 3.0 * CLOUD_MIN_CELL_PIXELS, ly.featureSize / max(fp, 1.0));
+	float rhoU = cloudUnresolvedRho(cp, li, st, fLoc, prof, d);
+	if (shapeFade <= 0.0) return vec3(rhoU * floorF, st, h);
 
-	// shape noise per genus, advected with the wind
+	// cell noise per genus, advected with the wind (horizontal only, so a
+	// cell spans the whole column)
 	vec3 p = cloudAdvect(cp, li, pfDir, lat, t);
 	vec3 q = p * (cp.a / ly.featureSize) + off;
-	float shape;
+	float U;
 	float ero;
+	float sheetMod = 1.0;
 	if (li == 0) {
 		vec3 qs = q * vec3(1.0, 1.5, 1.0); // slight roll organisation along the zonal wind
-		float sc = st < 0.999 ? cloudUniformize(cloudPerlinWorley(qs, CLOUD_SHAPE_OCTAVES, lod), CLOUD_PW_MEAN, CLOUD_PW_SD) : 0.0;
-		float sts = st > 0.001 ? cloudFbm(q * 0.15, 2, lod) * 0.4 + 0.6 : 0.0;
-		shape = mix(sc, sts, st);
+		U = st < 0.999 ? cloudUniformize(cloudPerlinWorley(qs, CLOUD_SHAPE_OCTAVES, lod), CLOUD_PW_MEAN, CLOUD_PW_SD) : 1.0;
+		// stratus: a continuous sheet with gentle density variation
+		if (st > 0.001)
+			sheetMod = mix(1.0, cloudFbm(q * 0.15, 2, lod) * 0.4 + 0.6, st);
 		ero = mix(0.4, 0.1, st);
 	} else {
 		vec3 qs = q * vec3(1.0, 0.8, 1.0); // rows across the wind
-		shape = cloudUniformize(cloudBillowFbm(qs, 3, lod), CLOUD_BILLOW_MEAN, CLOUD_BILLOW_SD);
+		U = cloudUniformize(cloudBillowFbm(qs, 3, lod), CLOUD_BILLOW_MEAN, CLOUD_BILLOW_SD);
 		ero = 0.45;
 	}
 
-	// inside a cloud system the cells fill the clustering fraction of the
-	// area (stratus fills all of it)
-	float cShape = cLoc * cellFill;
-	float rho = clamp(cloudRemap(shape * prof, 1.0 - cShape, 1.0, 0.0, 1.0), 0.0, 1.0) * cLoc;
-	if (rho > 0.0 && detailW > 0.01) {
-		// billowy detail erodes the edges into rounded lumps
+	// existence: U > 1 - fLoc covers exactly fLoc of the area
+	float thr = 1.0 - fLoc;
+	float edge = smoothstep(thr - 0.03, thr + 0.03, U);
+	if (edge <= 0.0) return vec3(rhoU * (1.0 - shapeFade) * floorF, st, h);
+	// rounded cells: toward the rim the top sinks and the base rises, and the
+	// rim thins, so cells are lens-shaped rather than prisms; the full cell
+	// area is kept at mid height, so the covered area is unchanged
+	float core = clamp((U - thr) / max(fLoc, 1e-3), 0.0, 1.0);
+	float sc = sqrt(core);
+	float topH = mix(mix(0.5, 1.0, sc), 1.0, st);
+	float botH = 0.4 * (1.0 - core) * (1.0 - st); // creases between merged cells
+	float shape = (1.0 - smoothstep(topH - 0.2, topH, h)) * smoothstep(botH, botH + 0.1, h);
+	float rim = mix(mix(0.25, 1.0, smoothstep(0.0, 0.3, core)), 1.0, st);
+	float rho = edge * shape * rim * prof * sheetMod;
+	if (detailW > 0.01) {
+		// billowy detail roughens the cells, strongest toward their edges
 		float det = cloudUniformize(cloudBillowFbm(q * 4.0 + vec3(3.1), CLOUD_DETAIL_OCTAVES, detailW), CLOUD_BILLOW_MEAN, CLOUD_BILLOW_SD);
-		rho = clamp(cloudRemap(rho, det * ero * detailW, 1.0, 0.0, 1.0), 0.0, 1.0);
+		rho *= 1.0 - ero * detailW * det * (1.0 - core);
 	}
-	return vec3(mix(meanRho, rho, shapeFade) * floorF, st, h);
+	return vec3(mix(rhoU, rho, shapeFade) * floorF, st, h);
 }
 
 // Density blended over both time phases (column evaluated in place).

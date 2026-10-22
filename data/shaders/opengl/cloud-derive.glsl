@@ -379,7 +379,7 @@ CloudPlanet cloudDerive()
 	// cloud fraction inside a cloud system: 0.35 (scattered) .. 0.95 (solid deck)
 	cp.L[0].fillBase = mix(0.35, 0.95, clamp(cloudTuneCluster.x, 0.0, 1.0));
 	cp.L[1].fillBase = mix(0.35, 0.95, clamp(cloudTuneCluster.y, 0.0, 1.0));
-	cp.L[2].fillBase = 1.0; // cirrus: clustering acts on its wisp groups instead
+	cp.L[2].fillBase = mix(0.15, 0.85, clamp(cloudTuneCluster.z, 0.0, 1.0));
 
 	// normalise the latitude factor to an area-weighted mean of 1 (9-point quadrature)
 	for (int l = 0; l < 3; l++) {
