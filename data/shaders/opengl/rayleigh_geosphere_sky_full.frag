@@ -10,6 +10,13 @@ uniform int NumShadows;
 uniform sampler2D densityLUT;
 uniform sampler2D scatterLUT;
 
+#define CLOUD_USE_SCATTER_LUT
+#include "cloud-config.glsl"
+#include "cloud-uniforms.glsl"
+#include "cloud-noise.glsl"
+#include "cloud-derive.glsl"
+#include "cloud-march.glsl"
+
 in vec4 varyingEyepos;
 in vec4 vertexColor;
 
@@ -53,5 +60,10 @@ void main(void)
 
 	vec4 color = vec4(specularHighlight.rgb, 1.0) * 20;
 
-	frag_color = toSRGB(1 - exp(-color));
+	// premultiplied output, see geosphere_sky.frag
+	vec3 atmos = toSRGB(1 - exp(-color.rgb));
+	vec3 camPos = -geosphereCenter;
+	CloudResult clouds = cloudSkyClouds(camPos, eyenorm, NumShadows);
+	frag_color = vec4(cloudToneMap(clouds.inscatter) + clouds.transmittance * atmos, 1.0 - clouds.transmittance);
+	frag_color = cloudSkyDebug(frag_color, camPos, eyenorm);
 }

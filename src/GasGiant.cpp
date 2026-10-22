@@ -7,6 +7,7 @@
 #include "Game.h"
 #include "GameConfig.h"
 #include "Pi.h"
+#include "PlanetClouds.h"
 #include "galaxy/AtmosphereParameters.h"
 #include "graphics/Drawables.h"
 #include "graphics/Frustum.h"
@@ -636,6 +637,9 @@ void GasGiant::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView,
 
 	//Update material parameters
 	SetMaterialParameters(trans, radius, shadows, m_atmosphereParameters);
+	// the sky shaders are shared with GeoSphere and expect cloud data
+	if (m_atmosphereMaterial.Valid())
+		PlanetClouds::SetDisabledCloudData(m_atmosphereMaterial.Get());
 	if (m_atmosphereParameters.atmosDensity > 0.0) {
 		// make atmosphere sphere slightly bigger than required so
 		// that the edges of the pixel shader atmosphere jizz doesn't
@@ -702,9 +706,9 @@ void GasGiant::SetUpMaterials()
 		skyDesc.lighting = true;
 		skyDesc.quality = Graphics::HAS_ECLIPSES;
 
-		// atmosphere is blended
+		// atmosphere is blended (premultiplied, the sky shaders are shared with GeoSphere)
 		Graphics::RenderStateDesc rsd;
-		rsd.blendMode = Graphics::BLEND_ALPHA_ONE;
+		rsd.blendMode = Graphics::BLEND_ALPHA_PREMULT;
 		rsd.cullMode = Graphics::CULL_NONE;
 		rsd.depthWrite = false;
 

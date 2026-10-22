@@ -25,6 +25,10 @@ class SQuadSplitRequest;
 class SQuadSplitResult;
 class SSingleSplitResult;
 
+namespace PlanetClouds {
+	class CloudHeightMap;
+}
+
 #define NUM_PATCHES 6
 
 class GeoSphere : public BaseSphere {
@@ -119,6 +123,9 @@ private:
 
 	RefCountedPtr<Graphics::Texture> m_texHi;
 	RefCountedPtr<Graphics::Texture> m_texLo;
+
+	// terrain heights for the cloud shaders, baked on first close approach
+	std::unique_ptr<PlanetClouds::CloudHeightMap> m_cloudHeightMap;
 
 	enum EGSInitialisationStage {
 		eBuildFirstPatches = 0,

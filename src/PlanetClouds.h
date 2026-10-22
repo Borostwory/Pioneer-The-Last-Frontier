@@ -1,0 +1,87 @@
+// Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+// Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+#ifndef _PLANETCLOUDS_H
+#define _PLANETCLOUDS_H
+
+#include "JobQueue.h"
+#include "RefCounted.h"
+#include "matrix4x4.h"
+#include "vector3.h"
+
+#include <atomic>
+#include <memory>
+#include <vector>
+
+class SystemBody;
+class Terrain;
+
+namespace Graphics {
+	class Material;
+	class Texture;
+} // namespace Graphics
+
+// Data bridge for the volumetric cloud shaders (data/shaders/opengl/cloud-*.glsl).
+//
+// All cloud science (presence, species, layers, coverage, wind, lighting) runs
+// in GLSL. This code only copies raw SystemBody values, game time and the
+// planet orientation into the CloudData uniform block, and bakes a coarse
+// terrain-height texture used to keep clouds 750 m above the ground.
+namespace PlanetClouds {
+
+	// Must match the CloudData block in cloud-uniforms.glsl (std140, vec4s only)
+	struct CloudDataBlock {
+		float axisX[4]; // xyz: planet +X axis in view space; w: height map state (0 none, 0.5 baking, 1 ready)
+		float axisY[4]; // xyz: planet +Y (spin) axis in view space
+		float axisZ[4]; // xyz: planet +Z axis in view space
+		float atmos[4]; // average temp [K], surface pressure [atm], surface density [kg/m^3], gravity [m/s^2]
+		float geom[4];	// radius [m], tropopause [m], atmosphere top [m], max terrain height [m]
+		float comp[4];	// volatileLiquid, volatileIces, atmosOxidizing, volcanicity
+		float spin[4];	// rotation period [days], orbit period around a star [days] (0 for moons), time accel rate, enabled (0/1)
+		float time[4];	// fmod(t, 2^20) [s], floor(t / 2^20), seed & 0xFFFF, seed >> 16
+	};
+	static_assert(sizeof(CloudDataBlock) == 128, "CloudDataBlock must match the std140 CloudData block");
+
+	// Coarse equirectangular terrain-height map (metres above sea level),
+	// baked once on the async job queue.
+	class CloudHeightMap {
+	public:
+		CloudHeightMap(RefCountedPtr<Terrain> terrain, double radius);
+		~CloudHeightMap();
+
+		// uploads the baked data on the first call after the job has finished
+		bool IsReady();
+		// the baked texture, or a 1x1 zero texture until it is ready
+		Graphics::Texture *GetTexture();
+
+		struct BakeResult {
+			std::vector<float> heights;
+			std::atomic<bool> done { false };
+		};
+
+	private:
+		std::shared_ptr<BakeResult> m_result;
+		RefCountedPtr<Graphics::Texture> m_texture;
+		Job::Handle m_job;
+		bool m_ready = false;
+	};
+
+	// true if a height map should be baked for this body at this camera
+	// position (campos in planet radii, relative to the planet centre)
+	bool WantsHeightMap(const SystemBody *sbody, const vector3d &campos);
+
+	// trans: the planet model-view matrix used by GeoSphere::Render
+	void FillCloudData(CloudDataBlock &out, const SystemBody *sbody, const matrix4x4d &trans, double maxFeatureHeight, CloudHeightMap *heightMap);
+
+	// binds the per-frame cloud data and height texture to a planet material
+	void SetMaterialCloudData(Graphics::Material *mat, CloudDataBlock &data, CloudHeightMap *heightMap);
+
+	// binds "no clouds" data, for materials sharing the cloud shaders (gas giant skies)
+	void SetDisabledCloudData(Graphics::Material *mat);
+
+	// releases the shared fallback texture
+	void Uninit();
+
+} // namespace PlanetClouds
+
+#endif /* _PLANETCLOUDS_H */

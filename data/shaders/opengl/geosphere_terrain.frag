@@ -13,6 +13,12 @@ in vec2 texCoord0;
 
 uniform int NumShadows;
 
+#include "cloud-config.glsl"
+#include "cloud-uniforms.glsl"
+#include "cloud-noise.glsl"
+#include "cloud-derive.glsl"
+#include "cloud-march.glsl"
+
 in float dist;
 
 in vec3 varyingEyepos;
@@ -42,6 +48,11 @@ void main(void)
 
 	float surfaceDist = dist * geosphereInvRadius;
 
+#ifdef ATMOSPHERE
+	float cloudPixAngle = cloudPixelAngle(eyenorm);
+	CloudPlanet clouds = cloudDerive();
+#endif
+
 	// calculate the detail texture contribution from hi and lo textures
 	float hiloMix = exp(-0.004 * dist);
 	float detailMix = exp(-0.001 * dist);
@@ -58,6 +69,9 @@ void main(void)
 	for (int i=0; i<NUM_LIGHTS; ++i) {
 		vec3 L = normalize(uLight[i].position.xyz);
 		float uneclipsed = clamp(calcUneclipsed(eclipse, NumShadows, V, L), 0.0, 1.0);
+#if defined(ATMOSPHERE) && (CLOUD_TERRAIN_SHADOWS == 1)
+		uneclipsed *= cloudShadowTerrain(clouds, eyeposScaled - geosphereCenter, L);
+#endif
 		CalcPlanetDiffuse(diff, uLight[i].diffuse, L, tnorm, uneclipsed);
 
 #ifdef TERRAIN_WITH_WATER
@@ -102,6 +116,8 @@ void main(void)
 #endif
 		  (0.02-clamp(fogFactor,0.0,0.01))*diff*ldprod*sunset +	      //increase fog scatter
 		  (pow((1.0-pow(fogFactor,0.75)),256.0)*0.4*diff*atmosColor)*sunset;  //distant fog.
+
+	frag_color.rgb = cloudTerrainComposite(frag_color.rgb, clouds, -geosphereCenter, eyenorm, surfaceDist, NumShadows, cloudPixAngle);
 #endif //ATMOSPHERE
 
 #else // NUM_LIGHTS > 0 -- unlit rendering - stars
