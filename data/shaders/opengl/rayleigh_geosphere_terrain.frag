@@ -4,14 +4,9 @@
 #include "attributes.glsl"
 #include "lib.glsl"
 #include "basesphere_uniforms.glsl"
-#include "rayleigh-lib.glsl"
 
 #define WATER_SHINE 16.0
 
-uniform int NumShadows;
-uniform sampler2D scatterLUT;
-
-#define CLOUD_USE_SCATTER_LUT
 #include "cloud-config.glsl"
 #include "cloud-uniforms.glsl"
 #include "cloud-noise.glsl"
@@ -63,8 +58,7 @@ void main(void)
 #endif
 
 #ifdef ATMOSPHERE
-	vec3 eyenorm = normalize(varyingEyepos);
-	float cloudPixAngle = cloudPixelAngle(eyenorm);
+	// cloud shadows; the clouds themselves are drawn by the cloud pass
 	CloudPlanet clouds = cloudDerive();
 #if (CLOUD_TERRAIN_SHADOWS == 1) && (NUM_LIGHTS > 0)
 	// lighting is per-vertex in this shader; dim the direct-light share only
@@ -75,8 +69,4 @@ void main(void)
 #endif
 
 	frag_color = toSRGB(1 - exp(-frag_color));
-
-#ifdef ATMOSPHERE
-	frag_color.rgb = cloudTerrainComposite(frag_color.rgb, clouds, -geosphereCenter, eyenorm, dist * geosphereInvRadius, NumShadows, cloudPixAngle);
-#endif
 }

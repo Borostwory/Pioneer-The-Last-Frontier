@@ -6,11 +6,17 @@
 #include "Game.h"
 #include "MathUtil.h"
 #include "Pi.h"
+#include "core/Log.h"
 #include "core/StringHash.h"
 #include "galaxy/SystemBody.h"
 #include "graphics/Material.h"
+#include "graphics/RenderState.h"
+#include "graphics/RenderTarget.h"
 #include "graphics/Renderer.h"
 #include "graphics/Texture.h"
+#include "graphics/Types.h"
+#include "graphics/VertexArray.h"
+#include "graphics/VertexBuffer.h"
 #include "terrain/Terrain.h"
 
 #include <algorithm>
@@ -18,9 +24,13 @@
 
 namespace {
 	static const size_t s_cloudDataName = "CloudData"_hash;
+	static const size_t s_cloudPassDataName = "CloudPassData"_hash;
 	static const size_t s_cloudHeightTexName = "cloudHeightTex"_hash;
+	static const size_t s_sceneDepthName = "sceneDepth"_hash;
+	static const size_t s_sceneDistName = "sceneDist"_hash;
+	static const size_t s_cloudTexName = "cloudTex"_hash;
 
-	// height map resolution, must match CLOUD_HEIGHTMAP_* in cloud-config.glsl
+	// height map resolution, must match the clamp in cloudTerrainHeight (cloud-march.glsl)
 	static const int HEIGHTMAP_WIDTH = 512;
 	static const int HEIGHTMAP_HEIGHT = 256;
 	// terrain samples per texel edge (2x2 per texel, then a 3x3 max filter)
@@ -31,7 +41,52 @@ namespace {
 	// time is split so the shader gets full float precision
 	static const double CLOUD_TIME_WRAP = 1048576.0; // 2^20 s
 
+	// the cloud clock never runs faster than this multiple of real time, so
+	// high time acceleration does not make the clouds flicker
+	static const double CLOUD_MAX_TIME_RATE = 100.0;
+
+	// target height of the reduced-resolution cloud buffer, in pixels
+	// (config key CloudResolutionDivisor overrides the automatic divisor)
+	static const int CLOUD_PASS_TARGET_HEIGHT = 540;
+
+	// planets further away than this (planet radii) are not given a pass
+	static const float CLOUD_PASS_MAX_DISTANCE = 2000.0f;
+
+	// Must match the CloudPassData block in cloud_pass.frag / cloud_composite.frag
+	struct CloudPassBlock {
+		float center[4]; // xyz: planet centre in view space [planet radii]
+		float proj[4];	 // x: P[0], y: P[5] (1 / tan of the half fov), z: near plane [m], w: resolution divisor
+		float size[4];	 // xy: cloud buffer size, zw: full size [pixels]
+		float atmos[4];	 // rgb: atmosphere colour
+	};
+	static_assert(sizeof(CloudPassBlock) == 64, "CloudPassBlock must match the std140 CloudPassData block");
+
+	struct PassEntry {
+		PlanetClouds::CloudDataBlock cloudData;
+		vector3f center;
+		Color4f atmosColor;
+		RefCountedPtr<Graphics::Texture> heightTex;
+	};
+
+	struct PassResources {
+		std::unique_ptr<Graphics::RenderTarget> distTarget;	 // full size, R32F view distance
+		std::unique_ptr<Graphics::RenderTarget> cloudTarget; // reduced size, premultiplied clouds
+		RefCountedPtr<Graphics::Material> distMaterial;
+		RefCountedPtr<Graphics::Material> passMaterial;
+		RefCountedPtr<Graphics::Material> compositeMaterial;
+		std::unique_ptr<Graphics::VertexArray> triangle;
+		int width = 0, height = 0, divisor = 0;
+	};
+
 	static RefCountedPtr<Graphics::Texture> s_fallbackTexture;
+	static std::unique_ptr<PassResources> s_pass;
+	static std::vector<PassEntry> s_queue;
+	static bool s_warnedMSAA = false;
+
+	// cloud clock
+	static const Game *s_clockGame = nullptr;
+	static double s_cloudTime = 0.0;
+	static double s_lastGameTime = 0.0;
 
 	Graphics::Texture *GetFallbackTexture()
 	{
@@ -127,6 +182,91 @@ namespace {
 		double m_radius;
 		std::shared_ptr<PlanetClouds::CloudHeightMap::BakeResult> m_result;
 	};
+
+	// Advances the cloud clock with game time, but at most CLOUD_MAX_TIME_RATE
+	// times real time. A new game, a loaded game or a large time jump
+	// (hyperspace) re-synchronises it with game time.
+	void AdvanceCloudClock()
+	{
+		if (!Pi::game) {
+			s_clockGame = nullptr;
+			return;
+		}
+		const double t = Pi::game->GetTime();
+		if (s_clockGame != Pi::game) {
+			s_clockGame = Pi::game;
+			s_cloudTime = t;
+			s_lastGameTime = t;
+			return;
+		}
+		const double dGame = t - s_lastGameTime;
+		s_lastGameTime = t;
+		if (dGame < 0.0 || dGame > 86400.0) {
+			s_cloudTime = t;
+			return;
+		}
+		const double maxStep = CLOUD_MAX_TIME_RATE * std::max(double(Pi::GetFrameTime()), 0.0);
+		s_cloudTime += std::min(dGame, maxStep);
+	}
+
+	int ChooseDivisor(int height)
+	{
+		const int configured = Pi::config->Int("CloudResolutionDivisor", 0);
+		if (configured > 0)
+			return Clamp(configured, 1, 8);
+		const int div = int(std::lround(double(height) / CLOUD_PASS_TARGET_HEIGHT));
+		return Clamp(div, 2, 4);
+	}
+
+	void EnsurePassResources(Graphics::Renderer *r, int width, int height)
+	{
+		const int divisor = ChooseDivisor(height);
+		if (s_pass && s_pass->width == width && s_pass->height == height && s_pass->divisor == divisor)
+			return;
+
+		if (!s_pass) {
+			s_pass.reset(new PassResources());
+
+			const Graphics::VertexFormatDesc vfmt = Graphics::VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_UV0);
+
+			Graphics::RenderStateDesc rsd;
+			rsd.blendMode = Graphics::BLEND_SOLID;
+			rsd.cullMode = Graphics::CULL_NONE;
+			rsd.depthTest = false;
+			rsd.depthWrite = false;
+
+			Graphics::MaterialDescriptor plainDesc;
+			s_pass->distMaterial.Reset(r->CreateMaterial("cloud_depth", plainDesc, rsd, vfmt));
+
+			Graphics::MaterialDescriptor litDesc;
+			litDesc.lighting = true;
+			s_pass->passMaterial.Reset(r->CreateMaterial("cloud_pass", litDesc, rsd, vfmt));
+
+			Graphics::RenderStateDesc blendRsd = rsd;
+			blendRsd.blendMode = Graphics::BLEND_ALPHA_PREMULT;
+			s_pass->compositeMaterial.Reset(r->CreateMaterial("cloud_composite", plainDesc, blendRsd, vfmt));
+
+			// one triangle covering the screen (clip-space positions)
+			s_pass->triangle.reset(new Graphics::VertexArray(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_UV0, 3));
+			s_pass->triangle->Add(vector3f(-1.0f, -1.0f, 0.0f), vector2f(0.0f, 0.0f));
+			s_pass->triangle->Add(vector3f(3.0f, -1.0f, 0.0f), vector2f(2.0f, 0.0f));
+			s_pass->triangle->Add(vector3f(-1.0f, 3.0f, 0.0f), vector2f(0.0f, 2.0f));
+		}
+
+		s_pass->width = width;
+		s_pass->height = height;
+		s_pass->divisor = divisor;
+
+		const Graphics::RenderTargetDesc distDesc(Uint16(width), Uint16(height), Graphics::TEXTURE_R32F, Graphics::TEXTURE_NONE, false, 0);
+		s_pass->distTarget.reset(r->CreateRenderTarget(distDesc));
+
+		const int cw = (width + divisor - 1) / divisor;
+		const int ch = (height + divisor - 1) / divisor;
+		const Graphics::RenderTargetDesc cloudDesc(Uint16(cw), Uint16(ch), Graphics::TEXTURE_RGBA_8888, Graphics::TEXTURE_NONE, false, 0);
+		s_pass->cloudTarget.reset(r->CreateRenderTarget(cloudDesc));
+
+		Log::Info("Cloud pass: {}x{} cloud buffer for {}x{} screen (divisor {})\n", cw, ch, width, height, divisor);
+	}
 } // namespace
 
 namespace PlanetClouds {
@@ -194,7 +334,7 @@ namespace PlanetClouds {
 		const double accel = Pi::game ? Pi::game->GetTimeAccelRate() : 0.0;
 		SetVec4(out.spin, sbody->GetRotationPeriodInDays(), orbitDays, accel, enabled ? 1.0 : 0.0);
 
-		const double t = Pi::game ? Pi::game->GetTime() : 0.0;
+		const double t = s_clockGame ? s_cloudTime : (Pi::game ? Pi::game->GetTime() : 0.0);
 		const Uint32 seed = sbody->GetSeed();
 		SetVec4(out.time, std::fmod(t, CLOUD_TIME_WRAP), std::floor(t / CLOUD_TIME_WRAP), double(seed & 0xFFFF), double(seed >> 16));
 	}
@@ -205,15 +345,104 @@ namespace PlanetClouds {
 		mat->SetTexture(s_cloudHeightTexName, heightMap ? heightMap->GetTexture() : GetFallbackTexture());
 	}
 
-	void SetDisabledCloudData(Graphics::Material *mat)
+	void BeginFrame()
 	{
-		CloudDataBlock data {};
-		mat->SetBufferDynamic(s_cloudDataName, &data);
-		mat->SetTexture(s_cloudHeightTexName, GetFallbackTexture());
+		s_queue.clear();
+		AdvanceCloudClock();
+	}
+
+	void QueueCloudPass(const SystemBody *sbody, const CloudDataBlock &data, const vector3f &center, const Color4f &atmosColor, CloudHeightMap *heightMap)
+	{
+		// only planets that can have clouds; the shaders decide the rest
+		if (sbody->GetType() != SystemBody::TYPE_PLANET_TERRESTRIAL || !sbody->HasAtmosphere() || !Pi::game)
+			return;
+		if (center.Length() > CLOUD_PASS_MAX_DISTANCE || s_queue.size() >= 8)
+			return;
+
+		PassEntry e;
+		e.cloudData = data;
+		e.center = center;
+		e.atmosColor = atmosColor;
+		e.heightTex.Reset(heightMap ? heightMap->GetTexture() : GetFallbackTexture());
+		s_queue.push_back(e);
+	}
+
+	void RenderCloudPasses(Graphics::Renderer *r)
+	{
+		if (s_queue.empty())
+			return;
+
+		Graphics::RenderTarget *mainTarget = r->GetRenderTarget();
+		if (!mainTarget || !mainTarget->GetDepthTexture()) {
+			s_queue.clear();
+			return;
+		}
+		const Graphics::RenderTargetDesc &mainDesc = mainTarget->GetDesc();
+		if (mainDesc.numSamples > 0) {
+			// a multisampled depth texture cannot be read by the cloud shaders
+			if (!s_warnedMSAA) {
+				Log::Warning("Volumetric clouds are disabled while multisample anti-aliasing is enabled.\n");
+				s_warnedMSAA = true;
+			}
+			s_queue.clear();
+			return;
+		}
+
+		const int width = mainDesc.width;
+		const int height = mainDesc.height;
+		EnsurePassResources(r, width, height);
+		PassResources &pass = *s_pass;
+		const int cw = pass.cloudTarget->GetDesc().width;
+		const int ch = pass.cloudTarget->GetDesc().height;
+
+		// restores the render target, viewport and matrices on scope exit
+		Graphics::Renderer::StateTicket ticket(r);
+
+		// infinite reverse-Z projection: depth = near / view distance
+		const matrix4x4f proj = r->GetProjection();
+
+		CloudPassBlock passData;
+		SetVec4(passData.proj, proj[0], proj[5], proj[14], pass.divisor);
+		SetVec4(passData.size, cw, ch, width, height);
+
+		// 1. linear view distance of the scene, so the passes below never
+		//    sample the depth buffer they are drawing into
+		r->SetRenderTarget(pass.distTarget.get());
+		r->SetViewport({ 0, 0, width, height });
+		pass.distMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
+		pass.distMaterial->SetTexture(s_sceneDepthName, mainTarget->GetDepthTexture());
+		r->DrawBuffer(pass.triangle.get(), pass.distMaterial.Get());
+
+		for (PassEntry &e : s_queue) {
+			SetVec4(passData.center, e.center.x, e.center.y, e.center.z, 0.0);
+			SetVec4(passData.atmos, e.atmosColor.r, e.atmosColor.g, e.atmosColor.b, 1.0);
+
+			// 2. clouds at reduced resolution
+			r->SetRenderTarget(pass.cloudTarget.get());
+			r->SetViewport({ 0, 0, cw, ch });
+			r->ClearScreen(Color(0, 0, 0, 0), false);
+			pass.passMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
+			pass.passMaterial->SetBufferDynamic(s_cloudDataName, &e.cloudData);
+			pass.passMaterial->SetTexture(s_sceneDistName, pass.distTarget->GetColorTexture());
+			pass.passMaterial->SetTexture(s_cloudHeightTexName, e.heightTex.Get());
+			r->DrawBuffer(pass.triangle.get(), pass.passMaterial.Get());
+
+			// 3. depth-aware upsample, blended over the scene
+			r->SetRenderTarget(mainTarget);
+			r->SetViewport({ 0, 0, width, height });
+			pass.compositeMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
+			pass.compositeMaterial->SetTexture(s_cloudTexName, pass.cloudTarget->GetColorTexture());
+			pass.compositeMaterial->SetTexture(s_sceneDistName, pass.distTarget->GetColorTexture());
+			r->DrawBuffer(pass.triangle.get(), pass.compositeMaterial.Get());
+		}
+
+		s_queue.clear();
 	}
 
 	void Uninit()
 	{
+		s_queue.clear();
+		s_pass.reset();
 		s_fallbackTexture.Reset();
 	}
 

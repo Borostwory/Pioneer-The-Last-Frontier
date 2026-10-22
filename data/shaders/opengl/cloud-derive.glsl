@@ -283,9 +283,9 @@ CloudPlanet cloudDerive()
 		hiTop = zb + 0.95 * span;
 	}
 
-	float dLow = min(800.0 * sH, lowTop - lowBot);
-	float dMid = min(500.0 * sH, midTop - midBot);
-	float dHigh = min(1500.0 * sH, hiTop - hiBot);
+	float dLow = min(1200.0 * sH, lowTop - lowBot);
+	float dMid = min(800.0 * sH, midTop - midBot);
+	float dHigh = min(2000.0 * sH, hiTop - hiBot);
 	float midCentre = 0.5 * (midBot + midTop);
 
 	float lowBase = lowBot, lowTopA = lowBot + dLow;

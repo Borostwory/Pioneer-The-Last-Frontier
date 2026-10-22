@@ -49,7 +49,7 @@ void main(void)
 	float surfaceDist = dist * geosphereInvRadius;
 
 #ifdef ATMOSPHERE
-	float cloudPixAngle = cloudPixelAngle(eyenorm);
+	// cloud shadows; the clouds themselves are drawn by the cloud pass
 	CloudPlanet clouds = cloudDerive();
 #endif
 
@@ -116,8 +116,6 @@ void main(void)
 #endif
 		  (0.02-clamp(fogFactor,0.0,0.01))*diff*ldprod*sunset +	      //increase fog scatter
 		  (pow((1.0-pow(fogFactor,0.75)),256.0)*0.4*diff*atmosColor)*sunset;  //distant fog.
-
-	frag_color.rgb = cloudTerrainComposite(frag_color.rgb, clouds, -geosphereCenter, eyenorm, surfaceDist, NumShadows, cloudPixAngle);
 #endif //ATMOSPHERE
 
 #else // NUM_LIGHTS > 0 -- unlit rendering - stars

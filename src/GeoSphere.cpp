@@ -429,7 +429,8 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	//Update material parameters
 	SetMaterialParameters(trans, radius, shadows, m_atmosphereParameters);
 
-	// per-frame data for the cloud shaders, see PlanetClouds.h
+	// cloud data: shadows in the terrain shader now, the clouds themselves in
+	// the screen-space cloud pass after all bodies are drawn (PlanetClouds.h)
 	{
 		if (!m_cloudHeightMap && PlanetClouds::WantsHeightMap(GetSystemBody(), campos))
 			m_cloudHeightMap.reset(new PlanetClouds::CloudHeightMap(m_terrain, GetSystemBody()->GetRadius()));
@@ -437,8 +438,8 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		PlanetClouds::CloudDataBlock cloudData;
 		PlanetClouds::FillCloudData(cloudData, GetSystemBody(), trans, GetMaxFeatureHeight(), m_cloudHeightMap.get());
 		PlanetClouds::SetMaterialCloudData(m_surfaceMaterial.Get(), cloudData, m_cloudHeightMap.get());
-		if (m_atmosphereMaterial.Valid())
-			PlanetClouds::SetMaterialCloudData(m_atmosphereMaterial.Get(), cloudData, m_cloudHeightMap.get());
+		PlanetClouds::QueueCloudPass(GetSystemBody(), cloudData, vector3f(trans * vector3d(0.0)) / radius,
+			m_atmosphereParameters.atmosCol.ToColor4f(), m_cloudHeightMap.get());
 	}
 
 	if (m_atmosphereMaterial.Valid() && m_atmosphereParameters.atmosDensity > 0.0) {
@@ -579,9 +580,8 @@ void GeoSphere::SetUpMaterials()
 void GeoSphere::CreateAtmosphereMaterial()
 {
 	Graphics::RenderStateDesc rsd;
-	// atmosphere is blended over the background; the sky shaders output
-	// premultiplied colour so clouds (alpha > 0) can hide the stars behind them
-	rsd.blendMode = Graphics::BLEND_ALPHA_PREMULT;
+	// atmosphere is blended over the background
+	rsd.blendMode = Graphics::BLEND_ALPHA_ONE;
 	rsd.cullMode = Graphics::CULL_FRONT;
 	rsd.depthWrite = false;
 

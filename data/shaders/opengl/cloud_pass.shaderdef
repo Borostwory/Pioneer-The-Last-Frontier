@@ -1,0 +1,15 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+Shader cloud_pass
+
+Texture sampler2D sceneDist
+Texture sampler2D cloudHeightTex
+
+Buffer LightData binding=0
+Buffer DrawData binding=1
+Buffer CloudPassData binding=2
+Buffer CloudData binding=3
+
+Vertex "cloud_fullscreen.vert"
+Fragment "cloud_pass.frag"

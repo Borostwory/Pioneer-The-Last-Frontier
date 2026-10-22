@@ -1,0 +1,12 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+Shader cloud_depth
+
+Texture sampler2D sceneDepth
+
+Buffer DrawData binding=1
+Buffer CloudPassData binding=2
+
+Vertex "cloud_fullscreen.vert"
+Fragment "cloud_depth.frag"

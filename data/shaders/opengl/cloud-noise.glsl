@@ -54,20 +54,21 @@ float cloudGradNoise(vec3 x)
 					 mix(mix(v001, v101, u.x), mix(v011, v111, u.x), u.y), u.z);
 }
 
-// 3D cellular noise (F1 distance) with a 2x2x2 search, after Stefan Gustavson
-// (MIT licence). Feature points are jittered within 0.1..0.9 of their cell so
-// the reduced search stays artefact-free. Returns [0, 1].
+// 3D cellular noise (F1 distance) with a full 3x3x3 search, so there are
+// no discontinuities along cell faces. Returns [0, 1].
 float cloudWorley(vec3 x)
 {
 	vec3 i = floor(x);
 	vec3 f = fract(x);
-	vec3 s = step(0.5, f) - 1.0;
 	float d = 8.0;
-	for (int k = 0; k < 8; k++) {
-		vec3 o = s + vec3(float(k & 1), float((k >> 1) & 1), float((k >> 2) & 1));
-		vec3 fp = o + 0.1 + 0.8 * cloudHash33(i + o);
-		vec3 r = fp - f;
-		d = min(d, dot(r, r));
+	for (int z = -1; z <= 1; z++) {
+		for (int y = -1; y <= 1; y++) {
+			for (int k = -1; k <= 1; k++) {
+				vec3 o = vec3(float(k), float(y), float(z));
+				vec3 r = o + cloudHash33(i + o) - f;
+				d = min(d, dot(r, r));
+			}
+		}
 	}
 	return clamp(sqrt(d), 0.0, 1.0);
 }
@@ -89,19 +90,20 @@ float cloudFbm(vec3 p, int octaves, float weightLast)
 	return 0.5 + 0.5 * sum / max(norm, 1e-4);
 }
 
-// inverted Worley fBm (1 at cell centres), returns [0, 1]
-float cloudWorleyFbm(vec3 p, int octaves, float weightLast)
+// billow fBm: 1 - |gradient noise| gives rounded puffs separated by creases,
+// a cheap stand-in for cellular noise. Returns roughly [0, 1].
+float cloudBillowFbm(vec3 p, int octaves, float weightLast)
 {
 	float sum = 0.0;
-	float amp = 0.625;
+	float amp = 0.5;
 	float norm = 0.0;
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < 6; i++) {
 		if (i >= octaves) break;
 		float w = (i == octaves - 1) ? weightLast : 1.0;
-		sum += w * amp * (1.0 - cloudWorley(p));
+		sum += w * amp * (1.0 - abs(cloudGradNoise(p)));
 		norm += w * amp;
 		amp *= 0.5;
-		p = p * 2.0 + vec3(5.3, 11.9, 23.1);
+		p = p * 2.07 + vec3(5.3, 11.9, 23.1);
 	}
 	return sum / max(norm, 1e-4);
 }

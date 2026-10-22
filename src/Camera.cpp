@@ -8,6 +8,7 @@
 #include "Game.h"
 #include "Pi.h"
 #include "Planet.h"
+#include "PlanetClouds.h"
 #include "Player.h"
 #include "Sfx.h"
 #include "Space.h"
@@ -263,6 +264,9 @@ void Camera::Draw(const Body *excludeBody)
 
 	m_renderer->ClearScreen();
 
+	// planets queue their clouds while being drawn, see PlanetClouds.h
+	PlanetClouds::BeginFrame();
+
 	matrix4x4d trans2bg;
 	Frame::GetFrameTransform(rootFrameId, camFrameId, trans2bg);
 	trans2bg.ClearToRotOnly();
@@ -347,6 +351,9 @@ void Camera::Draw(const Body *excludeBody)
 	}
 
 	RestoreLighting();
+
+	// clouds over everything drawn so far, using the scene depth
+	PlanetClouds::RenderCloudPasses(m_renderer);
 
 	if (!billboards.IsEmpty()) {
 		Graphics::Renderer::MatrixTicket mt(m_renderer, matrix4x4f::Identity);

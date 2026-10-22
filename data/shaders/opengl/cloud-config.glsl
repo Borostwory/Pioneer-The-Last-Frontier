@@ -16,15 +16,20 @@
 //   7 terrain floor (red where clouds are pushed up by terrain + 750 m)
 #define CLOUD_DEBUG 0
 
-// Primary raymarch steps per layer segment
-#define CLOUD_STEPS 16
+// Maximum raymarch steps per layer segment (the cloud pass runs at reduced
+// resolution, see CloudResolutionDivisor in config.ini)
+#define CLOUD_STEPS 48
 
 // Noise octaves near the camera (they fade out with distance)
 #define CLOUD_SHAPE_OCTAVES 3
 #define CLOUD_DETAIL_OCTAVES 2
 
-// Beyond this distance (m) a layer segment is rendered as a single slab
-#define CLOUD_MAX_MARCH_DIST 150000.0
+// Beyond this distance (m) along a layer segment it is rendered as a single slab
+#define CLOUD_MAX_MARCH_DIST 40000.0
+
+// Distance (m) at which clouds have faded to 1/e into the sky haze, for a
+// camera at 1 atm; it grows in thinner air. Clouds beyond 4x are skipped.
+#define CLOUD_VISIBILITY 90000.0
 
 // Stop marching once the view transmittance drops below this
 #define CLOUD_MIN_TRANSMITTANCE 0.02
@@ -53,3 +58,10 @@
 
 // Maximum number of stars that light clouds
 #define CLOUD_MAX_LIGHTS 2
+
+// Measured distributions of the shape noises (mean, sd), used to map them to
+// uniform variables. Re-measure if the noise functions change.
+#define CLOUD_PW_MEAN 0.704
+#define CLOUD_PW_SD 0.096
+#define CLOUD_BILLOW_MEAN 0.754
+#define CLOUD_BILLOW_SD 0.125

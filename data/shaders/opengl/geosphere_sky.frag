@@ -7,12 +7,6 @@
 
 uniform int NumShadows;
 
-#include "cloud-config.glsl"
-#include "cloud-uniforms.glsl"
-#include "cloud-noise.glsl"
-#include "cloud-derive.glsl"
-#include "cloud-march.glsl"
-
 in vec4 varyingEyepos;
 
 out vec4 frag_color;
@@ -60,15 +54,8 @@ void main(void)
 	vec4 sunset = vec4(0.8,clamp(pow(atmpower,0.8),0.0,1.0),clamp(pow(atmpower,1.2),0.0,1.0),1.0);
 
 	atmosDiffuse.a = 1.0;
-	vec4 atmos = (1.0-fogFactor) * (atmosDiffuse*
+	frag_color = (1.0-fogFactor) * (atmosDiffuse*
 		vec4(atmosColor.rgb, 1.0)) +
 		(0.02-clamp(fogFactor,0.0,0.01))*atmosDiffuse*ldprod*sunset +     //increase light on lower atmosphere.
 		atmosColor*specularHighlight*(1.0-fogFactor)*sunset;		  //add light from specularHighlight.
-
-	// The sky is blended premultiplied: alpha 0 reproduces the old additive
-	// "src * src.a + dst" result, cloud opacity hides the background.
-	vec3 camPos = -geosphereCenter;
-	CloudResult clouds = cloudSkyClouds(camPos, eyenorm, NumShadows);
-	frag_color = vec4(cloudToneMap(clouds.inscatter) + clouds.transmittance * atmos.rgb * atmos.a, 1.0 - clouds.transmittance);
-	frag_color = cloudSkyDebug(frag_color, camPos, eyenorm);
 }
