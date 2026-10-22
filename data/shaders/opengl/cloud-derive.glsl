@@ -352,9 +352,9 @@ CloudPlanet cloudDerive()
 		cMid = 0.0;
 	}
 
-	cloudSetLayer(cp.L[0], lowBase, lowTopA, cLow, qLow / sH, 2000.0 * sH, 32768.0);
-	cloudSetLayer(cp.L[1], midBase, midTopA, cMid, qMid / sH, 700.0 * sH, 32768.0);
-	cloudSetLayer(cp.L[2], hiBase, hiTopA, cHigh, qHigh / sH, 2500.0 * sH, 65536.0);
+	cloudSetLayer(cp.L[0], lowBase, lowTopA, cLow, qLow / sH, CLOUD_CELL_LOW_M * sH, 32768.0);
+	cloudSetLayer(cp.L[1], midBase, midTopA, cMid, qMid / sH, CLOUD_CELL_MID_M * sH, 32768.0);
+	cloudSetLayer(cp.L[2], hiBase, hiTopA, cHigh, qHigh / sH, CLOUD_CELL_HIGH_M * sH, 65536.0);
 
 	// normalise the latitude factor to an area-weighted mean of 1 (9-point quadrature)
 	for (int l = 0; l < 3; l++) {

@@ -20,6 +20,16 @@
 // resolution, see CloudResolutionDivisor in config.ini)
 #define CLOUD_STEPS 48
 
+// Cloud cell sizes in metres for an Earth-like atmosphere (scaled by the
+// planet's scale height): low (stratocumulus), medium (altocumulus), high (cirrus)
+#define CLOUD_CELL_LOW_M 4000.0
+#define CLOUD_CELL_MID_M 1500.0
+#define CLOUD_CELL_HIGH_M 5000.0
+
+// Cells smaller than this many pixels on screen fade to the mean density of
+// the field (avoids speckled "freckle" clouds seen from far away)
+#define CLOUD_MIN_CELL_PIXELS 4.0
+
 // Noise octaves near the camera (they fade out with distance)
 #define CLOUD_SHAPE_OCTAVES 3
 #define CLOUD_DETAIL_OCTAVES 2

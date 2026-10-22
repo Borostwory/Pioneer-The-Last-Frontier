@@ -268,6 +268,40 @@ local function showVideoOptions()
 		needBackgroundStarRefresh = true
 	end
 
+	-- Volumetric clouds (src/PlanetClouds.cpp); applied immediately
+	-- TODO: move the labels into the language files
+	ui.separator()
+	local cloudsEnabled = Engine.SettingsGetInt("CloudsEnabled") ~= 0
+	c,cloudsEnabled = checkbox("Volumetric clouds", cloudsEnabled,
+		"Cloud layers on planets with an atmosphere. Not drawn while multisampling (anti-aliasing) is enabled.")
+	if c then
+		Engine.SettingsSetInt("CloudsEnabled", cloudsEnabled and 1 or 0)
+	end
+	if cloudsEnabled then
+		local cloudResolutionLabels = { "Low (360 lines)", "Medium (540 lines)", "High (720 lines)", "Very high (1080 lines)", "Full screen resolution" }
+		local cloudResolution = Engine.SettingsGetInt("CloudResolution")
+		c,cloudResolution = combo("Cloud resolution", cloudResolution, cloudResolutionLabels,
+			"Resolution the clouds are rendered at before being scaled to the screen. Higher is sharper and slower.")
+		if c then
+			Engine.SettingsSetInt("CloudResolution", cloudResolution)
+		end
+
+		local cloudSoftnessLabels = { "Sharp", "Soft", "Very soft" }
+		local cloudSoftness = Engine.SettingsGetInt("CloudSoftness")
+		c,cloudSoftness = combo("Cloud softening", cloudSoftness, cloudSoftnessLabels,
+			"Blurs the cloud image while scaling it up, hiding the reduced resolution.")
+		if c then
+			Engine.SettingsSetInt("CloudSoftness", cloudSoftness)
+		end
+
+		local cloudSpeed = Engine.SettingsGetInt("CloudSpeed")
+		c,cloudSpeed = slider("Cloud speed", cloudSpeed, 1, 100,
+			"How fast clouds drift and change shape, as a multiple of the real wind speed.")
+		if c then
+			Engine.SettingsSetInt("CloudSpeed", cloudSpeed)
+		end
+	end
+
 	ui.separator()
 	optionTextButton("Debug Info", nil, true, function()
 		Engine.SetShowDebugInfo()

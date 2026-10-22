@@ -155,14 +155,24 @@ float cloudSigmaMax(int li, float st)
 	return 0.001;
 }
 
+// Wind displacement of a whole layer: every altitude inside a layer moves
+// with the wind at the layer's mid-height. Per-altitude winds would shear the
+// 3D noise by tens of km per layer over one evolution cycle, which shows up
+// as long streaks.
+vec3 cloudAdvect(CloudPlanet cp, int li, vec3 pfDir, float lat, float t)
+{
+	CloudLayer ly = cp.L[li];
+	float u = cloudWind(cp, lat, 0.5 * (ly.base + ly.top));
+	float theta = u * t / (cp.a * max(cos(lat), 0.1)) * cp.spinSign * CLOUD_WIND_SIGN;
+	return cloudRotY(pfDir, -theta);
+}
+
 // Large-scale properties of a layer column for one time phase: the
 // expensive, slowly varying part (weather coverage and base undulation).
 // Returns x = local coverage, y = stratus weight, z = base noise -1..1.
 vec3 cloudColumn(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float t, vec3 off, vec3 sunPf, float fp, float maxExtra)
 {
-	float u = cloudWind(cp, lat, alt);
-	float theta = u * t / (cp.a * max(cos(lat), 0.1)) * cp.spinSign * CLOUD_WIND_SIGN;
-	vec3 p = cloudRotY(pfDir, -theta);
+	vec3 p = cloudAdvect(cp, li, pfDir, lat, t);
 	vec2 cov = cloudCoverage(cp, li, p, pfDir, lat, off, sunPf, fp, maxExtra);
 	float baseN = cov.x > 0.0 ? cloudGradNoise(p * (cp.a / (15000.0 * cp.sH)) + off * 0.37) : 0.0;
 	return vec3(cov, baseN);
@@ -171,7 +181,7 @@ vec3 cloudColumn(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float
 // Density at a point given its column properties.
 // Returns x = density 0..1, y = stratus weight, z = height in layer 0..1.
 vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float hTerr,
-	float t, vec3 off, vec3 col, float lod, float detailW, bool full)
+	float t, vec3 off, vec3 col, float lod, float detailW, bool full, float fp)
 {
 	CloudLayer ly = cp.L[li];
 	float cLoc = col.x;
@@ -191,12 +201,14 @@ vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat,
 	if (floorF <= 0.0) return vec3(0.0, st, h);
 
 	float prof = cloudProfile(li, h, st);
-	if (!full) return vec3(cLoc * prof * floorF, st, h);
+	// cells smaller than a few pixels would only show as speckles: fade the
+	// shape noise to the mean density of the field instead
+	float shapeFade = full ? smoothstep(CLOUD_MIN_CELL_PIXELS, 3.0 * CLOUD_MIN_CELL_PIXELS, ly.featureSize / max(fp, 1.0)) : 0.0;
+	float meanRho = cLoc * prof * 0.6;
+	if (shapeFade <= 0.0) return vec3((full ? meanRho : cLoc * prof) * floorF, st, h);
 
 	// shape noise per genus, advected with the wind
-	float u = cloudWind(cp, lat, alt);
-	float theta = u * t / (cp.a * max(cos(lat), 0.1)) * cp.spinSign * CLOUD_WIND_SIGN;
-	vec3 p = cloudRotY(pfDir, -theta);
+	vec3 p = cloudAdvect(cp, li, pfDir, lat, t);
 	vec3 q = p * (cp.a / ly.featureSize) + off;
 	float shape;
 	float ero;
@@ -230,7 +242,7 @@ vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat,
 		float det = cloudUniformize(cloudBillowFbm(q * 4.0 + vec3(3.1), CLOUD_DETAIL_OCTAVES, detailW), CLOUD_BILLOW_MEAN, CLOUD_BILLOW_SD);
 		rho = clamp(cloudRemap(rho, det * ero * detailW, 1.0, 0.0, 1.0), 0.0, 1.0);
 	}
-	return vec3(rho * floorF, st, h);
+	return vec3(mix(meanRho, rho, shapeFade) * floorF, st, h);
 }
 
 // Density blended over both time phases (column evaluated in place).
@@ -240,11 +252,11 @@ vec3 cloudDensity(CloudPlanet cp, int li, CloudPhase ph, vec3 pfDir, float alt, 
 	vec3 r = vec3(0.0);
 	if (ph.wA > 0.001) {
 		vec3 col = cloudColumn(cp, li, pfDir, alt, lat, ph.tA, ph.offA, sunPf, fp, 5.0);
-		r += ph.wA * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tA, ph.offA, col, lod, detailW, full);
+		r += ph.wA * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tA, ph.offA, col, lod, detailW, full, fp);
 	}
 	if (ph.wA < 0.999) {
 		vec3 col = cloudColumn(cp, li, pfDir, alt, lat, ph.tB, ph.offB, sunPf, fp, 5.0);
-		r += (1.0 - ph.wA) * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tB, ph.offB, col, lod, detailW, full);
+		r += (1.0 - ph.wA) * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tB, ph.offB, col, lod, detailW, full, fp);
 	}
 	return r;
 }
@@ -489,9 +501,9 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 					float detailW = clamp(log2(ly.featureSize * 0.25 / (2.0 * fp)), 0.0, 1.0);
 					vec3 dens = vec3(0.0);
 					if (ph.wA > 0.001)
-						dens += ph.wA * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tA, ph.offA, cA, lod, detailW, true);
+						dens += ph.wA * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tA, ph.offA, cA, lod, detailW, true, fp);
 					if (ph.wA < 0.999)
-						dens += (1.0 - ph.wA) * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tB, ph.offB, cB, lod, detailW, true);
+						dens += (1.0 - ph.wA) * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tB, ph.offB, cB, lod, detailW, true, fp);
 					cloudShadeSample(cp, li, pos, dens, ds, rayDir, albedo, -1.0, m);
 				}
 				res.inscatter = mix(m.inscatter, res.inscatter, slabW);
@@ -611,9 +623,7 @@ vec4 cloudDebugColor(CloudPlanet cp, vec3 pfDir)
 	for (int li = 0; li < 3; li++) {
 		if (cp.L[li].active < 0.5) continue;
 		CloudPhase ph = cloudPhases(cp.L[li].period, float(li));
-		float u = cloudWind(cp, lat, 0.5 * (cp.L[li].base + cp.L[li].top));
-		float th = u * ph.tA / (cp.a * max(cos(lat), 0.1)) * cp.spinSign * CLOUD_WIND_SIGN;
-		c[li] = cloudCoverage(cp, li, cloudRotY(pfDir, -th), pfDir, lat, ph.offA, sunPf, 20000.0, 5.0).x;
+		c[li] = cloudCoverage(cp, li, cloudAdvect(cp, li, pfDir, lat, ph.tA), pfDir, lat, ph.offA, sunPf, 20000.0, 5.0).x;
 	}
 	return vec4(c, 0.9);
 #elif (CLOUD_DEBUG == 3)

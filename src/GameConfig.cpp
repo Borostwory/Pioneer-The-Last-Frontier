@@ -38,6 +38,10 @@ GameConfig::GameConfig(const map_string &override_)
 	map["MaxPhysicsCyclesPerRender"] = "4";
 	map["AntiAliasingMode"] = "2";
 	map["JoystickDeadzone"] = "0.2"; // 20% deadzone is common
+	map["CloudsEnabled"] = "1";
+	map["CloudResolution"] = "1"; // 0 low .. 4 full, see PlanetClouds.cpp
+	map["CloudSoftness"] = "1";   // 0 sharp .. 2 soft
+	map["CloudSpeed"] = "10";     // cloud motion relative to the real wind speed
 	map["DefaultLowThrustPower"] = "0.25";
 	map["VSync"] = "1";
 	map["UseTextureCompression"] = "1";

@@ -42,13 +42,16 @@ namespace {
 	// time is split so the shader gets full float precision
 	static const double CLOUD_TIME_WRAP = 1048576.0; // 2^20 s
 
-	// the cloud clock never runs faster than this multiple of real time, so
-	// high time acceleration does not make the clouds flicker
+	// the cloud clock never follows game time faster than this multiple of
+	// real time, so high time acceleration does not make the clouds flicker
 	static const double CLOUD_MAX_TIME_RATE = 100.0;
 
-	// target height of the reduced-resolution cloud buffer, in pixels
-	// (config key CloudResolutionDivisor overrides the automatic divisor)
-	static const int CLOUD_PASS_TARGET_HEIGHT = 540;
+	// Settings (config.ini, also in the video settings window):
+	//   CloudsEnabled    0/1
+	//   CloudResolution  0..4: cloud buffer height 360, 540, 720, 1080 lines, or full
+	//   CloudSoftness    0..2: upsampling kernel radius
+	//   CloudSpeed       1..100: cloud motion and evolution relative to the real wind
+	static const int CLOUD_RESOLUTION_LINES[] = { 360, 540, 720, 1080, 0 };
 
 	// planets further away than this (planet radii) are not given a pass
 	static const float CLOUD_PASS_MAX_DISTANCE = 2000.0f;
@@ -58,7 +61,7 @@ namespace {
 		float center[4]; // xyz: planet centre in view space [planet radii]
 		float proj[4];	 // x: P[0], y: P[5] (1 / tan of the half fov), z: near plane [m], w: resolution divisor
 		float size[4];	 // xy: cloud buffer size, zw: full size [pixels]
-		float atmos[4];	 // rgb: atmosphere colour
+		float atmos[4];	 // rgb: atmosphere colour, w: softness 0..2
 	};
 	static_assert(sizeof(CloudPassBlock) == 64, "CloudPassBlock must match the std140 CloudPassData block");
 
@@ -184,9 +187,10 @@ namespace {
 		std::shared_ptr<PlanetClouds::CloudHeightMap::BakeResult> m_result;
 	};
 
-	// Advances the cloud clock with game time, but at most CLOUD_MAX_TIME_RATE
-	// times real time. A new game, a loaded game or a large time jump
-	// (hyperspace) re-synchronises it with game time.
+	// Advances the cloud clock with game time (at most CLOUD_MAX_TIME_RATE
+	// times real time), multiplied by the CloudSpeed setting. A new game, a
+	// loaded game or a large time jump (hyperspace) re-synchronises it with
+	// game time.
 	void AdvanceCloudClock()
 	{
 		if (!Pi::game) {
@@ -207,16 +211,23 @@ namespace {
 			return;
 		}
 		const double maxStep = CLOUD_MAX_TIME_RATE * std::max(double(Pi::GetFrameTime()), 0.0);
-		s_cloudTime += std::min(dGame, maxStep);
+		const double speed = Clamp(Pi::config->Int("CloudSpeed", 10), 1, 100);
+		s_cloudTime += std::min(dGame, maxStep) * speed;
+	}
+
+	bool CloudsEnabled()
+	{
+		return Pi::config->Int("CloudsEnabled", 1) != 0;
 	}
 
 	int ChooseDivisor(int height)
 	{
-		const int configured = Pi::config->Int("CloudResolutionDivisor", 0);
-		if (configured > 0)
-			return Clamp(configured, 1, 8);
-		const int div = int(std::lround(double(height) / CLOUD_PASS_TARGET_HEIGHT));
-		return Clamp(div, 2, 4);
+		const int level = Clamp(Pi::config->Int("CloudResolution", 1), 0, 4);
+		const int lines = CLOUD_RESOLUTION_LINES[level];
+		if (lines <= 0)
+			return 1;
+		const int div = int(std::lround(double(height) / lines));
+		return Clamp(div, 1, 8);
 	}
 
 	void EnsurePassResources(Graphics::Renderer *r, int width, int height)
@@ -331,7 +342,7 @@ namespace PlanetClouds {
 		const SystemBody *parent = sbody->GetParent();
 		const bool orbitsStar = parent && parent->GetSuperType() == SystemBody::SUPERTYPE_STAR;
 		const double orbitDays = orbitsStar ? sbody->GetOrbit().Period() / (60.0 * 60.0 * 24.0) : 0.0;
-		const bool enabled = sbody->GetType() == SystemBody::TYPE_PLANET_TERRESTRIAL && Pi::game;
+		const bool enabled = sbody->GetType() == SystemBody::TYPE_PLANET_TERRESTRIAL && Pi::game && CloudsEnabled();
 		const double accel = Pi::game ? Pi::game->GetTimeAccelRate() : 0.0;
 		SetVec4(out.spin, sbody->GetRotationPeriodInDays(), orbitDays, accel, enabled ? 1.0 : 0.0);
 
@@ -355,7 +366,7 @@ namespace PlanetClouds {
 	void QueueCloudPass(const SystemBody *sbody, const CloudDataBlock &data, const vector3f &center, const Color4f &atmosColor, CloudHeightMap *heightMap)
 	{
 		// only planets that can have clouds; the shaders decide the rest
-		if (sbody->GetType() != SystemBody::TYPE_PLANET_TERRESTRIAL || !sbody->HasAtmosphere() || !Pi::game)
+		if (sbody->GetType() != SystemBody::TYPE_PLANET_TERRESTRIAL || !sbody->HasAtmosphere() || !Pi::game || !CloudsEnabled())
 			return;
 		if (center.Length() > CLOUD_PASS_MAX_DISTANCE || s_queue.size() >= 8)
 			return;
@@ -403,6 +414,7 @@ namespace PlanetClouds {
 		const matrix4x4f proj = r->GetProjection();
 
 		CloudPassBlock passData;
+		const int softness = Clamp(Pi::config->Int("CloudSoftness", 1), 0, 2);
 		SetVec4(passData.proj, proj[0], proj[5], proj[14], pass.divisor);
 		SetVec4(passData.size, cw, ch, width, height);
 
@@ -416,7 +428,7 @@ namespace PlanetClouds {
 
 		for (PassEntry &e : s_queue) {
 			SetVec4(passData.center, e.center.x, e.center.y, e.center.z, 0.0);
-			SetVec4(passData.atmos, e.atmosColor.r, e.atmosColor.g, e.atmosColor.b, 1.0);
+			SetVec4(passData.atmos, e.atmosColor.r, e.atmosColor.g, e.atmosColor.b, softness);
 
 			// 2. clouds at reduced resolution
 			r->SetRenderTarget(pass.cloudTarget.get());
