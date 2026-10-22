@@ -4,6 +4,7 @@
 #include "PlanetClouds.h"
 
 #include "Game.h"
+#include "GameConfig.h"
 #include "MathUtil.h"
 #include "Pi.h"
 #include "core/Log.h"
