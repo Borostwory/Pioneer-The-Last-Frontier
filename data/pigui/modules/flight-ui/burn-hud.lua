@@ -116,7 +116,7 @@ local L = {
 	ARRIVE_NORMAL_TIP = "When the warp arrives, carry on at normal speed (1x)",
 	ACCURACY_LABEL = "Burn accuracy",
 	ACCURACY_FORMAT = "%.1f %%",
-	ACCURACY_TIP = "Auto Burn flies each burn until the orbit reaches the planned periapsis and apoapsis, easing the throttle at the end. If the result is still further off than this share of their altitude (or out of the planned plane), it turns and makes a small correction burn.",
+	ACCURACY_TIP = "Auto Burn flies each burn onto the planned trajectory, with its planned timing, easing the throttle at the end. If the resulting periapsis or apoapsis is still further off than this share of their altitude (or the orbit is out of the planned plane), it turns and makes a small correction burn.",
 	-- each tooltip states only what its own control does. The two controls are
 	-- genuinely independent: Auto Orientation is a flight control state, Auto
 	-- Burn an engine flag applied on top of it; setting one never sets the

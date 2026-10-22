@@ -240,6 +240,12 @@ private:
 		double rp = 0.0;							   // periapsis radius
 		double ra = 0.0;							   // apoapsis radius, 0 on escape
 		double plannedDv = 0.0;
+		// the guidance aim point: the planned trajectory's position aimTime
+		// (aimLookahead seconds after the node)
+		bool aimValid = false;
+		vector3d aimPos = vector3d(0.0);
+		double aimTime = 0.0;
+		double aimLookahead = 0.0;
 		bool ignited = false;
 		double ignitionTime = 0.0;
 	};

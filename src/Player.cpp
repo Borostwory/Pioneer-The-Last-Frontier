@@ -359,7 +359,10 @@ void Player::TimeStepUpdate(const float timeStep)
 	if (planDv.LengthSqr() < 1e-18) // an inert plan has no direction to count progress along
 		return;
 
-	matrix3x3d rot = Frame::GetFrame(Frame::GetFrame(GetFrame())->GetNonRotFrame())->GetOrientRelTo(GetFrame());
+	const Frame *plannerFrame = TransferPlanner::GravityFrame(GetFrame());
+	if (!plannerFrame)
+		return;
+	matrix3x3d rot = plannerFrame->GetOrientRelTo(GetFrame());
 	const vector3d planDir = (rot * planDv).NormalizedSafe() * GetOrient();
 
 	const vector3d accel = GetPropulsion()->GetActualLinThrust() * (1.0 / mass);

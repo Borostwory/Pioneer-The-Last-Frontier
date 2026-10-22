@@ -9,6 +9,7 @@
 #include "GameSaveError.h"
 #include "Input.h"
 #include "Json.h"
+#include "Orbit.h"
 #include "Pi.h"
 #include "Player.h"
 #include <SDL_keycode.h>
@@ -25,6 +26,7 @@
 #include "gameconsts.h"
 
 #include <algorithm>
+#include <cmath>
 
 // plan-burn autopilot: face tolerance inside which the main engine may fire, the
 // slack allowed against a burn's ignition time, and the epsilon guard used when
@@ -42,8 +44,14 @@ static constexpr double PLAN_BURN_RETARGET_ANGLE = DEG2RAD(30.0);
 // thrust is cut while the direction fired along has less than this share of
 // the residual - an overshoot, or a trim the ship still has to turn to
 static constexpr double PLAN_BURN_MIN_ALONG = 0.5;
-// a residual this small is spent
-static constexpr double PLAN_BURN_SPENT_DV = 0.05; // m/s
+// a residual this small is spent: along the orbit a velocity error grows
+// into roughly three times itself per second of coasting, so 0.005 m/s keeps
+// a 45-minute transfer within some tens of metres
+static constexpr double PLAN_BURN_SPENT_DV = 0.005; // m/s
+// the guidance aim point lies this share of the planned orbit's period past
+// the node, and is used while at least this share of that is still ahead
+static constexpr double PLAN_BURN_AIM_PERIOD_SHARE = 0.35;
+static constexpr double PLAN_BURN_MIN_AIM_SHARE = 0.2;
 // the accuracy is measured against altitude, never against less than this
 static constexpr double PLAN_BURN_MIN_ACCURACY_ALTITUDE = 1000.0; // m
 // the throttle tapers over the last second of full thrust, or the last few
@@ -709,12 +717,12 @@ void PlayerShipController::SteerPlanBurnLock()
 
 bool PlayerShipController::GetPlannerState(vector3d &pos, vector3d &vel) const
 {
-	const Frame *shipFrame = Frame::GetFrame(m_ship->GetFrame());
-	if (!shipFrame)
+	// the planner's frame: never an orbital station's gravity-free one
+	const Frame *plannerFrame = TransferPlanner::GravityFrame(m_ship->GetFrame());
+	if (!plannerFrame)
 		return false;
-	const FrameId plannerFrame = shipFrame->GetNonRotFrame();
-	pos = m_ship->GetPositionRelTo(plannerFrame);
-	vel = m_ship->GetVelocityRelTo(plannerFrame);
+	pos = m_ship->GetPositionRelTo(plannerFrame->GetId());
+	vel = m_ship->GetVelocityRelTo(plannerFrame->GetId());
 	return true;
 }
 
@@ -729,8 +737,7 @@ bool PlayerShipController::SyncPlanBurnTarget(int idx)
 		return true;
 	target = PlanBurnTarget();
 
-	const Frame *shipFrame = Frame::GetFrame(m_ship->GetFrame());
-	const Frame *frame = shipFrame ? Frame::GetFrame(shipFrame->GetNonRotFrame()) : nullptr;
+	const Frame *frame = TransferPlanner::GravityFrame(m_ship->GetFrame());
 	if (!frame || !frame->GetSystemBody() || idx < 0)
 		return false;
 	const double mu = G * frame->GetSystemBody()->GetMass();
@@ -760,22 +767,54 @@ bool PlayerShipController::SyncPlanBurnTarget(int idx)
 	target.plannedDv = Pi::planner->GetBurnDeltaV(idx);
 	if (target.plannedDv < PLAN_BURN_EPS)
 		return false;
+
+	// the aim point: where the planned trajectory is a while after the node,
+	// at the planned time. Steering onto it keeps the plan's timing along the
+	// orbit, which the later burns and a rendezvous depend on, not only its
+	// shape. A share of the orbit's period keeps the ends well clear of
+	// lining up with the body (where Lambert's problem has no reliable answer)
+	const Orbit planned = Orbit::FromBodyState(pos, vel, frame->GetSystemBody()->GetMass());
+	if (!is_zero_general(planned.GetSemiMajorAxis())) {
+		const double aSize = std::fabs(target.a);
+		const double lookahead = PLAN_BURN_AIM_PERIOD_SHARE * 2.0 * M_PI * std::sqrt(aSize * aSize * aSize / mu);
+		target.aimPos = planned.OrbitalPosAtTime(lookahead);
+		target.aimTime = Pi::planner->GetStartTime(idx) + lookahead;
+		target.aimLookahead = lookahead;
+		target.aimValid = std::isfinite(target.aimPos.x) && lookahead > 0.0;
+	}
+
 	target.idx = idx;
 	target.serial = serial;
 	target.valid = true;
 	return true;
 }
 
-// The velocity still to gain to be on the target orbit, from where the ship
-// is now: the speed the target orbit's energy gives at the ship's radius, its
-// angular momentum split into horizontal and radial parts, radial outward or
-// inward as the target orbit is on that side of its periapsis, all in the
-// target plane. Flying it puts the ship on the planned periapsis, apoapsis and
-// plane, whatever the timing, pointing or gravity losses of the burn so far.
+// The velocity still to gain to be on the planned trajectory.
+//
+// Normally: the velocity that carries the ship from where it is now to the
+// aim point at its planned time (Lambert's problem), minus the ship's own.
+// Flying it puts the ship on the planned trajectory with the planned timing,
+// whatever the pointing, gravity losses or finite length of the burn so far.
+//
+// Without an aim point, or where Lambert's problem has no reliable answer:
+// the speed the target orbit's energy gives at the ship's radius, its angular
+// momentum split into horizontal and radial parts, radial outward or inward
+// as the target orbit is on that side of its periapsis, all in the target
+// plane - the planned periapsis, apoapsis and plane, without the timing.
 // Outside the target orbit's radius range only its angular momentum is kept.
 vector3d PlayerShipController::PlanBurnVelocityToGain(const vector3d &pos, const vector3d &vel) const
 {
 	const PlanBurnTarget &target = m_planBurnTarget;
+
+	if (target.aimValid) {
+		const double flight = target.aimTime - Pi::game->GetTime();
+		vector3d v1, v2;
+		double transferAngle;
+		if (flight > PLAN_BURN_MIN_AIM_SHARE * target.aimLookahead &&
+			TransferPlanner::SolveLambert(pos, target.aimPos, flight, target.mu, target.normal, v1, v2, transferAngle))
+			return v1 - vel;
+	}
+
 	const vector3d inPlane = pos - target.normal * pos.Dot(target.normal);
 	const double r = inPlane.Length();
 	if (is_zero_general(r))
@@ -831,7 +870,10 @@ void PlayerShipController::SetPlanBurnAccuracy(double fraction)
 
 vector3d PlayerShipController::PlannerToShipFrame(const vector3d &plannerDir) const
 {
-	const matrix3x3d rot = Frame::GetFrame(Frame::GetFrame(m_ship->GetFrame())->GetNonRotFrame())->GetOrientRelTo(m_ship->GetFrame());
+	const Frame *plannerFrame = TransferPlanner::GravityFrame(m_ship->GetFrame());
+	if (!plannerFrame)
+		return plannerDir.NormalizedSafe();
+	const matrix3x3d rot = plannerFrame->GetOrientRelTo(m_ship->GetFrame());
 	return (rot * plannerDir).NormalizedSafe();
 }
 

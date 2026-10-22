@@ -168,7 +168,7 @@ double StumpffS(double z)
 // transfer turns the same way as hRef, the departure orbit's angular
 // momentum. transferAngle is the angle swept on the way, in [0, 2pi).
 //
-bool SolveLambert(const vector3d &r1, const vector3d &r2, double tof, double mu, const vector3d &hRef,
+bool SolveLambertImpl(const vector3d &r1, const vector3d &r2, double tof, double mu, const vector3d &hRef,
 	vector3d &v1, vector3d &v2, double &transferAngle)
 {
 	const double r1n = r1.Length();
@@ -259,24 +259,35 @@ bool DipsBelow(const vector3d &r1, const vector3d &v1, const vector3d &r2, doubl
 
 } // namespace
 
+bool TransferPlanner::SolveLambert(const vector3d &r1, const vector3d &r2, double tof, double mu, const vector3d &hRef,
+	vector3d &v1, vector3d &v2, double &transferAngle)
+{
+	return SolveLambertImpl(r1, r2, tof, mu, hRef, v1, v2, transferAngle);
+}
+
 bool TransferPlanner::GetFinalOrbit(Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const
 {
 	Frame *frame = PlannerFrame();
 	if (!frame || !frame->GetSystemBody())
 		return false;
 
-	// chained as RecomputeChain chains it: the last burn's outgoing state, at
-	// its start time (never before now), or the live state now
+	// chained as RecomputeChain chains it: the outgoing state of the last
+	// burn still to fly, at its start time (never before now), or the live
+	// state now; completed burns are already in the live state
 	segmentTime = Pi::game->GetTime();
-	if (m_burns.empty()) {
+	const Burn *last = nullptr;
+	for (const Burn &burn : m_burns) {
+		if (burn.status == COMPLETED)
+			continue;
+		segmentTime = std::max(segmentTime, burn.startTime);
+		last = &burn;
+	}
+	if (!last) {
 		pos = Pi::player->GetPositionRelTo(frame->GetId());
 		vel = Pi::player->GetVelocityRelTo(frame->GetId());
 	} else {
-		for (const Burn &burn : m_burns)
-			segmentTime = std::max(segmentTime, burn.startTime);
-		const Burn &last = m_burns.back();
-		pos = last.pos;
-		vel = last.vel + GetOffsetVel(last);
+		pos = last->pos;
+		vel = last->vel + GetOffsetVel(*last);
 	}
 
 	orbit = Orbit::FromBodyState(pos, vel, frame->GetSystemBody()->GetMass());
@@ -462,6 +473,9 @@ bool TransferPlanner::GetClosestApproach(const Body *target, ClosestApproach &re
 							  Pi::player->GetVelocityRelTo(frame->GetId()), mass) });
 	double legStart = now;
 	for (const Burn &burn : m_burns) {
+		// completed burns are already in the live state
+		if (burn.status == COMPLETED)
+			continue;
 		legStart = std::max(legStart, burn.startTime);
 		legs.push_back({ legStart, Orbit::FromBodyState(burn.pos, burn.vel + GetOffsetVel(burn), mass) });
 	}

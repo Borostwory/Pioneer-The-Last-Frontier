@@ -46,14 +46,24 @@ double SweptAngle(const vector3d &a, const vector3d &b, const vector3d &axis)
 }
 } // namespace
 
+Frame *TransferPlanner::GravityFrame(FrameId frameId)
+{
+	const Frame *frame = Frame::GetFrame(frameId);
+	if (!frame)
+		return nullptr;
+	Frame *nonRot = Frame::GetFrame(frame->GetNonRotFrame());
+	// an orbital station's frame has no gravity of its own (DynamicBody::
+	// CalcExternalForce): it rides the station's orbit around the body above
+	while (nonRot && nonRot->GetBody() && nonRot->GetBody()->IsType(ObjectType::SPACESTATION))
+		nonRot = Frame::GetFrame(nonRot->GetParent());
+	return nonRot;
+}
+
 Frame *TransferPlanner::PlannerFrame()
 {
 	if (!Pi::player)
 		return nullptr;
-	const Frame *playerFrame = Frame::GetFrame(Pi::player->GetFrame());
-	if (!playerFrame)
-		return nullptr;
-	return Frame::GetFrame(playerFrame->GetNonRotFrame());
+	return GravityFrame(Pi::player->GetFrame());
 }
 
 bool TransferPlanner::DecomposeDv(const vector3d &pos, const vector3d &vel, const vector3d &change, double dv[3])
@@ -497,6 +507,12 @@ void TransferPlanner::RecomputeChain()
 		mass);
 
 	for (Burn &burn : m_burns) {
+		// a completed burn is already in the live state the chain is seeded
+		// from: applying it again would fly it twice. It keeps the state it
+		// was planned at.
+		if (burn.status == COMPLETED)
+			continue;
+
 		// hyperbolic legs chain exactly like elliptic ones: OrbitalPosAtTime /
 		// OrbitalVelocityAtTime branch on eccentricity internally (the same
 		// hyperbolic solver as Orbit.cpp's MeanAnomalyFromTrueAnomaly branch),
@@ -522,19 +538,24 @@ bool TransferPlanner::GetIncomingOrbit(int idx, Orbit &orbit, vector3d &pos, vec
 	if (!frame || !frame->GetSystemBody())
 		return false;
 
-	// the same chaining as RecomputeChain: burn 0 flies the live orbit from
-	// now, every later burn the orbit the previous burn leaves behind, from
-	// that burn's start time (never before now)
+	// the same chaining as RecomputeChain: the first burn still to fly takes
+	// the live orbit from now, every later one the orbit the previous burn
+	// still to fly leaves behind, from that burn's start time (never before
+	// now); completed burns are already in the live state
 	segmentTime = Pi::game->GetTime();
-	if (idx == 0) {
+	const Burn *prev = nullptr;
+	for (int i = 0; i < idx; ++i) {
+		if (m_burns[i].status == COMPLETED)
+			continue;
+		segmentTime = std::max(segmentTime, m_burns[i].startTime);
+		prev = &m_burns[i];
+	}
+	if (!prev) {
 		pos = Pi::player->GetPositionRelTo(frame->GetId());
 		vel = Pi::player->GetVelocityRelTo(frame->GetId());
 	} else {
-		for (int i = 0; i < idx; ++i)
-			segmentTime = std::max(segmentTime, m_burns[i].startTime);
-		const Burn &prev = m_burns[idx - 1];
-		pos = prev.pos;
-		vel = prev.vel + GetOffsetVel(prev);
+		pos = prev->pos;
+		vel = prev->vel + GetOffsetVel(*prev);
 	}
 
 	orbit = Orbit::FromBodyState(pos, vel, frame->GetSystemBody()->GetMass());

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "FrameId.h"
 #include "vector3.h"
 
 #include <cstddef>
@@ -18,6 +19,18 @@ class TransferPlanner {
 public:
 	// sane cap for a plan; more burns than this is fiddling, not planning
 	static constexpr size_t MAX_BURNS = 8;
+
+	// the frame the planner works in for a body in frameId: its non-rotating
+	// frame, or - inside an orbital station's gravity-free frame - the frame
+	// of the body the station orbits. Every planner vector is relative to it.
+	static Frame *GravityFrame(FrameId frameId);
+
+	// Lambert's problem, single revolution: the velocities leaving r1 and
+	// arriving at r2 tof seconds later around mu, turning the same way as
+	// hRef; transferAngle is the angle swept. False where it has no reliable
+	// answer, within about 0.1 degree of the ends being in line with the body.
+	static bool SolveLambert(const vector3d &r1, const vector3d &r2, double tof, double mu, const vector3d &hRef,
+		vector3d &v1, vector3d &v2, double &transferAngle);
 
 	enum BurnDirection {
 		PROGRADE,

@@ -294,8 +294,10 @@ void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double t
 	CalculateShipPositionAtTime(static_cast<Ship *>(Pi::player), playerOrbit, time, ppos);
 	map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLAYER, PlayerBody, ppos });
 
-	FrameId playerNonRotFrameId = Frame::GetFrame(PlayerBody->GetFrame())->GetNonRotFrame();
-	Frame *playerNonRotFrame = Frame::GetFrame(playerNonRotFrameId);
+	// the planner's frame, so the plan is drawn where it is computed - never
+	// an orbital station's gravity-free frame
+	Frame *playerNonRotFrame = TransferPlanner::GravityFrame(PlayerBody->GetFrame());
+	FrameId playerNonRotFrameId = playerNonRotFrame->GetId();
 	SystemBody *playerAround = playerNonRotFrame->GetSystemBody();
 
 	vector3d offset(0.0);
