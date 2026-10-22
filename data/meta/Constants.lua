@@ -193,6 +193,8 @@ local ProjectableTypes = {
 	L5 = 4,
 	APOAPSIS = 5,
 	PERIAPSIS = 6,
+	ASCENDING_NODE = 7,
+	DESCENDING_NODE = 8,
 }
 
 ---@type ProjectableTypes[]

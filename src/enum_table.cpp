@@ -153,6 +153,8 @@ const struct EnumItem ENUM_ProjectableTypes[] = {
 	{ "L5", int(Projectable::L5) },
 	{ "APOAPSIS", int(Projectable::APOAPSIS) },
 	{ "PERIAPSIS", int(Projectable::PERIAPSIS) },
+	{ "ASCENDING_NODE", int(Projectable::ASCENDING_NODE) },
+	{ "DESCENDING_NODE", int(Projectable::DESCENDING_NODE) },
 	{ 0, 0 },
 };
 

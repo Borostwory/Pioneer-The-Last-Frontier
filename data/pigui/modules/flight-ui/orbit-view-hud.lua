@@ -93,6 +93,8 @@ end
 local function getBodyIcon(obj)
 	if obj.type == Projectable.APOAPSIS then return icons.apoapsis
 	elseif obj.type == Projectable.PERIAPSIS then return icons.periapsis
+	elseif obj.type == Projectable.ASCENDING_NODE then return icons.normal_thin
+	elseif obj.type == Projectable.DESCENDING_NODE then return icons.antinormal_thin
 	elseif obj.type == Projectable.L4 or obj.type == Projectable.L5 then return icons.lagrange_marker
 	elseif obj.base == Projectable.PLAYER or obj.base == Projectable.PLANNER or obj.base == Projectable.PLANNER_BURN then
 		local shipClass = obj.ref and obj.ref:GetShipClass()
@@ -110,7 +112,19 @@ local function getBodyIcon(obj)
 	end
 end
 
+-- orbit markers labelled on the player's and the planner's orbits, which
+-- carry the marker's altitude (other orbits' apsides stay icon-only)
+local markerLabels = {
+	[Projectable.PERIAPSIS] = "Pe",
+	[Projectable.APOAPSIS] = "Ap",
+	[Projectable.ASCENDING_NODE] = "AN",
+	[Projectable.DESCENDING_NODE] = "DN",
+}
+
 local function getLabel(obj)
+	if markerLabels[obj.type] and obj.altitude then
+		return markerLabels[obj.type] .. " " .. ui.Format.Distance(obj.altitude)
+	end
 	if obj.type == Projectable.OBJECT then
 		if obj.base == Projectable.SYSTEMBODY then return obj.ref.name
 		elseif obj.base == Projectable.PLANNER then return ""
@@ -131,7 +145,7 @@ local function getColor(obj)
 		elseif obj.base == Projectable.PLANNER_BURN then return colors.systemMapPlannerBurn
 		else return colors.systemMapObject
 		end
-	elseif obj.type == Projectable.APOAPSIS or obj.type == Projectable.PERIAPSIS then
+	elseif markerLabels[obj.type] then
 		if obj.base == Projectable.SYSTEMBODY then return colors.systemMapSystemBodyOrbit
 		elseif obj.base == Projectable.PLAYER then return colors.systemMapPlayerOrbit
 		elseif obj.base == Projectable.PLANNER then return colors.systemMapPlannerOrbit

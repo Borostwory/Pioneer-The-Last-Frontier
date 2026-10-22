@@ -97,8 +97,10 @@ struct Projectable {
 		L5 = 3,
 		APOAPSIS = 4,
 		PERIAPSIS = 5,
-		ORBIT = 6, // <enum skip>
-		_MAX = 7 // <enum skip>
+		ASCENDING_NODE = 6,	 // where an orbit crosses the planner's reference plane northwards
+		DESCENDING_NODE = 7, // ... and southwards
+		ORBIT = 8, // <enum skip>
+		_MAX = 9 // <enum skip>
 	} type;
 	enum bases {		// <enum name=ProjectableBases scope='Projectable' public>
 		SYSTEMBODY = 0, // ref class SystemBody, may not have a physical body
@@ -116,6 +118,9 @@ struct Projectable {
 	float screensize = 0.f; // approximate size in screen pixels
 	vector3d worldpos;
 	int orbitIdx = -1;
+	// apsis and node markers of the player's and the planner's orbits: the
+	// marker's height above the surface of the orbited body
+	double altitude = 0.0;
 
 	Projectable(const types t, const bases b, const Body *obj, const vector3d &pos = vector3d()) :
 		type(t), base(b), worldpos(pos)

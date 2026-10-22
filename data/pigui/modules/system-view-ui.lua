@@ -546,6 +546,8 @@ local _getBodyIcon = require 'pigui.modules.flight-ui.body-icons'
 local function getBodyIcon(obj, forWorld, isOrrery)
 	if obj.type == Projectable.APOAPSIS then return icons.apoapsis
 	elseif obj.type == Projectable.PERIAPSIS then return icons.periapsis
+	elseif obj.type == Projectable.ASCENDING_NODE then return icons.normal_thin
+	elseif obj.type == Projectable.DESCENDING_NODE then return icons.antinormal_thin
 	elseif obj.type == Projectable.L4 then return icons.lagrange_marker
 	elseif obj.type == Projectable.L5 then return icons.lagrange_marker
 	elseif obj.base == Projectable.PLAYER or obj.base == Projectable.PLANNER or obj.base == Projectable.PLANNER_BURN then
@@ -1066,7 +1068,19 @@ function Windows.timeButtons.Show()
 	end
 end
 
+-- orbit markers labelled on the player's and the planner's orbits, which
+-- carry the marker's altitude (other orbits' apsides stay icon-only)
+local markerLabels = {
+	[Projectable.PERIAPSIS] = "Pe",
+	[Projectable.APOAPSIS] = "Ap",
+	[Projectable.ASCENDING_NODE] = "AN",
+	[Projectable.DESCENDING_NODE] = "DN",
+}
+
 local function getLabel(obj)
+	if markerLabels[obj.type] and obj.altitude then
+		return markerLabels[obj.type] .. " " .. ui.Format.Distance(obj.altitude)
+	end
 	if obj.type == Projectable.OBJECT then
 		if obj.base == Projectable.SYSTEMBODY then return obj.ref.name
 		elseif obj.base == Projectable.PLANNER then return ""
@@ -1089,7 +1103,7 @@ local function getColor(obj)
 		elseif obj.base == Projectable.PLANNER_BURN then return svColor.PLANNER_BURN
 		else return svColor.OBJECT
 		end
-	elseif obj.type == Projectable.APOAPSIS or obj.type == Projectable.PERIAPSIS then
+	elseif markerLabels[obj.type] then
 		if obj.base == Projectable.SYSTEMBODY then return svColor.SYSTEMBODY_ORBIT
 		elseif obj.base == Projectable.SHIP then
 			if obj.ref == selectedObject then return svColor.SELECTED_SHIP_ORBIT

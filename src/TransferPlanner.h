@@ -105,7 +105,7 @@ public:
 	// the plane the nodes are measured against: the navigation target's orbit
 	// when the target circles the same body, otherwise that body's equator.
 	// name is the target's or the body's label.
-	bool GetNodeReference(vector3d &normal, std::string &name, bool &isTarget) const;
+	static bool GetNodeReference(vector3d &normal, std::string &name, bool &isTarget);
 
 	// runtime-only lock-lifecycle serial: advances whenever a burn completes,
 	// is reset, or may be replaced at an existing index (insert/remove/reorder,

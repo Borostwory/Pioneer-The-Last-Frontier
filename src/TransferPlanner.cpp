@@ -34,7 +34,10 @@ Frame *PlannerFrame()
 {
 	if (!Pi::player)
 		return nullptr;
-	return Frame::GetFrame(Frame::GetFrame(Pi::player->GetFrame())->GetNonRotFrame());
+	const Frame *playerFrame = Frame::GetFrame(Pi::player->GetFrame());
+	if (!playerFrame)
+		return nullptr;
+	return Frame::GetFrame(playerFrame->GetNonRotFrame());
 }
 
 // angle swept from a to b around axis (the orbit's angular momentum), in [0, 2pi)
@@ -493,7 +496,7 @@ bool TransferPlanner::GetIncomingOrbit(int idx, Orbit &orbit, vector3d &pos, vec
 	return !is_zero_general(orbit.GetSemiMajorAxis());
 }
 
-bool TransferPlanner::GetNodeReference(vector3d &normal, std::string &name, bool &isTarget) const
+bool TransferPlanner::GetNodeReference(vector3d &normal, std::string &name, bool &isTarget)
 {
 	Frame *frame = PlannerFrame();
 	if (!frame || !frame->GetSystemBody())

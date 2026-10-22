@@ -16,7 +16,7 @@
 
 LuaTable projectable_to_lua_row(const Projectable &p, lua_State *l)
 {
-	LuaTable proj_table(l, 0, 4);
+	LuaTable proj_table(l, 0, 5);
 	proj_table.Set("type", int(p.type));
 	if (p.type == Projectable::NONE) return proj_table;
 	proj_table.Set("base", int(p.base));
@@ -27,6 +27,12 @@ LuaTable projectable_to_lua_row(const Projectable &p, lua_State *l)
 	// planned burn markers carry their (0-based) burn index in orbitIdx
 	if (p.base == Projectable::PLANNER_BURN)
 		proj_table.Set("burnIndex", p.orbitIdx + 1);
+	// apsis and node markers of the player's and the planner's orbits are
+	// labelled with their altitude
+	const bool marker = p.type == Projectable::APOAPSIS || p.type == Projectable::PERIAPSIS ||
+		p.type == Projectable::ASCENDING_NODE || p.type == Projectable::DESCENDING_NODE;
+	if (marker && (p.base == Projectable::PLAYER || p.base == Projectable::PLANNER))
+		proj_table.Set("altitude", p.altitude);
 	return proj_table;
 }
 

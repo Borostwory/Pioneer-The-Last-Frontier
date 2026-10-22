@@ -721,6 +721,33 @@ void SystemMapViewport::SetCurrentSystem(RefCountedPtr<StarSystem> system)
 	ResetViewpoint();
 }
 
+// Where an orbit crosses the plane with the given normal, going towards the
+// normal (ascending) or away from it, relative to the orbited body. False for
+// an orbit lying in the plane, and for a node beyond a hyperbola's asymptotes.
+static bool OrbitNodePosition(const Orbit &orbit, const vector3d &planeNormal, bool ascending, vector3d &pos)
+{
+	const double a = orbit.GetSemiMajorAxis();
+	const double e = orbit.GetEccentricity();
+	if (is_zero_general(a))
+		return false;
+
+	// the orbit's angular momentum is minus the plane's z axis
+	// (Orbit::FromBodyState), and the line of nodes, normal x h, points at
+	// the ascending node
+	const vector3d h = -(orbit.GetPlane() * vector3d(0.0, 0.0, 1.0));
+	vector3d dir = planeNormal.Cross(h);
+	if (dir.Length() < 1e-6)
+		return false;
+	dir = ascending ? dir.Normalized() : -dir.Normalized();
+
+	// conic radius at the true anomaly of that direction: r = p / (1 + e cos v)
+	const double denom = 1.0 + e * dir.Dot(orbit.Perigeum().Normalized());
+	if (denom <= 1e-9)
+		return false;
+	pos = dir * (a * std::fabs(1.0 - e * e) / denom);
+	return true;
+}
+
 void SystemMapViewport::RenderOrbit(const Projectable &p, const ProjectedOrbit *orbitData, const vector3d &offset)
 {
 	PROFILE_SCOPED()
@@ -775,8 +802,37 @@ void SystemMapViewport::RenderOrbit(const Projectable &p, const ProjectedOrbit *
 		m_orbits.Draw(m_renderer, m_lineMat.get());
 	}
 
-	AddProjected(p, Projectable::PERIAPSIS, offset + orbitData->orbit.Perigeum());
-	AddProjected(p, Projectable::APOAPSIS, offset + orbitData->orbit.Apogeum());
+	// apsis markers carry their altitude for the labels; an escape trajectory
+	// has no apoapsis (Orbit::Apogeum answers the body's centre)
+	const Orbit &orbit = orbitData->orbit;
+	Projectable marker = p;
+	const vector3d periapsis = orbit.Perigeum();
+	marker.altitude = periapsis.Length() - orbitData->planetRadius;
+	AddProjected(marker, Projectable::PERIAPSIS, offset + periapsis);
+	if (ecc < 1.0) {
+		const vector3d apoapsis = orbit.Apogeum();
+		marker.altitude = apoapsis.Length() - orbitData->planetRadius;
+		AddProjected(marker, Projectable::APOAPSIS, offset + apoapsis);
+	}
+
+	// the player's and the planner's orbits also mark their nodes, against
+	// the plane the planner's AN/DN snapping uses
+	if (p.base == Projectable::PLAYER || p.base == Projectable::PLANNER) {
+		vector3d normal;
+		std::string name;
+		bool isTarget;
+		if (TransferPlanner::GetNodeReference(normal, name, isTarget)) {
+			vector3d node;
+			if (OrbitNodePosition(orbit, normal, true, node)) {
+				marker.altitude = node.Length() - orbitData->planetRadius;
+				AddProjected(marker, Projectable::ASCENDING_NODE, offset + node);
+			}
+			if (OrbitNodePosition(orbit, normal, false, node)) {
+				marker.altitude = node.Length() - orbitData->planetRadius;
+				AddProjected(marker, Projectable::DESCENDING_NODE, offset + node);
+			}
+		}
+	}
 
 	if (p.base != Projectable::SYSTEMBODY || !p.getRef())
 		return;
