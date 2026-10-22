@@ -160,7 +160,7 @@ float cloudSigmaMax(int li, float st)
 	// depth continuous with stratocumulus as cover approaches overcast
 	if (li == 0) return mix(0.025, 0.05, st);
 	if (li == 1) return 0.02;
-	return 0.0005; // cirrus: mostly translucent veils, vertical optical depth ~0.1-0.6
+	return 0.0002; // cirrus: semi-transparent veils, vertical optical depth ~0.05-0.3
 }
 
 // Wind displacement of a whole layer: every altitude inside a layer moves
@@ -445,12 +445,15 @@ void cloudShadeSample(CloudPlanet cp, int li, vec3 pos, vec3 dens, float ds, vec
 		// light enters through the top, or through the side for a low sun
 		float tauSun = sigmaCol * min(depth / max(dot(up, L), 0.05), 4.0 * d);
 
-		// multiple scattering octaves (Wrenninge 2013)
+		// multiple scattering octaves (Wrenninge 2013); light is scattered more
+		// than once only in optically thick cloud, so thin veils (cirrus) get
+		// little more than the single-scattering octave
 		float mu = dot(rayDir, L);
 		vec3 ms = vec3(0.0);
+		float msW = 1.0 - exp(-sigmaCol * d);
 		float a = 1.0, b = 1.0, c = 1.0;
 		for (int o = 0; o < 3; o++) {
-			ms += a * exp(-tauSun * b) * cloudPhaseFn(ly, mu, c);
+			ms += (o == 0 ? 1.0 : msW) * a * exp(-tauSun * b) * cloudPhaseFn(ly, mu, c);
 			a *= 0.5;
 			b *= 0.5;
 			c *= 0.5;
