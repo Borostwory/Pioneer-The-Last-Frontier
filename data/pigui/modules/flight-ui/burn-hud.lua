@@ -4,9 +4,11 @@
 -- Multi-burn flight HUD widget.
 --
 -- A compact panel in the flight HUD (WorldView only) listing every planned
--- transfer burn: status, Δv, remaining Δv, countdown to the burn start,
--- estimated burn duration, time remaining, and per-row Complete / Warp
--- controls, plus the two autopilot toggles (Auto Orientation, Auto Burn).
+-- transfer burn, one row each: status, the Δv still to fly (with a progress
+-- bar once the burn is under way), the countdowns to ignition and to the
+-- node, the burn time left, and per-row Complete / Warp controls. A title
+-- line sums up what is left of the plan; the two autopilot toggles (Auto
+-- Orientation, Auto Burn) and the stop-before-burn margin sit below the table.
 --
 -- The table is rebuilt from the transfer planner every frame it draws. The
 -- planner is the single source of truth (shared with the map sidebar), so this
@@ -39,13 +41,11 @@ local icons = ui.theme.icons
 local colors = ui.theme.colors
 local styles = ui.theme.styles
 
-local labelFont = ui.fonts.pionillium.details
-local dataFont = ui.fonts.pionillium.small
-local captionFont = ui.fonts.pionillium.tiny
-local glyphFont = ui.fonts.pionicons.small
--- the font the reticle draws its side data blocks in, used only to measure the
--- horizontal band the panel must stay clear of (see reticleKeepoutLeft)
-local reticleDataFont = ui.fonts.pionillium.heading
+-- the panel's type scale: a heading for the title, readable captions over
+-- the columns, and one data font for every value in the table and below it
+local titleFont = ui.fonts.orbiteer.small
+local captionFont = ui.fonts.pionillium.small
+local dataFont = ui.fonts.pionillium.details
 
 local gameView = require 'pigui.views.game'
 
@@ -56,43 +56,46 @@ local BURN_STATUS_ACTIVE = 1
 local BURN_STATUS_COMPLETED = 2
 
 -- every window this module opens is fixed: no dragging, no ImGui layout
--- persistence. No keybindings are used anywhere in this widget.
+-- persistence. No keybindings are used anywhere in this widget. The panel
+-- sizes itself to its content and is anchored by its bottom-right corner.
 local windowFlags = ui.WindowFlags {"NoTitleBar", "NoResize", "NoMove", "NoSavedSettings",
-	"NoFocusOnAppearing", "NoBringToFrontOnFocus", "NoScrollbar"}
+	"NoFocusOnAppearing", "NoBringToFrontOnFocus", "NoScrollbar", "AlwaysAutoResize"}
 local toggleFlags = ui.WindowFlags {"NoTitleBar", "NoResize", "NoMove", "NoSavedSettings",
 	"NoFocusOnAppearing", "NoBringToFrontOnFocus", "NoBackground"}
+local tableFlags = ui.TableFlags {"SizingFixedFit", "NoSavedSettings", "NoHostExtendX"}
 
 -- cells render "-" when a value is unavailable
 local UNAVAILABLE = "-"
 
--- a worst-case reticle side-data line, measured only to keep the panel clear of
--- the reticle's data blocks (see reticleKeepoutLeft; never drawn). The widest
--- value the reticule prints is a speed in its heading font
--- (flight-ui/reticule.lua: displayDetailData).
-local RETICLE_WIDEST_SAMPLE = "999,999,999.9 m/s"
-
 -- The plan cap, mirrored from src/TransferPlanner.cpp (kMaxBurns).
 local MAX_BURN_COUNT = 8
 
--- strings the game ships no lang key for; Phase 4 is scoped to this module,
--- the HUD registration and the theme, so no data/lang entries are added here
+-- strings the game ships no lang key for; no data/lang entries are added here
 local L = {
+	TITLE = "BURN PLAN",
+	SUMMARY = "%d to go  ·  %s  ·  %s",
+	SUMMARY_TIP = "Burns left, the Δv they still need and their burn time at the current thrust",
+	ALL_DONE = "All burns complete",
 	BURN = "Burn %d",
 	NO_BURNS = "No planned burns",
-	CAPTION_LABEL = "Burn",
-	CAPTION_STATUS = "",
+	CAPTION_BURN = "Burn",
 	CAPTION_DV = "Δv",
-	CAPTION_REMAINING_DV = "Left",
-	CAPTION_START = "Start / Node",
-	START_NODE_SEPARATOR = " / ",
-	BURN_OVERLAP = "Burn %d!",
-	OVERLAP_TIP = ": overlaps the previous burn (its start is before the previous burn ends)",
-	CAPTION_DURATION = "Est.",
-	CAPTION_TIME_LEFT = "Time left",
-	CAPTION_ACTIONS = "",
+	CAPTION_IGNITION = "Ignition",
+	CAPTION_NODE = "Node",
+	CAPTION_DURATION = "Burn time",
+	CAPTION_DV_TIP = "Δv still to fly; the bar under it is the part already flown",
+	CAPTION_IGNITION_TIP = "Time to engine start: half the burn time before the node",
+	CAPTION_NODE_TIP = "Time to the planned node, the middle of the burn",
+	CAPTION_DURATION_TIP = "Burn time left at the current thrust",
+	DV_TIP = "Planned %s\nFlown %s\nLeft %s",
+	DURATION_TIP = "%s in total at the current thrust, %s left",
+	NO_THRUST = "No forward thrust: the burn time is unknown",
+	DONE = "Done",
 	STATUS_PENDING = "Planned burn",
 	STATUS_ACTIVE = "Active burn",
 	STATUS_COMPLETED = "Completed burn",
+	-- chained burns: this burn starts before the previous one ends
+	OVERLAP = "Starts %s before Burn %d ends",
 	COMPLETE = "Mark this burn complete",
 	-- the Warp tooltip names the configured stop-before-burn offset, so the row
 	-- control states exactly what it will do; the greyed form states why it
@@ -102,7 +105,8 @@ local L = {
 	WARP_STRIP = "Warp to Burn %d - stop %ds before, %s",
 	WARP_LIMITED = " (limited)",
 	CANCEL_WARP = "Cancel warp: restore the previous time acceleration",
-	OFFSET_LABEL = "Stop Before Burn (s)",
+	OFFSET_LABEL = "Stop before burn",
+	OFFSET_FORMAT = "%.0f s",
 	OFFSET_TIP = "Pause this far before the burn start (half the burn duration before the planned time); shared by all burns",
 	-- each tooltip states only what its own control does. The two controls are
 	-- genuinely independent: Auto Orientation is a flight control state, Auto
@@ -363,9 +367,9 @@ local function shouldShowHud()
 end
 
 --
--- Estimated burn duration: Δv / forward acceleration. Shared by the estimated
--- duration cell and the time-remaining cell; the same estimate the reticule
--- shows (flight-ui/reticule.lua).
+-- Estimated burn duration: Δv / forward acceleration. Shared by the burn time
+-- cell and the plan summary; the same estimate the reticule shows
+-- (flight-ui/reticule.lua).
 --
 local function estimateDuration(dv, acceleration)
 	if not dv or not acceleration or acceleration <= 0 then return nil end
@@ -374,7 +378,7 @@ end
 
 local function formatDuration(seconds)
 	if not seconds then return UNAVAILABLE end
-	return ui.Format.Duration(seconds)
+	return ui.Format.Duration(math.ceil(seconds), 2)
 end
 
 local function formatSpeed(dv)
@@ -383,11 +387,29 @@ local function formatSpeed(dv)
 	return speed .. " " .. unit
 end
 
--- countdown to the burn start, reusing the map sidebar's "Now" clamping
--- convention (modules/system-view-ui.lua)
-local function formatCountdown(start)
-	if start and start > Game.time then
-		return ui.Format.Duration(math.floor(start - Game.time))
+--
+-- Countdowns read as a clock, so a column of them lines up and ticks
+-- visibly: m:ss, h:mm:ss, or days plus h:mm:ss.
+--
+local function formatClock(seconds)
+	local s = math.max(0, math.floor(seconds))
+	local days = math.floor(s / 86400)
+	local hours = math.floor(s / 3600) % 24
+	local minutes = math.floor(s / 60) % 60
+	s = s % 60
+	if days > 0 then
+		return string.format("%dd %d:%02d:%02d", days, hours, minutes, s)
+	elseif hours > 0 then
+		return string.format("%d:%02d:%02d", hours, minutes, s)
+	end
+	return string.format("%d:%02d", minutes, s)
+end
+
+-- countdown to a game time, "NOW" once it is reached
+local function formatCountdown(time)
+	if not time then return UNAVAILABLE end
+	if time > Game.time then
+		return formatClock(time - Game.time)
 	end
 	return lc.NOW
 end
@@ -397,10 +419,6 @@ local status_glyph = {
 	[BURN_STATUS_ACTIVE] = icons.maneuver,
 	[BURN_STATUS_COMPLETED] = icons.map_checkmark,
 }
-
-local function glyphOf(status)
-	return status_glyph[status] or icons.empty
-end
 
 local status_name = {
 	[BURN_STATUS_PENDING] = L.STATUS_PENDING,
@@ -412,391 +430,305 @@ local status_name = {
 -- Function: collectRows
 --
 -- Read-only snapshot of the plan for this frame; every value comes from a
--- planner call and nothing here is kept between frames.
+-- planner call and nothing here is kept between frames. Returns the rows, the
+-- active index and the totals of what is left of the plan.
 --
 -- The planner stores only COMPLETED. The displayed status is derived exactly as
 -- the map sidebar derives it (modules/system-view-ui.lua: statusOf): COMPLETED
 -- as stored, ACTIVE for the planner's active burn (TransferPlannerGetActiveIndex),
--- PENDING for every other burn - so the status label, its glyph, the active-row
--- highlight and the sidebar's row status can never disagree.
+-- PENDING for every other burn - so the status glyph, the active-row highlight
+-- and the sidebar's row status can never disagree.
 --
 local function collectRows(systemView, acceleration)
 	local count = systemView:TransferPlannerGetBurnCount()
 	local activeIndex = systemView:TransferPlannerGetActiveIndex()
 	local rows = {}
+	local totals = { burns = 0, dv = 0, duration = 0 }
 	local prevEnd = nil
 
 	for idx = 0, count - 1 do
 		local stored = systemView:TransferPlannerGetBurnStatus(idx)
-		local status = (stored == BURN_STATUS_COMPLETED) and BURN_STATUS_COMPLETED
+		local completed = stored == BURN_STATUS_COMPLETED
+		local status = completed and BURN_STATUS_COMPLETED
 			or ((idx == activeIndex) and BURN_STATUS_ACTIVE or BURN_STATUS_PENDING)
 		local dv = systemView:TransferPlannerGetBurnDeltaV(idx)
 		local remaining = systemView:TransferPlannerGetBurnRemainingDeltaV(idx)
-		local start = systemView:TransferPlannerGet(idx, "starttime")
+		local node = systemView:TransferPlannerGet(idx, "starttime")
+		local ignition = node and burnStartTime(node, dv, acceleration) or nil
 		-- the Warp control's availability is startWarp's own rule, computed from
 		-- the same planner value: a target at or before now never warps
 		local warpTarget = warpTargetFor(systemView, idx, acceleration)
-		local burnStart = start and burnStartTime(start, dv, acceleration) or nil
 		-- chained burns: this burn's window overlaps the previous one's when it
 		-- starts before the previous burn ends (node + half duration)
-		local overlap = prevEnd ~= nil and burnStart ~= nil and burnStart < prevEnd
-		prevEnd = start and (start + halfBurnDuration(dv, acceleration)) or prevEnd
+		local overlap = (prevEnd ~= nil and ignition ~= nil and ignition < prevEnd) and (prevEnd - ignition) or nil
+		prevEnd = node and (node + halfBurnDuration(dv, acceleration)) or prevEnd
+
+		local timeLeft = estimateDuration(remaining, acceleration)
+		if not completed then
+			totals.burns = totals.burns + 1
+			totals.dv = totals.dv + remaining
+			totals.duration = totals.duration and timeLeft and (totals.duration + timeLeft) or nil
+		end
 
 		table.insert(rows, {
 			idx = idx,
 			status = status,
-			label = string.format(overlap and L.BURN_OVERLAP or L.BURN, idx + 1),
-			statusText = (status_name[status] or UNAVAILABLE) .. (overlap and L.OVERLAP_TIP or ""),
-			dv = formatSpeed(dv),
-			remainingDv = formatSpeed(remaining),
-			countdown = formatCountdown(burnStart) .. L.START_NODE_SEPARATOR .. formatCountdown(start),
-			duration = formatDuration(estimateDuration(dv, acceleration)),
-			timeLeft = formatDuration(estimateDuration(remaining, acceleration)),
-			completable = stored ~= BURN_STATUS_COMPLETED,
+			completed = completed,
+			dv = dv,
+			remaining = remaining,
+			-- the share already flown, for the Δv cell's progress bar
+			progress = (not completed and dv > 0) and math.min(math.max(1 - remaining / dv, 0), 1) or 0,
+			ignition = ignition,
+			node = node,
+			duration = estimateDuration(dv, acceleration),
+			timeLeft = timeLeft,
+			overlap = overlap,
 			warppable = (warpTarget ~= nil) and (warpTarget > Game.time),
 		})
 	end
 
-	return rows, activeIndex
+	return rows, activeIndex, totals
 end
 
--- table columns: burn label / status glyph / Δv / remaining Δv / start /
--- estimated duration / time remaining / actions. Each column receives exactly
--- one item per row, which is what keeps the rows aligned.
-local COL_LABEL, COL_STATUS, COL_DV, COL_REMAINING, COL_START, COL_DURATION, COL_TIME_LEFT, COL_ACTIONS = 0, 1, 2, 3, 4, 5, 6, 7
-local COL_COUNT = COL_ACTIONS + 1
+-- table columns, in order
+local COL_STATUS, COL_LABEL, COL_DV, COL_IGNITION, COL_NODE, COL_DURATION, COL_ACTIONS = 1, 2, 3, 4, 5, 6, 7
+local COL_COUNT = COL_ACTIONS
+
+local columnCaptions = {
+	[COL_STATUS] = "",
+	[COL_LABEL] = L.CAPTION_BURN,
+	[COL_DV] = L.CAPTION_DV,
+	[COL_IGNITION] = L.CAPTION_IGNITION,
+	[COL_NODE] = L.CAPTION_NODE,
+	[COL_DURATION] = L.CAPTION_DURATION,
+	[COL_ACTIONS] = "",
+}
+
+local columnTips = {
+	[COL_DV] = L.CAPTION_DV_TIP,
+	[COL_IGNITION] = L.CAPTION_IGNITION_TIP,
+	[COL_NODE] = L.CAPTION_NODE_TIP,
+	[COL_DURATION] = L.CAPTION_DURATION_TIP,
+}
+
+-- numeric columns are right-aligned, captions included, so a caption sits over
+-- the digits it labels
+local rightAlignedColumn = {
+	[COL_DV] = true, [COL_IGNITION] = true, [COL_NODE] = true, [COL_DURATION] = true,
+}
 
 --
--- Function: measureLayout
+-- Function: measureColumns
 --
--- The column widths plus the row heights, measured once per screen size.
+-- Fixed column widths from worst-case strings, measured in the font each
+-- column draws in, so the panel keeps one width while values tick: "Burn 8",
+-- a four-digit km/s, a countdown in days, a burn time of an hour. Longer
+-- values clip in their cell. The status and action columns hold icons sized
+-- to the data line.
 --
--- Every string is measured in the exact same font context that draws it (the
--- same ui.withFont(...) wrapper the row drawing uses), and against worst-case
--- strings, not the current plan's values: the label column is sized for
--- "Burn 8" (the plan cap, MAX_BURN_COUNT), the Δv / remaining columns for the
--- widest string ui.Format.SpeedUnit can produce including its unit suffix, the
--- time columns for the longest strings ui.Format.Duration can produce plus
--- "NOW" and the "-" placeholder, and the action column for BOTH controls
--- (Complete + Warp) including the inter-control ui.sameLine spacing. The
--- layout is therefore stable for a given screen size and independent of the
--- plan's contents.
---
--- Font context matters: ui.calcTextSize is font-context dependent, and the HUD
--- draws inside the ambient font views/game.lua pushes (pionillium.medium).
--- Measuring a string outside the font it is drawn in measures the wrong text —
--- the exact under-sizing pass 2's screenshot showed ("950 m/", "Est",
--- "Time l", "Burn"). Every measurement below is wrapped in the same
--- ui.withFont(...) block the corresponding drawing uses.
---
--- The vertical metrics come from the same measurement: a text item's height is
--- the font's text height, and a row is as tall as its tallest item. The action
--- buttons have an explicit label-font text height, also reserved by the row;
--- their glyphs are measured at that height less the inline padding.
---
--- Numeric widths use stable representative envelopes; labels and controls
--- retain their measured minimum sizes.
---
-local function measureLayout()
-	-- widths are indexed by column (0..COL_ACTIONS)
+local function measureColumns(lineHeight)
+	local spacing = ui.getItemSpacing().x
 	local widths = {}
-	for i = COL_LABEL, COL_ACTIONS do widths[i] = 0 end
 
-	-- column captions, measured in the caption font the header row is drawn in;
-	-- the captions' text height is the caption row's height
-	local captionLine = 0
+	ui.withFont(dataFont.name, dataFont.size, function()
+		local function widest(...)
+			local w = 0
+			for _, s in ipairs({...}) do w = math.max(w, ui.calcTextSize(s).x) end
+			return w
+		end
+		widths[COL_LABEL] = widest(string.format(L.BURN, MAX_BURN_COUNT))
+		widths[COL_DV] = widest(formatSpeed(999990), formatSpeed(-999), UNAVAILABLE)
+		local clock = widest(formatClock(99 * 86400 + 23 * 3600 + 59 * 60 + 59),
+			formatClock(88 * 86400 + 18 * 3600 + 58 * 60 + 58), lc.NOW, L.DONE, UNAVAILABLE)
+		widths[COL_IGNITION] = clock
+		widths[COL_NODE] = clock
+		widths[COL_DURATION] = widest(formatDuration(59 * 60 + 59), formatDuration(23 * 3600 + 59 * 60), UNAVAILABLE)
+	end)
+
+	widths[COL_STATUS] = lineHeight
+	widths[COL_ACTIONS] = lineHeight * 2 + spacing
+
 	ui.withFont(captionFont.name, captionFont.size, function()
-		-- the list is 1-based, the columns are 0-based: index widths[col - 1]
-		for col, caption in ipairs({
-			L.CAPTION_LABEL, L.CAPTION_STATUS, L.CAPTION_DV, L.CAPTION_REMAINING_DV,
-			L.CAPTION_START, L.CAPTION_DURATION, L.CAPTION_TIME_LEFT, L.CAPTION_ACTIONS,
-		}) do
-			local size = ui.calcTextSize(caption)
-			widths[col - 1] = math.max(widths[col - 1], size.x)
-			captionLine = math.max(captionLine, size.y)
+		for col = 1, COL_COUNT do
+			widths[col] = math.max(widths[col], ui.calcTextSize(columnCaptions[col]).x)
 		end
 	end)
 
-	-- burn labels for the whole cap ("Burn 1" .. "Burn 8"), in the label font;
-	-- the label's text height is the row's advance (see the note above). The
-	-- empty-plan line is drawn in this same font, so its height is measured
-	-- here too.
-	local worstLabels = { L.NO_BURNS }
-	for n = 1, MAX_BURN_COUNT do
-		worstLabels[n + 1] = string.format(L.BURN_OVERLAP, n)
-	end
-	local rowLine, emptyLine = 0, 0
-	ui.withFont(labelFont.name, labelFont.size, function()
-		for n, label in ipairs(worstLabels) do
-			local size = ui.calcTextSize(label)
-			-- n == 1 is the empty-plan line: it sizes the window, not a column
-			if n > 1 then
-				widths[COL_LABEL] = math.max(widths[COL_LABEL], size.x)
-				rowLine = math.max(rowLine, size.y)
-			else
-				emptyLine = size.y
+	return widths
+end
+
+-- text in the current font, pushed to the right edge of the current cell
+local function textRight(text, color)
+	local width = ui.calcTextSize(text).x
+	ui.addCursorPos(Vector2(math.max(0, ui.getContentRegion().x - width), 0))
+	ui.textColored(color, text)
+end
+
+--
+-- Function: drawProgress
+--
+-- A thin bar under the Δv value, filled by the share of the burn already
+-- flown. It sits in the cell's bottom padding, so it never moves the text.
+--
+local function drawProgress(fraction, width, lineHeight)
+	local pos = ui.getCursorScreenPos()
+	local thickness = math.max(2, math.floor(lineHeight / 10))
+	local top = Vector2(pos.x, pos.y + lineHeight)
+	ui.addRectFilled(top, top + Vector2(width, thickness), colors.burnHudProgressTrack, 0, 0)
+	ui.addRectFilled(top, top + Vector2(width * fraction, thickness), colors.burnHudProgress, 0, 0)
+end
+
+local function drawHeaderRow()
+	ui.tableNextRow()
+	ui.withFont(captionFont.name, captionFont.size, function()
+		for col = 1, COL_COUNT do
+			ui.tableNextColumn()
+			local caption = columnCaptions[col]
+			if caption ~= "" then
+				if rightAlignedColumn[col] then
+					textRight(caption, colors.fontDim)
+				else
+					ui.textColored(colors.fontDim, caption)
+				end
+				if columnTips[col] then
+					ui.setItemTooltip(columnTips[col])
+				end
 			end
 		end
 	end)
-
-	-- status glyphs, measured in the icon font the glyph cell is drawn in
-	ui.withFont(glyphFont.name, glyphFont.size, function()
-		for _, glyph in pairs(status_glyph) do
-			widths[COL_STATUS] = math.max(widths[COL_STATUS], ui.calcTextSize(ui.get_icon_glyph(glyph)).x)
-		end
-	end)
-
-	-- Stable display envelopes for changing numeric values. These deliberately
-	-- cover the normal readable range without allowing an extreme value to make
-	-- the whole right-anchored panel jump left; unusually large values clip in
-	-- their cell and remain available through the planner itself.
-	ui.withFont(dataFont.name, dataFont.size, function()
-		local speedWidth = math.max(
-			ui.calcTextSize(formatSpeed(-999999)).x,
-			ui.calcTextSize(formatSpeed(999000000)).x)
-		local durationSample = ui.Format.Duration(
-			99 * 7 * 24 * 60 * 60 + 6 * 24 * 60 * 60 + 23 * 60 * 60)
-		local timeWidth = math.max(
-			ui.calcTextSize(durationSample).x,
-			ui.calcTextSize(lc.NOW).x,
-			ui.calcTextSize(UNAVAILABLE).x)
-		for _, col in ipairs({ COL_DV, COL_REMAINING }) do
-			widths[col] = math.max(widths[col], speedWidth)
-		end
-		-- the Start cell reads "burn start / node"
-		widths[COL_START] = math.max(widths[COL_START], timeWidth * 2 + ui.calcTextSize(L.START_NODE_SEPARATOR).x)
-		for _, col in ipairs({ COL_START, COL_DURATION, COL_TIME_LEFT }) do
-			widths[col] = math.max(widths[col], timeWidth)
-		end
-	end)
-
-	-- Explicit action sizes must not depend on the line height, which resets
-	-- at nextColumn. Match iconButton's glyph font height and padding, and
-	-- reserve the label-line height for both buttons and the completed dummy.
-	local iconGlyphWidth = 0
-	ui.withFont(glyphFont.name, rowLine - styles.InlineIconPadding.y * 2, function()
-		for _, icon in ipairs({ icons.map_checkmark, icons.time_accel_10000x }) do
-			iconGlyphWidth = math.max(iconGlyphWidth, ui.calcTextSize(ui.get_icon_glyph(icon)).x)
-		end
-	end)
-	local iconWidth = iconGlyphWidth + styles.InlineIconPadding.x * 2
-	widths[COL_ACTIONS] = math.max(widths[COL_ACTIONS], (iconWidth * 2) + ui.getItemSpacing().x)
-	local actionSlotSize = Vector2(iconWidth, rowLine)
-
-	-- the warp strip's height and its cancel control. The strip is one
-	-- data-font text line (the status text and the inline cancel control share
-	-- it, see drawWarpStrip), so its advance is that text height, and the
-	-- cancel glyph is measured at exactly that height (less the inline
-	-- padding). Measured on the widest string the strip can print — the
-	-- highest burn number, the largest offset, the widest level name, the
-	-- clamped suffix — so the layout does not depend on a warp running.
-	local warpStripLine, warpStripWidth, cancelWidth = 0, 0, 0
-	local worstStrip = string.format(L.WARP_STRIP, MAX_BURN_COUNT, OFFSET_MAX, "10000x") .. L.WARP_LIMITED
-	ui.withFont(dataFont.name, dataFont.size, function()
-		local size = ui.calcTextSize(worstStrip)
-		warpStripLine = size.y
-		warpStripWidth = size.x
-	end)
-	ui.withFont(glyphFont.name, warpStripLine - styles.InlineIconPadding.y * 2, function()
-		cancelWidth = ui.calcTextSize(ui.get_icon_glyph(icons.cross)).x
-	end)
-
-	local layout = {
-		widths = widths,
-		rowLine = rowLine,
-		captionLine = captionLine,
-		emptyLine = emptyLine,
-		warpStripLine = warpStripLine,
-		warpStripWidth = warpStripWidth,
-		warpCancelWidth = cancelWidth,
-		actionSlotSize = actionSlotSize,
-	}
-	return layout
 end
 
--- the offset drag's fixed item width, in the data font's cap height
-local OFFSET_DRAG_WIDTH = dataFont.size * 4
+-- the row action buttons: flat until hovered, so the column does not read as
+-- a row of checkboxes; a greyed control keeps its slot with a dimmed glyph
+local actionVariant = ui.theme.buttonColors.transparent
+local disabledActionVariant = {
+	normal = colors.transparent, hovered = colors.transparent, active = colors.transparent,
+}
 
--- The offset row is a frame control, not a bare text line. Its height is
--- ui.getFrameHeight() under the caption font the row is drawn in
--- (drawOffsetControl draws the incrementDrag inside the same withFont block),
--- which is the font size plus FramePadding.y*2 — the same arithmetic, so the
--- layout reserves exactly the frame height the widget occupies.
-local OFFSET_ROW_HEIGHT = captionFont.size + styles.FramePadding.y * 2
+local function drawActions(row, systemView, slot)
+	local spacing = ui.getItemSpacing().x
+	-- Complete is drawn for the active burn and for pending burns, never on a
+	-- completed row; the slot stays reserved so Warp keeps the same x
+	if row.completed then
+		ui.dummy(slot)
+	elseif ui.iconButton("##burnHudComplete" .. row.idx, icons.map_checkmark, L.COMPLETE,
+		actionVariant, slot, styles.InlineIconPadding) then
+		systemView:TransferPlannerCompleteBurn(row.idx)
+	end
 
---
--- Function: reticleKeepoutLeft
---
--- The leftmost x the panel may reach. The reticle draws its side data blocks
--- from the 3 o'clock point of a circle of radius*1.2 around the screen centre
--- (flight-ui/reticule.lua: displayReticule passes radius * 1.2 to
--- displayDetailData / displayFrameData), extending rightward in the heading
--- font. The panel sizes from measured content and may extend left past the
--- reserved HUD column, so this keepout — screen centre + the reticle's data
--- radius + the widest reticle data line it can print — is the one hard width
--- limit.
---
--- The value only depends on the screen size, so the text measurement is cached
--- per screen size (the reticle computes its radius from the same numbers).
---
-local reticleKeepoutCache = {}
-
-local function reticleKeepoutLeft(screenWidth, screenHeight)
-	local key = tostring(screenWidth) .. "x" .. tostring(screenHeight)
-	local cached = reticleKeepoutCache[key]
-	if cached then return cached end
-
-	local center = gameView.center or Vector2(screenWidth / 2, screenHeight / 2)
-	local radius = math.min(screenWidth, screenHeight) / 8
-	local textWidth = ui.withFont(reticleDataFont.name, reticleDataFont.size, function()
-		return ui.calcTextSize(RETICLE_WIDEST_SAMPLE).x
+	ui.sameLine(0, spacing)
+	-- Warp starts the Phase 5 warp state machine; it is greyed with "Target is
+	-- already reached" when its target (burn start − margin) is at or before
+	-- now - the exact rule startWarp() applies, evaluated on the row data
+	local warpTip = row.warppable and string.format(L.WARP, stopBeforeBurnS) or L.WARP_REACHED
+	local variant = row.warppable and actionVariant or disabledActionVariant
+	ui.withStyleColors({ Text = row.warppable and colors.font or colors.fontDim }, function()
+		if ui.iconButton("##burnHudWarp" .. row.idx, icons.time_accel_10000x, warpTip,
+			variant, slot, styles.InlineIconPadding) and row.warppable then
+			startWarp(row.idx)
+		end
 	end)
-	local keepout = center.x + radius * 1.2 + textWidth + ui.getWindowPadding().x
-	reticleKeepoutCache[key] = keepout
-	return keepout
 end
 
 --
--- Function: warpStripText
+-- Function: drawBurnRow
 --
--- The warp status line: target burn number, the configured offset, the
--- acceleration level this module last requested, and the clamped indicator.
--- The requested-vs-applied comparison is the time window's pattern
--- (modules/time-window.lua). The engine's hard clamps (hyperspace, docking,
--- being fired on) rewrite the request — which hands the clock back to the
--- engine and ends the warp — while proximity clamps keep it; both show up on
--- this line, and neither is fought.
+-- One burn: status glyph, label, Δv left (planned once complete) with its
+-- progress bar, ignition and node countdowns, burn time left, actions. The
+-- active burn's row is highlighted and its values take the maneuver colour
+-- the reticle uses for the same burn; a completed row is dimmed.
 --
-local function warpStripText()
-	local level = warp.lastRequest or Game.GetRequestedTimeAcceleration()
-	local clamped = Game.GetTimeAcceleration() ~= Game.GetRequestedTimeAcceleration()
-	return string.format(L.WARP_STRIP, warp.idx + 1, stopBeforeBurnS, level)
-		.. (clamped and L.WARP_LIMITED or "")
-end
+local function drawBurnRow(row, isActive, systemView, lineHeight)
+	ui.tableNextRow()
+	if isActive then
+		ui.tableSetBgColor("RowBg1", colors.burnHudActiveRowBg)
+	end
 
---
--- Function: measureAutopilotRow
---
--- Measures the autopilot row: the two toggle buttons, the gap between them,
--- and the "Label: ON/OFF" state indicator that follows them on the same line.
--- Both the width and the row height come from measured text plus the fixed
--- button size, so the panel reserves exactly what the row needs.
---
-local function measureAutopilotRow()
-	local spacing = ui.getItemSpacing()
-	local width = styles.MainButtonSize.x * 2 + spacing.x
-	local height = styles.MainButtonSize.y
+	local textColor = row.completed and colors.burnHudCompletedText or colors.font
+	local valueColor = isActive and colors.maneuver or textColor
+	local glyphColor = isActive and colors.maneuver or colors.fontDim
 
-	ui.withFont(dataFont.name, dataFont.size, function()
-		-- the widest form of each indicator is the OFF state (three letters)
-		for _, label in ipairs({ L.STATE_ORIENTATION, L.STATE_BURN }) do
-			local w = math.max(
-				ui.calcTextSize(label .. STATE_SEPARATOR .. L.STATE_ON).x,
-				ui.calcTextSize(label .. STATE_SEPARATOR .. L.STATE_OFF).x)
-			width = width + spacing.x + w
-			height = math.max(height, dataFont.size)
+	ui.tableNextColumn()
+	ui.icon(status_glyph[row.status] or icons.empty, Vector2(lineHeight), glyphColor, status_name[row.status])
+
+	ui.tableNextColumn()
+	ui.textColored(textColor, string.format(L.BURN, row.idx + 1))
+	ui.setItemTooltip(status_name[row.status] or UNAVAILABLE)
+
+	ui.tableNextColumn()
+	if row.progress > 0 then
+		drawProgress(row.progress, ui.getContentRegion().x, lineHeight)
+	end
+	textRight(formatSpeed(row.completed and row.dv or row.remaining), valueColor)
+	ui.setItemTooltip(string.format(L.DV_TIP, formatSpeed(row.dv),
+		formatSpeed(math.max(0, row.dv - row.remaining)), formatSpeed(row.remaining)))
+
+	ui.tableNextColumn()
+	if row.completed then
+		textRight(L.DONE, textColor)
+	else
+		textRight(formatCountdown(row.ignition), row.overlap and colors.alertYellow or valueColor)
+		if row.overlap then
+			ui.setItemTooltip(string.format(L.OVERLAP, formatDuration(row.overlap), row.idx))
 		end
-	end)
+	end
 
-	return width, height
+	ui.tableNextColumn()
+	textRight(row.completed and UNAVAILABLE or formatCountdown(row.node), row.completed and textColor or colors.fontDim)
+
+	ui.tableNextColumn()
+	textRight(row.completed and UNAVAILABLE or formatDuration(row.timeLeft), valueColor)
+	if not row.completed then
+		ui.setItemTooltip(row.duration and string.format(L.DURATION_TIP, formatDuration(row.duration),
+			formatDuration(row.timeLeft)) or L.NO_THRUST)
+	end
+
+	ui.tableNextColumn()
+	drawActions(row, systemView, Vector2(lineHeight, lineHeight))
+end
+
+local function drawBurnTable(rows, activeIndex, systemView)
+	local lineHeight = ui.getTextLineHeight()
+	local widths = measureColumns(lineHeight)
+
+	if not ui.beginTable("##burnHudTable", COL_COUNT, tableFlags) then return end
+	for col = 1, COL_COUNT do
+		ui.tableSetupColumn("##burnHudCol" .. col, { "WidthFixed" }, widths[col])
+	end
+
+	drawHeaderRow()
+	for _, row in ipairs(rows) do
+		-- the planner is the live list: an action on an earlier row (complete,
+		-- warp) never removes a burn, but stop at the live count regardless
+		if row.idx >= systemView:TransferPlannerGetBurnCount() then break end
+		drawBurnRow(row, row.idx == activeIndex, systemView, lineHeight)
+	end
+
+	ui.endTable()
 end
 
 --
--- Function: measurePanelExtraWidth
+-- Function: drawTitle
 --
--- Measures the widest of the rows below the table — the offset stepper (label
--- + the fixed-width drag) and, while a warp is running, the warp status line
--- with its inline cancel control. Their heights are laid out from the same
--- measured quantities in displayBurnHudPanel (the offset stepper is a frame
--- control: caption font line + FramePadding.y*2 = OFFSET_ROW_HEIGHT; the warp
--- strip is one data-font text line plus its inline button). The warp strip is
--- measured on the widest string the strip can print, from the cached layout,
--- so the panel width does not change when a warp starts.
+-- "BURN PLAN" with, right-aligned, what is left of it: burns to go, the Δv
+-- they still need and their burn time.
 --
-local function measurePanelExtraWidth(layout)
-	local spacing = ui.getItemSpacing()
-	local width = 0
+local function drawTitle(totals, hasRows)
+	ui.withFont(titleFont.name, titleFont.size, function()
+		ui.textColored(colors.fontDim, L.TITLE)
+	end)
+	if not hasRows then return end
 
+	local summary = totals.burns > 0
+		and string.format(L.SUMMARY, totals.burns, formatSpeed(totals.dv), formatDuration(totals.duration))
+		or L.ALL_DONE
+	ui.sameLine()
 	ui.withFont(captionFont.name, captionFont.size, function()
-		width = math.max(width, ui.calcTextSize(L.OFFSET_LABEL).x)
+		textRight(summary, totals.burns > 0 and colors.maneuver or colors.fontDim)
 	end)
-	width = width + spacing.x + OFFSET_DRAG_WIDTH
-
-	-- Reserve the strip even while hidden so starting / stopping a warp never
-	-- changes the panel width.
-	width = math.max(width, layout.warpStripWidth + spacing.x
-		+ layout.warpCancelWidth + styles.InlineIconPadding.x * 2)
-
-	return width
+	ui.setItemTooltip(L.SUMMARY_TIP)
 end
 
---
--- Function: drawActiveRowHighlight
---
--- The active row's highlight: a filled band plus a 1px border across the full
--- content width of the table, at exactly the row band the layout measured
--- (layout.rowLine), in the theme's burnHudActiveRowBg / burnHudActiveRowBorder.
---
--- SUBMISSION ORDER CONTRACT (pass 5). ImGui paints a window's draw list in
--- submission order, so a rect is only ever *behind* the text it overlaps if it
--- is emitted first. This helper exists so that rule is a single call site and
--- can never drift: the row loop calls it as the FIRST draw of the row, before
--- any drawCell, and the row's cells are emitted after it. Geometry is the
--- caller's (rowTop/region/rowLine) — nothing here measures or moves the band.
---
--- Audit of every rect / background submission in this module, against the text
--- it could cover:
---   * this band, emitted before the row's cells (the only rect inside a row).
---   * the window's own background + frame, from the withStyleColorsAndVars
---     wrapper in displayBurnHudPanel: ImGui draws the window background behind
---     all of the window's items, and the frame border only at the window
---     edges, which the row band (content-region width) never reaches.
---   * drawCell's dim path: ui.addStyledText is called without a bg colour, and
---     that helper draws its background rect (when given one) before its own
---     text, so a dimmed cell paints over nothing.
---   * the autopilot buttons, the offset drag and the action buttons are ImGui
---     widgets: their frames and their own labels are emitted by the widget,
---     frame first. No free-standing rect is drawn on top of them.
---   * no addRectFaded / addImage / clip-rect background is used anywhere here.
---
-local function drawActiveRowHighlight(rowTop, region, rowLine)
-	ui.addRectFilled(rowTop, rowTop + Vector2(region, rowLine), colors.burnHudActiveRowBg,
-		styles.StyleRounding, ui.RoundCornersNone)
-	ui.addRect(rowTop, rowTop + Vector2(region, rowLine), colors.burnHudActiveRowBorder,
-		styles.StyleRounding, ui.RoundCornersNone, 1)
-end
-
---
--- Function: drawCell
---
--- Draw one table cell as a layout item so the columns keep advancing. The text
--- is drawn in exactly the font its column was measured in: the HUD is wrapped
--- in an ambient font by views/game.lua (pionillium.medium), so a cell drawn
--- without pushing its own font renders wider than the column measured for it —
--- the under-sizing pass 2 showed ("950 m/", "Est", "Time l", "Burn" with its
--- index clipped). A completed row is dimmed: the item is laid out empty and the
--- text is drawn over it with ui.addStyledText in the dim colour (that helper
--- pushes the font itself), keeping a completed row's geometry identical to a
--- live row.
---
-local function drawCell(text, font, dimColor, slotWidth)
-	if slotWidth then
-		local cursor = ui.getCursorPos()
-		local textWidth = ui.withFont(font.name, font.size, function()
-			return ui.calcTextSize(text).x
-		end)
-		ui.setCursorPos(Vector2(cursor.x + math.max(0, slotWidth - textWidth), cursor.y))
-	end
-	if not dimColor then
-		ui.withFont(font.name, font.size, function()
-			ui.text(text)
-		end)
-		return
-	end
-	local pos = ui.getCursorScreenPos()
-	ui.text("")
-	ui.addStyledText(pos, ui.anchor.left, ui.anchor.top, text, dimColor, font)
-end
 
 --
 -- Function: drawAutopilotControls
@@ -887,26 +819,23 @@ end
 --
 -- Function: drawOffsetControl
 --
--- "Stop Before Burn (s)": the pre-burn offset, shared by all burns, as a
--- drag the player can nudge, drag and type into. Clamped to non-negative
--- whole seconds and persisted with the game settings. The always-drawn
--- toggle window keeps this module alive, so the value survives while the
--- panel is hidden.
+-- "Stop before burn": the pre-burn offset, shared by all burns, as a drag the
+-- player can nudge, drag and type into. Clamped to non-negative whole seconds
+-- and persisted with the game settings. The always-drawn toggle window keeps
+-- this module alive, so the value survives while the panel is hidden.
 --
+local OFFSET_DRAG_WIDTH = dataFont.size * 5
+
 local function drawOffsetControl()
 	local value, changed
-	ui.withFont(captionFont.name, captionFont.size, function()
-		ui.text(L.OFFSET_LABEL)
-	end)
-	ui.setItemTooltip(L.OFFSET_TIP)
+	ui.withFont(dataFont.name, dataFont.size, function()
+		ui.alignTextToFramePadding()
+		ui.textColored(colors.fontDim, L.OFFSET_LABEL)
+		ui.setItemTooltip(L.OFFSET_TIP)
 
-	ui.sameLine()
-	-- the drag is a frame control: it is drawn in the same font the layout
-	-- measured it in, so its height (font size + FramePadding.y*2 =
-	-- OFFSET_ROW_HEIGHT) is exactly the height the panel reserved
-	ui.withFont(captionFont.name, captionFont.size, function()
+		ui.sameLine()
 		ui.pushItemWidth(OFFSET_DRAG_WIDTH)
-		value, changed = ui.incrementDrag("##burnHudStopBeforeBurn", stopBeforeBurnS, 1, 0, OFFSET_MAX, "%.0f", false)
+		value, changed = ui.incrementDrag("##burnHudStopBeforeBurn", stopBeforeBurnS, 1, 0, OFFSET_MAX, L.OFFSET_FORMAT, false)
 		ui.popItemWidth()
 	end)
 	if changed then
@@ -919,16 +848,21 @@ end
 -- Function: drawWarpStrip
 --
 -- While a warp is running: the target burn number, the configured offset, the
--- acceleration level this module last requested, the clamped indicator, and
--- the Cancel Warp control.
+-- acceleration level this module last requested, the clamped indicator (the
+-- time window's requested-vs-applied pattern, modules/time-window.lua), and
+-- the Cancel Warp control. The engine's hard clamps (hyperspace, docking,
+-- being fired on) rewrite the request - which hands the clock back to the
+-- engine and ends the warp - while proximity clamps keep it; both show up on
+-- this line, and neither is fought.
 --
 local function drawWarpStrip()
-	-- the status text and its cancel control share one measured line: the
-	-- inline button is sized to this line's height, so the strip never grows
-	-- past the height the layout reserved for it
-	ui.withFont(dataFont.name, dataFont.size, function()
-		ui.text(warpStripText())
+	local level = warp.lastRequest or Game.GetRequestedTimeAcceleration()
+	local clamped = Game.GetTimeAcceleration() ~= Game.GetRequestedTimeAcceleration()
+	local text = string.format(L.WARP_STRIP, warp.idx + 1, stopBeforeBurnS, level)
+		.. (clamped and L.WARP_LIMITED or "")
 
+	ui.withFont(dataFont.name, dataFont.size, function()
+		ui.textColored(colors.maneuver, text)
 		ui.sameLine()
 		if ui.inlineIconButton("##burnHudCancelWarp", icons.cross, L.CANCEL_WARP) then
 			cancelWarp()
@@ -939,280 +873,52 @@ end
 --
 -- Function: displayBurnHudPanel
 --
--- Draws the burn table. Vertical space is reserved from the bottom of the HUD
--- area (above the time window) so the panel never overlaps the modules sharing
--- this side of the screen. Width is sized from measured content and the panel
--- is anchored to the right edge of the HUD column — the anchored-in-code
--- pattern of modules/mass-twr-display.lua:130-131 and
--- modules/time-window.lua:18-36 — so it does not steal width from the other
--- HUD elements: the reserved column's width is free space, never the panel's
--- width, which is what squeezed the panel and hid the time-skip controls. The
--- panel grows leftwards into space no other HUD element claims, kept clear of
--- the reticle's data blocks by reticleKeepoutLeft(). The columns are scaled
--- down only as a last resort, and the window is never narrower than the
--- measured width of the un-scalable rows (offset stepper, autopilot row, warp
--- strip), so no control is clipped.
+-- The panel: title and plan summary, the burn table, then the autopilot
+-- toggles, the warp strip while a warp runs, and the stop-before-burn margin.
+-- The window sizes itself to that content (every table column is fixed-width,
+-- so the width only changes with the screen) and is anchored by its
+-- bottom-right corner to the left of the right-edge button column, at the
+-- bottom of the HUD area above the time window, so it grows up and to the
+-- left into space no other HUD element claims.
 --
 local function displayBurnHudPanel(min, max, player, systemView, toggleSize)
 	local acceleration = player:GetAcceleration("forward")
-	local rows, activeIndex = collectRows(systemView, acceleration)
+	local rows, activeIndex, totals = collectRows(systemView, acceleration)
 	local hasRows = #rows > 0
-
-	-- Keep the table compact while allowing longer live values to fit.
-	local layout = measureLayout()
-	local widths = layout.widths
-
-	-- the rows below the table: the autopilot row, the offset stepper, and
-	-- while a warp is running the warp status line with its cancel control
-	local showWarpStrip = warp ~= nil
-	local extraWidth = measurePanelExtraWidth(layout)
-	local autopilotWidth, autopilotHeight = measureAutopilotRow()
 
 	local spacing = ui.getItemSpacing()
 	local padding = ui.getWindowPadding()
-	-- the first drawn line is the column caption row with a table, and the
-	-- "No planned burns" label (labelFont) without one; both heights come from
-	-- the same font-context measurement the drawing uses
-	local captionLine = hasRows and layout.captionLine or layout.emptyLine
-
-	-- Legacy columns inset the cursor by ItemSpacing.x and clip one pixel
-	-- before the next boundary. Use these same spans for columns and window.
-	local columnSpans, tableWidth = {}, 0
-	for i = COL_LABEL, COL_ACTIONS do
-		columnSpans[i] = widths[i] + spacing.x + 1
-		tableWidth = tableWidth + columnSpans[i]
-	end
-	local contentWidth = math.max(tableWidth, extraWidth, autopilotWidth)
-	-- the un-scalable floor, used only when the panel is drawn without a table
-	-- (an empty plan): the widest row that cannot shrink. With the table drawn
-	-- the column sum is the floor, so there is nothing to compute here.
-	local floorWidth = 0
-	if not hasRows then
-		-- the empty-plan line is a single label drawn in the label font, so it
-		-- is a measured content width like every other row
-		local emptyWidth = ui.withFont(labelFont.name, labelFont.size, function()
-			return ui.calcTextSize(L.NO_BURNS).x
-		end)
-		contentWidth = math.max(contentWidth, emptyWidth)
-		floorWidth = math.max(extraWidth, autopilotWidth, emptyWidth) + padding.x * 2
-	end
-	local measuredWidth = contentWidth + padding.x * 2
-
-	-- height: every drawn row at its measured height — one line per burn at
-	-- layout.rowLine (a row's tallest item is the label-font line its action
-	-- buttons are sized to), the caption row at layout.captionLine, the
-	-- empty-plan line at layout.emptyLine, the autopilot row at its button
-	-- height, the offset row at its frame-control height
-	-- OFFSET_ROW_HEIGHT = getFrameHeight() under the caption font, the warp
-	-- strip at layout.warpStripLine (the data-font line its inline cancel
-	-- control is sized to) — each followed by its line spacing, plus the
-	-- window's top and bottom padding. The panel is fixed-size
-	-- (NoResize, NoScrollbar), so anything past the bottom edge of the window
-	-- is hidden: the window must cover the full content, including the offset
-	-- stepper and the toggles.
-	local contentHeight = captionLine + spacing.y
-	contentHeight = contentHeight + #rows * (layout.rowLine + spacing.y)
-	contentHeight = contentHeight + autopilotHeight + spacing.y
-	-- the offset row is a frame control, not a bare text line
-	contentHeight = contentHeight + OFFSET_ROW_HEIGHT + spacing.y
-	if showWarpStrip then
-		-- the warp status line and its inline cancel control share one
-		-- data-font line (see drawWarpStrip); the control sets the line height
-		contentHeight = contentHeight + layout.warpStripLine + spacing.y
-	end
-	local height = math.max(contentHeight + padding.y * 2, 1)
-
-	-- the panel is anchored horizontally to the left of the right-edge button
-	-- column so the toggle buttons stay in place when the panel is opened or
-	-- closed, and its bottom edge aligns with the bottom of the HUD area.
-	local spacing = ui.getItemSpacing()
 	local buttonWidth = toggleSize and toggleSize.x or (styles.MainButtonSize.x + padding.x * 2)
-	local rightEdge = max.x - buttonWidth - spacing.x
-	local bottom = max.y
-	if bottom < 1 then bottom = 1 end
-	height = math.min(height, bottom)
-	local top = bottom - height
+	local anchor = Vector2(max.x - buttonWidth - spacing.x, math.max(max.y, 1))
 
-	-- width: exactly the measured content, never a squeezed default and never
-	-- clamped below the table's own column sum — the pass-2 "last resort"
-	-- scaling is gone: it re-clamped every column below the width its strings
-	-- were measured at, which is what truncated "950 m/", "Est", "Time l" and
-	-- clipped the burn index. The anchored-right growth pattern (pass 2) is
-	-- unchanged: the window is sized from measured content, anchored to the
-	-- right edge of the HUD column, and grows leftwards into space no other
-	-- HUD element claims, so it never steals width from the reserved column.
-	-- The reticle keepout stays the cap for the rows that are drawn without a
-	-- table (an empty plan): there the panel is small and the keepout is a
-	-- meaningful limit; with the table drawn, the column sum is the floor,
-	-- because a clipped cell is worse than the panel reaching into a data band
-	-- the reticle only fills for its widest readout.
-	local freeSpace = rightEdge - reticleKeepoutLeft(ui.screenWidth, ui.screenHeight)
-	local width = measuredWidth
-	if not hasRows then
-		width = math.min(measuredWidth, math.max(freeSpace, floorWidth))
-	end
-	-- never wider than the screen, which also keeps the anchored x non-negative
-	width = math.min(width, ui.screenWidth)
-
-	-- anchor to the left of the button column; the vertical extent is grown
-	-- upward to the measured height from the bottom anchor
-	local winPos = Vector2(math.max(0, rightEdge - width), top)
-
-	-- the panel is the only HUD window with a background: views/game.lua
-	-- wraps the whole HUD in WindowBg = colors.transparent (line 276), which
-	-- is right for the overlay elements (the reticle readouts, the time
-	-- window, this module's visibility toggle) but left the burn table
-	-- floating with no frame, so the highlighted active row read as a white
-	-- block on the planet. Restore the theme's own window background and
-	-- frame for this window only — the same colors every themed window uses
-	-- (theme.colors.windowBackground / windowFrame) — without touching any
-	-- window flag: NoTitleBar/NoResize/NoMove/NoSavedSettings/NoScrollbar all
-	-- stay, the window is still anchored in code and not draggable, and no
-	-- layout persistence.
+	-- the panel is the only HUD window with a background: views/game.lua wraps
+	-- the whole HUD in WindowBg = colors.transparent, which is right for the
+	-- overlay elements but would leave the table floating on the planet.
+	-- Restore the theme's own window background and frame for this window only.
 	ui.withStyleColorsAndVars(
 		{ WindowBg = colors.windowBackground, Border = colors.windowFrame },
-		{ WindowBorderSize = 1.0, WindowRounding = styles.StyleRounding },
+		{ WindowBorderSize = 1.0, WindowRounding = styles.StyleRounding,
+		  CellPadding = Vector2(ui.rescaleUI(6), ui.rescaleUI(3)) },
 		function()
-	ui.setNextWindowSize(Vector2(width, height), "Always")
-	ui.setNextWindowPos(winPos, "Always")
+	ui.setNextWindowPos(anchor, "Always", Vector2(1, 1))
 
 	ui.window("BurnHud", windowFlags, function()
-		local region = ui.getContentRegion().x
+		drawTitle(totals, hasRows)
+		ui.separator()
 
-		if not hasRows then
-			ui.withFont(labelFont.name, labelFont.size, function()
-				ui.text(L.NO_BURNS)
-			end)
-			drawAutopilotControls(player)
-			-- the warp strip and the offset stay live with an empty table:
-			-- a warp survives the plan it was started from being cleared
-			if showWarpStrip then drawWarpStrip() end
-			drawOffsetControl()
-			return
-		end
-
-		ui.columns(COL_COUNT, "##burnHudTable", false)
-		for i = COL_LABEL, COL_ACTIONS do
-			ui.setColumnWidth(i, columnSpans[i])
-		end
-
-		-- column captions
-		ui.withFont(captionFont.name, captionFont.size, function()
-			ui.text(L.CAPTION_LABEL)
-			ui.nextColumn()
-			ui.text(L.CAPTION_STATUS)
-			ui.nextColumn()
-			ui.text(L.CAPTION_DV)
-			ui.nextColumn()
-			ui.text(L.CAPTION_REMAINING_DV)
-			ui.nextColumn()
-			ui.text(L.CAPTION_START)
-			ui.nextColumn()
-			ui.text(L.CAPTION_DURATION)
-			ui.nextColumn()
-			ui.text(L.CAPTION_TIME_LEFT)
-			ui.nextColumn()
-			ui.text(L.CAPTION_ACTIONS)
-			ui.nextColumn()
+		ui.withFont(dataFont.name, dataFont.size, function()
+			if hasRows then
+				drawBurnTable(rows, activeIndex, systemView)
+			else
+				ui.textColored(colors.fontDim, L.NO_BURNS)
+			end
 		end)
 
-		for _, row in ipairs(rows) do
-			-- the planner is the live list: removing a burn shifts every later
-			-- index, so stop at the current count, as the sidebar table does
-			if row.idx >= systemView:TransferPlannerGetBurnCount() then break end
-
-			local isActive = row.idx == activeIndex
-			local dimColor = row.status == BURN_STATUS_COMPLETED and colors.burnHudCompletedText or nil
-
-			local rowTop = ui.getCursorScreenPos()
-
-			-- (a) the active row's highlight FIRST, at the band the layout
-			-- measured; the row is still chosen by the planner's active index
-			if isActive then
-				drawActiveRowHighlight(rowTop, region, layout.rowLine)
-			end
-
-			-- (b) then the row's cells, on top of that band: every drawCell and
-			-- widget below is submitted after the highlight, so the label and its
-			-- index digit are painted over it, never under it
-			-- burn label
-			drawCell(row.label, labelFont, dimColor)
-			ui.nextColumn()
-
-			-- status glyph
-			ui.withFont(glyphFont.name, glyphFont.size, function()
-				ui.text(ui.get_icon_glyph(glyphOf(row.status)))
-			end)
-			ui.setItemTooltip(row.statusText)
-			ui.nextColumn()
-
-			ui.withFont(dataFont.name, dataFont.size, function()
-				drawCell(row.dv, dataFont, dimColor, widths[COL_DV])
-				ui.nextColumn()
-				drawCell(row.remainingDv, dataFont, dimColor, widths[COL_REMAINING])
-				ui.nextColumn()
-				drawCell(row.countdown, dataFont, dimColor, widths[COL_START])
-				ui.nextColumn()
-				drawCell(row.duration, dataFont, dimColor, widths[COL_DURATION])
-				ui.nextColumn()
-				drawCell(row.timeLeft, dataFont, dimColor, widths[COL_TIME_LEFT])
-				ui.nextColumn()
-			end)
-
-			-- actions: the column always holds both controls, in the two slots
-			-- measureLayout() reserved for them, so a row never shifts the Warp
-			-- control sideways.
-			--   Complete is drawn for the active burn and for pending burns,
-			--   never on a completed row (row.completable); the slot it would
-			--   occupy is reserved with a dummy of the measured width instead.
-			--   Warp starts the Phase 5 warp state machine for every row, and is
-			--   greyed with "Target is already reached" when its target
-			--   (burn start − margin) is at or before now - the exact rule
-			--   startWarp() applies, evaluated on the row data. Its tooltip names
-			--   the configured offset.
-			-- Explicit button sizes and padding match measurement; their height
-			-- is the label line reserved by layout.rowLine, even in a fresh column.
-			-- iconButton takes its ID from its own id argument (below), so
-			-- the tooltip is plain text — a "##id" suffix would be printed
-			-- verbatim by the tooltip helper
-			local warpTip = row.warppable
-				and string.format(L.WARP, stopBeforeBurnS)
-				or L.WARP_REACHED
-			-- nil = the theme's default button variant; the greyed variant is
-			-- only for a target that is already reached. Spelled as a branch
-			-- because `row.warppable and nil or X` would yield X in both cases
-			-- (`true and nil` is nil in Lua).
-			local warpVariant = nil
-			if not row.warppable then
-				warpVariant = ui.theme.buttonColors.disabled
-			end
-			ui.withFont(labelFont.name, labelFont.size, function()
-				if row.completable then
-					if ui.iconButton("##burnHudComplete" .. row.idx, icons.map_checkmark, L.COMPLETE,
-						nil, layout.actionSlotSize, styles.InlineIconPadding) then
-						systemView:TransferPlannerCompleteBurn(row.idx)
-					end
-				else
-					-- completed row: no Complete control, but the slot stays
-					-- reserved (the measured single-control width) so Warp keeps
-					-- the same x on every row
-					ui.dummy(layout.actionSlotSize)
-				end
-				ui.sameLine()
-				if ui.iconButton("##burnHudWarp" .. row.idx, icons.time_accel_10000x, warpTip,
-					warpVariant, layout.actionSlotSize, styles.InlineIconPadding) and row.warppable then
-					startWarp(row.idx)
-				end
-			end)
-			ui.nextColumn()
-		end
-
-		-- reset columns
-		ui.columns(1)
-
+		ui.separator()
 		drawAutopilotControls(player)
-
-		if showWarpStrip then drawWarpStrip() end
+		-- the warp strip and the offset stay live with an empty table: a warp
+		-- survives the plan it was started from being cleared
+		if warp then drawWarpStrip() end
 		drawOffsetControl()
 	end)
 	end)

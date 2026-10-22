@@ -338,7 +338,8 @@ theme.colors = {
 
 	-- flight HUD multi-burn widget (modules/flight-ui/burn-hud.lua)
 	burnHudActiveRowBg      = styleColors.primary_800:opacity(0.85),
-	burnHudActiveRowBorder  = styleColors.primary_500,
+	burnHudProgress         = styleColors.accent_300,
+	burnHudProgressTrack    = styleColors.panel_700,
 	burnHudCompletedText    = styleColors.gray_600,
 	burnHudToggleOnText     = styleColors.success_300,
 	burnHudToggleOffText    = styleColors.gray_500,
