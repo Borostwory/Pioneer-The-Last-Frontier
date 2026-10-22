@@ -2,6 +2,7 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 #include "PlayerShipController.h"
+#include "FloatComparison.h"
 #include "Frame.h"
 #include "Game.h"
 #include "GameConfig.h"
@@ -20,19 +21,41 @@
 #include "ship/GunManager.h"
 #include "ship/ShipController.h"
 #include "Sensors.h"
+#include "galaxy/SystemBody.h"
+#include "gameconsts.h"
 
 #include <algorithm>
 
 // plan-burn autopilot: face tolerance inside which the main engine may fire, the
-// slack allowed against a burn's scheduled start before the engine is considered
-// late, the delta-v below which a burn counts as spent, and the epsilon guard
-// used when dividing by an acceleration or a remaining time
+// slack allowed against a burn's ignition time, and the epsilon guard used when
+// dividing by an acceleration or a remaining time
 static constexpr double PLAN_BURN_FACE_TOLERANCE = DEG2RAD(5.0);
 static constexpr double PLAN_BURN_START_TOLERANCE = 1.0; // s
-static constexpr double PLAN_BURN_DV_EPSILON = 1e-3; // m/s
 static constexpr double PLAN_BURN_EPS = 1e-9;
 // squared-length threshold below which a planned burn has no direction to face
 static constexpr double PLAN_BURN_DIR_MIN_SQR = 1e-18;
+// closed-loop guidance: with less than this many seconds of full thrust left,
+// Auto Orientation holds its direction instead of chasing the shrinking
+// residual, and re-aims it (a trim) only once the residual has swung this far
+static constexpr double PLAN_BURN_HOLD_SECONDS = 2.0;
+static constexpr double PLAN_BURN_RETARGET_ANGLE = DEG2RAD(30.0);
+// thrust is cut while the direction fired along has less than this share of
+// the residual - an overshoot, or a trim the ship still has to turn to
+static constexpr double PLAN_BURN_MIN_ALONG = 0.5;
+// a residual this small is spent
+static constexpr double PLAN_BURN_SPENT_DV = 0.05; // m/s
+// the accuracy is measured against altitude, never against less than this
+static constexpr double PLAN_BURN_MIN_ACCURACY_ALTITUDE = 1000.0; // m
+// the throttle tapers over the last second of full thrust, or the last few
+// physics steps under time acceleration, so the final step cannot overshoot
+static constexpr double PLAN_BURN_TAPER_SECONDS = 1.0;
+static constexpr double PLAN_BURN_TAPER_STEPS = 3.0;
+// a burn still short of its target this long after ignition is closed anyway
+static constexpr double PLAN_BURN_TIMEOUT_FACTOR = 4.0; // planned burn durations
+static constexpr double PLAN_BURN_TIMEOUT_MIN = 60.0;	// s
+// the accuracy setting's bounds, as fractions of the planned periapsis / apoapsis
+static constexpr double PLAN_BURN_ACCURACY_MIN = 0.001;
+static constexpr double PLAN_BURN_ACCURACY_MAX = 0.2;
 
 // so that we can summarize the controller action from all subsystems
 struct PlayerShipController::TotalDesiredAction {
@@ -646,8 +669,9 @@ void PlayerShipController::StaticUpdate(const float timeStep)
 // frame - the frame Util::NeededAngVelocityToFaceDirection takes its input in.
 // Releases control to manual and returns -1 when there is no burn to point at.
 // The planner-frame direction is the Auto Orientation lock, acquired once for
-// the active burn and held until a lock-lifecycle event; only its transform
-// into the ship frame is recomputed every call.
+// the active burn from its planned delta-v; once Auto Burn has ignited the
+// burn, SteerPlanBurnLock aims it along the closed-loop residual. Only its
+// transform into the ship frame is recomputed every call.
 int PlayerShipController::ResolvePlanBurnDirection(vector3d &outWorldDir)
 {
 	const int idx = SyncPlanBurnDirectionLock();
@@ -655,30 +679,154 @@ int PlayerShipController::ResolvePlanBurnDirection(vector3d &outWorldDir)
 		SetFlightControlState(CONTROL_MANUAL);
 		return -1;
 	}
+	SteerPlanBurnLock();
 	outWorldDir = PlannerToShipFrame(m_lockedPlanBurnDir);
 	return idx;
 }
 
-// engine-side resolution: the pure live direction of a known burn index, with
-// no side effects on the flight control state (the engine control is
-// orthogonal to orientation and must not release it). Returns false for an
-// invalid index - no plan, every planned burn complete - or for an inert plan
-// with no direction.
-bool PlayerShipController::ResolvePlanBurnDirection(int idx, vector3d &outWorldDir) const
+void PlayerShipController::SteerPlanBurnLock()
 {
-	if (idx < 0) { // no plan, or every planned burn is complete
-		return false;
-	}
+	const PlanBurnTarget &target = m_planBurnTarget;
+	if (!m_lockedPlanBurnValid || !target.valid || !target.ignited || target.idx != m_lockedPlanBurnIdx)
+		return;
 
-	// the plan's offset velocity lives in the burn's non-rotating system frame,
-	// so convert it with the same rotation Player::TimeStepUpdate uses for progress
-	const vector3d planDv = Pi::player->GetManeuverVelocity(idx);
-	if (planDv.LengthSqr() < PLAN_BURN_DIR_MIN_SQR) { // an inert plan has no direction to face
-		return false;
-	}
+	vector3d pos, vel;
+	if (!GetPlannerState(pos, vel))
+		return;
+	const vector3d toGain = PlanBurnVelocityToGain(pos, vel);
+	const double left = toGain.Length();
+	if (left < PLAN_BURN_EPS)
+		return;
+	const vector3d dir = toGain / left;
 
-	outWorldDir = PlannerToShipFrame(planDv);
+	// follow the residual while there is plenty of it; near the end hold the
+	// direction - the residual's direction swings as it shrinks - unless it
+	// has swung so far that a trim in a new direction is needed
+	const double accel = std::max(PLAN_BURN_EPS, m_ship->GetPropulsion()->GetAccel(THRUSTER_FORWARD));
+	if (left > accel * PLAN_BURN_HOLD_SECONDS || dir.Dot(m_lockedPlanBurnDir) < std::cos(PLAN_BURN_RETARGET_ANGLE))
+		m_lockedPlanBurnDir = dir;
+}
+
+bool PlayerShipController::GetPlannerState(vector3d &pos, vector3d &vel) const
+{
+	const Frame *shipFrame = Frame::GetFrame(m_ship->GetFrame());
+	if (!shipFrame)
+		return false;
+	const FrameId plannerFrame = shipFrame->GetNonRotFrame();
+	pos = m_ship->GetPositionRelTo(plannerFrame);
+	vel = m_ship->GetVelocityRelTo(plannerFrame);
 	return true;
+}
+
+bool PlayerShipController::SyncPlanBurnTarget(int idx)
+{
+	PlanBurnTarget &target = m_planBurnTarget;
+	const uint32_t serial = Pi::planner->GetDirectionLockSerial();
+	// from ignition on the target is the plan as it stood then, so an edit
+	// that reruns the planner's chain mid-burn cannot move it; before
+	// ignition it follows the plan, edits included
+	if (target.valid && target.ignited && target.idx == idx && target.serial == serial)
+		return true;
+	target = PlanBurnTarget();
+
+	const Frame *shipFrame = Frame::GetFrame(m_ship->GetFrame());
+	const Frame *frame = shipFrame ? Frame::GetFrame(shipFrame->GetNonRotFrame()) : nullptr;
+	if (!frame || !frame->GetSystemBody() || idx < 0)
+		return false;
+	const double mu = G * frame->GetSystemBody()->GetMass();
+	target.bodyRadius = frame->GetSystemBody()->GetRadius();
+
+	// the orbit the plan expects after the burn: the burn point, with the
+	// planned velocity after it
+	const vector3d pos = Pi::planner->GetPos(idx);
+	const vector3d vel = Pi::planner->GetVel(idx);
+	const double r = pos.Length();
+	const vector3d h = pos.Cross(vel);
+	if (is_zero_general(r) || is_zero_general(h.Length()))
+		return false;
+	double energy = 0.5 * vel.LengthSqr() - mu / r;
+	if (std::fabs(energy) < PLAN_BURN_EPS)
+		energy = PLAN_BURN_EPS; // a parabola: treat it as the edge of an escape
+	const vector3d eccentricity = vel.Cross(h) / mu - pos / r;
+	const double e = eccentricity.Length();
+
+	target.mu = mu;
+	target.normal = h.Normalized();
+	target.periapsisDir = (e > 1e-9) ? eccentricity / e : vector3d(0.0);
+	target.a = -mu / (2.0 * energy);
+	target.p = h.LengthSqr() / mu;
+	target.rp = target.p / (1.0 + e);
+	target.ra = (e < 1.0) ? target.p / (1.0 - e) : 0.0;
+	target.plannedDv = Pi::planner->GetBurnDeltaV(idx);
+	if (target.plannedDv < PLAN_BURN_EPS)
+		return false;
+	target.idx = idx;
+	target.serial = serial;
+	target.valid = true;
+	return true;
+}
+
+// The velocity still to gain to be on the target orbit, from where the ship
+// is now: the speed the target orbit's energy gives at the ship's radius, its
+// angular momentum split into horizontal and radial parts, radial outward or
+// inward as the target orbit is on that side of its periapsis, all in the
+// target plane. Flying it puts the ship on the planned periapsis, apoapsis and
+// plane, whatever the timing, pointing or gravity losses of the burn so far.
+// Outside the target orbit's radius range only its angular momentum is kept.
+vector3d PlayerShipController::PlanBurnVelocityToGain(const vector3d &pos, const vector3d &vel) const
+{
+	const PlanBurnTarget &target = m_planBurnTarget;
+	const vector3d inPlane = pos - target.normal * pos.Dot(target.normal);
+	const double r = inPlane.Length();
+	if (is_zero_general(r))
+		return vector3d(0.0);
+	const vector3d radialDir = inPlane / r;
+	const vector3d horizontalDir = target.normal.Cross(radialDir);
+
+	const double speedSqr = target.mu * (2.0 / r - 1.0 / target.a);
+	const double horizontal = std::sqrt(target.mu * target.p) / r;
+	const double radialSqr = speedSqr - horizontal * horizontal;
+	double radial = radialSqr > 0.0 ? std::sqrt(radialSqr) : 0.0;
+	// sin of the true anomaly on the target orbit: positive on the way out
+	if (target.periapsisDir.Cross(radialDir).Dot(target.normal) < 0.0)
+		radial = -radial;
+
+	return radialDir * radial + horizontalDir * horizontal - vel;
+}
+
+// On target: the ship's periapsis and apoapsis are within the accuracy of the
+// target's, measured against their altitude (on an escape trajectory, the
+// periapsis and the semi-major axis), and what is left to gain out of the
+// target plane is within the accuracy of the ship's speed.
+bool PlayerShipController::IsPlanBurnOnTarget(const vector3d &pos, const vector3d &vel, const vector3d &toGain) const
+{
+	const PlanBurnTarget &target = m_planBurnTarget;
+	const double tolerance = m_planBurnAccuracy;
+	const double r = pos.Length();
+	const double speed = vel.Length();
+	const double energy = 0.5 * speed * speed - target.mu / r;
+	const double hSqr = pos.Cross(vel).LengthSqr();
+	const double p = hSqr / target.mu;
+	const double e = std::sqrt(std::max(0.0, 1.0 + 2.0 * energy * hSqr / (target.mu * target.mu)));
+	const auto allowed = [&](double radius) {
+		return tolerance * std::max(radius - target.bodyRadius, PLAN_BURN_MIN_ACCURACY_ALTITUDE);
+	};
+
+	if (std::fabs(p / (1.0 + e) - target.rp) > allowed(target.rp))
+		return false;
+	if (target.a > 0.0) {
+		if (e >= 1.0 || std::fabs(p / (1.0 - e) - target.ra) > allowed(target.ra))
+			return false;
+	} else {
+		if (energy <= 0.0 || std::fabs(-target.mu / (2.0 * energy) - target.a) > tolerance * std::fabs(target.a))
+			return false;
+	}
+	return std::fabs(toGain.Dot(target.normal)) <= tolerance * speed;
+}
+
+void PlayerShipController::SetPlanBurnAccuracy(double fraction)
+{
+	m_planBurnAccuracy = Clamp(fraction, PLAN_BURN_ACCURACY_MIN, PLAN_BURN_ACCURACY_MAX);
 }
 
 vector3d PlayerShipController::PlannerToShipFrame(const vector3d &plannerDir) const
@@ -761,72 +909,88 @@ void PlayerShipController::UpdatePlanBurnThrust()
 		return;
 	}
 
-	// progress accounting lives in the planner (Player::TimeStepUpdate); this
-	// control keeps no delta-v total of its own
-	int burnIdx = -1;
-	vector3d burnDir;
-	if (m_flightControlState == CONTROL_PLAN_HEADING) {
-		// Auto Orientation owns the direction: fire along the same locked
-		// direction the ship is being pointed at
-		burnIdx = SyncPlanBurnDirectionLock();
-		if (burnIdx >= 0)
-			burnDir = PlannerToShipFrame(m_lockedPlanBurnDir);
-	} else {
-		// no Auto Orientation: gate on the live residual maneuver direction
-		burnIdx = Pi::player->GetActiveBurnIndex();
-		if (!ResolvePlanBurnDirection(burnIdx, burnDir))
-			burnIdx = -1;
-	}
-	if (burnIdx < 0) {
+	// closed loop: the target is the orbit the plan expects after the burn,
+	// and every step flies what is still missing to get onto it
+	const int burnIdx = Pi::player->GetActiveBurnIndex();
+	vector3d pos, vel;
+	const double accel = m_ship->GetPropulsion()->GetAccel(THRUSTER_FORWARD);
+	if (burnIdx < 0 || !SyncPlanBurnTarget(burnIdx) || !GetPlannerState(pos, vel) || accel <= PLAN_BURN_EPS) {
 		m_ship->GetPropulsion()->ClearLinThrusterState();
+		return;
+	}
+	PlanBurnTarget &target = m_planBurnTarget;
+	const double now = Pi::game->GetTime();
+
+	// ignition is centred on the node - half the planned burn before it, the
+	// timing the plan, the flight HUD and its warp all use
+	if (!target.ignited) {
+		const double node = Pi::planner->GetStartTime(burnIdx);
+		if (now < node - 0.5 * target.plannedDv / accel - PLAN_BURN_START_TOLERANCE) {
+			m_ship->GetPropulsion()->ClearLinThrusterState();
+			return;
+		}
+		target.ignited = true;
+		target.ignitionTime = now;
+	}
+
+	const vector3d toGain = PlanBurnVelocityToGain(pos, vel);
+	const double left = toGain.Length();
+	// the planner's remaining delta-v is this residual while Auto Burn flies
+	// the burn (Player::TimeStepUpdate counts progress only without it)
+	Pi::planner->SetBurnRemainingDeltaV(burnIdx, left);
+
+	// the direction fired along: Auto Orientation's steered lock, or the
+	// residual itself when the player points the ship
+	vector3d fireDir;
+	if (m_flightControlState == CONTROL_PLAN_HEADING) {
+		if (SyncPlanBurnDirectionLock() != burnIdx) {
+			m_ship->GetPropulsion()->ClearLinThrusterState();
+			return;
+		}
+		fireDir = m_lockedPlanBurnDir;
+	} else {
+		fireDir = toGain.NormalizedSafe();
+	}
+	// thrust along fireDir no longer closes the residual: an overshoot, or a
+	// trim in another direction the ship would have to turn to
+	const double along = toGain.Dot(fireDir);
+	const bool stalled = along < PLAN_BURN_MIN_ALONG * left;
+
+	// Done once the orbit is on the plan's periapsis, apoapsis and plane
+	// within the accuracy, and the residual is spent or could only be flown
+	// by turning for a trim the accuracy does not need. The burn always runs
+	// the residual down first, so the accuracy decides when a correction is
+	// needed, not where the burn stops. A burn running far past its planned
+	// duration is closed rather than chased forever.
+	const double timeout = std::max(PLAN_BURN_TIMEOUT_MIN, PLAN_BURN_TIMEOUT_FACTOR * target.plannedDv / accel);
+	if ((IsPlanBurnOnTarget(pos, vel, toGain) && (left <= PLAN_BURN_SPENT_DV || stalled)) ||
+		now - target.ignitionTime > timeout) {
+		m_ship->GetPropulsion()->ClearLinThrusterState();
+		Pi::planner->CompleteBurn(burnIdx);
+		// drop the lock and the target now; the next update acquires the next
+		// active burn or releases plan heading to manual when none remains
+		InvalidatePlanBurnDirectionLock();
+		m_planBurnTarget = PlanBurnTarget();
 		return;
 	}
 
 	// alignment gate: only the angle to the burn direction is read, never a
-	// commanded attitude - the orientation control owns the ship's pointing
-	if (Util::AngleToFaceDirection(*this, burnDir) > PLAN_BURN_FACE_TOLERANCE) {
+	// commanded attitude - the orientation control owns the ship's pointing.
+	// A stalled residual waits for the orientation to re-aim.
+	if (stalled || Util::AngleToFaceDirection(*this, PlannerToShipFrame(fireDir)) > PLAN_BURN_FACE_TOLERANCE) {
 		// the main engine is fore-firing: rotate into the burn direction first
 		m_ship->GetPropulsion()->ClearLinThrusterState();
 		return;
 	}
 
-	const double remainingDv = Pi::planner->GetBurnRemainingDeltaV(burnIdx);
-	if (remainingDv <= PLAN_BURN_DV_EPSILON) {
-		m_ship->GetPropulsion()->ClearLinThrusterState();
-		Pi::planner->CompleteBurn(burnIdx);
-		// drop the lock now; the next update acquires the next active burn or
-		// releases plan heading to manual when none remains
-		InvalidatePlanBurnDirectionLock();
-		return;
-	}
-
-	// schedule-aware control law: fire at full thrust for as long as the
-	// remaining delta-v can still be spent by the burn's scheduled start
-	// (plus tolerance); taper proportionally only when the time left is
-	// shorter than what the remaining delta-v needs, so the burn trails off
-	// at the scheduled start; and hold thrust off entirely before the burn's
-	// window opens, i.e. before a full-thrust burn would land on that start.
-	// The burn completes once the remaining delta-v is under epsilon.
-	const double start = Pi::planner->GetStartTime(burnIdx);
-	const double now = Pi::game->GetTime();
-	const double accel = m_ship->GetPropulsion()->GetAccel(THRUSTER_FORWARD);
-	const double timeToSpend = remainingDv / std::max(PLAN_BURN_EPS, accel);
-	// the window opens when full thrust would spend the rest exactly at the start
-	if (timeToSpend + PLAN_BURN_START_TOLERANCE < (start - now)) {
-		m_ship->GetPropulsion()->ClearLinThrusterState();
-		return;
-	}
-	const double timeLeft = start + PLAN_BURN_START_TOLERANCE - now;
-	// axis 2 is the main engine and its level is inverted: a negative
-	// level fires THRUSTER_FORWARD, so a planned burn is always executed
-	// prograde - the ship faces the burn direction and accelerates into it
-	if (timeToSpend <= timeLeft) {
-		// there is slack time: no reason to burn below full thrust
-		m_ship->GetPropulsion()->SetLinThrusterState(2, -1.0);
-	} else {
-		const double throttle = Clamp(remainingDv / std::max(PLAN_BURN_EPS, accel * std::max(PLAN_BURN_EPS, timeLeft)), 0.0, 1.0);
-		m_ship->GetPropulsion()->SetLinThrusterState(2, -throttle);
-	}
+	// full thrust while more than the taper is left, then in proportion to
+	// what is left, so the last steps are fine ones and none overshoots. Axis
+	// 2 is the main engine and its level is inverted: a negative level fires
+	// THRUSTER_FORWARD - the ship faces the burn direction and accelerates
+	// into it
+	const double taper = std::max(PLAN_BURN_TAPER_SECONDS, PLAN_BURN_TAPER_STEPS * Pi::game->GetTimeStep());
+	const double throttle = Clamp(along / (accel * taper), 0.0, 1.0);
+	m_ship->GetPropulsion()->SetLinThrusterState(2, -throttle);
 }
 
 bool PlayerShipController::AreControlsLocked()

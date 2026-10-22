@@ -18,11 +18,12 @@
 -- of docs/implementation_plans/multi-burn-hud-autopilot_plan.md.
 --
 -- Phase 5: the Warp control warps the clock to (burn start − offset) with the
--- game's own time-acceleration levels and pauses on arrival. The simulation is
--- never un-paused by this module: resume happens only through an explicit user
--- action (Cancel Warp), using the pause menu's restore pattern from
--- views/game.lua. Arrival is detected on a physics tick (Timer:CallAt, armed
--- once per warp) and on every draw as a supplement.
+-- game's own time-acceleration levels and, on arrival, pauses or drops to 1x
+-- as the player chose. The simulation is never un-paused by this module:
+-- resume happens only through an explicit user action (Cancel Warp), using the
+-- pause menu's restore pattern from views/game.lua. Arrival is detected on a
+-- physics tick (Timer:CallAt, armed once per warp) and on every draw as a
+-- supplement.
 --
 -- The Warp control runs in the same Lua VM as gameplay, so it can arm a game
 -- Timer; the state machine itself lives in this module.
@@ -107,7 +108,15 @@ local L = {
 	CANCEL_WARP = "Cancel warp: restore the previous time acceleration",
 	OFFSET_LABEL = "Stop before burn",
 	OFFSET_FORMAT = "%.0f s",
-	OFFSET_TIP = "Pause this far before the burn start (half the burn duration before the planned time); shared by all burns",
+	OFFSET_TIP = "Warp stops this far before the burn start (half the burn duration before the planned time); shared by all burns",
+	ARRIVE_LABEL = "then",
+	ARRIVE_PAUSE = "Pause",
+	ARRIVE_PAUSE_TIP = "When the warp arrives, pause the game",
+	ARRIVE_NORMAL = "1x",
+	ARRIVE_NORMAL_TIP = "When the warp arrives, carry on at normal speed (1x)",
+	ACCURACY_LABEL = "Burn accuracy",
+	ACCURACY_FORMAT = "%.1f %%",
+	ACCURACY_TIP = "Auto Burn flies each burn until the orbit reaches the planned periapsis and apoapsis, easing the throttle at the end. If the result is still further off than this share of their altitude (or out of the planned plane), it turns and makes a small correction burn.",
 	-- each tooltip states only what its own control does. The two controls are
 	-- genuinely independent: Auto Orientation is a flight control state, Auto
 	-- Burn an engine flag applied on top of it; setting one never sets the
@@ -163,6 +172,34 @@ local function saveStopBeforeBurn()
 end
 
 --
+-- Function: loadBurnSettings, saveBurnSettings
+--
+-- What the warp does on arrival (pause, the default, or carry on at 1x) and
+-- Auto Burn's accuracy, persisted in the game settings like the margin above.
+-- The accuracy is in tenths of a percent, stored biased by 1 for the same
+-- reason, default 1 %; the ship controller gets it on every draw (see
+-- displayBurnHud), so it holds across saves and new ships.
+--
+local DEFAULT_ACCURACY_PERMILLE = 10
+local ACCURACY_MIN_PERMILLE = 1
+local ACCURACY_MAX_PERMILLE = 200
+local accuracyPermille = DEFAULT_ACCURACY_PERMILLE
+local arriveAtNormalSpeed = false
+
+local function loadBurnSettings()
+	arriveAtNormalSpeed = Game.GetConfigBool("MultiBurnHud", "arriveAtNormalSpeed") and true or false
+	local stored = Game.GetConfigInt("MultiBurnHud", "accuracyPermille")
+	accuracyPermille = (stored > 0) and (stored - 1) or DEFAULT_ACCURACY_PERMILLE
+	accuracyPermille = math.min(math.max(accuracyPermille, ACCURACY_MIN_PERMILLE), ACCURACY_MAX_PERMILLE)
+end
+
+local function saveBurnSettings()
+	Game.SetConfigBool("MultiBurnHud", "arriveAtNormalSpeed", arriveAtNormalSpeed)
+	Game.SetConfigInt("MultiBurnHud", "accuracyPermille", accuracyPermille + 1)
+	Engine.SaveSettings()
+end
+
+--
 -- Burn centring: a planned burn is applied at its node time, but a real burn
 -- takes d = Δv / acceleration seconds. The burn is split 50:50 around the node,
 -- so it starts d/2 before and ends d/2 after the node time. The planned
@@ -192,7 +229,7 @@ end
 -- One warp at a time, in module state: { idx, target, prevAccel,
 -- lastRequest, armed }. target = burn start − offset; the module drives
 -- Game.SetTimeAcceleration(level, true) down a staircase as the target
--- nears, and pauses on arrival. It never un-pauses the simulation: resume
+-- nears, and pauses (or drops to 1x) on arrival. It never un-pauses the simulation: resume
 -- happens only through an explicit user action (Cancel Warp), following the
 -- pause menu's restore pattern in views/game.lua.
 --
@@ -233,13 +270,14 @@ end
 --
 -- Function: arrive
 --
--- Arrival: request the pause (a paused request is sticky) and clear the warp
--- state. Called from the armed Timer callback on a physics tick and from the
--- per-draw check; whichever runs first wins, the second is a no-op.
+-- Arrival: request the pause (a paused request is sticky), or normal speed
+-- when the player chose to carry on at 1x, and clear the warp state. Called
+-- from the armed Timer callback on a physics tick and from the per-draw check;
+-- whichever runs first wins, the second is a no-op.
 --
 local function arrive()
 	if not warp then return end
-	Game.SetTimeAcceleration("paused")
+	Game.SetTimeAcceleration(arriveAtNormalSpeed and "1x" or "paused")
 	warp = nil
 end
 
@@ -845,6 +883,60 @@ local function drawOffsetControl()
 end
 
 --
+-- Function: drawArrivalChoice
+--
+-- On the margin's line: what the warp does when it arrives - Pause or 1x -
+-- as two buttons, the chosen one highlighted.
+--
+local function drawArrivalChoice()
+	local choice = nil
+	ui.withFont(dataFont.name, dataFont.size, function()
+		ui.sameLine()
+		ui.textColored(colors.fontDim, L.ARRIVE_LABEL)
+		ui.sameLine()
+		local selected = ui.theme.buttonColors.selected
+		if ui.button(L.ARRIVE_PAUSE .. "##burnHudArrivePause", nil,
+			not arriveAtNormalSpeed and selected or nil, L.ARRIVE_PAUSE_TIP) then
+			choice = false
+		end
+		ui.sameLine(0, 0)
+		if ui.button(L.ARRIVE_NORMAL .. "##burnHudArriveNormal", nil,
+			arriveAtNormalSpeed and selected or nil, L.ARRIVE_NORMAL_TIP) then
+			choice = true
+		end
+	end)
+	if choice ~= nil and choice ~= arriveAtNormalSpeed then
+		arriveAtNormalSpeed = choice
+		saveBurnSettings()
+	end
+end
+
+--
+-- Function: drawAccuracyControl
+--
+-- "Burn accuracy": Auto Burn's accuracy in percent, a drag like the margin's.
+--
+local function drawAccuracyControl()
+	local value, changed
+	ui.withFont(dataFont.name, dataFont.size, function()
+		ui.alignTextToFramePadding()
+		ui.textColored(colors.fontDim, L.ACCURACY_LABEL)
+		ui.setItemTooltip(L.ACCURACY_TIP)
+
+		ui.sameLine()
+		ui.pushItemWidth(OFFSET_DRAG_WIDTH)
+		value, changed = ui.incrementDrag("##burnHudAccuracy", accuracyPermille / 10, 0.1,
+			ACCURACY_MIN_PERMILLE / 10, ACCURACY_MAX_PERMILLE / 10, L.ACCURACY_FORMAT, false)
+		ui.popItemWidth()
+		ui.setItemTooltip(L.ACCURACY_TIP)
+	end)
+	if changed then
+		accuracyPermille = math.min(math.max(math.floor(value * 10 + 0.5), ACCURACY_MIN_PERMILLE), ACCURACY_MAX_PERMILLE)
+		saveBurnSettings()
+	end
+end
+
+--
 -- Function: drawWarpStrip
 --
 -- While a warp is running: the target burn number, the configured offset, the
@@ -920,6 +1012,8 @@ local function displayBurnHudPanel(min, max, player, systemView, toggleSize)
 		-- survives the plan it was started from being cleared
 		if warp then drawWarpStrip() end
 		drawOffsetControl()
+		drawArrivalChoice()
+		drawAccuracyControl()
 	end)
 	end)
 end
@@ -966,6 +1060,13 @@ local function displayBurnHud(min, max)
 	local systemView = Game.systemView
 	if not player or not systemView then return end
 
+	-- Auto Burn's accuracy lives in the ship controller, which a new game or
+	-- ship starts from its default: keep it on the setting
+	local accuracy = accuracyPermille / 1000
+	if math.abs(player:GetPlanBurnAccuracy() - accuracy) > 1e-9 then
+		player:SetPlanBurnAccuracy(accuracy)
+	end
+
 	-- leave the time window's height clear at the bottom
 	if ui.timeWindowSize then
 		max.y = max.y - ui.timeWindowSize.y
@@ -1006,9 +1107,11 @@ end
 
 loadVisibility()
 loadStopBeforeBurn()
+loadBurnSettings()
 Event.Register("onGameStart", function()
 	loadVisibility()
 	loadStopBeforeBurn()
+	loadBurnSettings()
 	resetWarpState()
 end)
 Event.Register("onGameEnd", resetWarpState)

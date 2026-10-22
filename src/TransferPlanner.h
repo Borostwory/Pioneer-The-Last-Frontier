@@ -98,6 +98,9 @@ public:
 	double GetBurnDeltaV(int idx) const;
 	double GetBurnRemainingDeltaV(int idx) const;
 	void AddBurnProgress(int idx, double dv);
+	// sets the executed delta-v from what is still left of the burn, for a
+	// closed-loop executor that measures the remainder directly
+	void SetBurnRemainingDeltaV(int idx, double remaining);
 
 	// snapping: the node time a snap of burn idx to the given event would set.
 	// The first occurrence after the previous burn (or now) is chosen; a burn

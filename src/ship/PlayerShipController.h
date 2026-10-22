@@ -44,6 +44,11 @@ public:
 	// CONTROL_PLAN_HEADING acquired it. Zero when plan heading is not active, or
 	// the active burn index or planner lock serial no longer match the cache.
 	vector3d GetLockedManeuverDirection() const;
+	// how close Auto Burn brings the orbit to the plan before a burn counts as
+	// done: the largest error in periapsis / apoapsis, as a fraction of them
+	// (and of the speed, out of the planned plane). Clamped to [0.001, 0.2]
+	void SetPlanBurnAccuracy(double fraction);
+	double GetPlanBurnAccuracy() const { return m_planBurnAccuracy; }
 	float GetLowThrustPower() const { return m_lowThrustPower; }
 	void SetLowThrustPower(float power);
 
@@ -149,16 +154,22 @@ private:
 	// current frame, which the attitude helpers take as input. returns the burn
 	// index, or -1 when there is no burn to point at, in which case the flight
 	// control state is released to manual. The direction comes from the
-	// Auto Orientation lock, acquired once per active burn and kept stable
+	// Auto Orientation lock, acquired once per active burn and steered along the
+	// closed-loop residual once the burn is under way
 	int ResolvePlanBurnDirection(vector3d &outWorldDir);
-	// pure live direction resolution for a known burn index: writes the unit
-	// direction of the live residual maneuver velocity of burn idx into the
-	// ship's current frame, returns false when the index is invalid or the plan
-	// has no direction to point at - in contrast to the single-argument form
-	// above it never touches the flight control state or the lock, which the
-	// engine control must not do. Used by the engine control while plan
-	// heading is not active
-	bool ResolvePlanBurnDirection(int idx, vector3d &outWorldDir) const;
+	// aims the Auto Orientation lock along what is still to gain, once Auto
+	// Burn has ignited the burn; holds it near the end of the burn
+	void SteerPlanBurnLock();
+	// the ship's position and velocity relative to the planner frame (the
+	// non-rotating frame of the body it orbits)
+	bool GetPlannerState(vector3d &pos, vector3d &vel) const;
+	// keep m_planBurnTarget on burn idx: follows the plan until ignition, then
+	// holds it. False when the burn has no target orbit
+	bool SyncPlanBurnTarget(int idx);
+	// the velocity still to gain to be on the target orbit, planner frame
+	vector3d PlanBurnVelocityToGain(const vector3d &pos, const vector3d &vel) const;
+	// the ship's orbit matches the target within m_planBurnAccuracy
+	bool IsPlanBurnOnTarget(const vector3d &pos, const vector3d &vel, const vector3d &toGain) const;
 	// transform a planner-frame (non-rotating system frame) direction into the
 	// ship's current frame; recomputed every call, never cached
 	vector3d PlannerToShipFrame(const vector3d &plannerDir) const;
@@ -213,6 +224,28 @@ private:
 	int m_lockedPlanBurnIdx = -1;
 	uint32_t m_lockedPlanBurnSerial = 0;
 	bool m_lockedPlanBurnValid = false;
+	// closed-loop guidance of the active planned burn: the orbit the plan
+	// expects after it (planner frame), held from ignition. Derived runtime
+	// state, never serialized
+	struct PlanBurnTarget {
+		bool valid = false;
+		int idx = -1;
+		uint32_t serial = 0;
+		double mu = 0.0;							   // of the central body
+		double bodyRadius = 0.0;					   // of the central body
+		vector3d normal = vector3d(0.0);			   // unit angular momentum
+		vector3d periapsisDir = vector3d(0.0);		   // unit; zero for a circle
+		double a = 0.0;								   // semi-major axis, negative on escape
+		double p = 0.0;								   // semi-latus rectum
+		double rp = 0.0;							   // periapsis radius
+		double ra = 0.0;							   // apoapsis radius, 0 on escape
+		double plannedDv = 0.0;
+		bool ignited = false;
+		double ignitionTime = 0.0;
+	};
+	PlanBurnTarget m_planBurnTarget;
+	// how close to the planned periapsis / apoapsis a burn must end, as a fraction
+	double m_planBurnAccuracy = 0.01;
 	float m_fovY; //for mouse acceleration adjustment
 	float m_joystickDeadzone;
 	float m_lowThrustPower;

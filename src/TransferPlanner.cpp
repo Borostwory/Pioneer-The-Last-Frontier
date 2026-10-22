@@ -431,6 +431,20 @@ void TransferPlanner::AddBurnProgress(int idx, double dv)
 	burn.appliedDeltaV = std::min(std::max(burn.appliedDeltaV + dv, 0.0), GetBurnDeltaV(idx));
 }
 
+void TransferPlanner::SetBurnRemainingDeltaV(int idx, double remaining)
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return;
+
+	Burn &burn = m_burns[idx];
+	if (burn.status == COMPLETED)
+		return;
+
+	// within [0, planned delta-v], as AddBurnProgress keeps it
+	const double planned = GetBurnDeltaV(idx);
+	burn.appliedDeltaV = std::min(std::max(planned - remaining, 0.0), planned);
+}
+
 TransferPlanner::Burn &TransferPlanner::EnsureBurn(int idx) const
 {
 	if (idx == 0 && m_burns.empty() && Pi::game)

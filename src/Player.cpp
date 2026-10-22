@@ -341,6 +341,9 @@ void Player::TimeStepUpdate(const float timeStep)
 	// direction of the active burn, and let the planner accumulate it
 	if (!Pi::planner->HasPlan())
 		return;
+	// Auto Burn flies the burn closed-loop and sets the remainder itself
+	if (GetPlanBurnEnabled())
+		return;
 
 	const int activeIdx = Pi::planner->GetActiveIndex();
 	if (activeIdx < 0) // every planned burn is complete: nothing to accumulate into
@@ -424,6 +427,20 @@ bool Player::GetPlanBurnEnabled() const
 {
 	auto con = GetPlayerController();
 	return con ? con->GetPlanBurnEnabled() : false;
+}
+
+void Player::SetPlanBurnAccuracy(double fraction)
+{
+	auto con = GetPlayerController();
+	if (con) {
+		con->SetPlanBurnAccuracy(fraction);
+	}
+}
+
+double Player::GetPlanBurnAccuracy() const
+{
+	auto con = GetPlayerController();
+	return con ? con->GetPlanBurnAccuracy() : 0.0;
 }
 
 vector3d Player::GetLockedManeuverDirection() const

@@ -464,6 +464,48 @@ static int l_player_get_plan_burn_enabled(lua_State *l)
 }
 
 /*
+ * Function: SetPlanBurnAccuracy
+ *
+ * How close Auto Burn brings the orbit to the plan before a burn counts as
+ * done: the largest error in the planned periapsis and apoapsis, as a
+ * fraction of them. Clamped to 0.001 .. 0.2.
+ *
+ * Example:
+ *
+ * > player:SetPlanBurnAccuracy(0.01) -- within 1 %
+ *
+ * Parameters:
+ *
+ *   fraction - number
+ *
+ */
+static int l_player_set_plan_burn_accuracy(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	player->SetPlanBurnAccuracy(LuaPull<double>(l, 2));
+	return 0;
+}
+
+/*
+ * Function: GetPlanBurnAccuracy
+ *
+ * Example:
+ *
+ * > fraction = player:GetPlanBurnAccuracy()
+ *
+ * Returns:
+ *
+ *   fraction - number, see SetPlanBurnAccuracy
+ *
+ */
+static int l_player_get_plan_burn_accuracy(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	LuaPush<double>(l, player->GetPlanBurnAccuracy());
+	return 1;
+}
+
+/*
  * Method: GetHeadingPitchRoll
  *
  * Get the player's ship's current heading, pitch and roll (all in radians)
@@ -827,6 +869,8 @@ void LuaObject<Player>::RegisterClass()
 		{ "GetActiveBurnIndex", l_player_get_active_burn_index },
 		{ "SetPlanBurnEnabled", l_player_set_plan_burn_enabled },
 		{ "GetPlanBurnEnabled", l_player_get_plan_burn_enabled },
+		{ "SetPlanBurnAccuracy", l_player_set_plan_burn_accuracy },
+		{ "GetPlanBurnAccuracy", l_player_get_plan_burn_accuracy },
 		{ "GetAcceleration", l_get_acceleration },
 		{ "IsMouseActive", l_get_is_mouse_active },
 		{ "GetMouseDirection", l_get_mouse_direction },

@@ -68,6 +68,10 @@ public:
 	// controller, orthogonal to the flight control state
 	void SetPlanBurnEnabled(bool enabled);
 	bool GetPlanBurnEnabled() const;
+	// how close Auto Burn brings the orbit to the plan, as a fraction of the
+	// planned periapsis / apoapsis: a forwarder to the ship controller
+	void SetPlanBurnAccuracy(double fraction);
+	double GetPlanBurnAccuracy() const;
 	// effective Auto Orientation direction lock: normalized, in the non-rotating
 	// planner frame; zero when no valid lock is active. Read-only forwarder
 	vector3d GetLockedManeuverDirection() const;
