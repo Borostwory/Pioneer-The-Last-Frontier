@@ -281,14 +281,14 @@ local function showVideoOptions()
 		local cloudResolutionLabels = { "Low (360 lines)", "Medium (540 lines)", "High (720 lines)", "Very high (1080 lines)", "Full screen resolution" }
 		local cloudResolution = Engine.SettingsGetInt("CloudResolution")
 		c,cloudResolution = combo("Cloud resolution", cloudResolution, cloudResolutionLabels,
-			"Resolution the clouds are rendered at near the ground and in the air, before being scaled to the screen. Higher is sharper and slower.")
+			"Resolution the clouds are rendered at near the ground and in the air (the coarsest used), before being scaled to the screen. Higher is sharper and slower.")
 		if c then
 			Engine.SettingsSetInt("CloudResolution", cloudResolution)
 		end
 
 		local cloudResolutionSpace = Engine.SettingsGetInt("CloudResolutionSpace")
 		c,cloudResolutionSpace = combo("Cloud resolution from space", cloudResolutionSpace, cloudResolutionLabels,
-			"Resolution used when the camera is high above the clouds (from about 40 km on Earth). Seen from above, clouds are cheap to draw but show fine detail, so a higher resolution than near the ground is affordable.")
+			"The finest resolution used. High above a planet the clouds are cheap to draw but their detail becomes small on screen, so the resolution rises gradually toward this one, as far as the detail needs it. On Earth it starts rising at about 100 km and reaches it at about 450 km looking down; planets with larger clouds (thin, cold atmospheres, or a larger cloud size setting) need it later.")
 		if c then
 			Engine.SettingsSetInt("CloudResolutionSpace", cloudResolutionSpace)
 		end

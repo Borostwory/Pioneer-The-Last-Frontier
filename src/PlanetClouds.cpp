@@ -66,15 +66,30 @@ namespace {
 	static const int CLOUD_RESOLUTION_LINES[] = { 360, 540, 720, 1080, 0 };
 	static const int CLOUD_QUALITY_STEPS[] = { 16, 24, 32, 48 };
 
-	// Above the clouds every pixel shows sharp cloud detail, but costs little
-	// (one sample per layer), so the "space" resolution applies there. The
-	// resolution blends continuously from the normal one at the cloud-top
-	// height (the tropopause, at least SPACE_MIN_TOP_M) times SPACE_BLEND_START
-	// to the space one at SPACE_BLEND_END times it. The buffers are allocated
-	// for the higher of the two and drawn in part, so nothing is reallocated.
-	static const double SPACE_BLEND_START = 1.0;
-	static const double SPACE_BLEND_END = 3.0;
-	static const double SPACE_MIN_TOP_M = 8000.0;
+	// Resolution per frame (ChooseFrameResolution). The cloud field has detail
+	// down to its smallest cells; a history pixel needs to be no finer than
+	// that detail seen from the camera: RES_PIXELS_PER_CELL pixels across the
+	// smallest cell at the viewing distance. Near the ground cells look large,
+	// so the normal ("Cloud resolution") setting is the coarsest used; far
+	// above the clouds they shrink on screen and the resolution rises toward
+	// the "from space" setting, the finest used. Inside and below the clouds
+	// every pixel is raymarched (expensive) and the cells look large, so the
+	// refinement fades in between REFINE_START and REFINE_END times the
+	// cloud-top height (the tropopause, at least CLOUD_MIN_TOP_M). Changes are
+	// smoothed over RES_SMOOTH_TIME. The buffers hold the finest resolution
+	// and each frame draws into the part it needs, so nothing is reallocated.
+	static const double RES_PIXELS_PER_CELL = 3.0;
+	static const double REFINE_START = 1.0;
+	static const double REFINE_END = 2.0;
+	static const double CLOUD_MIN_TOP_M = 8000.0;
+	static const double RES_SMOOTH_TIME = 0.5; // [s]
+
+	// must match the shader (cloud-config.glsl, cloud-derive.glsl,
+	// cloudCellU in cloud-march.glsl): cell sizes for a scale height of 8.4 km.
+	// Cirrus fibres (700 m apart) are faint, so they count as 3x coarser.
+	static const double CELL_LOW_M = 4000.0;
+	static const double CELL_MID_M = 1500.0 / 2.2;
+	static const double CIRRUS_DETAIL_M = 3.0 * 700.0;
 
 	// planets further away than this (planet radii) are not given a pass
 	static const float CLOUD_PASS_MAX_DISTANCE = 2000.0f;
@@ -152,6 +167,10 @@ namespace {
 	static bool s_warnedMSAA = false;
 	static TemporalState s_temporal;
 	static Uint64 s_frameIndex = 0;
+
+	// smoothed resolution (full pixels per history pixel) and the planet it is for
+	static double s_resDivisor = 0.0;
+	static const SystemBody *s_resBody = nullptr;
 
 	// cloud clock
 	static const Game *s_clockGame = nullptr;
@@ -369,16 +388,72 @@ namespace {
 			pass.maxHistW, pass.maxHistH, pass.maxMarchW, pass.maxMarchH, width, height);
 	}
 
-	// This frame's resolution: the normal one near and below the clouds,
-	// blending smoothly to the space one above them. alt: camera altitude
-	// above the nearest planet [m]; top: its cloud-top height [m].
-	void ChooseFrameResolution(PassResources &pass, double alt, double top)
+	// Size of the smallest cloud cells of a planet [m]: they scale with the
+	// atmosphere's scale height and the per-layer size settings. Layers set
+	// to no cover are left out.
+	double SmallestCloudCell(const PlanetClouds::CloudDataBlock &d)
+	{
+		const double T = std::max(double(d.atmos[0]), 1.0);
+		const double g = std::max(double(d.atmos[3]), 1e-3);
+		const double H = 8.3144621 * T / (0.02897 * g);
+		const double sH = Clamp(H / 8400.0, 0.5, 4.0);
+		const double cells[3] = { CELL_LOW_M, CELL_MID_M, CIRRUS_DETAIL_M };
+		double smallest = 1e30;
+		for (int i = 0; i < 3; i++)
+			if (d.tuneDensity[i] > 0.0f)
+				smallest = std::min(smallest, cells[i] * sH * std::max(double(d.tuneSize[i]), 0.05));
+		return smallest < 1e29 ? smallest : CELL_LOW_M * sH;
+	}
+
+	// This frame's resolution for the nearest planet e (see RES_PIXELS_PER_CELL).
+	// proj5: 1 / tan of the half vertical field of view.
+	void ChooseFrameResolution(PassResources &pass, const PassEntry &e, double proj5)
 	{
 		const double divNear = ChooseDivisor(pass.height, false);
 		const double divSpace = ChooseDivisor(pass.height, true);
-		const double x = Clamp((alt - SPACE_BLEND_START * top) / ((SPACE_BLEND_END - SPACE_BLEND_START) * top), 0.0, 1.0);
-		const double s = x * x * (3.0 - 2.0 * x);
-		pass.divisor = std::max(divNear + (divSpace - divNear) * s, double(pass.allocDivisor));
+		const double divFine = std::min(divNear, divSpace), divCoarse = std::max(divNear, divSpace);
+
+		// camera relative to the planet [planet radii]; the camera looks down -Z
+		const double a = std::max(double(e.cloudData.geom[0]), 1.0);
+		const double top = std::max(double(e.cloudData.geom[1]), CLOUD_MIN_TOP_M);
+		const vector3d c(e.center);
+		const double dc = c.Length();
+		const double alt = (dc - 1.0) * a;
+		const double rTop = 1.0 + top / a;
+
+		// viewing distance of the clouds: the geometric mean of the distance
+		// straight down and along the view (at most to the horizon of the
+		// cloud deck), so looking toward the horizon, where distant clouds are
+		// small on screen, raises the resolution, but only moderately
+		const double nadir = std::max(alt - top, 1.0);
+		double dist = nadir;
+		if (dc > rTop) {
+			const double horizon = std::sqrt(dc * dc - rTop * rTop) * a;
+			const double b = -c.z; // dot(view direction, centre)
+			const double disc = b * b - (dc * dc - rTop * rTop);
+			const double hit = (disc >= 0.0 && b > 0.0) ? (b - std::sqrt(disc)) * a : horizon;
+			dist = std::sqrt(nadir * Clamp(hit, nadir, horizon));
+		}
+
+		// resolution at which the smallest cells span RES_PIXELS_PER_CELL pixels
+		const double pixelAngle = 2.0 / (proj5 * pass.height); // full-resolution pixel [rad]
+		const double divDetail = SmallestCloudCell(e.cloudData) / (dist * RES_PIXELS_PER_CELL * pixelAngle);
+
+		// refinement only well above the clouds
+		const double x = Clamp((alt - REFINE_START * top) / ((REFINE_END - REFINE_START) * top), 0.0, 1.0);
+		const double w = x * x * (3.0 - 2.0 * x);
+		const double target = divNear + (Clamp(divDetail, divFine, divCoarse) - divNear) * w;
+
+		// smooth over time; a new planet starts at its target
+		if (s_resBody != e.body || s_resDivisor <= 0.0) {
+			s_resDivisor = target;
+			s_resBody = e.body;
+		} else {
+			const double dt = Clamp(double(Pi::GetFrameTime()), 0.0, 1.0);
+			s_resDivisor += (target - s_resDivisor) * (1.0 - std::exp(-dt / RES_SMOOTH_TIME));
+		}
+
+		pass.divisor = std::max(s_resDivisor, double(pass.allocDivisor));
 		pass.histW = std::min(int(std::ceil(pass.width / pass.divisor)), pass.maxHistW);
 		pass.histH = std::min(int(std::ceil(pass.height / pass.divisor)), pass.maxHistH);
 		pass.marchW = (pass.histW + 1) / 2;
@@ -523,16 +598,13 @@ namespace PlanetClouds {
 		EnsurePassResources(r, width, height);
 		PassResources &pass = *s_pass;
 
-		// resolution from the camera height above the nearest planet's clouds
+		// resolution from what the nearest planet's clouds look like on screen
 		{
 			const PassEntry *nearest = &s_queue[0];
 			for (const PassEntry &e : s_queue)
 				if (e.center.Length() < nearest->center.Length())
 					nearest = &e;
-			const double radius = nearest->cloudData.geom[0];
-			const double alt = (double(nearest->center.Length()) - 1.0) * radius;
-			const double top = std::max(double(nearest->cloudData.geom[1]), SPACE_MIN_TOP_M);
-			ChooseFrameResolution(pass, alt, top);
+			ChooseFrameResolution(pass, *nearest, r->GetProjection()[5]);
 		}
 		const bool shadows = Pi::config->Int("CloudShadows", 2) > 0;
 
