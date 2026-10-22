@@ -51,6 +51,7 @@ struct CloudPlanet {
 	float H;       // scale height [m]
 	float sH;      // H / 8.4 km, clamped
 	float hMax;    // max terrain height [m]
+	float cirrusScale; // cirrus fibre scale: sH times the user size multiplier
 	float phiH;    // Hadley cell edge [rad]
 	float phiJ;    // jet latitude [rad]
 	float wsr;     // 0 = Earth-like jets, 1 = super-rotation
@@ -146,6 +147,7 @@ CloudPlanet cloudDerive()
 	cp.ztEff = cp.zt > 0.0 ? cp.zt : 2.0 * cp.H;
 	cp.sH = clamp(cp.H / 8400.0, 0.5, 4.0);
 	cp.hMax = cloudGeom.w;
+	cp.cirrusScale = cp.sH * max(cloudTuneSize.z, 0.05);
 	cp.phiH = 0.5 * PI;
 	cp.phiJ = 0.5 * PI;
 	cp.wsr = 1.0;
@@ -352,9 +354,13 @@ CloudPlanet cloudDerive()
 		cMid = 0.0;
 	}
 
-	cloudSetLayer(cp.L[0], lowBase, lowTopA, cLow, qLow / sH, CLOUD_CELL_LOW_M * sH, 32768.0);
-	cloudSetLayer(cp.L[1], midBase, midTopA, cMid, qMid / sH, CLOUD_CELL_MID_M * sH, 32768.0);
-	cloudSetLayer(cp.L[2], hiBase, hiTopA, cHigh, qHigh / sH, CLOUD_CELL_HIGH_M * sH, 65536.0);
+	// user tuning (video settings): amount scales coverage and, more gently,
+	// the optical thickness; size scales the individual cells / fibres
+	vec3 amount = max(cloudTuneDensity.xyz, vec3(0.0));
+	vec3 size = max(cloudTuneSize.xyz, vec3(0.05));
+	cloudSetLayer(cp.L[0], lowBase, lowTopA, cLow * amount.x, qLow * sqrt(amount.x) / sH, CLOUD_CELL_LOW_M * sH * size.x, 32768.0);
+	cloudSetLayer(cp.L[1], midBase, midTopA, cMid * amount.y, qMid * sqrt(amount.y) / sH, CLOUD_CELL_MID_M * sH * size.y, 32768.0);
+	cloudSetLayer(cp.L[2], hiBase, hiTopA, cHigh * amount.z, qHigh * sqrt(amount.z) / sH, CLOUD_CELL_HIGH_M * sH * size.z, 65536.0);
 
 	// normalise the latitude factor to an area-weighted mean of 1 (9-point quadrature)
 	for (int l = 0; l < 3; l++) {

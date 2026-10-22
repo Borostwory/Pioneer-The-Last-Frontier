@@ -51,6 +51,8 @@ namespace {
 	//   CloudResolution  0..4: cloud buffer height 360, 540, 720, 1080 lines, or full
 	//   CloudSoftness    0..2: upsampling kernel radius
 	//   CloudSpeed       1..100: cloud motion and evolution relative to the real wind
+	//   CloudDensityLow/Medium/High  0..300 %: amount of cloud per layer
+	//   CloudSizeLow/Medium/High     25..400 %: size of individual clouds per layer
 	static const int CLOUD_RESOLUTION_LINES[] = { 360, 540, 720, 1080, 0 };
 
 	// planets further away than this (planet radii) are not given a pass
@@ -215,6 +217,12 @@ namespace {
 		s_cloudTime += std::min(dGame, maxStep) * speed;
 	}
 
+	// a per-layer percentage setting as a multiplier
+	double LayerPercent(const char *key, int lo, int hi)
+	{
+		return Clamp(Pi::config->Int(key, 100), lo, hi) / 100.0;
+	}
+
 	bool CloudsEnabled()
 	{
 		return Pi::config->Int("CloudsEnabled", 1) != 0;
@@ -349,6 +357,9 @@ namespace PlanetClouds {
 		const double t = s_clockGame ? s_cloudTime : (Pi::game ? Pi::game->GetTime() : 0.0);
 		const Uint32 seed = sbody->GetSeed();
 		SetVec4(out.time, std::fmod(t, CLOUD_TIME_WRAP), std::floor(t / CLOUD_TIME_WRAP), double(seed & 0xFFFF), double(seed >> 16));
+
+		SetVec4(out.tuneDensity, LayerPercent("CloudDensityLow", 0, 300), LayerPercent("CloudDensityMedium", 0, 300), LayerPercent("CloudDensityHigh", 0, 300), 0.0);
+		SetVec4(out.tuneSize, LayerPercent("CloudSizeLow", 25, 400), LayerPercent("CloudSizeMedium", 25, 400), LayerPercent("CloudSizeHigh", 25, 400), 0.0);
 	}
 
 	void SetMaterialCloudData(Graphics::Material *mat, CloudDataBlock &data, CloudHeightMap *heightMap)

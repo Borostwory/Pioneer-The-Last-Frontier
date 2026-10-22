@@ -45,8 +45,10 @@ namespace PlanetClouds {
 		float comp[4];	// volatileLiquid, volatileIces, atmosOxidizing, volcanicity
 		float spin[4];	// rotation period [days], orbit period around a star [days] (0 for moons), time accel rate, enabled (0/1)
 		float time[4];	// fmod(t, 2^20) [s], floor(t / 2^20), seed & 0xFFFF, seed >> 16 (t = cloud clock)
+		float tuneDensity[4]; // user amount multiplier: low, medium, high layer
+		float tuneSize[4];	  // user cloud size multiplier: low, medium, high layer
 	};
-	static_assert(sizeof(CloudDataBlock) == 128, "CloudDataBlock must match the std140 CloudData block");
+	static_assert(sizeof(CloudDataBlock) == 160, "CloudDataBlock must match the std140 CloudData block");
 
 	// Coarse equirectangular terrain-height map (metres above sea level),
 	// baked once on the async job queue.

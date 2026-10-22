@@ -42,6 +42,12 @@ GameConfig::GameConfig(const map_string &override_)
 	map["CloudResolution"] = "1"; // 0 low .. 4 full, see PlanetClouds.cpp
 	map["CloudSoftness"] = "1";   // 0 sharp .. 2 soft
 	map["CloudSpeed"] = "10";     // cloud motion relative to the real wind speed
+	map["CloudDensityLow"] = "100";    // percent, per cloud layer
+	map["CloudDensityMedium"] = "100";
+	map["CloudDensityHigh"] = "100";
+	map["CloudSizeLow"] = "100";       // percent, per cloud layer
+	map["CloudSizeMedium"] = "100";
+	map["CloudSizeHigh"] = "100";
 	map["DefaultLowThrustPower"] = "0.25";
 	map["VSync"] = "1";
 	map["UseTextureCompression"] = "1";

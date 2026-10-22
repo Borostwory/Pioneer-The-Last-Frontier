@@ -185,8 +185,8 @@ vec3 cloudColumn(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float
 vec3 cloudCirrusDomain(CloudPlanet cp, vec3 p, vec3 off)
 {
 	float lat = asin(clamp(p.y, -1.0, 1.0));
-	float len = CLOUD_CIRRUS_LENGTH_M * cp.sH;
-	float wid = CLOUD_CIRRUS_WIDTH_M * cp.sH;
+	float len = CLOUD_CIRRUS_LENGTH_M * cp.cirrusScale;
+	float wid = CLOUD_CIRRUS_WIDTH_M * cp.cirrusScale;
 	vec3 q = vec3(p.x * (cp.a / len), p.z * (cp.a / len), lat * (cp.a / wid)) + off;
 	// fibres meander and fan out: bend the across-wind coordinate with a
 	// broad and a finer noise
@@ -201,7 +201,7 @@ vec3 cloudCirrusDomain(CloudPlanet cp, vec3 p, vec3 off)
 float cloudCirrusWisps(CloudPlanet cp, vec3 q, float fp)
 {
 	float bands = smoothstep(0.35, 0.65, cloudFbm(vec3(q.xy * 0.08, q.z * 0.006) + vec3(9.7), 2, 1.0));
-	float groupAcross = CLOUD_CIRRUS_WIDTH_M * cp.sH / 0.06;
+	float groupAcross = CLOUD_CIRRUS_WIDTH_M * cp.cirrusScale / 0.06;
 	float nearW = smoothstep(1.5, 4.0, groupAcross / max(fp, 1.0));
 	if (nearW <= 0.0) return bands;
 	float groups = smoothstep(0.38, 0.62, cloudFbm(vec3(q.xy * 0.6, q.z * 0.06) + vec3(3.1), 2, 1.0));
@@ -213,7 +213,7 @@ float cloudCirrusWisps(CloudPlanet cp, vec3 q, float fp)
 // ~2x finer; octaves whose crest is under ~2 pixels fade out (no moire)
 float cloudCirrusOctaves(CloudPlanet cp, float fp)
 {
-	float crest = 0.2 * CLOUD_CIRRUS_WIDTH_M * cp.sH;
+	float crest = 0.2 * CLOUD_CIRRUS_WIDTH_M * cp.cirrusScale;
 	return clamp(log2(crest / (2.0 * max(fp, 1.0))) + 1.0, 0.0, 3.0);
 }
 
@@ -265,7 +265,7 @@ vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat,
 		// cirrus: fibrous streaks along the wind, with their own distance LOD
 		vec3 p = cloudAdvect(cp, li, pfDir, lat, t);
 		// fall streaks: the lower, falling ice trails the wind (cirrus uncinus hooks)
-		p = cloudRotY(p, (1.0 - h) * CLOUD_CIRRUS_FALL_M * cp.sH / cp.a);
+		p = cloudRotY(p, (1.0 - h) * CLOUD_CIRRUS_FALL_M * cp.cirrusScale / cp.a);
 		vec3 q = cloudCirrusDomain(cp, p, off);
 		float wisps = cloudCirrusWisps(cp, q, fp);
 		// unresolved fibres (far away, slabs, shadows) use their mean fill

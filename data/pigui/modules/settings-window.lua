@@ -300,6 +300,33 @@ local function showVideoOptions()
 		if c then
 			Engine.SettingsSetInt("CloudSpeed", cloudSpeed)
 		end
+
+		-- per-layer tuning, in percent of the physically derived value
+		local cloudLayers = {
+			{ key = "High", label = "high altitude (cirrus)" },
+			{ key = "Medium", label = "medium altitude (altocumulus)" },
+			{ key = "Low", label = "low altitude (stratus / stratocumulus)" },
+		}
+		ui.text("Cloud density multiplier (%)")
+		for _, layer in ipairs(cloudLayers) do
+			local key = "CloudDensity" .. layer.key
+			local value = Engine.SettingsGetInt(key)
+			c,value = slider("Density, " .. layer.label, value, 0, 300,
+				"How much of the sky this cloud layer covers, and how thick it is. 100 = physically derived amount, 0 = layer off.")
+			if c then
+				Engine.SettingsSetInt(key, value)
+			end
+		end
+		ui.text("Cloud size multiplier (%)")
+		for _, layer in ipairs(cloudLayers) do
+			local key = "CloudSize" .. layer.key
+			local value = Engine.SettingsGetInt(key)
+			c,value = slider("Size, " .. layer.label, value, 25, 400,
+				"Size of the individual clouds in this layer. 100 = default size.")
+			if c then
+				Engine.SettingsSetInt(key, value)
+			end
+		end
 	end
 
 	ui.separator()
