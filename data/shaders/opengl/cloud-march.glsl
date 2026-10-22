@@ -246,6 +246,14 @@ float cloudCirrusFibres(vec3 q, float oct)
 	return norm > 0.0 ? sum / norm * (0.35 + 0.65 * bundle) : 0.0;
 }
 
+// Scale of the erosion detail [m]: follows the cell size up to 4x the
+// default, then stays fixed, so very large clouds keep a fine texture
+float cloudDetailCell(CloudPlanet cp, int li)
+{
+	float base = li == 0 ? CLOUD_CELL_LOW_M : (li == 1 ? CLOUD_CELL_MID_M : CLOUD_CELL_HIGH_M);
+	return min(cp.L[li].featureSize, 4.0 * base * cp.sH);
+}
+
 // Density of a field of unresolved cells (too small for the pixel): a
 // uniform medium with the same mean transmittance as the broken field, so
 // the visible amount of cloud does not change with distance or cell size.
@@ -353,7 +361,8 @@ vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat,
 	float rho = edge * shape * rim * prof * sheetMod;
 	if (detailW > 0.01) {
 		// billowy detail roughens the cells, strongest toward their edges
-		float det = cloudUniformize(cloudBillowFbm(q * 4.0 + vec3(3.1), CLOUD_DETAIL_OCTAVES, detailW), CLOUD_BILLOW_MEAN, CLOUD_BILLOW_SD);
+		vec3 qd = (p * (cp.a / cloudDetailCell(cp, li)) + off) * 4.0 + vec3(3.1);
+		float det = cloudUniformize(cloudBillowFbm(qd, CLOUD_DETAIL_OCTAVES, detailW), CLOUD_BILLOW_MEAN, CLOUD_BILLOW_SD);
 		rho *= 1.0 - ero * detailW * det * (1.0 - core);
 	}
 	return vec3(mix(rhoU, rho, shapeFade) * floorF, st, h);
@@ -637,7 +646,7 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 
 					float fp = max(t * cp.a, 1.0) * pixelAngle;
 					float lod = clamp(log2(ly.featureSize / (2.0 * fp)) - float(CLOUD_SHAPE_OCTAVES - 1), 0.0, 1.0);
-					float detailW = clamp(log2(ly.featureSize * 0.25 / (2.0 * fp)), 0.0, 1.0);
+					float detailW = clamp(log2(cloudDetailCell(cp, li) * 0.25 / (2.0 * fp)), 0.0, 1.0);
 					vec3 dens = vec3(0.0);
 					if (ph.wA > 0.001)
 						dens += ph.wA * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tA, ph.offA, cA, lod, detailW, true, fp);

@@ -55,7 +55,7 @@ namespace {
 	//   CloudSoftness    0..2: upsampling kernel radius
 	//   CloudSpeed       1..100: cloud motion and evolution relative to the real wind
 	//   CloudDensityLow/Medium/High  0..300 %: cloud cover per layer (as 1 - (1 - c)^m)
-	//   CloudSizeLow/Medium/High     25..400 %: size of individual clouds per layer
+	//   CloudSizeLow/Medium/High     25..1600 %: size of individual clouds per layer
 	//   CloudTransparencyLow/Medium/High  25..1000 %: 200 = half the optical thickness
 	//   CloudSystemSizeLow/Medium/High    25..400 %: size of cloud systems and the gaps between them
 	//   CloudClusteringLow/Medium/High    0..100 %: scattered clouds .. solid decks, at the same cover
@@ -410,7 +410,7 @@ namespace PlanetClouds {
 		SetVec4(out.time, std::fmod(t, CLOUD_TIME_WRAP), std::floor(t / CLOUD_TIME_WRAP), double(seed & 0xFFFF), double(seed >> 16));
 
 		SetVec4(out.tuneDensity, LayerPercent("CloudDensityLow", 0, 300), LayerPercent("CloudDensityMedium", 0, 300), LayerPercent("CloudDensityHigh", 0, 300), 0.0);
-		SetVec4(out.tuneSize, LayerPercent("CloudSizeLow", 25, 400), LayerPercent("CloudSizeMedium", 25, 400), LayerPercent("CloudSizeHigh", 25, 400), 0.0);
+		SetVec4(out.tuneSize, LayerPercent("CloudSizeLow", 25, 1600), LayerPercent("CloudSizeMedium", 25, 1600), LayerPercent("CloudSizeHigh", 25, 1600), 0.0);
 		SetVec4(out.tuneTransparency, LayerPercent("CloudTransparencyLow", 25, 1000), LayerPercent("CloudTransparencyMedium", 25, 1000), LayerPercent("CloudTransparencyHigh", 25, 1000), 0.0);
 		SetVec4(out.tuneSystem, LayerPercent("CloudSystemSizeLow", 25, 400), LayerPercent("CloudSystemSizeMedium", 25, 400), LayerPercent("CloudSystemSizeHigh", 25, 400), 0.0);
 		SetVec4(out.tuneCluster, Clamp(Pi::config->Int("CloudClusteringLow", 75), 0, 100) / 100.0,

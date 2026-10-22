@@ -328,8 +328,8 @@ local function showVideoOptions()
 		for _, layer in ipairs(cloudLayers) do
 			local key = "CloudSize" .. layer.key
 			local value = Engine.SettingsGetInt(key)
-			c,value = slider("Size, " .. layer.label, value, 25, 400,
-				"Size of the individual clouds in this layer. 100 = default size. Does not change the cover.")
+			c,value = slider("Size, " .. layer.label, value, 25, 1600,
+				"Size of the individual clouds in this layer. 100 = default size, up to 16x. Does not change the cover.")
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
