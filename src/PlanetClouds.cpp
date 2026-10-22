@@ -53,6 +53,7 @@ namespace {
 	//   CloudSpeed       1..100: cloud motion and evolution relative to the real wind
 	//   CloudDensityLow/Medium/High  0..300 %: amount of cloud per layer
 	//   CloudSizeLow/Medium/High     25..400 %: size of individual clouds per layer
+	//   CloudTransparencyLow/Medium/High  25..1000 %: 200 = half the optical thickness
 	static const int CLOUD_RESOLUTION_LINES[] = { 360, 540, 720, 1080, 0 };
 
 	// planets further away than this (planet radii) are not given a pass
@@ -360,6 +361,7 @@ namespace PlanetClouds {
 
 		SetVec4(out.tuneDensity, LayerPercent("CloudDensityLow", 0, 300), LayerPercent("CloudDensityMedium", 0, 300), LayerPercent("CloudDensityHigh", 0, 300), 0.0);
 		SetVec4(out.tuneSize, LayerPercent("CloudSizeLow", 25, 400), LayerPercent("CloudSizeMedium", 25, 400), LayerPercent("CloudSizeHigh", 25, 400), 0.0);
+		SetVec4(out.tuneTransparency, LayerPercent("CloudTransparencyLow", 25, 1000), LayerPercent("CloudTransparencyMedium", 25, 1000), LayerPercent("CloudTransparencyHigh", 25, 1000), 0.0);
 	}
 
 	void SetMaterialCloudData(Graphics::Material *mat, CloudDataBlock &data, CloudHeightMap *heightMap)

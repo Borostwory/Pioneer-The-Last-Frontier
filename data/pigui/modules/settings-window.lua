@@ -327,6 +327,16 @@ local function showVideoOptions()
 				Engine.SettingsSetInt(key, value)
 			end
 		end
+		ui.text("Cloud transparency multiplier (%)")
+		for _, layer in ipairs(cloudLayers) do
+			local key = "CloudTransparency" .. layer.key
+			local value = Engine.SettingsGetInt(key)
+			c,value = slider("Transparency, " .. layer.label, value, 25, 1000,
+				"How much light passes through the clouds of this layer. 100 = physically derived, 200 = half as thick, 50 = twice as thick.")
+			if c then
+				Engine.SettingsSetInt(key, value)
+			end
+		end
 	end
 
 	ui.separator()

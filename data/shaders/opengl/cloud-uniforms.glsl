@@ -14,6 +14,7 @@ layout(std140) uniform CloudData {
 	vec4 cloudTime;	 // fmod(t, 2^20) [s], floor(t / 2^20), seed & 0xFFFF, seed >> 16
 	vec4 cloudTuneDensity; // xyz: user amount multiplier for the low, medium, high layer
 	vec4 cloudTuneSize;	   // xyz: user cloud size multiplier for the low, medium, high layer
+	vec4 cloudTuneTransparency; // xyz: user transparency multiplier for the low, medium, high layer
 };
 
 // Equirectangular terrain height in metres (u = longitude, v = latitude)

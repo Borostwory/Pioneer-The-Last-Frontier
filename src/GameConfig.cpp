@@ -48,6 +48,9 @@ GameConfig::GameConfig(const map_string &override_)
 	map["CloudSizeLow"] = "100";       // percent, per cloud layer
 	map["CloudSizeMedium"] = "100";
 	map["CloudSizeHigh"] = "100";
+	map["CloudTransparencyLow"] = "100"; // percent, per cloud layer
+	map["CloudTransparencyMedium"] = "100";
+	map["CloudTransparencyHigh"] = "100";
 	map["DefaultLowThrustPower"] = "0.25";
 	map["VSync"] = "1";
 	map["UseTextureCompression"] = "1";

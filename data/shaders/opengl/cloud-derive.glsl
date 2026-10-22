@@ -355,12 +355,14 @@ CloudPlanet cloudDerive()
 	}
 
 	// user tuning (video settings): amount scales coverage and, more gently,
-	// the optical thickness; size scales the individual cells / fibres
+	// the optical thickness; size scales the individual cells / fibres;
+	// transparency divides the optical thickness only
 	vec3 amount = max(cloudTuneDensity.xyz, vec3(0.0));
 	vec3 size = max(cloudTuneSize.xyz, vec3(0.05));
-	cloudSetLayer(cp.L[0], lowBase, lowTopA, cLow * amount.x, qLow * sqrt(amount.x) / sH, CLOUD_CELL_LOW_M * sH * size.x, 32768.0);
-	cloudSetLayer(cp.L[1], midBase, midTopA, cMid * amount.y, qMid * sqrt(amount.y) / sH, CLOUD_CELL_MID_M * sH * size.y, 32768.0);
-	cloudSetLayer(cp.L[2], hiBase, hiTopA, cHigh * amount.z, qHigh * sqrt(amount.z) / sH, CLOUD_CELL_HIGH_M * sH * size.z, 65536.0);
+	vec3 opacity = sqrt(amount) / max(cloudTuneTransparency.xyz, vec3(0.05));
+	cloudSetLayer(cp.L[0], lowBase, lowTopA, cLow * amount.x, qLow * opacity.x / sH, CLOUD_CELL_LOW_M * sH * size.x, 32768.0);
+	cloudSetLayer(cp.L[1], midBase, midTopA, cMid * amount.y, qMid * opacity.y / sH, CLOUD_CELL_MID_M * sH * size.y, 32768.0);
+	cloudSetLayer(cp.L[2], hiBase, hiTopA, cHigh * amount.z, qHigh * opacity.z / sH, CLOUD_CELL_HIGH_M * sH * size.z, 65536.0);
 
 	// normalise the latitude factor to an area-weighted mean of 1 (9-point quadrature)
 	for (int l = 0; l < 3; l++) {
