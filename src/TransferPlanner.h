@@ -10,10 +10,15 @@
 #include <string>
 #include <vector>
 
+class Body;
+class Frame;
 class Orbit;
 
 class TransferPlanner {
 public:
+	// sane cap for a plan; more burns than this is fiddling, not planning
+	static constexpr size_t MAX_BURNS = 8;
+
 	enum BurnDirection {
 		PROGRADE,
 		NORMAL,
@@ -118,6 +123,29 @@ public:
 	// moves burn idx and replaces its delta-v as GetCircularizePlan says
 	bool Circularize(int idx);
 
+	// closest-approach planning (TransferPlannerApproach.cpp), against a
+	// target orbiting the body the player orbits: a ship or station flying in
+	// the planner's frame, or a moon / orbital station on rails around it.
+	//
+	// PlanApproach appends burns after the plan's last burn: one that puts the
+	// ship on a transfer meeting the target (burns = 1, intercept), and with
+	// burns = 2 a second one on arrival that matches the target's velocity
+	// (rendezvous). Departure and flight time are chosen for the least total
+	// delta-v. A planet or moon is passed at two of its radii from its
+	// centre, never aimed at. On failure error says why.
+	bool PlanApproach(const Body *target, int burns, std::string &error);
+
+	struct ClosestApproach {
+		double time = 0.0;			// game time of the closest approach
+		double distance = 0.0;		// between the ship and the target's centre
+		double relativeSpeed = 0.0;
+		double targetRadius = 0.0; // a planet's or moon's radius, 0 for ships and stations
+	};
+	// the closest approach of the planned trajectory (the live orbit, then
+	// each burn's) to the target, from now until a revolution after the last
+	// burn. On failure error says why.
+	bool GetClosestApproach(const Body *target, ClosestApproach &result, std::string &error) const;
+
 	// runtime-only lock-lifecycle serial: advances whenever a burn completes,
 	// is reset, or may be replaced at an existing index (insert/remove/reorder,
 	// plan resets). Consumers caching a burn direction compare it for equality
@@ -126,7 +154,16 @@ public:
 	uint32_t GetDirectionLockSerial() const { return m_directionLockSerial; }
 
 private:
+	// the non-rotating frame of the body the player orbits: every planner
+	// vector is relative to it
+	static Frame *PlannerFrame();
+	// splits a velocity change at a burn point onto GetOffsetVel's axes:
+	// prograde (along vel), normal (along pos x vel), radial (along pos)
+	static bool DecomposeDv(const vector3d &pos, const vector3d &vel, const vector3d &change, double dv[3]);
 	vector3d GetOffsetVel(const Burn &burn) const;
+	// the orbit the plan ends on - after its last burn, or the live one - with
+	// its state at t = 0 and the game time t = 0 corresponds to
+	bool GetFinalOrbit(Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const;
 	// the orbit flown into burn idx, its state vector at t = 0 and the game
 	// time t = 0 corresponds to, as RecomputeChain chains it
 	bool GetIncomingOrbit(int idx, Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const;

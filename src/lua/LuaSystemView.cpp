@@ -694,6 +694,58 @@ static int l_systemview_transfer_planner_circularize(lua_State *l)
 	return 1;
 }
 
+/*
+ * Method: TransferPlannerPlanApproach
+ *
+ * > ok, error = systemView:TransferPlannerPlanApproach(target, burns)
+ *
+ * Append burns that take the ship to the target body: burns = 1 intercepts
+ * it, burns = 2 also matches its velocity on arrival. On failure ok is false
+ * and error says why.
+ */
+static int l_systemview_transfer_planner_plan_approach(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	const Body *target = LuaObject<Body>::GetFromLua(2);
+	const int burns = LuaPull<int>(l, 3);
+	std::string error;
+	if (sv->GetTransferPlanner()->PlanApproach(target, burns, error)) {
+		LuaPush(l, true);
+		return 1;
+	}
+	LuaPush(l, false);
+	LuaPush(l, error);
+	return 2;
+}
+
+/*
+ * Method: TransferPlannerGetClosestApproach
+ *
+ * > distance, time, speed, radius = systemView:TransferPlannerGetClosestApproach(target)
+ *
+ * The closest approach of the planned trajectory to the target: the distance
+ * between the ship and the target's centre, its game time, the relative speed
+ * then, and the target's radius (0 for ships and stations). On failure nil and
+ * a reason.
+ */
+static int l_systemview_transfer_planner_get_closest_approach(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	const Body *target = LuaObject<Body>::GetFromLua(2);
+	TransferPlanner::ClosestApproach approach;
+	std::string error;
+	if (!sv->GetTransferPlanner()->GetClosestApproach(target, approach, error)) {
+		lua_pushnil(l);
+		LuaPush(l, error);
+		return 2;
+	}
+	LuaPush<double>(l, approach.distance);
+	LuaPush<double>(l, approach.time);
+	LuaPush<double>(l, approach.relativeSpeed);
+	LuaPush<double>(l, approach.targetRadius);
+	return 4;
+}
+
 template <>
 const char *LuaObject<SystemView>::s_type = "SystemView";
 
@@ -747,6 +799,8 @@ void LuaObject<SystemView>::RegisterClass()
 		{ "TransferPlannerGetNodeReference", l_systemview_transfer_planner_get_node_reference },
 		{ "TransferPlannerGetCircularizeDeltaV", l_systemview_transfer_planner_get_circularize_delta_v },
 		{ "TransferPlannerCircularize", l_systemview_transfer_planner_circularize },
+		{ "TransferPlannerPlanApproach", l_systemview_transfer_planner_plan_approach },
+		{ "TransferPlannerGetClosestApproach", l_systemview_transfer_planner_get_closest_approach },
 
 		{ NULL, NULL }
 	};

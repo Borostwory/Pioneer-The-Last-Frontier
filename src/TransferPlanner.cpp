@@ -20,26 +20,11 @@ namespace {
 // a burn whose startTime is effectively unset; seeds at Pi::game->GetTime() on first touch
 bool IsUnsetStartTime(double t) { return std::fabs(t) < 1.; }
 
-// sane cap for a plan; more burns than this is fiddling, not planning
-constexpr size_t kMaxBurns = 8;
-
 // a burn within this many seconds of a snap event is "on" it, so snapping
 // again moves it to the next orbit's occurrence
 constexpr double kSnapTolerance = 1.0;
 // the furthest an escape trajectory is searched for an event, in seconds
 constexpr double kSnapHyperbolicHorizon = 1e10;
-
-// the non-rotating frame of the body the player orbits: every planner vector
-// is relative to it
-Frame *PlannerFrame()
-{
-	if (!Pi::player)
-		return nullptr;
-	const Frame *playerFrame = Frame::GetFrame(Pi::player->GetFrame());
-	if (!playerFrame)
-		return nullptr;
-	return Frame::GetFrame(playerFrame->GetNonRotFrame());
-}
 
 // the occurrence of an event (first at time, then every period; 0 = once)
 // that a burn at current sits on, or -1 when it sits on none
@@ -60,6 +45,42 @@ double SweptAngle(const vector3d &a, const vector3d &b, const vector3d &axis)
 	return angle;
 }
 } // namespace
+
+Frame *TransferPlanner::PlannerFrame()
+{
+	if (!Pi::player)
+		return nullptr;
+	const Frame *playerFrame = Frame::GetFrame(Pi::player->GetFrame());
+	if (!playerFrame)
+		return nullptr;
+	return Frame::GetFrame(playerFrame->GetNonRotFrame());
+}
+
+bool TransferPlanner::DecomposeDv(const vector3d &pos, const vector3d &vel, const vector3d &change, double dv[3])
+{
+	if (is_zero_general(pos.Length()) || is_zero_general(vel.Length()))
+		return false;
+
+	// prograde (along vel) and radial (along pos) both lie in the orbital
+	// plane but are not orthogonal off a circle, so the in-plane part is split
+	// by solving the 2x2 system; normal is orthogonal to both. At an apsis the
+	// two in-plane axes are orthogonal and this is a plain projection.
+	const vector3d progradeDir = vel.Normalized();
+	const vector3d radialDir = pos.Normalized();
+	const vector3d normal = pos.Cross(vel);
+	if (is_zero_general(normal.Length()))
+		return false;
+	const double k = progradeDir.Dot(radialDir);
+	const double det = 1.0 - k * k;
+	if (det < 1e-9)
+		return false;
+	const double alongPrograde = change.Dot(progradeDir);
+	const double alongRadial = change.Dot(radialDir);
+	dv[PROGRADE] = (alongPrograde - k * alongRadial) / det;
+	dv[RADIAL] = (alongRadial - k * alongPrograde) / det;
+	dv[NORMAL] = change.Dot(normal.Normalized());
+	return true;
+}
 
 TransferPlanner::TransferPlanner()
 {
@@ -176,7 +197,7 @@ void TransferPlanner::ResetStartTime()
 int TransferPlanner::InsertBurn(int afterIdx)
 {
 	// hard cap: a plan is a plan, not a wishlist
-	if (m_burns.size() >= kMaxBurns)
+	if (m_burns.size() >= MAX_BURNS)
 		return -1;
 
 	Burn burn;
@@ -709,22 +730,8 @@ bool TransferPlanner::GetCircularizePlan(int idx, double &time, int &apsis, doub
 	const vector3d change = horizontal.Normalized() * std::sqrt(G * mass / r) - vel;
 	magnitude = change.Length();
 
-	// GetOffsetVel's axes: prograde (along vel) and radial (along pos) both
-	// lie in the orbital plane but are not orthogonal off a circle, so the
-	// in-plane change is split by solving the 2x2 system; normal is
-	// orthogonal to both and the change has no part along it. At an apsis
-	// the two are orthogonal and the change is all prograde.
-	const vector3d progradeDir = vel.Normalized();
-	const double k = progradeDir.Dot(radialDir);
-	const double det = 1.0 - k * k;
-	if (det < 1e-9)
-		return false;
-	const double alongPrograde = change.Dot(progradeDir);
-	const double alongRadial = change.Dot(radialDir);
-	dv[PROGRADE] = (alongPrograde - k * alongRadial) / det;
-	dv[RADIAL] = (alongRadial - k * alongPrograde) / det;
-	dv[NORMAL] = 0.0;
-	return true;
+	// the change lies in the orbital plane, so its normal part is zero
+	return DecomposeDv(pos, vel, change, dv);
 }
 
 bool TransferPlanner::Circularize(int idx)

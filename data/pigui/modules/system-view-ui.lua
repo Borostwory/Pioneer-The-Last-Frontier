@@ -732,6 +732,25 @@ local L = {
 	CIRCULARIZE_TIP = "Make the orbit a circle at %s: %s of Δv.\nMoves this burn there and replaces its prograde, normal and radial values.",
 	CIRCULARIZE_AT_APSIS = "the %s, in %s",
 	CIRCULARIZE_AT_POINT = "this burn's point (no periapsis or apoapsis ahead)",
+	-- closest-approach planning
+	APPROACH_TITLE = "Closest approach",
+	APPROACH_TARGET = "Target: %s",
+	APPROACH_FROM_SELECTION = "The object selected on the map",
+	APPROACH_FROM_NAV = "Your navigation target - select an object on the map to choose another",
+	APPROACH_NO_TARGET = "Select an object on the map, or set a navigation target",
+	APPROACH_INTERCEPT = "Intercept",
+	APPROACH_INTERCEPT_TIP = "1 burn: a transfer that meets the target",
+	APPROACH_RENDEZVOUS = "Rendezvous",
+	APPROACH_RENDEZVOUS_TIP = "2 burns: meet the target, then match its velocity on arrival",
+	APPROACH_PLAN = "Plan approach",
+	APPROACH_PLAN_TIP = "Add %s after the last planned burn, timed for the least Δv.\nA planet or moon is passed at two of its radii from its centre.",
+	APPROACH_ONE_BURN = "1 burn",
+	APPROACH_TWO_BURNS = "2 burns",
+	APPROACH_RESULT = "%s in %s",
+	APPROACH_ALTITUDE = "%s above the surface",
+	APPROACH_IMPACT = "Impact with the target in %s",
+	APPROACH_SPEED = "Relative speed %s",
+	APPROACH_RESULT_TIP = "Closest approach of the planned trajectory to the target, up to a revolution after the last burn",
 	CIRCULARIZE_NONE = "This burn's orbit cannot be circularized here",
 	REF_TARGET = "%s's orbit",
 	REF_EQUATOR = "%s's equator",
@@ -846,6 +865,91 @@ local function drawCircularizeButton(idx, width, completed)
 	local variant = not dv and colorset.disabled or nil
 	if ui.button(L.CIRCULARIZE .. "##plannerCircularize" .. idx, Vector2(width, 0), variant, tooltip) and dv then
 		systemView:TransferPlannerCircularize(idx)
+	end
+end
+
+-- closest-approach planning: how many burns to plan (1 intercept, 2
+-- rendezvous), and the last planning failure with the target it was for
+local approachBurns = 1
+local approachError, approachErrorTarget = nil, nil
+
+-- the approach target: the object selected on the map when it has a physical
+-- body in this system, otherwise the navigation target; with where it came from
+local function approachTarget()
+	local selected = systemView:GetSelectedObject()
+	if selected and selected.type == Projectable.OBJECT and selected.ref then
+		local body
+		if selected.base == Projectable.SYSTEMBODY then
+			body = selected.ref.physicsBody
+		elseif selected.base == Projectable.SHIP or selected.base == Projectable.BODY then
+			body = selected.ref
+		end
+		if body then return body, L.APPROACH_FROM_SELECTION end
+	end
+	local navTarget = Game.player:GetNavTarget()
+	if navTarget then return navTarget, L.APPROACH_FROM_NAV end
+	return nil
+end
+
+--
+-- Function: drawApproachSection
+--
+-- The target, the intercept / rendezvous choice, the Plan button, and the
+-- closest approach of the plan as it stands - which also follows burns
+-- edited by hand.
+--
+local function drawApproachSection()
+	ui.separator()
+	ui.textColored(colors.fontDim, L.APPROACH_TITLE)
+
+	local target, source = approachTarget()
+	if not target then
+		ui.textColored(colors.fontDim, L.APPROACH_NO_TARGET)
+		return
+	end
+	local targetName = target:GetLabel()
+	ui.text(string.format(L.APPROACH_TARGET, targetName))
+	ui.setItemTooltip(source)
+
+	local width = ui.getContentRegion().x
+	local spacing = ui.getItemSpacing().x
+	local half = Vector2(math.floor((width - spacing) / 2), 0)
+	if ui.button(L.APPROACH_INTERCEPT .. "##plannerApproach1", half,
+		approachBurns == 1 and colorset.selected or nil, L.APPROACH_INTERCEPT_TIP) then
+		approachBurns = 1
+	end
+	ui.sameLine(0, spacing)
+	if ui.button(L.APPROACH_RENDEZVOUS .. "##plannerApproach2", half,
+		approachBurns == 2 and colorset.selected or nil, L.APPROACH_RENDEZVOUS_TIP) then
+		approachBurns = 2
+	end
+
+	local planTip = string.format(L.APPROACH_PLAN_TIP, approachBurns == 1 and L.APPROACH_ONE_BURN or L.APPROACH_TWO_BURNS)
+	if ui.button(L.APPROACH_PLAN .. "##plannerApproachPlan", Vector2(width, 0), nil, planTip) then
+		local ok, err = systemView:TransferPlannerPlanApproach(target, approachBurns)
+		approachError = not ok and err or nil
+		approachErrorTarget = targetName
+	end
+
+	-- on failure the second value is the reason
+	local distance, time, speed, radius = systemView:TransferPlannerGetClosestApproach(target)
+	if distance then
+		local when = time > Game.time + 1 and ui.Format.Duration(math.floor(time - Game.time)) or lc.NOW
+		if radius > 0 and distance < radius then
+			ui.textColored(colors.alertRed, string.format(L.APPROACH_IMPACT, when))
+		else
+			local shown = radius > 0 and string.format(L.APPROACH_ALTITUDE, ui.Format.Distance(distance - radius))
+				or ui.Format.Distance(distance)
+			ui.text(string.format(L.APPROACH_RESULT, shown, when))
+		end
+		ui.setItemTooltip(L.APPROACH_RESULT_TIP)
+		ui.textColored(colors.fontDim, string.format(L.APPROACH_SPEED, ui.Format.Speed(speed)))
+	else
+		ui.withStyleColors({ Text = colors.fontDim }, function() ui.textWrapped(time) end)
+	end
+
+	if approachError and approachErrorTarget == targetName then
+		ui.withStyleColors({ Text = colors.alertYellow }, function() ui.textWrapped(approachError) end)
 	end
 end
 
@@ -1025,6 +1129,8 @@ local plannerView = {
 			selectedBurn = systemView:TransferPlannerInsertBurn(selectedBurn)
 			clampSelectedBurn(systemView:TransferPlannerGetBurnCount())
 		end
+
+		drawApproachSection()
 	end
 }
 
