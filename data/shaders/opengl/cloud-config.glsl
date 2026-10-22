@@ -26,6 +26,23 @@
 #define CLOUD_CELL_MID_M 1500.0
 #define CLOUD_CELL_HIGH_M 5000.0
 
+// Cirrus fibres (scaled by the planet's scale height): length along the
+// wind, spacing across it, and how far the falling ice trails behind (hooks)
+#define CLOUD_CIRRUS_LENGTH_M 15000.0
+#define CLOUD_CIRRUS_WIDTH_M 700.0
+#define CLOUD_CIRRUS_FALL_M 3000.0
+
+// Samples through the cirrus sheet per view ray (1-4)
+#define CLOUD_CIRRUS_SAMPLES 3
+
+// Cirrus fibre threshold (the fibre noise averages 0.22, sd 0.15): raise LO
+// for thinner, sparser fibres. FAR_FILL is the measured mean fill inside
+// wisp groups, used where the fibres are too thin to resolve; update it
+// when changing LO/HI.
+#define CLOUD_CIRRUS_FIB_LO 0.3
+#define CLOUD_CIRRUS_FIB_HI 0.52
+#define CLOUD_CIRRUS_FAR_FILL 0.24
+
 // Cells smaller than this many pixels on screen fade to the mean density of
 // the field (avoids speckled "freckle" clouds seen from far away)
 #define CLOUD_MIN_CELL_PIXELS 4.0

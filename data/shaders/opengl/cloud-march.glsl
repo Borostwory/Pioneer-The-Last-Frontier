@@ -152,7 +152,7 @@ float cloudSigmaMax(int li, float st)
 {
 	if (li == 0) return mix(0.025, 0.10, st);
 	if (li == 1) return 0.02;
-	return 0.001;
+	return 0.0005; // cirrus: mostly translucent veils, vertical optical depth ~0.1-0.6
 }
 
 // Wind displacement of a whole layer: every altitude inside a layer moves
@@ -178,6 +178,65 @@ vec3 cloudColumn(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float
 	return vec3(cov, baseN);
 }
 
+// Cirrus noise domain: horizontal planet coordinates scaled by the
+// along-wind fibre length, latitude arc by the across-wind spacing. The
+// noise is thus stretched along latitude circles - the direction of the
+// zonal wind - without a seam at any longitude.
+vec3 cloudCirrusDomain(CloudPlanet cp, vec3 p, vec3 off)
+{
+	float lat = asin(clamp(p.y, -1.0, 1.0));
+	float len = CLOUD_CIRRUS_LENGTH_M * cp.sH;
+	float wid = CLOUD_CIRRUS_WIDTH_M * cp.sH;
+	vec3 q = vec3(p.x * (cp.a / len), p.z * (cp.a / len), lat * (cp.a / wid)) + off;
+	// fibres meander and fan out: bend the across-wind coordinate with a
+	// broad and a finer noise
+	q.z += 3.0 * cloudGradNoise(vec3(q.xy * 0.25, q.z * 0.03) + vec3(7.3));
+	q.z += 1.2 * cloudGradNoise(vec3(q.xy * 1.3, q.z * 0.15) + vec3(1.9));
+	return q;
+}
+
+// Large-scale cirrus structure, 0..1: broad streak bands along the wind
+// (~250 km across) seen from afar, and groups of wisps within them
+// (~25 km across) closer in. fp: pixel footprint [m].
+float cloudCirrusWisps(CloudPlanet cp, vec3 q, float fp)
+{
+	float bands = smoothstep(0.35, 0.65, cloudFbm(vec3(q.xy * 0.08, q.z * 0.006) + vec3(9.7), 2, 1.0));
+	float groupAcross = CLOUD_CIRRUS_WIDTH_M * cp.sH / 0.06;
+	float nearW = smoothstep(1.5, 4.0, groupAcross / max(fp, 1.0));
+	if (nearW <= 0.0) return bands;
+	float groups = smoothstep(0.38, 0.62, cloudFbm(vec3(q.xy * 0.6, q.z * 0.06) + vec3(3.1), 2, 1.0));
+	return mix(bands, clamp(bands * groups * 2.0, 0.0, 1.0), nearW);
+}
+
+// number of resolvable fibre octaves for a pixel footprint fp [m] (0..3):
+// a fibre's bright crest is ~20% of the fibre spacing, and each octave is
+// ~2x finer; octaves whose crest is under ~2 pixels fade out (no moire)
+float cloudCirrusOctaves(CloudPlanet cp, float fp)
+{
+	float crest = 0.2 * CLOUD_CIRRUS_WIDTH_M * cp.sH;
+	return clamp(log2(crest / (2.0 * max(fp, 1.0))) + 1.0, 0.0, 3.0);
+}
+
+// Fibres: ridged noise across the wind gives thin filaments along it.
+// Octaves thinner than ~2 pixels fade out.
+float cloudCirrusFibres(vec3 q, float oct)
+{
+	vec3 q0 = q;
+	float sum = 0.0, norm = 0.0, amp = 0.6;
+	for (int i = 0; i < 3; i++) {
+		float w = clamp(oct - float(i), 0.0, 1.0);
+		if (w <= 0.0) break;
+		float r = max(1.0 - abs(cloudGradNoise(q)), 0.0);
+		sum += w * amp * pow(r, 6.0); // sharp crests: thin filaments
+		norm += w * amp;
+		amp *= 0.5;
+		q = q * vec3(1.6, 1.6, 2.2) + vec3(11.3, 5.7, 2.9);
+	}
+	// bundles: fibres fade in and out along their length (~15 km segments)
+	float bundle = smoothstep(0.25, 0.75, 0.5 + 0.5 * cloudGradNoise(q0 * vec3(0.7, 0.7, 0.12) + vec3(4.1)));
+	return norm > 0.0 ? sum / norm * (0.35 + 0.65 * bundle) : 0.0;
+}
+
 // Density at a point given its column properties.
 // Returns x = density 0..1, y = stratus weight, z = height in layer 0..1.
 vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float hTerr,
@@ -201,6 +260,22 @@ vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat,
 	if (floorF <= 0.0) return vec3(0.0, st, h);
 
 	float prof = cloudProfile(li, h, st);
+
+	if (li == 2) {
+		// cirrus: fibrous streaks along the wind, with their own distance LOD
+		vec3 p = cloudAdvect(cp, li, pfDir, lat, t);
+		// fall streaks: the lower, falling ice trails the wind (cirrus uncinus hooks)
+		p = cloudRotY(p, (1.0 - h) * CLOUD_CIRRUS_FALL_M * cp.sH / cp.a);
+		vec3 q = cloudCirrusDomain(cp, p, off);
+		float wisps = cloudCirrusWisps(cp, q, fp);
+		// unresolved fibres (far away, slabs, shadows) use their mean fill
+		float oct = full ? cloudCirrusOctaves(cp, fp) : 0.0;
+		float fill = CLOUD_CIRRUS_FAR_FILL;
+		if (oct > 0.0)
+			fill = mix(CLOUD_CIRRUS_FAR_FILL, smoothstep(CLOUD_CIRRUS_FIB_LO, CLOUD_CIRRUS_FIB_HI, cloudCirrusFibres(q, oct) + 0.25 * (wisps - 0.5)), clamp(oct, 0.0, 1.0));
+		return vec3(cLoc * prof * wisps * fill * floorF, st, h);
+	}
+
 	// cells smaller than a few pixels would only show as speckles: fade the
 	// shape noise to the mean density of the field instead
 	float shapeFade = full ? smoothstep(CLOUD_MIN_CELL_PIXELS, 3.0 * CLOUD_MIN_CELL_PIXELS, ly.featureSize / max(fp, 1.0)) : 0.0;
@@ -218,23 +293,16 @@ vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat,
 		float sts = st > 0.001 ? cloudFbm(q * 0.15, 2, lod) * 0.4 + 0.6 : 0.0;
 		shape = mix(sc, sts, st);
 		ero = mix(0.4, 0.1, st);
-	} else if (li == 1) {
+	} else {
 		vec3 qs = q * vec3(1.0, 0.8, 1.0); // rows across the wind
 		shape = cloudUniformize(cloudBillowFbm(qs, 3, lod), CLOUD_BILLOW_MEAN, CLOUD_BILLOW_SD);
 		ero = 0.45;
-	} else {
-		// fall streaks: lower parts trail the wind (cirrus uncinus)
-		vec3 pf2 = cloudRotY(p, (1.0 - h) * 3000.0 * cp.sH / cp.a);
-		vec3 qs = (pf2 * (cp.a / ly.featureSize) + off) * vec3(1.0, 4.0, 1.0);
-		qs.xz += 0.6 * vec2(cloudGradNoise(qs * 0.5), cloudGradNoise(qs * 0.5 + vec3(11.7)));
-		shape = cloudUniformize(cloudFbm(qs, 2, lod), 0.500, 0.114);
-		ero = 0.25;
 	}
 
 	// even inside a cloud system each genus keeps gaps between its cells:
 	// stratocumulus fills at most 80% of the envelope, altocumulus 65%,
-	// cirrus 55%, stratus all of it
-	float fillMax = li == 0 ? 0.8 : (li == 1 ? 0.65 : 0.55);
+	// stratus all of it
+	float fillMax = li == 0 ? 0.8 : 0.65;
 	float cShape = cLoc * mix(fillMax, 1.0, st);
 	float rho = clamp(cloudRemap(shape * prof, 1.0 - cShape, 1.0, 0.0, 1.0), 0.0, 1.0) * cLoc;
 	if (rho > 0.0 && detailW > 0.01) {
@@ -445,6 +513,31 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 		vec3 midPos = camPos + rayDir * (0.5 * (t0 + t1));
 		vec3 albedo = cloudTint(cp, li, cloudToPf(normalize(midPos)));
 		CloudResult before = res;
+
+		// cirrus is a thin, translucent sheet whose pattern hardly changes with
+		// height: a few jittered samples through the layer replace the raymarch
+		// (a raymarch would never terminate early in it)
+		if (li == 2) {
+			float ds = segLen / float(CLOUD_CIRRUS_SAMPLES);
+			for (int i = 0; i < 4; i++) {
+				if (i >= CLOUD_CIRRUS_SAMPLES) break;
+				// fixed (not jittered) sample heights: the fall-streak offset varies
+				// with height, so jitter would scramble the fibres into a moire
+				float t = t0 + (float(i) + 0.5) * (t1 - t0) / float(CLOUD_CIRRUS_SAMPLES);
+				vec3 pos = camPos + rayDir * t;
+				float r = length(pos);
+				vec3 pfDir = cloudToPf(pos) / r;
+				float alt = (r - 1.0) * cp.a;
+				float lat = asin(clamp(pfDir.y, -1.0, 1.0));
+				float fp = max(t * cp.a, 1.0) * pixelAngle;
+				vec3 dens = cloudDensity(cp, li, ph, pfDir, alt, lat, cloudTerrainHeight(cp, pfDir), 1.0, 0.0, true, sunPf, fp);
+				cloudShadeSample(cp, li, pos, dens, ds, rayDir, albedo, -1.0, res);
+			}
+			float fadeC = exp(-(0.5 * (t0 + t1) * cp.a) / hazeDist);
+			res.inscatter = mix(before.inscatter, res.inscatter, fadeC);
+			res.transmittance = mix(before.transmittance, res.transmittance, fadeC);
+			continue;
+		}
 
 		// near: raymarch the first CLOUD_MAX_MARCH_DIST of the segment
 		float marchLen = slabW < 0.99 ? min(segLen, CLOUD_MAX_MARCH_DIST) : 0.0;
