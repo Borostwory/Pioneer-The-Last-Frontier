@@ -63,7 +63,7 @@ void main(void)
 #if (CLOUD_TERRAIN_SHADOWS == 1) && (NUM_LIGHTS > 0)
 	// lighting is per-vertex in this shader; dim the direct-light share only
 	vec3 surfPos = varyingEyepos * geosphereInvRadius - geosphereCenter;
-	float shadow = cloudShadowTerrain(clouds, surfPos, normalize(uLight[0].position.xyz));
+	float shadow = cloudShadowTerrain(clouds, surfPos, normalize(uLight[0].position.xyz), max(dist * CLOUD_SHADOW_PIXEL_ANGLE, 1.0));
 	frag_color.rgb *= mix(1.0, shadow, 0.75);
 #endif
 #endif

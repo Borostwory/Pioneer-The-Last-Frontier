@@ -301,6 +301,14 @@ local function showVideoOptions()
 			Engine.SettingsSetInt("CloudSoftness", cloudSoftness)
 		end
 
+		local cloudShadowLabels = { "Off", "Soft", "Detailed" }
+		local cloudShadows = Engine.SettingsGetInt("CloudShadows")
+		c,cloudShadows = combo("Cloud shadows", cloudShadows, cloudShadowLabels,
+			"Shadows of the clouds on the ground. Soft: dimming under cloud fields, almost free. Detailed: the shadow of each cloud, costs some GPU time when close to the ground.")
+		if c then
+			Engine.SettingsSetInt("CloudShadows", cloudShadows)
+		end
+
 		local cloudSpeed = Engine.SettingsGetInt("CloudSpeed")
 		c,cloudSpeed = slider("Cloud speed", cloudSpeed, 1, 100,
 			"How fast clouds drift and change shape, as a multiple of the real wind speed.")

@@ -266,6 +266,29 @@ float cloudUnresolvedRho(CloudPlanet cp, int li, float st, float fLoc, float pro
 	return prof * -log(max(tEff, 1e-4)) / max(sig * CLOUD_PROF_MEAN * d, 1e-6);
 }
 
+// Cell noise of the low and medium layers, advected with the wind and
+// horizontal only, so a cell spans the whole column. Uniformly distributed:
+// U > 1 - f covers exactly the fraction f of the area. Also returns the
+// advected position p and the stratus sheet modulation.
+float cloudCellU(CloudPlanet cp, int li, vec3 pfDir, float lat, float t, vec3 off, float st, float lod, out vec3 p, out float sheetMod)
+{
+	p = cloudAdvect(cp, li, pfDir, lat, t);
+	vec3 q = p * (cp.a / cp.L[li].featureSize) + off;
+	sheetMod = 1.0;
+	if (li == 0) {
+		// stratus: a continuous sheet with gentle density variation
+		if (st > 0.001)
+			sheetMod = mix(1.0, cloudFbm(q * 0.15, 2, lod) * 0.4 + 0.6, st);
+		vec3 qs = q * vec3(1.0, 1.5, 1.0); // slight roll organisation along the zonal wind
+		return st < 0.999 ? cloudUniformize(cloudPerlinWorley(qs, CLOUD_SHAPE_OCTAVES, lod), CLOUD_PW_MEAN, CLOUD_PW_SD) : 1.0;
+	}
+	// cell noise peaks at points (cell centres): thresholding it gives
+	// round cells and a network of gaps; billow noise peaks along lines
+	// and gave worm-like strands and holes
+	vec3 qs = q * vec3(2.2, 1.8, 2.2); // rows across the wind
+	return cloudUniformize(cloudPerlinWorley(qs, CLOUD_SHAPE_OCTAVES, lod), CLOUD_PW_MEAN, CLOUD_PW_SD);
+}
+
 // Density at a point given its column properties.
 // Whether a cloud exists in a column is decided by a horizontal, uniformly
 // distributed noise against the local cloud fraction, so the covered area
@@ -322,28 +345,10 @@ vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat,
 	float rhoU = cloudUnresolvedRho(cp, li, st, fLoc, prof, d);
 	if (shapeFade <= 0.0) return vec3(rhoU * floorF, st, h);
 
-	// cell noise per genus, advected with the wind (horizontal only, so a
-	// cell spans the whole column)
-	vec3 p = cloudAdvect(cp, li, pfDir, lat, t);
-	vec3 q = p * (cp.a / ly.featureSize) + off;
-	float U;
-	float ero;
-	float sheetMod = 1.0;
-	if (li == 0) {
-		vec3 qs = q * vec3(1.0, 1.5, 1.0); // slight roll organisation along the zonal wind
-		U = st < 0.999 ? cloudUniformize(cloudPerlinWorley(qs, CLOUD_SHAPE_OCTAVES, lod), CLOUD_PW_MEAN, CLOUD_PW_SD) : 1.0;
-		// stratus: a continuous sheet with gentle density variation
-		if (st > 0.001)
-			sheetMod = mix(1.0, cloudFbm(q * 0.15, 2, lod) * 0.4 + 0.6, st);
-		ero = mix(0.4, 0.1, st);
-	} else {
-		// cell noise peaks at points (cell centres): thresholding it gives
-		// round cells and a network of gaps; billow noise peaks along lines
-		// and gave worm-like strands and holes
-		vec3 qs = q * vec3(2.2, 1.8, 2.2); // rows across the wind
-		U = cloudUniformize(cloudPerlinWorley(qs, CLOUD_SHAPE_OCTAVES, lod), CLOUD_PW_MEAN, CLOUD_PW_SD);
-		ero = 0.45;
-	}
+	vec3 p;
+	float sheetMod;
+	float U = cloudCellU(cp, li, pfDir, lat, t, off, st, lod, p, sheetMod);
+	float ero = li == 0 ? mix(0.4, 0.1, st) : 0.45;
 
 	// existence: U > 1 - fLoc covers exactly fLoc of the area
 	float thr = 1.0 - fLoc;
@@ -706,11 +711,55 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 	return res;
 }
 
-// Cloud shadow factor on terrain at pos for light direction L
-float cloudShadowTerrain(CloudPlanet cp, vec3 pos, vec3 L)
+// two-stream total (direct + diffuse) transmission, g = 0.85: thick cloud
+// still passes ~30-40% of the light
+float cloudTwoStream(float tau)
 {
-	if (cp.enabled < 0.5) return 1.0;
-	float tau = 0.0;
+	return 1.0 / (1.0 + 0.75 * tau * (1.0 - 0.85));
+}
+
+// Light reaching the ground through one layer in one time phase.
+// slant: 1 / cos of the sun zenith angle at the layer. A broken field passes
+// (1 - f) + f * T(cell): averaging the optical depth instead would make
+// distant shadows far too weak (or, spread as a uniform deck, far too dark).
+float cloudShadowPhase(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float t, vec3 off, vec3 sunPf, float fp, float slant)
+{
+	CloudLayer ly = cp.L[li];
+	vec4 col = cloudColumn(cp, li, pfDir, alt, lat, t, off, sunPf, li == 2 ? max(fp, 20000.0) : fp, 3.0);
+	if (col.x <= 0.0) return 1.0;
+	float st = col.y;
+	float sig = cloudSigmaMax(li, st) * ly.sigmaScale;
+	float colD = CLOUD_PROF_MEAN * (ly.top - ly.base) * slant;
+	float fLoc = col.x * mix(col.w, 1.0, st);
+	float tUnres = 1.0 - fLoc + fLoc * cloudTwoStream(sig * CLOUD_CELL_DENSITY * colD);
+	if (li == 2 || cloudTuneDensity.w < 1.5) return tUnres; // cirrus fibres are too thin to cast distinct shadows
+	float sf = smoothstep(CLOUD_MIN_CELL_PIXELS, 3.0 * CLOUD_MIN_CELL_PIXELS, ly.featureSize / max(fp, 1.0));
+	if (sf <= 0.0) return tUnres;
+	// resolved: the footprint of each cell (the same noise as the clouds),
+	// thicker toward the cell core like the domed cells themselves
+	float lod = clamp(log2(ly.featureSize / (2.0 * fp)) - float(CLOUD_SHAPE_OCTAVES - 1), 0.0, 1.0);
+	vec3 p;
+	float sheetMod;
+	float U = cloudCellU(cp, li, pfDir, lat, t, off, st, lod, p, sheetMod);
+	float thr = 1.0 - fLoc;
+	float edge = smoothstep(thr - 0.03, thr + 0.03, U);
+	float core = clamp((U - thr) / max(fLoc, 1e-3), 0.0, 1.0);
+	float thick = mix(mix(0.4, 1.2, sqrt(core)), 1.0, st) * sheetMod;
+	float tRes = 1.0 - edge + edge * cloudTwoStream(sig * CLOUD_CELL_DENSITY * colD * thick);
+	return mix(tUnres, tRes, sf);
+}
+
+// Cloud shadow factor on terrain at pos for light direction L.
+// fp: footprint of the terrain pixel [m]. Near the camera the shadow follows
+// the individual cells, using the same column and cell noise as the clouds
+// so they line up; where cells are too small to see, the average of the
+// broken field. Cost: one column (weather fBm) per layer, plus one cell
+// noise per layer where cells are resolved.
+float cloudShadowTerrain(CloudPlanet cp, vec3 pos, vec3 L, float fp)
+{
+	// cloudTuneDensity.w: shadow mode, 0 off, 1 soft (field average), 2 detailed
+	if (cp.enabled < 0.5 || cloudTuneDensity.w < 0.5) return 1.0;
+	float T = 1.0;
 	vec3 sunPf = cloudToPf(L);
 	for (int li = 0; li < 3; li++) {
 		if (cp.L[li].active < 0.5) continue;
@@ -720,13 +769,17 @@ float cloudShadowTerrain(CloudPlanet cp, vec3 pos, vec3 L)
 		if (hit.y <= 0.0) continue;
 		vec3 lp = pos + L * max(hit.y, 0.0);
 		vec3 pfDir = normalize(cloudToPf(lp));
+		float lat = asin(clamp(pfDir.y, -1.0, 1.0));
+		float slant = 1.0 / max(dot(normalize(lp), L), 0.1);
 		CloudPhase ph = cloudPhases(ly.period, float(li));
-		vec3 dens = cloudDensity(cp, li, ph, pfDir, altMid, asin(clamp(pfDir.y, -1.0, 1.0)), 0.0, 1.0, 0.0, false, sunPf, 150000.0);
-		tau += cloudSigmaMax(li, dens.y) * ly.sigmaScale * dens.x * 0.7 * (ly.top - ly.base) / max(dot(normalize(lp), L), 0.1);
+		float tl = 0.0;
+		if (ph.wA > 0.001)
+			tl += ph.wA * cloudShadowPhase(cp, li, pfDir, altMid, lat, ph.tA, ph.offA, sunPf, fp, slant);
+		if (ph.wA < 0.999)
+			tl += (1.0 - ph.wA) * cloudShadowPhase(cp, li, pfDir, altMid, lat, ph.tB, ph.offB, sunPf, fp, slant);
+		T *= tl;
 	}
-	// two-stream total (direct + diffuse) transmission, g = 0.85: overcast
-	// skies still pass ~30% of the light
-	return 1.0 / (1.0 + 0.75 * tau * (1.0 - 0.85));
+	return T;
 }
 
 vec3 cloudToneMap(vec3 c)

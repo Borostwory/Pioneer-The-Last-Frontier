@@ -71,6 +71,8 @@
 
 // Cloud shadows on terrain (0/1)
 #define CLOUD_TERRAIN_SHADOWS 1
+// typical angle of a screen pixel [rad], for the terrain shadow detail level
+#define CLOUD_SHADOW_PIXEL_ANGLE 0.0008
 
 // Brightness variation between individual clouds (fraction)
 #define CLOUD_TINT_AMPLITUDE 0.04

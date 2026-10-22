@@ -70,7 +70,7 @@ void main(void)
 		vec3 L = normalize(uLight[i].position.xyz);
 		float uneclipsed = clamp(calcUneclipsed(eclipse, NumShadows, V, L), 0.0, 1.0);
 #if defined(ATMOSPHERE) && (CLOUD_TERRAIN_SHADOWS == 1)
-		uneclipsed *= cloudShadowTerrain(clouds, eyeposScaled - geosphereCenter, L);
+		uneclipsed *= cloudShadowTerrain(clouds, eyeposScaled - geosphereCenter, L, max(dist * CLOUD_SHADOW_PIXEL_ANGLE, 1.0));
 #endif
 		CalcPlanetDiffuse(diff, uLight[i].diffuse, L, tnorm, uneclipsed);
 

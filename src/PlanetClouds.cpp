@@ -53,6 +53,7 @@ namespace {
 	//   CloudResolution  0..4: effective cloud resolution 360, 540, 720, 1080 lines, or full
 	//   CloudTemporal    0/1: temporal reconstruction (each frame traces 1 of 4 pixels)
 	//   CloudSoftness    0..2: upsampling kernel radius
+	//   CloudShadows     0 off, 1 soft (cloud-field average), 2 detailed (per cloud)
 	//   CloudSpeed       1..100: cloud motion and evolution relative to the real wind
 	//   CloudDensityLow/Medium/High  0..300 %: cloud cover per layer (as 1 - (1 - c)^m)
 	//   CloudSizeLow/Medium/High     25..1600 %: size of individual clouds per layer
@@ -409,7 +410,8 @@ namespace PlanetClouds {
 		const Uint32 seed = sbody->GetSeed();
 		SetVec4(out.time, std::fmod(t, CLOUD_TIME_WRAP), std::floor(t / CLOUD_TIME_WRAP), double(seed & 0xFFFF), double(seed >> 16));
 
-		SetVec4(out.tuneDensity, LayerPercent("CloudDensityLow", 0, 300), LayerPercent("CloudDensityMedium", 0, 300), LayerPercent("CloudDensityHigh", 0, 300), 0.0);
+		SetVec4(out.tuneDensity, LayerPercent("CloudDensityLow", 0, 300), LayerPercent("CloudDensityMedium", 0, 300), LayerPercent("CloudDensityHigh", 0, 300),
+			Clamp(Pi::config->Int("CloudShadows", 2), 0, 2));
 		SetVec4(out.tuneSize, LayerPercent("CloudSizeLow", 25, 1600), LayerPercent("CloudSizeMedium", 25, 1600), LayerPercent("CloudSizeHigh", 25, 1600), 0.0);
 		SetVec4(out.tuneTransparency, LayerPercent("CloudTransparencyLow", 25, 1000), LayerPercent("CloudTransparencyMedium", 25, 1000), LayerPercent("CloudTransparencyHigh", 25, 1000), 0.0);
 		SetVec4(out.tuneSystem, LayerPercent("CloudSystemSizeLow", 25, 400), LayerPercent("CloudSystemSizeMedium", 25, 400), LayerPercent("CloudSystemSizeHigh", 25, 400), 0.0);

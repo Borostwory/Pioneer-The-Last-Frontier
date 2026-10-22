@@ -45,7 +45,7 @@ namespace PlanetClouds {
 		float comp[4];	// volatileLiquid, volatileIces, atmosOxidizing, volcanicity
 		float spin[4];	// rotation period [days], orbit period around a star [days] (0 for moons), time accel rate, enabled (0/1)
 		float time[4];	// fmod(t, 2^20) [s], floor(t / 2^20), seed & 0xFFFF, seed >> 16 (t = cloud clock)
-		float tuneDensity[4]; // user amount multiplier: low, medium, high layer
+		float tuneDensity[4]; // user amount multiplier: low, medium, high layer; w: terrain shadow mode
 		float tuneSize[4];	  // user cloud size multiplier: low, medium, high layer
 		float tuneTransparency[4]; // user transparency multiplier: low, medium, high layer
 		float tuneSystem[4];	   // user cloud system (weather pattern) size multiplier: low, medium, high

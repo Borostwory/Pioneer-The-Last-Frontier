@@ -42,6 +42,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["CloudResolution"] = "1"; // 0 low .. 4 full, see PlanetClouds.cpp
 	map["CloudTemporal"] = "1";   // temporal reconstruction of the cloud image
 	map["CloudSoftness"] = "1";   // 0 sharp .. 2 soft
+	map["CloudShadows"] = "2";    // terrain shadows: 0 off, 1 soft, 2 detailed
 	map["CloudSpeed"] = "10";     // cloud motion relative to the real wind speed
 	map["CloudDensityLow"] = "100";    // percent, per cloud layer
 	map["CloudDensityMedium"] = "100";
