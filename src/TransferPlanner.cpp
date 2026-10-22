@@ -3,11 +3,13 @@
 
 #include "TransferPlanner.h"
 
+#include "FloatComparison.h"
 #include "Frame.h"
 #include "Game.h"
 #include "Orbit.h"
 #include "Pi.h"
 #include "Player.h"
+#include "galaxy/SystemBody.h"
 
 #include <algorithm>
 #include <cmath>
@@ -19,6 +21,30 @@ bool IsUnsetStartTime(double t) { return std::fabs(t) < 1.; }
 
 // sane cap for a plan; more burns than this is fiddling, not planning
 constexpr size_t kMaxBurns = 8;
+
+// a burn within this many seconds of a snap event is "on" it, so snapping
+// again moves it to the next orbit's occurrence
+constexpr double kSnapTolerance = 1.0;
+// the furthest an escape trajectory is searched for an event, in seconds
+constexpr double kSnapHyperbolicHorizon = 1e10;
+
+// the non-rotating frame of the body the player orbits: every planner vector
+// is relative to it
+Frame *PlannerFrame()
+{
+	if (!Pi::player)
+		return nullptr;
+	return Frame::GetFrame(Frame::GetFrame(Pi::player->GetFrame())->GetNonRotFrame());
+}
+
+// angle swept from a to b around axis (the orbit's angular momentum), in [0, 2pi)
+double SweptAngle(const vector3d &a, const vector3d &b, const vector3d &axis)
+{
+	double angle = std::atan2(a.Cross(b).Dot(axis), a.Dot(b));
+	if (angle < 0.0)
+		angle += 2.0 * M_PI;
+	return angle;
+}
 } // namespace
 
 TransferPlanner::TransferPlanner()
@@ -407,7 +433,7 @@ void TransferPlanner::RecomputeChain()
 	if (m_burns.empty())
 		return;
 
-	Frame *frame = Frame::GetFrame(Frame::GetFrame(Pi::player->GetFrame())->GetNonRotFrame());
+	Frame *frame = PlannerFrame();
 	if (!frame)
 		return;
 
@@ -436,6 +462,178 @@ void TransferPlanner::RecomputeChain()
 		// the burn's offset velocity bends the next segment
 		segment = Orbit::FromBodyState(burn.pos, burn.vel + GetOffsetVel(burn), mass);
 	}
+}
+
+bool TransferPlanner::GetIncomingOrbit(int idx, Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return false;
+
+	Frame *frame = PlannerFrame();
+	if (!frame || !frame->GetSystemBody())
+		return false;
+
+	// the same chaining as RecomputeChain: burn 0 flies the live orbit from
+	// now, every later burn the orbit the previous burn leaves behind, from
+	// that burn's start time (never before now)
+	segmentTime = Pi::game->GetTime();
+	if (idx == 0) {
+		pos = Pi::player->GetPositionRelTo(frame->GetId());
+		vel = Pi::player->GetVelocityRelTo(frame->GetId());
+	} else {
+		for (int i = 0; i < idx; ++i)
+			segmentTime = std::max(segmentTime, m_burns[i].startTime);
+		const Burn &prev = m_burns[idx - 1];
+		pos = prev.pos;
+		vel = prev.vel + GetOffsetVel(prev);
+	}
+
+	orbit = Orbit::FromBodyState(pos, vel, frame->GetSystemBody()->GetMass());
+	// FromBodyState falls back to a static body for a degenerate state
+	return !is_zero_general(orbit.GetSemiMajorAxis());
+}
+
+bool TransferPlanner::GetNodeReference(vector3d &normal, std::string &name, bool &isTarget) const
+{
+	Frame *frame = PlannerFrame();
+	if (!frame || !frame->GetSystemBody())
+		return false;
+
+	// the navigation target's orbital plane, when it circles the same body:
+	// a ship or station flying in this frame, or a moon of this body. Surface
+	// stations ride the rotating frame and are left to the equator below.
+	if (const Body *target = Pi::player->GetNavTarget()) {
+		const SystemBody *targetBody = target->GetSystemBody();
+		const bool orbitsCentre = target->GetFrame() == frame->GetId() ||
+			(targetBody && targetBody->GetParent() == frame->GetSystemBody());
+		if (orbitsCentre) {
+			const vector3d h = target->GetPositionRelTo(frame->GetId()).Cross(target->GetVelocityRelTo(frame->GetId()));
+			if (h.Length() > 0.0) {
+				normal = h.Normalized();
+				name = target->GetLabel();
+				isTarget = true;
+				return true;
+			}
+		}
+	}
+
+	// the body's equator: its rotation axis is the rotating frame's +y
+	// (Frame::UpdateOrbitRails), a frame without one falls back to the
+	// system's reference plane, which is the same axis
+	const Frame *rotFrame = Frame::GetFrame(frame->GetRotFrame());
+	normal = (rotFrame ? rotFrame->GetOrient() : matrix3x3d::Identity) * vector3d(0.0, 1.0, 0.0);
+	name = frame->GetSystemBody()->GetName();
+	isTarget = false;
+	return true;
+}
+
+bool TransferPlanner::GetSnapTime(int idx, SnapEvent event, double &time) const
+{
+	Orbit orbit;
+	vector3d pos, vel;
+	double segmentTime;
+	if (!GetIncomingOrbit(idx, orbit, pos, vel, segmentTime))
+		return false;
+
+	const vector3d h = pos.Cross(vel);
+	if (is_zero_general(h.Length()))
+		return false;
+	const vector3d axis = h.Normalized();
+	const bool elliptic = orbit.GetEccentricity() < 1.0;
+
+	// the direction from the body to the event, in the orbital plane
+	vector3d eventDir;
+	switch (event) {
+	case SNAP_PERIAPSIS:
+		eventDir = orbit.Perigeum();
+		break;
+	case SNAP_APOAPSIS:
+		if (!elliptic)
+			return false;
+		eventDir = orbit.Apogeum();
+		break;
+	case SNAP_ASCENDING_NODE:
+	case SNAP_DESCENDING_NODE: {
+		vector3d normal;
+		std::string name;
+		bool isTarget;
+		if (!GetNodeReference(normal, name, isTarget))
+			return false;
+		// the line of nodes points at the ascending node (k x h)
+		const vector3d nodeLine = normal.Cross(axis);
+		if (nodeLine.Length() < 1e-6)
+			return false;
+		eventDir = (event == SNAP_ASCENDING_NODE) ? nodeLine : -nodeLine;
+		break;
+	}
+	}
+	if (is_zero_general(eventDir.Length()))
+		return false;
+
+	// The burn must stay at least 1 s after the previous one (EnforceOrder),
+	// so the search starts there. The angle swept from that point grows
+	// monotonically with time, from 0 to 2pi over one period of an ellipse,
+	// and towards the asymptote on an escape trajectory, so the event time is
+	// found by bisection on the swept angle. Only OrbitalPosAtTime is used,
+	// the same propagation the chain and the map draw with.
+	const double tau0 = 1.0;
+	const vector3d from = orbit.OrbitalPosAtTime(tau0);
+	const double target = SweptAngle(from, eventDir, axis);
+	const auto swept = [&](double tau) { return SweptAngle(from, orbit.OrbitalPosAtTime(tau), axis); };
+
+	double lo = tau0, hi;
+	if (elliptic) {
+		hi = tau0 + orbit.Period();
+	} else {
+		// widen the window until it reaches the event; an event beyond the
+		// asymptote (a passed periapsis, a node never crossed) is never reached
+		hi = tau0 + 60.0;
+		while (true) {
+			const double s = swept(hi);
+			if (std::isnan(s) || hi > kSnapHyperbolicHorizon)
+				return false;
+			if (s >= target)
+				break;
+			lo = hi;
+			hi *= 2.0;
+		}
+	}
+
+	for (int i = 0; i < 100 && hi - lo > 1e-3; ++i) {
+		const double mid = 0.5 * (lo + hi);
+		if (swept(mid) < target)
+			lo = mid;
+		else
+			hi = mid;
+	}
+	time = segmentTime + hi;
+
+	// a burn already on an occurrence moves on to the next orbit's
+	if (elliptic) {
+		const double period = orbit.Period();
+		const double current = m_burns[idx].startTime;
+		const double k = std::floor((current - time) / period + 0.5);
+		if (k >= 0.0 && std::fabs(current - (time + k * period)) < kSnapTolerance)
+			time += (k + 1.0) * period;
+	}
+	return true;
+}
+
+bool TransferPlanner::SnapStartTime(int idx, SnapEvent event)
+{
+	// snap against the chain as it stands now, not as it was last edited
+	RecomputeChain();
+
+	double time;
+	if (!GetSnapTime(idx, event, time))
+		return false;
+
+	m_burns[idx].startTime = time;
+
+	// a snap past later burns pushes them along, as the time stepper does
+	EnforceOrder();
+	RecomputeChain();
+	return true;
 }
 
 void TransferPlanner::IncreaseFactor(void)

@@ -7,7 +7,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
+
+class Orbit;
 
 class TransferPlanner {
 public:
@@ -23,6 +26,16 @@ public:
 		PENDING = 0,
 		ACTIVE = 1,
 		COMPLETED = 2,
+	};
+
+	// orbital events a burn's node time can be snapped to, found on the orbit
+	// leading into the burn: the live orbit for burn 0, otherwise the orbit
+	// left behind by the previous burn
+	enum SnapEvent {
+		SNAP_PERIAPSIS,
+		SNAP_APOAPSIS,
+		SNAP_ASCENDING_NODE,
+		SNAP_DESCENDING_NODE,
 	};
 
 	// a single planned burn; dv[] indices map to BurnDirection values
@@ -81,6 +94,19 @@ public:
 	double GetBurnRemainingDeltaV(int idx) const;
 	void AddBurnProgress(int idx, double dv);
 
+	// snapping: the node time a snap of burn idx to the given event would set.
+	// The first occurrence after the previous burn (or now) is chosen; a burn
+	// already sitting on an occurrence moves on to the next orbit's. False when
+	// the orbit has no such event ahead: no apoapsis on an escape trajectory, a
+	// periapsis already passed on one, no nodes for an orbit in the reference
+	// plane.
+	bool GetSnapTime(int idx, SnapEvent event, double &time) const;
+	bool SnapStartTime(int idx, SnapEvent event);
+	// the plane the nodes are measured against: the navigation target's orbit
+	// when the target circles the same body, otherwise that body's equator.
+	// name is the target's or the body's label.
+	bool GetNodeReference(vector3d &normal, std::string &name, bool &isTarget) const;
+
 	// runtime-only lock-lifecycle serial: advances whenever a burn completes,
 	// is reset, or may be replaced at an existing index (insert/remove/reorder,
 	// plan resets). Consumers caching a burn direction compare it for equality
@@ -90,6 +116,9 @@ public:
 
 private:
 	vector3d GetOffsetVel(const Burn &burn) const;
+	// the orbit flown into burn idx, its state vector at t = 0 and the game
+	// time t = 0 corresponds to, as RecomputeChain chains it
+	bool GetIncomingOrbit(int idx, Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const;
 	void RecomputeChain();
 	void EnforceOrder();
 	Burn &EnsureBurn(int idx) const;

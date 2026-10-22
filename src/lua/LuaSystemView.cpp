@@ -535,6 +535,85 @@ static int l_systemview_transfer_planner_get_active_index(lua_State *l)
 	return 1;
 }
 
+// snap event names, as the Lua side passes them
+static bool PullSnapEvent(lua_State *l, int arg, TransferPlanner::SnapEvent &event)
+{
+	const std::string name = LuaPull<std::string>(l, arg);
+	if (name == "periapsis")
+		event = TransferPlanner::SNAP_PERIAPSIS;
+	else if (name == "apoapsis")
+		event = TransferPlanner::SNAP_APOAPSIS;
+	else if (name == "ascending")
+		event = TransferPlanner::SNAP_ASCENDING_NODE;
+	else if (name == "descending")
+		event = TransferPlanner::SNAP_DESCENDING_NODE;
+	else
+		return false;
+	return true;
+}
+
+/*
+ * Method: TransferPlannerGetSnapTime
+ *
+ * > time = systemView:TransferPlannerGetSnapTime(idx, event)
+ *
+ * The node time a snap of burn idx to event ("periapsis", "apoapsis",
+ * "ascending", "descending") would set, or nil when its orbit has no such
+ * event ahead.
+ */
+static int l_systemview_transfer_planner_get_snap_time(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	int idx = LuaPull<int>(l, 2);
+	TransferPlanner::SnapEvent event;
+	double time;
+	if (!PullSnapEvent(l, 3, event) || !sv->GetTransferPlanner()->GetSnapTime(idx, event, time))
+		lua_pushnil(l);
+	else
+		LuaPush<double>(l, time);
+	return 1;
+}
+
+/*
+ * Method: TransferPlannerSnap
+ *
+ * > snapped = systemView:TransferPlannerSnap(idx, event)
+ *
+ * Move burn idx to the time TransferPlannerGetSnapTime reports.
+ */
+static int l_systemview_transfer_planner_snap(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	int idx = LuaPull<int>(l, 2);
+	TransferPlanner::SnapEvent event;
+	LuaPush(l, PullSnapEvent(l, 3, event) && sv->GetTransferPlanner()->SnapStartTime(idx, event));
+	return 1;
+}
+
+/*
+ * Method: TransferPlannerGetNodeReference
+ *
+ * > name, isTarget = systemView:TransferPlannerGetNodeReference()
+ *
+ * What the ascending/descending nodes are measured against: the navigation
+ * target's orbit (isTarget) or the central body's equator, by name; nil when
+ * there is no reference.
+ */
+static int l_systemview_transfer_planner_get_node_reference(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	vector3d normal;
+	std::string name;
+	bool isTarget;
+	if (!sv->GetTransferPlanner()->GetNodeReference(normal, name, isTarget)) {
+		lua_pushnil(l);
+		return 1;
+	}
+	LuaPush(l, name);
+	LuaPush(l, isTarget);
+	return 2;
+}
+
 template <>
 const char *LuaObject<SystemView>::s_type = "SystemView";
 
@@ -581,6 +660,9 @@ void LuaObject<SystemView>::RegisterClass()
 		{ "TransferPlannerGetBurnDeltaV", l_systemview_transfer_planner_get_burn_delta_v },
 		{ "TransferPlannerGetBurnRemainingDeltaV", l_systemview_transfer_planner_get_burn_remaining_delta_v },
 		{ "TransferPlannerGetActiveIndex", l_systemview_transfer_planner_get_active_index },
+		{ "TransferPlannerGetSnapTime", l_systemview_transfer_planner_get_snap_time },
+		{ "TransferPlannerSnap", l_systemview_transfer_planner_snap },
+		{ "TransferPlannerGetNodeReference", l_systemview_transfer_planner_get_node_reference },
 
 		{ NULL, NULL }
 	};

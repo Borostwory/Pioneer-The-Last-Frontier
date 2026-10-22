@@ -718,6 +718,24 @@ local L = {
 	STATUS_COMPLETED = "Completed burn",
 	REMAINING_DV = "Remaining delta-v of this burn",
 	COMPLETE = "Mark this burn complete",
+	-- snap row: the burn's node time jumps to an event of the orbit leading
+	-- into it (the current orbit for the first burn)
+	SNAP_TIP = "Move this burn to the next %s of the orbit before it, in %s.\nClick again for the next orbit.",
+	SNAP_NODE_TIP = "Move this burn to the next %s, relative to %s, in %s.\nClick again for the next orbit.",
+	SNAP_NONE = "No %s ahead on the orbit before this burn",
+	SNAP_NODE_NONE = "No %s ahead relative to %s on the orbit before this burn",
+	SNAP_COMPLETED = "This burn is complete",
+	REF_TARGET = "%s's orbit",
+	REF_EQUATOR = "%s's equator",
+}
+
+-- the snap events, in button order: short label, the name the tooltip uses,
+-- and whether it is a node (measured against a reference plane)
+local snapEvents = {
+	{ key = "periapsis", label = "Pe", name = "periapsis" },
+	{ key = "apoapsis", label = "Ap", name = "apoapsis" },
+	{ key = "ascending", label = "AN", name = "ascending node", node = true },
+	{ key = "descending", label = "DN", name = "descending node", node = true },
 }
 
 -- cells render "-" when a value is unavailable
@@ -751,6 +769,44 @@ local function formatRemainingDv(dv)
 	end
 	local speed, unit = ui.Format.SpeedUnit(dv)
 	return speed .. " " .. unit
+end
+
+--
+-- Function: drawSnapRow
+--
+-- Four buttons that snap burn idx's node time to the next periapsis,
+-- apoapsis, ascending or descending node of the orbit leading into it. Each
+-- is greyed when its event does not exist there; the tooltip names when the
+-- event is and, for the nodes, the plane they are measured against.
+--
+local function drawSnapRow(idx, width, completed)
+	local spacing = ui.getItemSpacing().x
+	local size = Vector2(math.floor((width - spacing * (#snapEvents - 1)) / #snapEvents), 0)
+
+	local refName, refIsTarget = systemView:TransferPlannerGetNodeReference()
+	local reference = refName and string.format(refIsTarget and L.REF_TARGET or L.REF_EQUATOR, refName) or UNAVAILABLE
+
+	for i, event in ipairs(snapEvents) do
+		if i > 1 then ui.sameLine(0, spacing) end
+
+		local time = not completed and systemView:TransferPlannerGetSnapTime(idx, event.key) or nil
+		local tooltip
+		if completed then
+			tooltip = L.SNAP_COMPLETED
+		elseif time then
+			local delay = ui.Format.Duration(math.max(0, math.floor(time - Game.time)))
+			tooltip = event.node and string.format(L.SNAP_NODE_TIP, event.name, reference, delay)
+				or string.format(L.SNAP_TIP, event.name, delay)
+		else
+			tooltip = event.node and string.format(L.SNAP_NODE_NONE, event.name, reference)
+				or string.format(L.SNAP_NONE, event.name)
+		end
+
+		local variant = not time and colorset.disabled or nil
+		if ui.button(event.label .. "##plannerSnap" .. event.key .. idx, size, variant, tooltip) and time then
+			systemView:TransferPlannerSnap(idx, event.key)
+		end
+	end
 end
 
 -- the burn the plan's controls are currently aimed at
@@ -872,6 +928,7 @@ local plannerView = {
 					showDvLine(idx, burnRow.key, burnRow.icons[1], burnRow.icons[2], burnRow.icons[3],
 						burnRow.formatter, luc.DECREASE, burnRow.resetTooltip, luc.INCREASE, buttonSize)
 				end
+				drawSnapRow(idx, ui.getContentRegion().x, not row.completable)
 
 				ui.nextColumn()
 
