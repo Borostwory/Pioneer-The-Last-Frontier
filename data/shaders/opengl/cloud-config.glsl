@@ -58,6 +58,11 @@
 // camera at 1 atm; it grows in thinner air. Clouds beyond 4x are skipped.
 #define CLOUD_VISIBILITY 90000.0
 
+// Temporal reconstruction: reprojected history may exceed the range of the
+// fresh neighbouring samples by this much (higher keeps more detail, lower
+// ghosts less)
+#define CLOUD_HISTORY_CLAMP_MARGIN 0.04
+
 // Stop marching once the view transmittance drops below this
 #define CLOUD_MIN_TRANSMITTANCE 0.02
 

@@ -24,10 +24,11 @@ out vec4 frag_color;
 
 void main(void)
 {
-	float div = cloudPassProj.w;
-
-	// the full-resolution pixel at the centre of this cloud-buffer pixel
-	vec2 fullPos = (floor(gl_FragCoord.xy) + 0.5) * div;
+	// this march pixel traces one history pixel of its 2x2 block (the
+	// checkerboard offset rotates every frame), or the block centre when the
+	// planet has no history
+	vec2 histPos = floor(gl_FragCoord.xy) * 2.0 + cloudPassFrame.xy + 0.5;
+	vec2 fullPos = histPos * cloudPassMarch.z;
 	ivec2 ip = ivec2(min(fullPos, cloudPassSize.zw - 1.0));
 	float viewZ = texelFetch(sceneDist, ip, 0).r;
 
@@ -39,7 +40,7 @@ void main(void)
 	float a = max(cloudGeom.x, 1.0);
 	float tMax = min(viewZ * length(dirV) / a, 1e6); // planet radii
 	vec3 camPos = -cloudPassCenter.xyz;
-	float pixelAngle = 2.0 / cloudPassProj.y / cloudPassSize.w * div;
+	float pixelAngle = 2.0 / cloudPassProj.y / cloudPassSize.w * cloudPassMarch.w;
 
 	CloudPlanet cp = cloudDerive();
 	CloudResult r = cloudMarchView(cp, camPos, eyenorm, tMax, pixelAngle, cloudJitter());

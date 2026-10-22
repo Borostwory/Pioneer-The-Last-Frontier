@@ -40,6 +40,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["JoystickDeadzone"] = "0.2"; // 20% deadzone is common
 	map["CloudsEnabled"] = "1";
 	map["CloudResolution"] = "1"; // 0 low .. 4 full, see PlanetClouds.cpp
+	map["CloudTemporal"] = "1";   // temporal reconstruction of the cloud image
 	map["CloudSoftness"] = "1";   // 0 sharp .. 2 soft
 	map["CloudSpeed"] = "10";     // cloud motion relative to the real wind speed
 	map["CloudDensityLow"] = "100";    // percent, per cloud layer

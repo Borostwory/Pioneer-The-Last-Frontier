@@ -286,6 +286,13 @@ local function showVideoOptions()
 			Engine.SettingsSetInt("CloudResolution", cloudResolution)
 		end
 
+		local cloudTemporal = Engine.SettingsGetInt("CloudTemporal") ~= 0
+		c,cloudTemporal = checkbox("Temporal cloud reconstruction", cloudTemporal,
+			"Each frame traces a quarter of the cloud pixels and fills in the rest from previous frames: about 4x faster at the same resolution. Turn off if you see ghosting.")
+		if c then
+			Engine.SettingsSetInt("CloudTemporal", cloudTemporal and 1 or 0)
+		end
+
 		local cloudSoftnessLabels = { "Sharp", "Soft", "Very soft" }
 		local cloudSoftness = Engine.SettingsGetInt("CloudSoftness")
 		c,cloudSoftness = combo("Cloud softening", cloudSoftness, cloudSoftnessLabels,
