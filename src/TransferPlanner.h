@@ -107,6 +107,17 @@ public:
 	// name is the target's or the body's label.
 	static bool GetNodeReference(vector3d &normal, std::string &name, bool &isTarget);
 
+	// circularizing: where burn idx should go and the prograde / normal /
+	// radial delta-v that leaves it on a circular orbit there, in the plane it
+	// is already flying. The place is the periapsis or apoapsis the burn
+	// already sits on, otherwise the next one ahead on the orbit leading into
+	// it (apsis = SNAP_PERIAPSIS / SNAP_APOAPSIS), or the burn's own time when
+	// that orbit has neither ahead (apsis = -1). magnitude is the delta-v's
+	// size. False for an inert burn or a purely radial trajectory.
+	bool GetCircularizePlan(int idx, double &time, int &apsis, double dv[3], double &magnitude) const;
+	// moves burn idx and replaces its delta-v as GetCircularizePlan says
+	bool Circularize(int idx);
+
 	// runtime-only lock-lifecycle serial: advances whenever a burn completes,
 	// is reset, or may be replaced at an existing index (insert/remove/reorder,
 	// plan resets). Consumers caching a burn direction compare it for equality
@@ -119,6 +130,9 @@ private:
 	// the orbit flown into burn idx, its state vector at t = 0 and the game
 	// time t = 0 corresponds to, as RecomputeChain chains it
 	bool GetIncomingOrbit(int idx, Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const;
+	// the first occurrence of an event after the previous burn (or now) on the
+	// orbit leading into burn idx, and its period (0 on an escape trajectory)
+	bool FindEventTime(int idx, SnapEvent event, double &time, double &period) const;
 	void RecomputeChain();
 	void EnforceOrder();
 	Burn &EnsureBurn(int idx) const;

@@ -10,6 +10,7 @@
 #include "Pi.h"
 #include "Player.h"
 #include "galaxy/SystemBody.h"
+#include "gameconsts.h"
 
 #include <algorithm>
 #include <cmath>
@@ -38,6 +39,16 @@ Frame *PlannerFrame()
 	if (!playerFrame)
 		return nullptr;
 	return Frame::GetFrame(playerFrame->GetNonRotFrame());
+}
+
+// the occurrence of an event (first at time, then every period; 0 = once)
+// that a burn at current sits on, or -1 when it sits on none
+double OccurrenceAt(double current, double time, double period)
+{
+	const double k = (period > 0.0) ? std::floor((current - time) / period + 0.5) : 0.0;
+	if (k < 0.0 || std::fabs(current - (time + k * period)) >= kSnapTolerance)
+		return -1.0;
+	return k;
 }
 
 // angle swept from a to b around axis (the orbit's angular momentum), in [0, 2pi)
@@ -530,7 +541,7 @@ bool TransferPlanner::GetNodeReference(vector3d &normal, std::string &name, bool
 	return true;
 }
 
-bool TransferPlanner::GetSnapTime(int idx, SnapEvent event, double &time) const
+bool TransferPlanner::FindEventTime(int idx, SnapEvent event, double &time, double &period) const
 {
 	Orbit orbit;
 	vector3d pos, vel;
@@ -610,15 +621,20 @@ bool TransferPlanner::GetSnapTime(int idx, SnapEvent event, double &time) const
 			hi = mid;
 	}
 	time = segmentTime + hi;
+	period = elliptic ? orbit.Period() : 0.0;
+	return true;
+}
+
+bool TransferPlanner::GetSnapTime(int idx, SnapEvent event, double &time) const
+{
+	double period;
+	if (!FindEventTime(idx, event, time, period))
+		return false;
 
 	// a burn already on an occurrence moves on to the next orbit's
-	if (elliptic) {
-		const double period = orbit.Period();
-		const double current = m_burns[idx].startTime;
-		const double k = std::floor((current - time) / period + 0.5);
-		if (k >= 0.0 && std::fabs(current - (time + k * period)) < kSnapTolerance)
-			time += (k + 1.0) * period;
-	}
+	const double k = OccurrenceAt(m_burns[idx].startTime, time, period);
+	if (period > 0.0 && k >= 0.0)
+		time += (k + 1.0) * period;
 	return true;
 }
 
@@ -636,6 +652,104 @@ bool TransferPlanner::SnapStartTime(int idx, SnapEvent event)
 	// a snap past later burns pushes them along, as the time stepper does
 	EnforceOrder();
 	RecomputeChain();
+	return true;
+}
+
+bool TransferPlanner::GetCircularizePlan(int idx, double &time, int &apsis, double dv[3], double &magnitude) const
+{
+	Orbit orbit;
+	vector3d pos, vel;
+	double segmentTime;
+	if (!GetIncomingOrbit(idx, orbit, pos, vel, segmentTime))
+		return false;
+	const double mass = PlannerFrame()->GetSystemBody()->GetMass();
+
+	// where to burn: the apsis the burn already sits on (so a periapsis or
+	// apoapsis picked by hand is kept), otherwise the next apsis ahead, and
+	// the burn's own time when the orbit has neither ahead
+	const double current = m_burns[idx].startTime;
+	int onApsis = -1, nextApsis = -1;
+	double nextTime = 0.0;
+	for (const SnapEvent event : { SNAP_PERIAPSIS, SNAP_APOAPSIS }) {
+		double t, period;
+		if (!FindEventTime(idx, event, t, period))
+			continue;
+		if (OccurrenceAt(current, t, period) >= 0.0)
+			onApsis = event;
+		if (nextApsis < 0 || t < nextTime) {
+			nextApsis = event;
+			nextTime = t;
+		}
+	}
+	if (onApsis >= 0) {
+		time = current;
+		apsis = onApsis;
+	} else if (nextApsis >= 0) {
+		time = nextTime;
+		apsis = nextApsis;
+	} else {
+		time = current;
+		apsis = -1;
+	}
+
+	// the state there, propagated exactly as RecomputeChain will
+	const double tau = std::max(0.0, time - segmentTime);
+	pos = orbit.OrbitalPosAtTime(tau);
+	vel = orbit.OrbitalVelocityAtTime(mass, tau);
+	const double r = pos.Length();
+	if (is_zero_general(r) || is_zero_general(vel.Length()))
+		return false;
+
+	// the velocity wanted after the burn: circular speed along the horizontal
+	// direction of the current motion, which keeps the orbital plane
+	const vector3d radialDir = pos / r;
+	const vector3d horizontal = vel - radialDir * vel.Dot(radialDir);
+	if (horizontal.Length() < 1e-6 * vel.Length())
+		return false;
+	const vector3d change = horizontal.Normalized() * std::sqrt(G * mass / r) - vel;
+	magnitude = change.Length();
+
+	// GetOffsetVel's axes: prograde (along vel) and radial (along pos) both
+	// lie in the orbital plane but are not orthogonal off a circle, so the
+	// in-plane change is split by solving the 2x2 system; normal is
+	// orthogonal to both and the change has no part along it. At an apsis
+	// the two are orthogonal and the change is all prograde.
+	const vector3d progradeDir = vel.Normalized();
+	const double k = progradeDir.Dot(radialDir);
+	const double det = 1.0 - k * k;
+	if (det < 1e-9)
+		return false;
+	const double alongPrograde = change.Dot(progradeDir);
+	const double alongRadial = change.Dot(radialDir);
+	dv[PROGRADE] = (alongPrograde - k * alongRadial) / det;
+	dv[RADIAL] = (alongRadial - k * alongPrograde) / det;
+	dv[NORMAL] = 0.0;
+	return true;
+}
+
+bool TransferPlanner::Circularize(int idx)
+{
+	// circularize against the chain as it stands now
+	RecomputeChain();
+
+	double time, magnitude, dv[3];
+	int apsis;
+	if (!GetCircularizePlan(idx, time, apsis, dv, magnitude))
+		return false;
+
+	Burn &burn = m_burns[idx];
+	burn.startTime = time;
+	for (int i = 0; i < 3; ++i)
+		burn.dv[i] = dv[i];
+	// new delta-v values make a new burn, as a reset does: nothing of it is
+	// flown yet, and any cached burn direction is stale
+	burn.status = PENDING;
+	burn.appliedDeltaV = 0.0;
+
+	// a move past later burns pushes them along, as a snap does
+	EnforceOrder();
+	RecomputeChain();
+	AdvanceDirectionLockSerial();
 	return true;
 }
 

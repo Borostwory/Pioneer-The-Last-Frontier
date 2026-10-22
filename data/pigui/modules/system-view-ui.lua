@@ -728,6 +728,11 @@ local L = {
 	SNAP_NONE = "No %s ahead on the orbit before this burn",
 	SNAP_NODE_NONE = "No %s ahead relative to %s on the orbit before this burn",
 	SNAP_COMPLETED = "This burn is complete",
+	CIRCULARIZE = "Circularize",
+	CIRCULARIZE_TIP = "Make the orbit a circle at %s: %s of Δv.\nMoves this burn there and replaces its prograde, normal and radial values.",
+	CIRCULARIZE_AT_APSIS = "the %s, in %s",
+	CIRCULARIZE_AT_POINT = "this burn's point (no periapsis or apoapsis ahead)",
+	CIRCULARIZE_NONE = "This burn's orbit cannot be circularized here",
 	REF_TARGET = "%s's orbit",
 	REF_EQUATOR = "%s's equator",
 }
@@ -809,6 +814,38 @@ local function drawSnapRow(idx, width, completed)
 		if ui.button(event.label .. "##plannerSnap" .. event.key .. idx, size, variant, tooltip) and time then
 			systemView:TransferPlannerSnap(idx, event.key)
 		end
+	end
+end
+
+--
+-- Function: drawCircularizeButton
+--
+-- One full-width button that moves burn idx to the next periapsis or apoapsis
+-- (keeping one it already sits on) and sets its Δv so the orbit after it is
+-- circular there; the tooltip says where, when and how much Δv that takes.
+--
+local function drawCircularizeButton(idx, width, completed)
+	local dv, time, apsis
+	if not completed then
+		dv, time, apsis = systemView:TransferPlannerGetCircularizeDeltaV(idx)
+	end
+
+	local tooltip
+	if completed then
+		tooltip = L.SNAP_COMPLETED
+	elseif not dv then
+		tooltip = L.CIRCULARIZE_NONE
+	else
+		local where = L.CIRCULARIZE_AT_POINT
+		if apsis then
+			local delay = ui.Format.Duration(math.max(0, math.floor(time - Game.time)))
+			where = string.format(L.CIRCULARIZE_AT_APSIS, apsis, delay)
+		end
+		tooltip = string.format(L.CIRCULARIZE_TIP, where, ui.Format.Speed(dv))
+	end
+	local variant = not dv and colorset.disabled or nil
+	if ui.button(L.CIRCULARIZE .. "##plannerCircularize" .. idx, Vector2(width, 0), variant, tooltip) and dv then
+		systemView:TransferPlannerCircularize(idx)
 	end
 end
 
@@ -932,6 +969,7 @@ local plannerView = {
 						burnRow.formatter, luc.DECREASE, burnRow.resetTooltip, luc.INCREASE, buttonSize)
 				end
 				drawSnapRow(idx, ui.getContentRegion().x, not row.completable)
+				drawCircularizeButton(idx, ui.getContentRegion().x, not row.completable)
 
 				ui.nextColumn()
 

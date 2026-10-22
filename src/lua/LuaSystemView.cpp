@@ -649,6 +649,51 @@ static int l_systemview_transfer_planner_get_node_reference(lua_State *l)
 	return 2;
 }
 
+/*
+ * Method: TransferPlannerGetCircularizeDeltaV
+ *
+ * > dv, time, apsis = systemView:TransferPlannerGetCircularizeDeltaV(idx)
+ *
+ * What circularizing burn idx would do: the delta-v magnitude, the node time
+ * it would move to, and the apsis that is ("periapsis", "apoapsis", or nil
+ * for the burn's own time). nil when it cannot be circularized.
+ */
+static int l_systemview_transfer_planner_get_circularize_delta_v(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	int idx = LuaPull<int>(l, 2);
+	double time, magnitude, dv[3];
+	int apsis;
+	if (!sv->GetTransferPlanner()->GetCircularizePlan(idx, time, apsis, dv, magnitude)) {
+		lua_pushnil(l);
+		return 1;
+	}
+	LuaPush<double>(l, magnitude);
+	LuaPush<double>(l, time);
+	if (apsis == TransferPlanner::SNAP_PERIAPSIS)
+		LuaPush(l, "periapsis");
+	else if (apsis == TransferPlanner::SNAP_APOAPSIS)
+		LuaPush(l, "apoapsis");
+	else
+		lua_pushnil(l);
+	return 3;
+}
+
+/*
+ * Method: TransferPlannerCircularize
+ *
+ * > done = systemView:TransferPlannerCircularize(idx)
+ *
+ * Replace burn idx's delta-v with the one that circularizes the orbit there.
+ */
+static int l_systemview_transfer_planner_circularize(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	int idx = LuaPull<int>(l, 2);
+	LuaPush(l, sv->GetTransferPlanner()->Circularize(idx));
+	return 1;
+}
+
 template <>
 const char *LuaObject<SystemView>::s_type = "SystemView";
 
@@ -700,6 +745,8 @@ void LuaObject<SystemView>::RegisterClass()
 		{ "TransferPlannerGetSnapTime", l_systemview_transfer_planner_get_snap_time },
 		{ "TransferPlannerSnap", l_systemview_transfer_planner_snap },
 		{ "TransferPlannerGetNodeReference", l_systemview_transfer_planner_get_node_reference },
+		{ "TransferPlannerGetCircularizeDeltaV", l_systemview_transfer_planner_get_circularize_delta_v },
+		{ "TransferPlannerCircularize", l_systemview_transfer_planner_circularize },
 
 		{ NULL, NULL }
 	};
