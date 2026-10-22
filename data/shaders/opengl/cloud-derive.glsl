@@ -106,8 +106,8 @@ float cloudFrostCO2(float p)
 // latitude structure of coverage (plan R4.4.2), not normalised
 float cloudLatFactorRaw(CloudPlanet cp, float alat, float layer)
 {
-	float fj = 1.0 + 0.6 * exp(-cloudSq(alat / (8.0 * CLOUD_DEG)))
-		- 0.5 * exp(-cloudSq((alat - cp.phiH) / (10.0 * CLOUD_DEG)))
+	float fj = 1.0 + 0.9 * exp(-cloudSq(alat / (7.0 * CLOUD_DEG)))
+		- 0.65 * exp(-cloudSq((alat - cp.phiH) / (10.0 * CLOUD_DEG)))
 		+ 0.4 * exp(-cloudSq((alat - cp.phiJ - 5.0 * CLOUD_DEG) / (12.0 * CLOUD_DEG)));
 	if (layer < 0.5)
 		fj += 0.2 * smoothstep(60.0 * CLOUD_DEG, 80.0 * CLOUD_DEG, alat);

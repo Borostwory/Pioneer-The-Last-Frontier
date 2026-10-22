@@ -34,6 +34,19 @@ struct CloudPhase {
 	vec3 offB;
 };
 
+// Phase k (0 = A, 1 = B) of a CloudPhase. Loops over the active phases use
+// runtime bounds (cloudPhaseFirst .. cloudPhaseLast) so the compiler emits
+// the expensive body once instead of unrolling it per phase.
+void cloudPhaseK(CloudPhase ph, int k, out float t, out vec3 off, out float w)
+{
+	t = k == 0 ? ph.tA : ph.tB;
+	off = k == 0 ? ph.offA : ph.offB;
+	w = k == 0 ? ph.wA : 1.0 - ph.wA;
+}
+
+int cloudPhaseFirst(CloudPhase ph) { return ph.wA > 0.001 ? 0 : 1; }
+int cloudPhaseLast(CloudPhase ph) { return ph.wA < 0.999 ? 1 : 0; }
+
 struct CloudResult {
 	vec3 inscatter; // linear radiance, already premultiplied
 	float transmittance;
@@ -105,6 +118,72 @@ float cloudUniformize(float x, float mean, float sd)
 	return 1.0 / (1.0 + exp(-1.702 * (x - mean) / sd));
 }
 
+// Rodrigues rotation of v about the unit axis k by angle ang
+vec3 cloudRotAxis(vec3 v, vec3 k, float ang)
+{
+	float c = cos(ang), s = sin(ang);
+	return v * c + cross(k, v) * s + k * dot(k, v) * (1.0 - c);
+}
+
+// Weather-noise domain: the large-scale flow organises cloud systems.
+//  - extratropical cyclones in the storm tracks wind the cloud field into
+//    spirals and comma clouds (cyclonic sense per hemisphere);
+//  - the zonal flow stretches systems east-west into fronts and bands;
+//  - a two-scale domain warp folds them into filaments.
+// p: advected planet-fixed unit vector; returns the noise coordinate
+// (1 unit = one weather system, wsize metres).
+vec3 cloudWeatherDomain(CloudPlanet cp, vec3 p, float wsize, vec3 off)
+{
+	// cyclones: one candidate per cell of a 3D grid over the sphere, kept
+	// with a probability that peaks in the storm track (poleward of the
+	// subtropical jet); only planets with a strong Coriolis effect
+	float spacing = CLOUD_CYCLONE_SPACING_M * (cp.a / 6.378e6);
+	float strength = (1.0 - cp.wsr) * CLOUD_CYCLONE_SWIRL;
+	if (strength > 0.01) {
+		vec3 g = p * (cp.a / spacing);
+		// candidates sit at 0.25..0.75 within their cell and reach at most
+		// 0.75 cells, so only the 2x2x2 cells nearest to g can contribute
+		vec3 g0 = floor(g - 0.5);
+		vec3 seed = vec3(cloudTime.z, cloudTime.w, 0.0) * 0.013;
+		vec3 disp = vec3(0.0);
+		for (int z = 0; z <= 1; z++) {
+			for (int y = 0; y <= 1; y++) {
+				for (int x = 0; x <= 1; x++) {
+					vec3 cell = g0 + vec3(float(x), float(y), float(z));
+					vec3 h = cloudHash33(cell + seed);
+					// candidates live in 3D grid space; the distance is measured
+					// there too, so the field is continuous across cells
+					vec3 cand = cell + 0.25 + 0.5 * h;
+					vec3 dg = g - cand;
+					float reach = CLOUD_CYCLONE_RADIUS * (0.6 + 0.4 * h.y); // cyclones differ in size
+					float q = 1.0 - dot(dg, dg) / (reach * reach);
+					if (q <= 0.0) continue;
+					float fall = q * q * q; // compact bell, ~gaussian of radius reach / 2.2
+					vec3 c = normalize(cand);
+					float clat = abs(asin(clamp(c.y, -1.0, 1.0)));
+					float track = exp(-cloudSq((clat - cp.phiJ - 5.0 * CLOUD_DEG) / (12.0 * CLOUD_DEG)));
+					if (cloudHash13(cell * 1.7 + seed + vec3(5.3)) > CLOUD_CYCLONE_CHANCE * track) continue;
+					// cyclonic: with the planet's spin, so opposite in the two
+					// hemispheres; differential rotation (fastest near the centre)
+					// winds any pattern into spiral arms (sampled back-rotated)
+					float s = sign(c.y) * cp.spinSign * (0.6 + 0.8 * h.x);
+					disp += cloudRotAxis(p, c, -strength * s * fall) - p;
+				}
+			}
+		}
+		// summed displacements: smooth where cyclones overlap
+		p = normalize(p + disp);
+	}
+	vec3 x = p * (cp.a / wsize) + off * 0.001;
+	// east-west elongation (the spin axis is y)
+	x.y *= CLOUD_WEATHER_ZONAL;
+	// fold into fronts and filaments
+	vec3 w1 = vec3(cloudGradNoise(x * 0.6 + vec3(1.7, 9.2, 3.1)), cloudGradNoise(x * 0.6 + vec3(8.3, 2.8, 5.4)), cloudGradNoise(x * 0.6 + vec3(4.4, 7.1, 0.9)));
+	x += CLOUD_WEATHER_WARP * w1;
+	vec3 w2 = vec3(cloudGradNoise(x * 2.1 + vec3(3.3, 1.2, 7.7)), cloudGradNoise(x * 2.1 + vec3(6.1, 4.9, 2.2)), cloudGradNoise(x * 2.1 + vec3(0.7, 5.5, 8.8)));
+	return x + 0.15 * CLOUD_WEATHER_WARP * w2;
+}
+
 // Local coverage of a layer at an (advected) planet-fixed position.
 // fp: pixel footprint [m]; weather octaves are added down to ~2 pixels, up
 // to 3 + maxExtra octaves (raymarched samples get their fine structure from
@@ -118,18 +197,23 @@ vec3 cloudCoverage(CloudPlanet cp, int li, vec3 pAdv, vec3 pfDir, float lat, vec
 	float n = 3.0 + clamp(log2((wsize / 8.0) / max(2.0 * fp, 1.0)), 0.0, maxExtra);
 	float lastW = n - floor(n);
 	int oct = int(ceil(n - 1e-3));
-	float W = cloudFbm(pAdv * (cp.a / wsize) + off * 0.001, oct, lastW > 1e-3 ? lastW : 1.0);
-	float U = cloudUniformize(W, 0.5, 0.09);
+	float W = cloudFbm(cloudWeatherDomain(cp, pAdv, wsize, off), oct, lastW > 1e-3 ? lastW : 1.0);
+	float U = cloudUniformize(W, CLOUD_WEATHER_MEAN, CLOUD_WEATHER_SD);
 	// total cover here, split into the fraction of the area inside cloud
 	// systems (r) and the cloud fraction within a system (fill): r * fill = c
 	float c = clamp(cp.L[li].coverage * cloudLatFactor(cp, li, lat, pfDir, sunPf) * CLOUD_COVERAGE_SCALE, 0.0, 1.0);
 	float fill = max(cp.L[li].fillBase, c);
 	float rg = c / max(fill, 1e-3);
-	// soft edges, narrowing as the layer approaches overcast; never wider than
-	// the system itself, or small systems would be all edge and lose cover
-	float e = min(0.3 * clamp(2.0 * (1.0 - rg) + 0.1, 0.1, 1.0), rg);
+	// soft edges: cloud fields thin out gradually toward their edges. The
+	// edge stays inside 0..1 (e <= 2 rg and 2 (1 - rg)), so the mean of the
+	// symmetric ramp, and thus the cover, is exact
+	float e = min(0.6, 1.9 * min(rg, 1.0 - rg));
 	float st = li == 0 ? max(smoothstep(0.85, 0.95, c), smoothstep(0.975, 0.995, U)) : 0.0;
-	return vec3(smoothstep(1.0 - rg - 0.5 * e, 1.0 - rg + 0.5 * e, U), st, fill);
+	// cloud fraction across a system: overcast cores, broken toward the edges.
+	// u is uniform over the system, so the linear ramp keeps the mean = fill
+	float u = clamp((U - (1.0 - rg)) / max(rg, 1e-3), 0.0, 1.0);
+	float ramp = min(1.0, 1.0 / max(fill, 1e-3) - 1.0);
+	return vec3(smoothstep(1.0 - rg - 0.5 * e, 1.0 - rg + 0.5 * e, U), st, fill * (1.0 + ramp * (2.0 * u - 1.0)));
 }
 
 // Height profiles per genus. st = stratus weight (low layer only).
@@ -378,13 +462,12 @@ vec3 cloudDensity(CloudPlanet cp, int li, CloudPhase ph, vec3 pfDir, float alt, 
 	float lod, float detailW, bool full, vec3 sunPf, float fp)
 {
 	vec3 r = vec3(0.0);
-	if (ph.wA > 0.001) {
-		vec4 col = cloudColumn(cp, li, pfDir, alt, lat, ph.tA, ph.offA, sunPf, fp, 5.0);
-		r += ph.wA * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tA, ph.offA, col, lod, detailW, full, fp);
-	}
-	if (ph.wA < 0.999) {
-		vec4 col = cloudColumn(cp, li, pfDir, alt, lat, ph.tB, ph.offB, sunPf, fp, 5.0);
-		r += (1.0 - ph.wA) * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tB, ph.offB, col, lod, detailW, full, fp);
+	for (int k = cloudPhaseFirst(ph); k <= cloudPhaseLast(ph); k++) {
+		float t, w;
+		vec3 off;
+		cloudPhaseK(ph, k, t, off, w);
+		vec4 col = cloudColumn(cp, li, pfDir, alt, lat, t, off, sunPf, fp, 5.0);
+		r += w * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, t, off, col, lod, detailW, full, fp);
 	}
 	return r;
 }
@@ -581,6 +664,23 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 		// height: a few jittered samples through the layer replace the raymarch
 		// (a raymarch would never terminate early in it)
 		if (li == 2) {
+			// the weather column hardly changes across one crossing of the thin
+			// layer: evaluate it once at the middle, for both phases
+			vec4 cirCol[2];
+			cirCol[0] = vec4(0.0);
+			cirCol[1] = vec4(0.0);
+			{
+				float rm = length(midPos);
+				vec3 mDir = cloudToPf(midPos) / rm;
+				float mLat = asin(clamp(mDir.y, -1.0, 1.0));
+				float fpMid = max(0.5 * (t0 + t1) * cp.a, 1.0) * pixelAngle;
+				for (int k = cloudPhaseFirst(ph); k <= cloudPhaseLast(ph); k++) {
+					float tk, wk;
+					vec3 offk;
+					cloudPhaseK(ph, k, tk, offk, wk);
+					cirCol[k] = cloudColumn(cp, li, mDir, (rm - 1.0) * cp.a, mLat, tk, offk, sunPf, fpMid, 5.0);
+				}
+			}
 			float ds = segLen / float(CLOUD_CIRRUS_SAMPLES);
 			for (int i = 0; i < 4; i++) {
 				if (i >= CLOUD_CIRRUS_SAMPLES) break;
@@ -593,7 +693,14 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 				float alt = (r - 1.0) * cp.a;
 				float lat = asin(clamp(pfDir.y, -1.0, 1.0));
 				float fp = max(t * cp.a, 1.0) * pixelAngle;
-				vec3 dens = cloudDensity(cp, li, ph, pfDir, alt, lat, cloudTerrainHeight(cp, pfDir), 1.0, 0.0, true, sunPf, fp);
+				float hTerrC = cloudTerrainHeight(cp, pfDir);
+				vec3 dens = vec3(0.0);
+				for (int k = cloudPhaseFirst(ph); k <= cloudPhaseLast(ph); k++) {
+					float tk, wk;
+					vec3 offk;
+					cloudPhaseK(ph, k, tk, offk, wk);
+					dens += wk * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerrC, tk, offk, cirCol[k], 1.0, 0.0, true, fp);
+				}
 				cloudShadeSample(cp, li, pos, dens, ds, rayDir, albedo, -1.0, res);
 			}
 			float fadeC = exp(-(0.5 * (t0 + t1) * cp.a) / hazeDist);
@@ -623,8 +730,16 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 				vec3 cdir = cloudToPf(cpos) / cr;
 				float clat = asin(clamp(cdir.y, -1.0, 1.0));
 				float calt = (cr - 1.0) * cp.a;
-				if (ph.wA > 0.001) colA[c] = cloudColumn(cp, li, cdir, calt, clat, ph.tA, ph.offA, sunPf, fpCol, 3.0);
-				if (ph.wA < 0.999) colB[c] = cloudColumn(cp, li, cdir, calt, clat, ph.tB, ph.offB, sunPf, fpCol, 3.0);
+				for (int k = cloudPhaseFirst(ph); k <= cloudPhaseLast(ph); k++) {
+					float tk, wk;
+					vec3 offk;
+					cloudPhaseK(ph, k, tk, offk, wk);
+					vec4 cc = cloudColumn(cp, li, cdir, calt, clat, tk, offk, sunPf, fpCol, 3.0);
+					if (k == 0)
+						colA[c] = cc;
+					else
+						colB[c] = cc;
+				}
 				anyCover = max(anyCover, max(colA[c].x, colB[c].x));
 			}
 
@@ -656,10 +771,12 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 					float lod = clamp(log2(ly.featureSize / (2.0 * fp)) - float(CLOUD_SHAPE_OCTAVES - 1), 0.0, 1.0);
 					float detailW = clamp(log2(cloudDetailCell(cp, li) * 0.25 / (2.0 * fp)), 0.0, 1.0);
 					vec3 dens = vec3(0.0);
-					if (ph.wA > 0.001)
-						dens += ph.wA * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tA, ph.offA, cA, lod, detailW, true, fp);
-					if (ph.wA < 0.999)
-						dens += (1.0 - ph.wA) * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, ph.tB, ph.offB, cB, lod, detailW, true, fp);
+					for (int k = cloudPhaseFirst(ph); k <= cloudPhaseLast(ph); k++) {
+						float tk, wk;
+						vec3 offk;
+						cloudPhaseK(ph, k, tk, offk, wk);
+						dens += wk * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, tk, offk, k == 0 ? cA : cB, lod, detailW, true, fp);
+					}
 					cloudShadeSample(cp, li, pos, dens, ds, rayDir, albedo, -1.0, m);
 				}
 				res.inscatter = mix(m.inscatter, res.inscatter, slabW);
@@ -773,10 +890,12 @@ float cloudShadowTerrain(CloudPlanet cp, vec3 pos, vec3 L, float fp)
 		float slant = 1.0 / max(dot(normalize(lp), L), 0.1);
 		CloudPhase ph = cloudPhases(ly.period, float(li));
 		float tl = 0.0;
-		if (ph.wA > 0.001)
-			tl += ph.wA * cloudShadowPhase(cp, li, pfDir, altMid, lat, ph.tA, ph.offA, sunPf, fp, slant);
-		if (ph.wA < 0.999)
-			tl += (1.0 - ph.wA) * cloudShadowPhase(cp, li, pfDir, altMid, lat, ph.tB, ph.offB, sunPf, fp, slant);
+		for (int k = cloudPhaseFirst(ph); k <= cloudPhaseLast(ph); k++) {
+			float tk, wk;
+			vec3 offk;
+			cloudPhaseK(ph, k, tk, offk, wk);
+			tl += wk * cloudShadowPhase(cp, li, pfDir, altMid, lat, tk, offk, sunPf, fp, slant);
+		}
 		T *= tl;
 	}
 	return T;

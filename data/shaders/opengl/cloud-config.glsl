@@ -80,6 +80,21 @@
 // Global coverage multiplier for art tuning
 #define CLOUD_COVERAGE_SCALE 1.0
 
+// Large-scale organisation of the weather field (cloudWeatherDomain).
+// Cyclones: candidate spacing [m, Earth-sized planet], chance that a
+// candidate in the core of the storm track is a cyclone, its outer reach
+// (fraction of the spacing, at most 0.75) and the winding at its centre [rad].
+#define CLOUD_CYCLONE_SPACING_M 2.6e6
+#define CLOUD_CYCLONE_CHANCE 0.6
+#define CLOUD_CYCLONE_RADIUS 0.75
+#define CLOUD_CYCLONE_SWIRL 1.8
+// east-west elongation of weather systems, and the domain warp amplitude
+#define CLOUD_WEATHER_ZONAL 2.5
+#define CLOUD_WEATHER_WARP 0.8
+// measured distribution (mean, sd) of the weather fBm on the warped domain
+#define CLOUD_WEATHER_MEAN 0.5
+#define CLOUD_WEATHER_SD 0.09
+
 // Hard terrain clearance in metres (do not lower)
 #define CLOUD_FLOOR_M 750.0
 
