@@ -719,6 +719,7 @@ local L = {
 	STATUS_ACTIVE = "Active burn",
 	STATUS_COMPLETED = "Completed burn",
 	REMAINING_DV = "Remaining delta-v of this burn",
+	ZOOM_TO_SHIP = "Zoom to your ship",
 	COMPLETE = "Mark this burn complete",
 	-- snap row: the burn's node time jumps to an event of the orbit leading
 	-- into it (the current orbit for the first burn)
@@ -1033,6 +1034,11 @@ function Windows.edgeButtons.Show()
 		systemView:SetRotateMode(ui.isItemActive())
 		ui.mainMenuButton(icons.search_lens, luc.ZOOM)
 		systemView:SetZoomMode(ui.isItemActive())
+		-- the ship is on the map whenever it shows the system the player is
+		-- in, also when that system is reached through "selected system"
+		if isOrrery and systemView:IsViewingCurrentSystem() and ui.mainMenuButton(icons.bullseye, L.ZOOM_TO_SHIP) then
+			systemView:ViewPlayer()
+		end
 
 		-- view settings buttons
 		if isOrrery then

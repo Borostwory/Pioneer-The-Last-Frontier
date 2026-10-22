@@ -221,6 +221,11 @@ public:
 	void DrawHudMapPiGui();
 	HudMapFocus GetHudMapFocus() const { return m_hudMapFocus; }
 	void SetHudMapFocus(HudMapFocus focus);
+	// centre the main map on the player's ship, zoomed to frame its orbit
+	void ViewPlayer();
+	// the map shows the system the player is in, whichever selection mode
+	// got it there, so the player's ship is on it
+	bool IsViewingCurrentSystem() const { return m_viewingCurrentSystem; }
 
 private:
 	void RefreshShips(void);
@@ -356,6 +361,8 @@ public:
 	void RotateCameraByMouse(float dx, float dy);
 	void ZoomCameraByWheel(float wheel, float speedMod = 1.0f);
 	void SetZoomDirect(float zoom);
+	// zoom to the given level with the usual zoom animation
+	void SetZoomTarget(float zoom);
 	void SnapTransitionToViewedObject();
 
 	// all used colors. defined in system-view-ui.lua

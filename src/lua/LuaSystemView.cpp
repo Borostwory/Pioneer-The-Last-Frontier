@@ -211,6 +211,35 @@ static int l_systemview_view_selected_object(lua_State *l)
 	return 0;
 }
 
+/*
+ * Method: ViewPlayer
+ *
+ * > systemView:ViewPlayer()
+ *
+ * Centre the map on the player's ship and zoom to frame its orbit.
+ */
+static int l_systemview_view_player(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	sv->ViewPlayer();
+	return 0;
+}
+
+/*
+ * Method: IsViewingCurrentSystem
+ *
+ * > viewing = systemView:IsViewingCurrentSystem()
+ *
+ * True when the map shows the system the player is in, in either selection
+ * mode.
+ */
+static int l_systemview_is_viewing_current_system(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	LuaPush(l, sv->IsViewingCurrentSystem());
+	return 1;
+}
+
 static int l_systemview_reset_viewpoint(lua_State *l)
 {
 	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
@@ -643,6 +672,8 @@ void LuaObject<SystemView>::RegisterClass()
 		{ "SetSelectedObject", l_systemview_set_selected_object },
 		{ "ViewSelectedObject", l_systemview_view_selected_object },
 		{ "ResetViewpoint", l_systemview_reset_viewpoint },
+		{ "ViewPlayer", l_systemview_view_player },
+		{ "IsViewingCurrentSystem", l_systemview_is_viewing_current_system },
 		{ "SetVisibility", l_systemview_set_visibility },
 		{ "SetColor", l_systemview_set_color },
 		{ "SetRotateMode", l_systemview_set_rotate_mode },

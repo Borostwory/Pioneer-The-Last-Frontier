@@ -414,6 +414,30 @@ void SystemView::SetSystemSelectionMode(SystemSelectionMode systemMode)
 	}
 }
 
+void SystemView::ViewPlayer()
+{
+	if (!Pi::player || !m_game->IsNormalSpace() || !m_viewingCurrentSystem)
+		return;
+
+	Body *playerBody = static_cast<Body *>(Pi::player);
+	const Frame *playerFrame = Frame::GetFrame(playerBody->GetFrame());
+	if (!playerFrame)
+		return;
+	const FrameId nonRotFrameId = playerFrame->GetNonRotFrame();
+	const Frame *nonRotFrame = Frame::GetFrame(nonRotFrameId);
+	const SystemBody *frameBody = nonRotFrame ? nonRotFrame->GetSystemBody() : nullptr;
+
+	// the map follows the player's track from here on, like any viewed object
+	m_map->SetViewedObject(Projectable(Projectable::OBJECT, Projectable::PLAYER, playerBody));
+
+	// frame the ship as the flight HUD's orbit view does: three times its
+	// distance from the body it orbits, and at least a few body radii
+	const double dist = playerBody->GetPositionRelTo(nonRotFrameId).Length();
+	const double span = std::max(dist * 3.0, frameBody ? frameBody->GetRadius() * 6.0 : 0.0);
+	if (span > 0.0)
+		m_map->SetZoomTarget(float(DEFAULT_VIEW_DISTANCE / span));
+}
+
 void SystemView::SetHudMapFocus(HudMapFocus focus)
 {
 	m_hudMapFocus = focus;
@@ -1580,6 +1604,11 @@ void SystemMapViewport::ZoomCameraByWheel(float wheel, float speedMod)
 void SystemMapViewport::SetZoomDirect(float zoom)
 {
 	m_zoom = m_zoomTo = Clamp(zoom, MIN_ZOOM, MAX_ZOOM);
+}
+
+void SystemMapViewport::SetZoomTarget(float zoom)
+{
+	m_zoomTo = Clamp(zoom, MIN_ZOOM, MAX_ZOOM);
 }
 
 void SystemMapViewport::SnapTransitionToViewedObject()
