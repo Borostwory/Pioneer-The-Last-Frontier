@@ -293,6 +293,13 @@ local function showVideoOptions()
 			Engine.SettingsSetInt("CloudResolutionSpace", cloudResolutionSpace)
 		end
 
+		local cloudSpaceDetail = Engine.SettingsGetInt("CloudSpaceDetail")
+		c,cloudSpaceDetail = slider("Cloud detail from space (%)", cloudSpaceDetail, 0, 200,
+			"How soon the cloud resolution rises from 'Cloud resolution' toward 'Cloud resolution from space' as the clouds get further away and their detail smaller on screen. It works the same on every planet. Halving it doubles the distance at which sharpening happens (cheaper); 0 = never sharpen. On Earth at 4K looking down: 100 reaches full resolution at about 450 km, 50 at about 900 km, 25 at about 1800 km.")
+		if c then
+			Engine.SettingsSetInt("CloudSpaceDetail", cloudSpaceDetail)
+		end
+
 		local cloudQualityLabels = { "Low (16 steps)", "Medium (24 steps)", "High (32 steps)", "Very high (48 steps)" }
 		local cloudQuality = Engine.SettingsGetInt("CloudQuality")
 		c,cloudQuality = combo("Cloud quality", cloudQuality, cloudQualityLabels,

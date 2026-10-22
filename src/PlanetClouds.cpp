@@ -54,6 +54,8 @@ namespace {
 	//   CloudResolution  0..4: effective cloud resolution 360, 540, 720, 1080 lines, or full
 	//   CloudResolutionSpace  0..4: the same, used when the camera is well above the clouds
 	//   CloudQuality     0..3: raymarch steps (CLOUD_QUALITY_STEPS)
+	//   CloudSpaceDetail 0..200 %: how soon the resolution rises toward the
+	//                    space resolution with distance (scales RES_PIXELS_PER_CELL; 0 = never)
 	//   CloudTemporal    0/1: temporal reconstruction (each frame traces 1 of 4 pixels)
 	//   CloudSoftness    0..2: upsampling kernel radius
 	//   CloudShadows     0 off, 1 soft (cloud-field average), 2 detailed (per cloud)
@@ -435,9 +437,11 @@ namespace {
 			dist = std::sqrt(nadir * Clamp(hit, nadir, horizon));
 		}
 
-		// resolution at which the smallest cells span RES_PIXELS_PER_CELL pixels
+		// resolution at which the smallest cells span RES_PIXELS_PER_CELL pixels,
+		// scaled by the "Cloud detail from space" setting (lower: later, cheaper)
+		const double detail = Clamp(Pi::config->Int("CloudSpaceDetail", 50), 0, 200) / 100.0;
 		const double pixelAngle = 2.0 / (proj5 * pass.height); // full-resolution pixel [rad]
-		const double divDetail = SmallestCloudCell(e.cloudData) / (dist * RES_PIXELS_PER_CELL * pixelAngle);
+		const double divDetail = detail > 0.0 ? SmallestCloudCell(e.cloudData) / (dist * RES_PIXELS_PER_CELL * detail * pixelAngle) : divCoarse;
 
 		// refinement only well above the clouds
 		const double x = Clamp((alt - REFINE_START * top) / ((REFINE_END - REFINE_START) * top), 0.0, 1.0);
