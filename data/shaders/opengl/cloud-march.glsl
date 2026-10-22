@@ -329,8 +329,11 @@ vec3 cloudShapeDensity(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat,
 			sheetMod = mix(1.0, cloudFbm(q * 0.15, 2, lod) * 0.4 + 0.6, st);
 		ero = mix(0.4, 0.1, st);
 	} else {
-		vec3 qs = q * vec3(1.0, 0.8, 1.0); // rows across the wind
-		U = cloudUniformize(cloudBillowFbm(qs, 3, lod), CLOUD_BILLOW_MEAN, CLOUD_BILLOW_SD);
+		// cell noise peaks at points (cell centres): thresholding it gives
+		// round cells and a network of gaps; billow noise peaks along lines
+		// and gave worm-like strands and holes
+		vec3 qs = q * vec3(2.2, 1.8, 2.2); // rows across the wind
+		U = cloudUniformize(cloudPerlinWorley(qs, CLOUD_SHAPE_OCTAVES, lod), CLOUD_PW_MEAN, CLOUD_PW_SD);
 		ero = 0.45;
 	}
 
