@@ -18,6 +18,7 @@ local ls = Lang.GetResource("ships")
 local luc = Lang.GetResource("ui-core")
 local layout = require 'pigui.libs.window-layout'
 local Sidebar = require 'pigui.libs.sidebar'
+local ApproachTarget = require 'pigui.libs.approach-target'
 
 local systemEconView = require 'pigui.modules.system-econ-view'.New()
 
@@ -1041,6 +1042,8 @@ local function drawApproachSection()
 		local ok, err = systemView:TransferPlannerPlanApproach(target, approachBurns, value)
 		approachError = not ok and err or nil
 		approachErrorTarget = targetName
+		-- the flight HUD can stop the clock before the closest approach to it
+		if ok then ApproachTarget.Set(target) end
 		-- the readout below shows the new plan
 		distance, time, speed, radius = systemView:TransferPlannerGetClosestApproach(target)
 	end

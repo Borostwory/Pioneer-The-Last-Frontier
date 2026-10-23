@@ -49,6 +49,7 @@ local captionFont = ui.fonts.pionillium.small
 local dataFont = ui.fonts.pionillium.details
 
 local gameView = require 'pigui.views.game'
+local ApproachTarget = require 'pigui.libs.approach-target'
 
 -- TransferPlanner burn status values, as returned by
 -- SystemView:TransferPlannerGetBurnStatus (see src/TransferPlanner.h)
@@ -114,6 +115,12 @@ local L = {
 	ARRIVE_PAUSE_TIP = "When the warp arrives, pause the game",
 	ARRIVE_NORMAL = "1x",
 	ARRIVE_NORMAL_TIP = "When the warp arrives, carry on at normal speed (1x)",
+	APPROACH_STOP = "Stop before closest approach",
+	APPROACH_STOP_FORMAT = "%.0f s",
+	APPROACH_STOP_TIP = "Stop the clock this long before the closest approach to the target of the approach planned in the map - pausing, or carrying on at 1x, as chosen for the burns. Time acceleration is stepped down on the way so it cannot run past.",
+	APPROACH_STATUS = "%s: %s in %s",
+	APPROACH_NONE = "No approach planned",
+	APPROACH_PASSED = "%s: closest approach passed",
 	ACCURACY_LABEL = "Burn accuracy",
 	ACCURACY_FORMAT = "%.1f %%",
 	ACCURACY_TIP = "Auto Burn flies each burn onto the planned trajectory, with its planned timing, easing the throttle at the end. If the resulting periapsis or apoapsis is still further off than this share of their altitude (or the orbit is out of the planned plane), it turns and makes a small correction burn.",
@@ -185,17 +192,28 @@ local ACCURACY_MIN_PERMILLE = 1
 local ACCURACY_MAX_PERMILLE = 200
 local accuracyPermille = DEFAULT_ACCURACY_PERMILLE
 local arriveAtNormalSpeed = false
+-- stopping before the closest approach to the planned approach's target:
+-- whether, and how many seconds before (stored biased by 1, default 60)
+local DEFAULT_APPROACH_STOP_S = 60
+local APPROACH_STOP_MAX_S = 3600
+local approachStopEnabled = false
+local approachStopS = DEFAULT_APPROACH_STOP_S
 
 local function loadBurnSettings()
 	arriveAtNormalSpeed = Game.GetConfigBool("MultiBurnHud", "arriveAtNormalSpeed") and true or false
 	local stored = Game.GetConfigInt("MultiBurnHud", "accuracyPermille")
 	accuracyPermille = (stored > 0) and (stored - 1) or DEFAULT_ACCURACY_PERMILLE
 	accuracyPermille = math.min(math.max(accuracyPermille, ACCURACY_MIN_PERMILLE), ACCURACY_MAX_PERMILLE)
+	approachStopEnabled = Game.GetConfigBool("MultiBurnHud", "approachStopEnabled") and true or false
+	stored = Game.GetConfigInt("MultiBurnHud", "approachStopS")
+	approachStopS = (stored > 0) and math.min(stored - 1, APPROACH_STOP_MAX_S) or DEFAULT_APPROACH_STOP_S
 end
 
 local function saveBurnSettings()
 	Game.SetConfigBool("MultiBurnHud", "arriveAtNormalSpeed", arriveAtNormalSpeed)
 	Game.SetConfigInt("MultiBurnHud", "accuracyPermille", accuracyPermille + 1)
+	Game.SetConfigBool("MultiBurnHud", "approachStopEnabled", approachStopEnabled)
+	Game.SetConfigInt("MultiBurnHud", "approachStopS", approachStopS + 1)
 	Engine.SaveSettings()
 end
 
@@ -383,6 +401,59 @@ local function startWarp(idx)
 	end
 
 	return true
+end
+
+--
+-- Stop before the closest approach.
+--
+-- While enabled, the closest approach of the plan to the target of the last
+-- planned approach (pigui.libs.approach-target) is watched: time acceleration
+-- is stepped down the warp's staircase as the stop time (closest approach -
+-- approachStopS) nears - never up, so a slower clock the player chose is
+-- kept - and at the stop time the clock pauses or drops to 1x, the arrival
+-- choice the burn warp uses. Each approach stops the clock once. The closest
+-- approach is recomputed every few draws only: it holds still while coasting.
+--
+local APPROACH_REFRESH_DRAWS = 15
+local approach = { target = nil, time = nil, distance = nil, radius = 0, draws = 0, stoppedFor = nil }
+
+local function updateApproachStop(systemView)
+	local target = ApproachTarget.Get()
+	if target ~= approach.target then
+		approach.target, approach.time, approach.draws = target, nil, 0
+	end
+	if not target then return end
+
+	approach.draws = approach.draws - 1
+	if approach.draws <= 0 then
+		approach.draws = APPROACH_REFRESH_DRAWS
+		local distance, time, _, radius = systemView:TransferPlannerGetClosestApproach(target)
+		approach.distance = distance
+		approach.time = distance and time or nil
+		approach.radius = distance and radius or 0
+	end
+	if not approachStopEnabled or not approach.time then return end
+
+	local stopAt = approach.time - approachStopS
+	-- this approach has stopped the clock already
+	if approach.stoppedFor and math.abs(approach.stoppedFor - approach.time) < 60 then return end
+
+	local remaining = stopAt - Game.time
+	if remaining <= 0 then
+		-- a stop time reached before the closest approach stops the clock,
+		-- not one for an approach already passed
+		if Game.time < approach.time then
+			approach.stoppedFor = approach.time
+			Game.SetTimeAcceleration(arriveAtNormalSpeed and "1x" or "paused")
+		end
+		return
+	end
+
+	local requested = Game.GetRequestedTimeAcceleration()
+	local level = desiredLevel(remaining)
+	if LEVEL_RATES[requested] and LEVEL_RATES[requested] > LEVEL_RATES[level] then
+		Game.SetTimeAcceleration(level, true)
+	end
 end
 
 --
@@ -943,6 +1014,46 @@ local function drawAccuracyControl()
 end
 
 --
+-- Function: drawApproachStopControl
+--
+-- "Stop before closest approach": the switch and the seconds, then the
+-- watched approach - target, distance (altitude for a planet or moon) and
+-- the time to it.
+--
+local function drawApproachStopControl()
+	local enabledChanged, enabled, value, changed
+	ui.withFont(dataFont.name, dataFont.size, function()
+		enabledChanged, enabled = ui.checkbox(L.APPROACH_STOP .. "##burnHudApproachStop", approachStopEnabled)
+		ui.setItemTooltip(L.APPROACH_STOP_TIP)
+		ui.sameLine()
+		ui.pushItemWidth(OFFSET_DRAG_WIDTH)
+		value, changed = ui.incrementDrag("##burnHudApproachStopS", approachStopS, 1, 0, APPROACH_STOP_MAX_S, L.APPROACH_STOP_FORMAT, false)
+		ui.popItemWidth()
+		ui.setItemTooltip(L.APPROACH_STOP_TIP)
+
+		local status = L.APPROACH_NONE
+		if approach.target then
+			local name = approach.target:GetLabel()
+			if approach.time and approach.time > Game.time then
+				local distance = approach.radius > 0 and (approach.distance - approach.radius) or approach.distance
+				status = string.format(L.APPROACH_STATUS, name, ui.Format.Distance(distance), formatCountdown(approach.time))
+			else
+				status = string.format(L.APPROACH_PASSED, name)
+			end
+		end
+		ui.textColored(colors.fontDim, status)
+	end)
+	if enabledChanged then
+		approachStopEnabled = enabled
+		saveBurnSettings()
+	end
+	if changed then
+		approachStopS = math.min(math.max(math.floor(value), 0), APPROACH_STOP_MAX_S)
+		saveBurnSettings()
+	end
+end
+
+--
 -- Function: drawWarpStrip
 --
 -- While a warp is running: the target burn number, the configured offset, the
@@ -1020,6 +1131,7 @@ local function displayBurnHudPanel(min, max, player, systemView, toggleSize)
 		drawOffsetControl()
 		drawArrivalChoice()
 		drawAccuracyControl()
+		drawApproachStopControl()
 	end)
 	end)
 end
@@ -1083,6 +1195,8 @@ local function displayBurnHud(min, max)
 	-- drawing happens once per render frame, which is why the physics-tick
 	-- Timer is the primary arrival detector
 	updateWarp()
+	-- likewise the closest-approach stop
+	updateApproachStop(systemView)
 
 	local initialMax = Vector2(max.x, max.y)
 	local toggleSize = displayVisibilityToggle(min, max)
