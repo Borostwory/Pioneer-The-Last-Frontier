@@ -21,11 +21,12 @@
 #define DETAIL_HI_PIXELS_PER_TEXEL 2.0
 #define DETAIL_LO_PIXELS_PER_TEXEL 16.0
 
-// detail contrast near the camera and far away (distances in metres)
+// detail contrast near the camera, fading out with distance (in metres) so
+// the tiling does not show from altitude; terrain-surface.glsl takes over there
 #define DETAIL_CONTRAST_NEAR 1.0
-#define DETAIL_CONTRAST_FAR 0.6
+#define DETAIL_CONTRAST_FAR 0.0
 #define DETAIL_CONTRAST_NEAR_DIST 2.0e3
-#define DETAIL_CONTRAST_FAR_DIST 2.0e5
+#define DETAIL_CONTRAST_FAR_DIST 3.0e4
 
 // finest scale: 16 texture repeats per deepest patch
 #define DETAIL_MIN_LEVEL -4.0

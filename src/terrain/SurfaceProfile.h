@@ -44,6 +44,9 @@ struct SurfaceProfile {
 	double lavaCover = 0.0; // 0..1
 	double surfaceAge = 1.0; // 0 = freshly resurfaced, 1 = old
 
+	// main hue of sand and dust in the palette, in degrees
+	double SandHue() const { return 40.0 - 18.0 * ironOxide; }
+
 	// colour arrays used by the rocky colour fractals
 	struct Palette {
 		vector3d rock[8];

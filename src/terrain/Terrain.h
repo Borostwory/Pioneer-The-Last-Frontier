@@ -54,6 +54,8 @@ public:
 
 	double GetMaxHeight() const { return m_maxHeight; }
 
+	const SurfaceProfile &GetSurfaceProfile() const { return m_surfaceProfile; }
+
 	Uint32 GetSurfaceEffects() const { return m_surfaceEffects; }
 
 	double BiCubicInterpolation(const vector3d &p) const;

@@ -22,17 +22,27 @@ in float dist;
 in vec3 varyingEyepos;
 in vec3 varyingNormal;
 in vec4 vertexColor;
+in vec4 albedoColor;
 
 out vec4 frag_color;
 
 uniform float PatchDetailFrequency;
 
 #include "terrain-detail.glsl"
+#include "terrain-surface.glsl"
 
 void main(void)
 {
 	// detail texture contribution, at a constant on-screen scale at any distance
 	vec4 detailMul = vec4(vec3(terrainDetail(texture0, texture1, texCoord0, PatchDetailFrequency, dist)), 1.0);
+
+	// surface type patterns: water waves, sand ripples, vegetation clumps, stones
+#ifdef TERRAIN_WITH_WATER
+	const bool hasWater = true;
+#else
+	const bool hasWater = false;
+#endif
+	detailMul.rgb *= terrainSurfacePattern(varyingEyepos, albedoColor.rgb, dist, hasWater);
 
 	// Use the detail value to multiply the final colour before lighting
 	vec4 ambient = scene.ambient * vertexColor * 0.f;

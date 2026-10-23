@@ -138,7 +138,7 @@ void SurfaceProfile::MakePalette(const uint32_t bodySeed, Palette &out) const
 		rockHue = 210.0;
 		rockSat *= 0.5;
 	}
-	const double sandHue = 40.0 - 18.0 * ironOxide;
+	const double sandHue = SandHue();
 	const double vegSat = 0.35 + 0.4 * vegetationCover;
 	// dark pigments around red dwarfs
 	const double vegVal = (starTempK < 3900.0) ? 0.75 : 1.0;

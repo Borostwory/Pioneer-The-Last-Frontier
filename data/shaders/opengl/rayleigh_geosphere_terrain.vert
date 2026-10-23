@@ -13,6 +13,8 @@ uniform sampler2D scatterLUT;
 out vec3 varyingEyepos;
 out vec3 varyingNormal;
 out vec4 vertexColor;
+// unlit terrain colour, for the surface type patterns
+out vec4 albedoColor;
 
 out vec2 texCoord0;
 out float dist;
@@ -20,6 +22,7 @@ out float dist;
 void main(void)
 {
 	gl_Position = matrixTransform();
+	albedoColor = a_color;
 	vertexColor = a_color;
 	varyingEyepos = vec3(uViewMatrix * a_vertex);
 	varyingNormal = normalize(normalMatrix() * a_normal);

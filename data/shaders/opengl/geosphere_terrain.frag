@@ -19,6 +19,7 @@ uniform int NumShadows;
 #include "cloud-derive.glsl"
 #include "cloud-march.glsl"
 #include "terrain-detail.glsl"
+#include "terrain-surface.glsl"
 
 in float dist;
 
@@ -50,6 +51,14 @@ void main(void)
 
 	// detail texture contribution, at a constant on-screen scale at any distance
 	vec4 detailMul = vec4(vec3(terrainDetail(texture0, texture1, texCoord0, PatchDetailFrequency, dist)), 1.0);
+
+	// surface type patterns: water waves, sand ripples, vegetation clumps, stones
+#ifdef TERRAIN_WITH_WATER
+	const bool hasWater = true;
+#else
+	const bool hasWater = false;
+#endif
+	detailMul.rgb *= terrainSurfacePattern(varyingEyepos, vertexColor.rgb, dist, hasWater);
 
 #ifdef TERRAIN_WITH_WATER
 	float specularReflection=0.0;

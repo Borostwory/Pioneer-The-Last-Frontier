@@ -17,6 +17,7 @@ Buffer CloudData binding=3
 
 PushConstant int NumShadows binding=0
 PushConstant float PatchDetailFrequency binding=1
+PushConstant vec4 SurfaceMaterial binding=2
 
 Vertex "rayleigh_geosphere_terrain.vert"
 Fragment "rayleigh_geosphere_terrain.frag"

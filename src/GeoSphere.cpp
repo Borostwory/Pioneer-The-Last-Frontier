@@ -572,6 +572,12 @@ void GeoSphere::SetUpMaterials()
 		m_texLo.Reset(Graphics::TextureBuilder::Model("textures/low.dds").GetOrCreateTexture(Pi::renderer, "model"));
 		m_surfaceMaterial->SetTexture("texture0"_hash, m_texHi.Get());
 		m_surfaceMaterial->SetTexture("texture1"_hash, m_texLo.Get());
+
+		// surface type patterns (terrain-surface.glsl) classify the terrain
+		// colour using the palette's vegetation and sand hues
+		const SurfaceProfile &profile = m_terrain->GetSurfaceProfile();
+		m_surfaceMaterial->SetPushConstant("SurfaceMaterial"_hash,
+			vector3f(float(profile.vegetationHue / 360.0), float(profile.SandHue() / 360.0), float(profile.vegetationCover)), 0.0f);
 	}
 
 	CreateAtmosphereMaterial();
