@@ -4,6 +4,7 @@
 #include "DynamicBody.h"
 
 #include "Frame.h"
+#include "Orbit.h"
 #include "GameSaveError.h"
 #include "JsonUtils.h"
 #include "Planet.h"
@@ -18,88 +19,6 @@
 static const float KINETIC_ENERGY_MULT = 0.00001f;
 const double DynamicBody::DEFAULT_DRAG_COEFF = 0.1; // 'smooth sphere'
 
-namespace {
-// Stumpff functions C(z) and S(z) of the universal-variable formulation
-double StumpffC(double z)
-{
-	if (z > 1e-6)
-		return (1.0 - std::cos(std::sqrt(z))) / z;
-	if (z < -1e-6)
-		return (std::cosh(std::sqrt(-z)) - 1.0) / -z;
-	return 0.5 - z / 24.0 + z * z / 720.0;
-}
-
-double StumpffS(double z)
-{
-	if (z > 1e-6) {
-		const double s = std::sqrt(z);
-		return (s - std::sin(s)) / (s * s * s);
-	}
-	if (z < -1e-6) {
-		const double s = std::sqrt(-z);
-		return (std::sinh(s) - s) / (s * s * s);
-	}
-	return 1.0 / 6.0 - z / 120.0 + z * z / 5040.0;
-}
-
-//
-// Moves pos / vel along their two-body conic around a point mass mu for dt
-// seconds, exactly for any dt: universal-variable Kepler propagation with the
-// Lagrange f and g coefficients (Curtis, Orbital Mechanics for Engineering
-// Students, algorithms 3.3 and 3.4). Leaves them untouched and returns false
-// when the solver does not converge (a near-radial fall, say), so the caller
-// can fall back to a plain integration step.
-//
-bool KeplerDrift(vector3d &pos, vector3d &vel, double mu, double dt)
-{
-	const double r0 = pos.Length();
-	if (r0 <= 0.0 || mu <= 0.0)
-		return false;
-	const double sqrtMu = std::sqrt(mu);
-	const double vr0 = pos.Dot(vel) / r0;
-	const double alpha = 2.0 / r0 - vel.LengthSqr() / mu; // 1 / semi-major axis
-
-	// Newton on the universal anomaly chi
-	double chi = sqrtMu * std::fabs(alpha) * dt;
-	if (!(std::fabs(chi) > 0.0))
-		chi = sqrtMu * dt / r0;
-	bool converged = false;
-	for (int i = 0; i < 50; ++i) {
-		const double z = alpha * chi * chi;
-		const double C = StumpffC(z), S = StumpffS(z);
-		const double F = r0 * vr0 / sqrtMu * chi * chi * C + (1.0 - alpha * r0) * chi * chi * chi * S + r0 * chi - sqrtMu * dt;
-		const double dF = r0 * vr0 / sqrtMu * chi * (1.0 - alpha * chi * chi * S) + (1.0 - alpha * r0) * chi * chi * C + r0;
-		if (!std::isfinite(F) || !std::isfinite(dF) || dF == 0.0)
-			return false;
-		const double step = F / dF;
-		chi -= step;
-		if (std::fabs(step) <= 1e-12 * std::max(1.0, std::fabs(chi))) {
-			converged = true;
-			break;
-		}
-	}
-	if (!converged)
-		return false;
-
-	const double z = alpha * chi * chi;
-	const double C = StumpffC(z), S = StumpffS(z);
-	const double f = 1.0 - chi * chi / r0 * C;
-	const double g = dt - chi * chi * chi / sqrtMu * S;
-	const vector3d newPos = f * pos + g * vel;
-	const double r = newPos.Length();
-	if (!(r > 0.0) || !std::isfinite(r))
-		return false;
-	const double fDot = sqrtMu / (r * r0) * (alpha * chi * chi * chi * S - chi);
-	const double gDot = 1.0 - chi * chi / r * C;
-	const vector3d newVel = fDot * pos + gDot * vel;
-	if (!std::isfinite(newVel.x) || !std::isfinite(newVel.y) || !std::isfinite(newVel.z))
-		return false;
-
-	pos = newPos;
-	vel = newVel;
-	return true;
-}
-} // namespace
 
 DynamicBody::DynamicBody() :
 	ModelBody()
@@ -319,7 +238,7 @@ void DynamicBody::TimeStepUpdate(const float timeStep)
 	if (m_isMoving) {
 		// In a non-rotating frame around a gravitating body the only external
 		// force is that body's gravity (CalcExternalForce), and the motion it
-		// causes is a two-body conic, which KeplerDrift follows exactly. The
+		// causes is a two-body conic, which Orbit::PropagateState follows exactly. The
 		// plain step below drifts off the conic by an amount that grows with
 		// the step - kilometres per orbit under time acceleration - while the
 		// transfer planner predicts exact conics. So there the step is split:
@@ -331,7 +250,7 @@ void DynamicBody::TimeStepUpdate(const float timeStep)
 			const vector3d nonGravity = m_force + (m_externalForce - m_gravityForce);
 			vector3d pos = GetPosition();
 			vector3d vel = m_vel + double(timeStep) * nonGravity * (1.0 / m_mass);
-			if (KeplerDrift(pos, vel, gravityMu, double(timeStep))) {
+			if (Orbit::PropagateState(pos, vel, gravityMu, double(timeStep))) {
 				m_force += m_externalForce;
 				m_vel = vel;
 				UpdateAngularMotion(timeStep);

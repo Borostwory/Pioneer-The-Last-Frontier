@@ -20,6 +20,14 @@ public:
 	static Orbit FromBodyState(const vector3d &position, const vector3d &velocity, double central_mass);
 	static Orbit ForStaticBody(const vector3d &position);
 
+	// Moves pos / vel along their two-body conic around mu (G * the central
+	// mass) for dt seconds, exactly for any dt: universal-variable Kepler
+	// propagation with the Lagrange f and g coefficients. A solve that does not
+	// converge is split into two half steps. False, with pos / vel untouched,
+	// for a state it cannot move (no mass, at the centre, or a radial fall the
+	// splitting does not rescue).
+	static bool PropagateState(vector3d &pos, vector3d &vel, double mu, double dt);
+
 	Orbit() :
 		m_eccentricity(0.0),
 		m_semiMajorAxis(0.0),
