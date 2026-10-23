@@ -143,10 +143,10 @@ public:
 	// target orbiting the body the player orbits: a ship or station flying in
 	// the planner's frame, or a moon / orbital station on rails around it.
 	//
-	// PlanApproach appends burns after the plan's last burn: one that puts the
-	// ship on a transfer meeting the target (burns = 1, intercept), and with
-	// burns = 2 a second one on arrival that matches the target's velocity
-	// (rendezvous). Departure and flight time are chosen for the least total
+	// PlanApproach replaces the plan with burns from the ship's current orbit:
+	// one that puts the ship on a transfer meeting the target (burns = 1,
+	// intercept), and with burns = 2 a second one on arrival that matches the
+	// target's velocity (rendezvous). The old plan is kept when it fails. Departure and flight time are chosen for the least total
 	// delta-v. A ship or station is met standOff metres behind it on its own
 	// orbit, so a rendezvous parks the ship there instead of running into it;
 	// a planet or moon is passed at two of its radii from its centre, never
@@ -182,6 +182,8 @@ private:
 	// the orbit the plan ends on - after its last burn, or the live one - with
 	// its state at t = 0 and the game time t = 0 corresponds to
 	bool GetFinalOrbit(Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const;
+	// PlanApproach's search, appending its burns after the plan's last burn
+	bool AppendApproach(const Body *target, int burns, double standOff, std::string &error);
 	// the orbit flown into burn idx, its state vector at t = 0 and the game
 	// time t = 0 corresponds to, as RecomputeChain chains it
 	bool GetIncomingOrbit(int idx, Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const;

@@ -300,6 +300,18 @@ bool TransferPlanner::GetFinalOrbit(Orbit &orbit, vector3d &pos, vector3d &vel, 
 
 bool TransferPlanner::PlanApproach(const Body *target, int burns, double standOff, std::string &error)
 {
+	// the approach is a fresh plan: whatever was planned before goes, but
+	// only once a transfer is found - a failed attempt leaves it as it was
+	std::vector<Burn> previous;
+	previous.swap(m_burns);
+	if (AppendApproach(target, burns, standOff, error))
+		return true;
+	m_burns.swap(previous);
+	return false;
+}
+
+bool TransferPlanner::AppendApproach(const Body *target, int burns, double standOff, std::string &error)
+{
 	burns = std::min(std::max(burns, 1), 2);
 	if (m_burns.size() + burns > MAX_BURNS) {
 		error = "Not enough room: a plan holds at most " + std::to_string(MAX_BURNS) + " burns";
