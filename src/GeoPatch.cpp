@@ -397,7 +397,7 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 		// levels, so distant terrain stayed coarse (quads of ~25 px at 4K).
 		// Also split within a set number of patch widths (the terrain detail
 		// distance setting), read every update so changes apply live.
-		const double splitLength = std::max(m_splitLength, GeoSphere::GetLodDistanceScale() * m_edgeLength);
+		const double splitLength = std::max(m_splitLength, m_geosphere->GetLodDistance() * m_edgeLength);
 		const bool tooFar = (centroidDist >= splitLength);	// check if the distance is greater than the rough length, which is how far it should be before it can split
 		if (m_depth >= std::min(GEOPATCH_MAX_DEPTH, m_geosphere->GetMaxDepth()) || tooFar) {
 			canSplit = false; // we're too deep in the quadtree or too far away so cannot split

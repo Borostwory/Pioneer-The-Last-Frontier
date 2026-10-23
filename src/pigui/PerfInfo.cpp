@@ -687,6 +687,7 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 	}
 	if (ImGui::IsItemDeactivatedAfterEdit())
 		Pi::config->Save();
+	ImGui::Text("(peak value; reduced near the ground and in high orbit)");
 
 	const GeoPatchGenStats stats = GetGeoPatchGenStats();
 	const double totalMs = double(stats.microseconds) / 1000.0;

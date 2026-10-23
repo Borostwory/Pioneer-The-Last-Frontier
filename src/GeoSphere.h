@@ -79,6 +79,8 @@ public:
 	// frame by UpdateAllGeoSpheres)
 	static double GetLodDistanceScale();
 	static void SetLodDistanceScale(double scale);
+	// the setting adjusted for the camera's current altitude above this body
+	double GetLodDistance() const { return m_lodDistance; }
 
 	// in sbody radii
 	double GetMaxFeatureHeight() const final { return m_terrain->GetMaxHeight(); }
@@ -143,6 +145,9 @@ private:
 	EGSInitialisationStage m_initStage;
 
 	Sint32 m_maxDepth;
+
+	// effective terrain detail distance for this frame, see GetLodDistance()
+	double m_lodDistance = 8.0;
 };
 
 #endif /* _GEOSPHERE_H */

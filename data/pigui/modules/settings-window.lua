@@ -236,7 +236,7 @@ local function showVideoOptions()
 	local newLodDistance
 	newLodDistance, c = ui.sliderFloat("Terrain detail distance", lodDistance, 1.0, 30.0, "%.0f")
 	if ui.isItemHovered() then
-		Engine.pigui.SetTooltip("How far away planet terrain gets its full mesh detail: a terrain patch is refined once you are closer than this many patch widths. Higher is sharper from far away but generates more terrain (CPU) and draws more triangles. 8 = default, 1 = original Pioneer behaviour.")
+		Engine.pigui.SetTooltip("How far away planet terrain gets its full mesh detail: a terrain patch is refined once you are closer than this many patch widths. Higher is sharper from far away but generates more terrain (CPU) and draws more triangles. This is the value at mid altitude (about 200 to 2,000 km on Earth); it is reduced automatically near the ground and in high orbit, where it costs more or shows less. 8 = default, 1 = original Pioneer behaviour.")
 	end
 	if c then
 		Engine.SettingsSetFloat("PlanetLodDistance", newLodDistance)

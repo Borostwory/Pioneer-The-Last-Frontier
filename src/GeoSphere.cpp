@@ -66,6 +66,23 @@ void GeoSphere::SetLodDistanceScale(const double scale)
 	s_lodDistanceScale = Clamp(scale, 1.0, 30.0);
 }
 
+// The detail distance setting applies in full at mid altitude (about 200 to
+// 2,000 km on Earth), where it shows most. Near the ground the terrain close
+// by is already at full detail and the extra patches cost the most; in high
+// orbit the planet's data, not the mesh, limits what you see. Both get a
+// reduced value. Altitude is in planet radii, so this scales with body size.
+static double LodDistanceAtAltitude(const double altitude)
+{
+	auto smoothStep = [](const double edge0, const double edge1, const double x) {
+		const double t = Clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+		return t * t * (3.0 - 2.0 * t);
+	};
+	const double peak = s_lodDistanceScale;
+	const double reduced = std::min(peak, std::max(4.0, peak * 0.35));
+	const double weight = smoothStep(0.003, 0.03, altitude) * (1.0 - smoothStep(0.3, 1.0, altitude));
+	return reduced + (peak - reduced) * weight;
+}
+
 void GeoSphere::UninitGeoSphere()
 {
 	assert(s_patchContext.Unique());
@@ -390,6 +407,7 @@ void GeoSphere::Update()
 	case eDefaultUpdateState:
 		if (m_hasTempCampos) {
 			ProcessSplitResults();
+			m_lodDistance = LodDistanceAtAltitude(m_tempCampos.Length() - 1.0);
 			for (int i = 0; i < NUM_PATCHES; i++) {
 				m_patches[i]->LODUpdate(m_tempCampos, m_tempFrustum);
 			}
