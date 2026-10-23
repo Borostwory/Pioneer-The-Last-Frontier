@@ -11,6 +11,13 @@ in vec3 v_texCoord;
 
 out vec4 frag_color;
 
+// Halo with core radius r0 (pixels) that integrates to 1 over the screen
+float halo(float r, float r0)
+{
+	float q = 1.0 + (r * r) / (r0 * r0);
+	return 1.0 / (3.14159265 * r0 * r0 * q * q);
+}
+
 void main(void)
 {
 	vec3 axis = u_axisBeta.xyz;
@@ -33,6 +40,10 @@ void main(void)
 		color += u_cmbCore.rgb;
 	else
 		color += planckRadiance(u_cmb.y * doppler) * whiteBalance() * u_cmb.x;
+
+	// glow around the bright point, standing in for the bloom of an eye or camera
+	float r = angle / u_lorentz.w;
+	color += u_glow.rgb * (0.10 * halo(r, 2.5) + 0.04 * halo(r, 25.0));
 
 	frag_color = vec4(toSRGB(softClip(color)), 1.0);
 }

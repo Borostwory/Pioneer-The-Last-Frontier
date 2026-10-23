@@ -3,13 +3,14 @@
 
 // Special relativity helpers for the hyperspace sky: aberration, Doppler
 // shift of blackbody colours, and the cosmic microwave background.
-// Must match src/Relativity.h and Background::RelativityData.
+// Must match RelativityData in src/Background.cpp.
 
 layout(std140) uniform RelativityData {
 	vec4 u_axisBeta; // xyz: direction of travel in view space, w: beta
-	vec4 u_lorentz;	 // x: gamma, y: 1 - beta, z: exposure, w: unused
+	vec4 u_lorentz;	 // x: gamma, y: 1 - beta, z: exposure, w: angular size of a pixel (rad)
 	vec4 u_cmb;		 // x: CMB radiance -> pixel value, y: CMB temperature at rest, z: angular radius of the core disc, w: max sprite growth
 	vec4 u_cmbCore;	 // rgb: pixel value of the CMB inside the core disc, w: unused
+	vec4 u_glow;	 // rgb: light spread into the glow around the bright point (pixel units), w: unused
 };
 
 const vec3 CHANNEL_WAVELENGTH = vec3(610e-9, 550e-9, 465e-9);

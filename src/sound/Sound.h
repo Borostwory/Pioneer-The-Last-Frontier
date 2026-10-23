@@ -65,8 +65,6 @@ namespace Sound {
 	void SetSfxVolume(const float vol);
 	float GetSfxVolume();
 	const std::vector<std::string> GetMusicFiles();
-	// length in seconds of a loaded sound effect, or 0 if there is none by that name
-	float GetSampleDuration(const std::string &fx);
 	void Update(float delta_t);
 
 	bool IsBinauralSupported();

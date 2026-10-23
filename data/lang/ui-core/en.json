@@ -1227,10 +1227,6 @@
     "description": "HUD Label indicating the hyperspace origin system. Should just be Origin.",
     "message": "Origin"
   },
-  "HUD_HYPERSPACE_VELOCITY": {
-    "description": "Speed during a hyperspace transit as a fraction of the speed of light (c), and the Lorentz factor",
-    "message": "Velocity: {velocity} c    Lorentz factor: {gamma}"
-  },
   "HUD_HYPERSPACING_TO_N_IN_N_SECONDS": {
     "description": "",
     "message": "Hyperspacing to {destination} in {countdown} seconds"

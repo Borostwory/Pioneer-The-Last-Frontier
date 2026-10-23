@@ -24,32 +24,6 @@ namespace Graphics {
  */
 
 namespace Background {
-
-	// The sky as seen from a ship moving at relativistic speed.
-	// Matches the uniform block RelativityData in data/shaders/opengl/relativity.glsl
-	struct RelativisticView {
-		vector3f axis; // direction of travel in view space
-		float beta;
-		float gamma;
-		float oneMinusBeta; // kept separately because beta rounds to 1 near the peak
-		float exposure;
-		float unused0;
-		float cmbScale;		  // CMB spectral radiance (W m^-2 sr^-1 nm^-1) -> pixel value
-		float cmbTemperature; // K, at rest
-		float coreRadius;	  // angular radius (rad) of the disc holding the unresolved CMB core
-		float maxSpriteGrowth;
-		vector3f cmbCore; // pixel value inside that disc
-		float unused1;
-	};
-
-	// A star of the starfield, kept to estimate how bright the sky looks when moving
-	struct StarSample {
-		vector3f dir; // in background (root frame) coordinates
-		vector3f linearColor;
-		float area;		   // sprite area in pixels
-		float temperature; // estimated blackbody temperature, K
-	};
-
 	class BackgroundElement {
 	public:
 		void SetIntensity(float intensity);
@@ -57,7 +31,7 @@ namespace Background {
 	protected:
 		Graphics::Renderer *m_renderer;
 		RefCountedPtr<Graphics::Material> m_material;
-		RefCountedPtr<Graphics::Material> m_materialRelativistic;
+		RefCountedPtr<Graphics::Material> m_materialStreaks;
 
 		float m_rMin;
 		float m_rMax;
@@ -73,7 +47,6 @@ namespace Background {
 		~UniverseBox();
 
 		void Draw();
-		void DrawRelativistic(RelativisticView view);
 		void LoadCubeMap(Random &rand);
 
 	private:
@@ -90,21 +63,18 @@ namespace Background {
 		//does not Fill the starfield
 		Starfield(Graphics::Renderer *r);
 		void Draw();
-		void DrawRelativistic(RelativisticView view);
 		//create or recreate the starfield
 		void Fill(Random &rand, const SystemPath *const systemPath, RefCountedPtr<Galaxy> galaxy);
-
-		// a subset of the stars; each one stands for GetSampleWeight() stars
-		const std::vector<StarSample> &GetSamples() const { return m_samples; }
-		float GetSampleWeight() const { return m_sampleWeight; }
 
 	private:
 		void Init();
 
 		std::unique_ptr<Graphics::Drawables::PointSprites> m_pointSprites;
 
-		std::vector<StarSample> m_samples;
-		float m_sampleWeight = 0.f;
+		//hyperspace animation vertex data
+		std::unique_ptr<vector3f[]> m_hyperVtx; // BG_STAR_MAX * 3
+		std::unique_ptr<Color[]> m_hyperCol;	// BG_STAR_MAX * 3
+		std::unique_ptr<Graphics::MeshObject> m_animMesh;
 	};
 
 	class MilkyWay : public BackgroundElement {
@@ -127,8 +97,6 @@ namespace Background {
 
 		Container(Graphics::Renderer *, Random &rand);
 		void Draw(const matrix4x4d &transform);
-		// draw as seen from a ship moving at relativistic speed
-		void DrawRelativistic(const matrix4x4d &transform, const RelativisticView &view);
 
 		void SetIntensity(float intensity);
 		void SetDrawFlags(const Uint32 flags);

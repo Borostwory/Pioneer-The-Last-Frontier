@@ -13,7 +13,6 @@
 #include "HyperspaceCloud.h"
 #include "JsonUtils.h"
 #include "MathUtil.h"
-#include "Relativity.h"
 #include "collider/CollisionSpace.h"
 #include "core/GZipFormat.h"
 #include "galaxy/Economy.h"
@@ -35,10 +34,6 @@
 #include "WorldView.h"
 #include "galaxy/GalaxyGenerator.h"
 #include "ship/PlayerShipController.h"
-#include "sound/Sound.h"
-
-// used when the jump sound cannot be found, in real seconds
-static constexpr double DEFAULT_HYPERSPACE_REAL_DURATION = 15.0;
 
 Game::Game(const SystemPath &path, const double startDateTime, const char *shipType) :
 	m_galaxy(GalaxyGenerator::Create()),
@@ -473,14 +468,6 @@ void Game::WantHyperspace()
 	m_wantHyperspace = true;
 }
 
-double Game::GetHyperspaceTransitProgress() const
-{
-	if (m_state != State::HYPERSPACE || m_hyperspaceDuration <= 0.0)
-		return 0.0;
-	const double progress = m_hyperspaceProgress + Pi::GetGameTickAlpha() * GetTimeStep();
-	return Clamp(progress / m_hyperspaceDuration, 0.0, 1.0);
-}
-
 double Game::GetHyperspaceArrivalProbability() const
 {
 	double progress = m_hyperspaceProgress / m_hyperspaceDuration;
@@ -506,15 +493,6 @@ void Game::SwitchToHyperspace()
 	// remember where we came from so we can properly place the player on exit
 	m_hyperspaceSource = m_space->GetStarSystem()->GetPath();
 	m_hyperspaceDest = m_player->GetHyperspaceDest();
-
-	// the transit lasts as long as the jump sound, whatever the length of the jump
-	double realDuration = Sound::GetSampleDuration(m_player->GetHyperspaceSounds().jump_sound);
-	if (realDuration <= 0.0)
-		realDuration = DEFAULT_HYPERSPACE_REAL_DURATION;
-
-	// the ship keeps the orientation it had when it jumped and travels along its nose
-	m_hyperspaceOrient = m_player->GetOrientRelTo(m_space->GetRootFrame());
-	m_hyperspaceTravelDir = -m_hyperspaceOrient.VectorZ();
 
 	// find all the departure clouds, convert them to arrival clouds and store
 	// them for the next system
@@ -558,6 +536,9 @@ void Game::SwitchToHyperspace()
 	m_space.reset(); // HACK: Here because next line will create Frames *before* deleting existing ones
 	m_space.reset(new Space(this, m_galaxy, m_space.get()));
 
+	// the skybox carries the cosmic microwave background seen at relativistic speed
+	m_space->GetBackground()->SetDrawFlags(Background::Container::DRAW_SKYBOX | Background::Container::DRAW_STARS);
+
 	// Reset planner
 	Pi::planner->ResetStartTime();
 	Pi::planner->ResetDv();
@@ -570,14 +551,15 @@ void Game::SwitchToHyperspace()
 	// but at least it gives some consistency
 	m_player->SetPosition(vector3d::Zero);
 	m_player->SetVelocity(vector3d::Zero);
-	m_player->SetAngVelocity(vector3d::Zero);
-	m_player->SetOrient(m_hyperspaceOrient);
+	m_player->SetOrient(matrix3x3d::Identity);
 
 	// animation and end time counters
 	m_hyperspaceProgress = 0;
 	m_hyperspaceDuration = m_player->GetHyperspaceDuration();
 	m_hyperspaceEndTime = Pi::game->GetTime() + m_hyperspaceDuration;
-	m_hyperspaceTimeAccelRate = float(std::max(1.0, m_hyperspaceDuration / realDuration));
+	// the transit lasts as long as the jump sound (Hyperdrive_Jump.ogg), whatever the length of the jump
+	constexpr double HYPERSPACE_REAL_DURATION = 15.5;
+	m_hyperspaceTimeAccelRate = float(std::max(1.0, m_hyperspaceDuration / HYPERSPACE_REAL_DURATION));
 
 	m_state = State::HYPERSPACE;
 	m_wantHyperspace = false;
@@ -606,9 +588,13 @@ void Game::SwitchToNormalSpace()
 	m_player->SetPosition(pos);
 	m_player->SetVelocity(vel);
 
-	// keep the orientation the ship had in hyperspace, so the view does not jump
-	m_player->SetOrient(m_hyperspaceOrient);
-	m_player->SetAngVelocity(vector3d::Zero);
+	// orient ship in direction of travel
+	{
+		vector3d oz = -vel.Normalized();
+		vector3d ox = MathUtil::OrthogonalDirection(vel);
+		vector3d oy = oz.Cross(ox).Normalized();
+		m_player->SetOrient(matrix3x3d::FromVectors(ox, oy, oz));
+	}
 
 	// place the exit cloud
 	HyperspaceCloud *cloud = new HyperspaceCloud(0, Pi::game->GetTime(), true);

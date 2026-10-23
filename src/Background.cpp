@@ -9,7 +9,8 @@
 #include "GameConfig.h"
 #include "MathUtil.h"
 #include "Pi.h"
-#include "Relativity.h"
+#include "Player.h"
+#include "Space.h"
 #include "StringF.h"
 
 #include "core/TaskGraph.h"
@@ -38,19 +39,160 @@ namespace {
 	constexpr Uint32 BG_STAR_MAX = 500000;
 	constexpr Uint32 BG_STAR_MIN = 1;
 	constexpr Sint32 BG_STAR_RADIUS_MAX = 500;
-	// stars kept on the CPU to estimate the brightness of the sky in hyperspace
-	constexpr Uint32 NUM_STAR_SAMPLES = 2048;
 	static RefCountedPtr<Graphics::Texture> s_defaultCubeMap;
 
-	// the starfield is stored Z-up, the rest of the background Y-up
-	static matrix4x4f ZUpToYUp()
+	/*
+	 * Hyperspace is shown as a 1 g relativistic voyage along the ship's nose,
+	 * compressed into the length of the transit: accelerate for PEAK_SHIP_YEARS of
+	 * ship time, flip, decelerate. Stars and sky are aberrated and Doppler shifted
+	 * in data/shaders/opengl/relativity.glsl; the cosmic microwave background (CMB)
+	 * turns into a white-hot point ahead.
+	 */
+	constexpr double PEAK_SHIP_YEARS = 11.0;
+	constexpr double G_OVER_C = 1.0326; // 1 g in units of c per year
+	constexpr double CMB_TEMPERATURE = 2.725;
+	// starlight of the sky at rest: magnitude -3.1 as 550 nm flux, W m^-2 nm^-1
+	constexpr double REST_STARLIGHT_FLUX = 3.63e-11 * 17.38;
+	// the same starlight in the starfield's pixel units: ties the CMB to the stars
+	constexpr double REST_STARLIGHT_PIXELS = 5000.0;
+	// typical star, for estimating how bright the sky gets
+	constexpr double STAR_TEMPERATURE = 5800.0;
+	// light (pixel units) below which the bright point does not glow
+	constexpr double GLOW_THRESHOLD = 20.0;
+	// a star sprite grows by at most this factor to show light it cannot show as brightness
+	constexpr float MAX_SPRITE_GROWTH = 8.0f;
+	constexpr double CHANNEL_WAVELENGTH[3] = { 610e-9, 550e-9, 465e-9 };
+	constexpr double HC_OVER_K = 1.438777e-2; // m K
+
+	static RefCountedPtr<Graphics::Material> s_starfieldRelativistic;
+	static RefCountedPtr<Graphics::Material> s_skyboxRelativistic;
+
+	// Matches the uniform block RelativityData in relativity.glsl
+	struct RelativityData {
+		vector3f axis;
+		float beta;
+		float gamma;
+		float oneMinusBeta;
+		float exposure;
+		float pixelAngle;
+		float cmbScale;
+		float cmbTemperature;
+		float coreRadius;
+		float maxSpriteGrowth;
+		vector3f cmbCore;
+		float unused0;
+		vector3f glow;
+		float unused1;
+	};
+	static_assert(sizeof(RelativityData) == 80, "RelativityData must match the std140 layout of the shader");
+
+	// Planck spectral radiance B_lambda(T), in W / (m^2 sr nm)
+	static double PlanckRadiance(double lambda, double T)
 	{
-		return matrix4x4f::FromRowMajor({
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			1, 0, 0, 0,
-			0, 0, 0, 1
-		});
+		const double x = HC_OVER_K / (lambda * T);
+		return (T <= 0.0 || x > 700.0) ? 0.0 : 1.191042972e-16 / std::pow(lambda, 5.0) / std::expm1(x) * 1e-9;
+	}
+
+	// Integrate f(D) dD / D over ln(D) in [uMin, uMax]
+	template <typename F>
+	static auto IntegrateLogD(double uMin, double uMax, F f)
+	{
+		constexpr int STEPS = 256;
+		const double du = (uMax - uMin) / STEPS;
+		auto sum = f(std::exp(uMin)) * 0.5;
+		for (int i = 1; i <= STEPS; i++)
+			sum += f(std::exp(uMin + i * du)) * (i == STEPS ? 0.5 : 1.0);
+		return sum * du;
+	}
+
+	// Flux per channel (W m^-2 nm^-1) of the CMB inside a cone around the direction of travel.
+	// Seen from the ship, light from angle theta has Doppler factor D = 1 / (gamma (1 - beta cos(theta)))
+	// and dOmega = 2 pi dD / (gamma beta D^2).
+	static vector3d CmbFlux(double rapidity, double halfAngle)
+	{
+		const double s = std::sin(0.5 * halfAngle);
+		const double oneMinusCos = 2.0 * s * s;
+		if (rapidity < 1e-6)
+			return vector3d(0.0); // invisible at rest
+		const double beta = std::tanh(rapidity), gamma = std::cosh(rapidity);
+		const double oneMinusBeta = 1.0 - beta;
+		const double dEdge = 1.0 / (gamma * (oneMinusBeta + beta * oneMinusCos));
+		return IntegrateLogD(std::log(dEdge), rapidity, [](double D) {
+			return vector3d(PlanckRadiance(CHANNEL_WAVELENGTH[0], CMB_TEMPERATURE * D),
+					   PlanckRadiance(CHANNEL_WAVELENGTH[1], CMB_TEMPERATURE * D),
+					   PlanckRadiance(CHANNEL_WAVELENGTH[2], CMB_TEMPERATURE * D)) / D;
+		}) * (2.0 * M_PI / std::sinh(rapidity));
+	}
+
+	// Starlight of a sky of STAR_TEMPERATURE stars relative to rest. A star seen with Doppler
+	// factor D = gamma (1 + beta cos(theta)) is a blackbody at T D, dimmed by 1 / D^2.
+	static double StarlightFactor(double rapidity)
+	{
+		if (rapidity < 1e-6)
+			return 1.0;
+		const double x0 = HC_OVER_K / (CHANNEL_WAVELENGTH[1] * STAR_TEMPERATURE);
+		return IntegrateLogD(-rapidity, rapidity, [x0](double D) {
+			return x0 / D > 700.0 ? 0.0 : std::expm1(x0) / std::expm1(x0 / D) / D;
+		}) / (2.0 * std::sinh(rapidity));
+	}
+
+	// Physical channel flux * WhiteBalance() = display value; a 5800 K body looks white
+	static vector3d WhiteBalance()
+	{
+		vector3d w;
+		for (int c = 0; c < 3; c++)
+			w[c] = PlanckRadiance(CHANNEL_WAVELENGTH[1], 5800.0) / PlanckRadiance(CHANNEL_WAVELENGTH[c], 5800.0);
+		return w;
+	}
+
+	// What the ship sees in hyperspace. axisView: direction of travel in view space.
+	// Returns false when not in hyperspace.
+	static bool GetRelativityData(Graphics::Renderer *renderer, const vector3f &axisView, RelativityData &data)
+	{
+		if (!Pi::game || !Pi::game->IsHyperspace() || Pi::game->GetHyperspaceDuration() <= 0.0)
+			return false;
+
+		const double progress = Clamp((Pi::game->GetHyperspaceProgress() + Pi::GetGameTickAlpha() * Pi::game->GetTimeStep()) / Pi::game->GetHyperspaceDuration(), 0.0, 1.0);
+		const double rapidity = G_OVER_C * PEAK_SHIP_YEARS * (progress < 0.5 ? 2.0 * progress : 2.0 - 2.0 * progress);
+		const double e = std::exp(-2.0 * rapidity);
+
+		// angular size of a pixel at the centre of the view, and a disc of the same area
+		const double pixelAngle = 2.0 / (std::abs(renderer->GetProjection()[5]) * std::max(1, int(renderer->GetViewport().h)));
+		const double coreRadius = pixelAngle / std::sqrt(M_PI);
+
+		// physical flux -> pixel values
+		const vector3d toPixels = WhiteBalance() * (REST_STARLIGHT_PIXELS / REST_STARLIGHT_FLUX);
+		const vector3d cmbTotal = CmbFlux(rapidity, M_PI);
+		const vector3d cmbCore = CmbFlux(rapidity, coreRadius);
+
+		// exposure keeps the total light at what the sky gives at rest, never brighter
+		const double exposure = 1.0 / std::max(1.0, StarlightFactor(rapidity) + cmbTotal.y / REST_STARLIGHT_FLUX);
+
+		vector3d glow(cmbTotal.x * toPixels.x, cmbTotal.y * toPixels.y, cmbTotal.z * toPixels.z);
+		glow *= exposure;
+		const double glowLuma = glow.Dot(vector3d(0.2126, 0.7152, 0.0722));
+		glow *= glowLuma > GLOW_THRESHOLD ? 1.0 - GLOW_THRESHOLD / glowLuma : 0.0;
+
+		data = {};
+		data.axis = axisView.Normalized();
+		data.beta = float(std::tanh(rapidity));
+		data.gamma = float(std::cosh(rapidity));
+		data.oneMinusBeta = float(2.0 * e / (1.0 + e));
+		data.exposure = float(exposure);
+		data.pixelAngle = float(pixelAngle);
+		data.cmbScale = float(pixelAngle * pixelAngle * toPixels.y * exposure);
+		data.cmbTemperature = float(CMB_TEMPERATURE);
+		data.coreRadius = float(coreRadius);
+		data.maxSpriteGrowth = MAX_SPRITE_GROWTH;
+		data.cmbCore = vector3f(vector3d(cmbCore.x * toPixels.x, cmbCore.y * toPixels.y, cmbCore.z * toPixels.z) * exposure);
+		data.glow = vector3f(glow);
+		return true;
+	}
+
+	// direction the ship travels in hyperspace: along its nose, in background coordinates
+	static vector3f HyperspaceTravelDir()
+	{
+		return vector3f(-Pi::player->GetOrient().VectorZ());
 	}
 
 	static Uint32 GetNumSkyboxes()
@@ -174,8 +316,10 @@ namespace Background {
 		m_material.Reset(m_renderer->CreateMaterial("skybox", desc, stateDesc, fmt));
 		m_material->diffuse = Color4f(0.8, 0.8, 0.8, 1.0);
 
-		m_materialRelativistic.Reset(m_renderer->CreateMaterial("skybox_relativistic", desc, stateDesc, fmt));
-		m_materialRelativistic->emissive = Color::WHITE;
+		if (!s_skyboxRelativistic.Valid()) {
+			s_skyboxRelativistic.Reset(m_renderer->CreateMaterial("skybox_relativistic", desc, stateDesc, fmt));
+			s_skyboxRelativistic->emissive = Color::WHITE;
+		}
 
 		m_universeBox.reset(m_renderer->CreateMeshObject(fmt, vertexBuf));
 		m_numCubemaps = GetNumSkyboxes();
@@ -185,17 +329,17 @@ namespace Background {
 
 	void UniverseBox::Draw()
 	{
-		if (m_cubemap.Valid())
-			m_renderer->DrawMesh(m_universeBox.get(), m_material.Get());
-	}
-
-	void UniverseBox::DrawRelativistic(RelativisticView view)
-	{
 		if (!m_cubemap.Valid())
 			return;
 
-		m_materialRelativistic->SetBufferDynamic("RelativityData"_hash, &view);
-		m_renderer->DrawMesh(m_universeBox.get(), m_materialRelativistic.Get());
+		RelativityData data;
+		const vector3f dir = Pi::game ? HyperspaceTravelDir() : vector3f(0.0f);
+		if (GetRelativityData(m_renderer, m_renderer->GetTransform().ApplyRotationOnly(dir), data)) {
+			s_skyboxRelativistic->SetTexture("texture0"_hash, m_cubemap.Get());
+			s_skyboxRelativistic->SetBufferDynamic("RelativityData"_hash, &data);
+			m_renderer->DrawMesh(m_universeBox.get(), s_skyboxRelativistic.Get());
+		} else
+			m_renderer->DrawMesh(m_universeBox.get(), m_material.Get());
 	}
 
 	void UniverseBox::LoadCubeMap(Random &rand)
@@ -214,7 +358,6 @@ namespace Background {
 		}
 
 		m_material->SetTexture("texture0"_hash, m_cubemap.Get());
-		m_materialRelativistic->SetTexture("texture0"_hash, m_cubemap.Get());
 	}
 
 	Starfield::Starfield(Graphics::Renderer *renderer)
@@ -243,13 +386,15 @@ namespace Background {
 		m_material->SetTexture("texture0"_hash, texture);
 		m_material->emissive = Color::WHITE;
 
-		// Create material for the starfield seen at relativistic speed in hyperspace.
+		// Create material for the stars seen at relativistic speed in hyperspace.
 		// Additive, so that stars crowding into the same pixels add up their light.
-		Graphics::RenderStateDesc stateDescRelativistic = stateDesc;
-		stateDescRelativistic.blendMode = Graphics::BLEND_ALPHA_ONE;
-		m_materialRelativistic.Reset(m_renderer->CreateMaterial("starfield_relativistic", desc, stateDescRelativistic, m_pointSprites->GetVertexFormat()));
-		m_materialRelativistic->SetTexture("texture0"_hash, texture);
-		m_materialRelativistic->emissive = Color::WHITE;
+		if (!s_starfieldRelativistic.Valid()) {
+			Graphics::RenderStateDesc stateDescRelativistic = stateDesc;
+			stateDescRelativistic.blendMode = Graphics::BLEND_ALPHA_ONE;
+			s_starfieldRelativistic.Reset(m_renderer->CreateMaterial("starfield_relativistic", desc, stateDescRelativistic, m_pointSprites->GetVertexFormat()));
+			s_starfieldRelativistic->SetTexture("texture0"_hash, texture);
+			s_starfieldRelativistic->emissive = Color::WHITE;
+		}
 
 		IniConfig cfg;
 		cfg.Read(FileSystem::gameDataFiles, "configs/Starfield.ini");
@@ -462,8 +607,7 @@ namespace Background {
 		PROFILE_SCOPED()
 
 		const Uint32 NUM_BG_STARS = MathUtil::mix(BG_STAR_MIN, BG_STAR_MAX, Pi::GetAmountBackgroundStars());
-		m_samples.clear();
-		m_sampleWeight = 0.f;
+		m_animMesh.reset();
 
 		// user doesn't want to see stars
 		if (NUM_BG_STARS == BG_STAR_MIN) return;
@@ -592,28 +736,6 @@ namespace Background {
 		}
 		PROFILE_STOP()
 
-		PROFILE_START_DESC("Sample Stars")
-		{
-			// keep an evenly spread subset, in the same terms as starfield_relativistic.vert
-			const matrix4x4f toBackground = ZUpToYUp();
-			const Uint32 stride = std::max<Uint32>(1, NUM_BG_STARS / NUM_STAR_SAMPLES);
-			m_samples.reserve(NUM_BG_STARS / stride + 1);
-			for (Uint32 i = 0; i < NUM_BG_STARS; i += stride) {
-				const Color4f col = stars.color[i].ToColor4f();
-				const vector3f linearColor(std::pow(col.r, 2.2f), std::pow(col.g, 2.2f), std::pow(col.b, 2.2f));
-				const float pointSize = 1.0f + std::pow(stars.brightness[i], 3.0f);
-
-				StarSample sample;
-				sample.dir = toBackground.ApplyRotationOnly(stars.pos[i]).Normalized();
-				sample.linearColor = linearColor;
-				sample.area = pointSize * pointSize;
-				sample.temperature = float(Relativity::EstimateTemperature(linearColor));
-				m_samples.push_back(sample);
-			}
-			m_sampleWeight = float(NUM_BG_STARS) / float(m_samples.size());
-		}
-		PROFILE_STOP()
-
 		Output("Final stars number: %d\n", num);
 
 		m_pointSprites->SetData(NUM_BG_STARS, std::move(stars.pos), std::move(stars.color), std::move(stars.brightness));
@@ -622,14 +744,15 @@ namespace Background {
 	void Starfield::Draw()
 	{
 		PROFILE_SCOPED()
-		m_pointSprites->Draw(m_renderer, m_material.Get());
-	}
-
-	void Starfield::DrawRelativistic(RelativisticView view)
-	{
-		PROFILE_SCOPED()
-		m_materialRelativistic->SetBufferDynamic("RelativityData"_hash, &view);
-		m_pointSprites->Draw(m_renderer, m_materialRelativistic.Get());
+		// XXX would be nice to get rid of the Pi:: stuff here
+		// the starfield is Z-up: bring the direction of travel from Y-up space into it
+		const vector3f dir = Pi::game ? HyperspaceTravelDir() : vector3f(0.0f);
+		RelativityData data;
+		if (GetRelativityData(m_renderer, m_renderer->GetTransform().ApplyRotationOnly(vector3f(dir.z, dir.x, dir.y)), data)) {
+			s_starfieldRelativistic->SetBufferDynamic("RelativityData"_hash, &data);
+			m_pointSprites->Draw(m_renderer, s_starfieldRelativistic.Get());
+		} else
+			m_pointSprites->Draw(m_renderer, m_material.Get());
 	}
 
 	MilkyWay::MilkyWay(Graphics::Renderer *renderer)
@@ -730,21 +853,14 @@ namespace Background {
 			m_milkyWay.Draw();
 		}
 		if (DRAW_STARS & m_drawFlags) {
-			m_renderer->SetTransform(matrix4x4f(transform) * ZUpToYUp());
+			auto Zup_to_Yup = matrix4x4f::FromRowMajor({
+				0, 1, 0, 0,
+				0, 0, 1, 0,
+				1, 0, 0, 0,
+				0, 0, 0, 1
+			});
+			m_renderer->SetTransform(matrix4x4f(transform) * Zup_to_Yup);
 			m_starField.Draw();
-		}
-	}
-
-	void Container::DrawRelativistic(const matrix4x4d &transform, const RelativisticView &view)
-	{
-		PROFILE_SCOPED()
-		m_renderer->SetTransform(matrix4x4f(transform));
-		if (DRAW_SKYBOX & m_drawFlags) {
-			m_universeBox.DrawRelativistic(view);
-		}
-		if (DRAW_STARS & m_drawFlags) {
-			m_renderer->SetTransform(matrix4x4f(transform) * ZUpToYUp());
-			m_starField.DrawRelativistic(view);
 		}
 	}
 

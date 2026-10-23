@@ -99,12 +99,6 @@ function Game.InHyperspace() end
 ---@return number
 function Game.GetHyperspaceTravelledPercentage() end
 
--- Speed of the relativistic voyage shown during a hyperspace transit
----@return number beta speed as a fraction of c
----@return number oneMinusBeta 1 - beta, which keeps its precision when beta rounds to 1
----@return number gamma Lorentz factor
-function Game.GetHyperspaceRelativity() end
-
 ---@return string
 function Game.GetWorldCamType() end
 ---@param type string

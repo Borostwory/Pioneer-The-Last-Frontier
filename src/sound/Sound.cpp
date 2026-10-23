@@ -370,15 +370,6 @@ namespace Sound {
 		return keys;
 	}
 
-	float GetSampleDuration(const std::string &fx)
-	{
-		for (const auto &sample : m_samples) {
-			if (sample.first == fx && sample.second.channels > 0 && sample.second.samplerate > 0)
-				return float(sample.second.buf_len) / float(sample.second.channels) / float(sample.second.samplerate);
-		}
-		return 0.0f;
-	}
-
 	void Update(float delta_t)
 	{
 		m_backend->Update(delta_t);

@@ -159,7 +159,6 @@ public:
 	void SetHyperspaceDest(const SystemPath &dest) { m_hyperspace.dest = dest; }
 	const SystemPath &GetHyperspaceDest() const { return m_hyperspace.dest; }
 	double GetHyperspaceDuration() const { return m_hyperspace.duration; }
-	const HyperdriveSoundsTable &GetHyperspaceSounds() const { return m_hyperspace.sounds; }
 	double GetECMRechargeRemain() const { return m_ecmRecharge; }
 
 	enum HyperjumpStatus { // <enum scope='Ship' name=ShipJumpStatus prefix=HYPERJUMP_ public>
