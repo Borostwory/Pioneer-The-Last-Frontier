@@ -5,6 +5,7 @@
 #define _TERRAIN_H
 
 #include "FracDef.h"
+#include "SurfaceProfile.h"
 #include "../Random.h"
 #include "../RefCounted.h"
 #include "../vector3.h"
@@ -173,6 +174,9 @@ protected:
 		std::string m_name;
 	};
 	MinBodyData m_minBody;
+
+	// surface parameters derived from the body; provides the rocky palettes
+	SurfaceProfile m_surfaceProfile;
 };
 
 template <typename HeightFractal>

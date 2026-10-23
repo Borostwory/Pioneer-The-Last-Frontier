@@ -24,4 +24,5 @@ void Terrain::DebugDump() const
 	for (Uint32 i = 0; i < MAX_COLOR_FRACDEFS; i++) {
 		Output("    %u: freq %f  lac %f  oct %d\n", i, m_colorFracdef[i].frequency, m_colorFracdef[i].lacunarity, m_colorFracdef[i].octaves);
 	}
+	m_surfaceProfile.Dump();
 }

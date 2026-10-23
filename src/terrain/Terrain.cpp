@@ -12,6 +12,8 @@
 #include "core/Log.h"
 #include "../galaxy/SystemBody.h"
 
+#include <iterator>
+
 // static instancer. selects the best height and color classes for the body
 Terrain *Terrain::InstanceTerrain(const SystemBody *body)
 {
@@ -390,7 +392,8 @@ Terrain::Terrain(const SystemBody *body) :
 	m_rand(body->GetSeed()),
 	m_heightScaling(0),
 	m_minh(0),
-	m_minBody(body)
+	m_minBody(body),
+	m_surfaceProfile(body)
 {
 
 	// load the heightmap
@@ -621,6 +624,23 @@ Terrain::Terrain(const SystemBody *body) :
 		g = m_rand.Double(0.0, r);
 		b = m_rand.Double(0.0, std::min(r, g));
 		m_ggdarkColor[i] = vector3d(r, g, b);
+	}
+
+	// Rocky bodies take their palette from their physical properties (star
+	// type, composition, life) instead of the random colours above. The
+	// random draws above stay, so the height fractals that draw from m_rand
+	// after this constructor get the same numbers as before.
+	if (body->GetSuperType() == SystemBody::SUPERTYPE_ROCKY_PLANET) {
+		SurfaceProfile::Palette palette;
+		m_surfaceProfile.MakePalette(m_seed, palette);
+		std::copy(std::begin(palette.rock), std::end(palette.rock), m_rockColor);
+		std::copy(std::begin(palette.darkrock), std::end(palette.darkrock), m_darkrockColor);
+		std::copy(std::begin(palette.plant), std::end(palette.plant), m_plantColor);
+		std::copy(std::begin(palette.darkplant), std::end(palette.darkplant), m_darkplantColor);
+		std::copy(std::begin(palette.sand), std::end(palette.sand), m_sandColor);
+		std::copy(std::begin(palette.darksand), std::end(palette.darksand), m_darksandColor);
+		std::copy(std::begin(palette.dirt), std::end(palette.dirt), m_dirtColor);
+		std::copy(std::begin(palette.darkdirt), std::end(palette.darkdirt), m_darkdirtColor);
 	}
 }
 
