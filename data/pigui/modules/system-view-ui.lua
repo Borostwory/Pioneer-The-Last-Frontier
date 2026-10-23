@@ -721,6 +721,7 @@ local L = {
 	STATUS_COMPLETED = "Completed burn",
 	REMAINING_DV = "Remaining delta-v of this burn",
 	ZOOM_TO_SHIP = "Zoom to your ship",
+	FOLLOW_PLAN = "Follow where the plan puts your ship - scrub the map time to fly along it",
 	COMPLETE = "Mark this burn complete",
 	-- snap row: the burn's node time jumps to an event of the orbit leading
 	-- into it (the current orbit for the first burn)
@@ -1300,6 +1301,13 @@ function Windows.edgeButtons.Show()
 		-- in, also when that system is reached through "selected system"
 		if isOrrery and systemView:IsViewingCurrentSystem() and ui.mainMenuButton(icons.bullseye, L.ZOOM_TO_SHIP) then
 			systemView:ViewPlayer()
+		end
+		-- follow where the plan puts the ship as the map time is scrubbed;
+		-- highlighted while it does
+		if isOrrery and systemView:IsViewingCurrentSystem() and systemView:TransferPlannerGetBurnCount() > 0 then
+			if ui.mainMenuButton(icons.follow_pos, L.FOLLOW_PLAN .. "##followPlannedShip", systemView:IsViewingPlannedShip()) then
+				systemView:ViewPlannedShip()
+			end
 		end
 
 		-- view settings buttons

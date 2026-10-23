@@ -169,6 +169,23 @@ public:
 	// failure error says why.
 	bool PlanApproach(const Body *target, int burns, double standOff, std::string &error);
 
+	// The planned trajectory from now: the live orbit, every burn still to
+	// fly and the spheres crossed on the way, as the chain flies them, one
+	// segment per frame stretch - a conic in a gravity frame between two
+	// times. Up to `until`; with an infinite `until`, on past the last burn for
+	// a revolution of the orbit it leaves (30 days when that does not close).
+	struct TrajectorySegment {
+		FrameId frame;
+		PlannerConics::Conic conic;
+		double start = 0.0;
+		double end = 0.0;
+	};
+	void GetPlannedTrajectory(double until, std::vector<TrajectorySegment> &segments) const;
+	// Where the plan puts the ship at game time t, on that trajectory; frame
+	// gets the gravity frame pos is relative to. False when there is nothing
+	// to follow.
+	bool GetPlannedPosition(double t, FrameId &frame, vector3d &pos) const;
+
 	struct ClosestApproach {
 		double time = 0.0;			// game time of the closest approach
 		double distance = 0.0;		// between the ship and the target's centre

@@ -12,6 +12,7 @@
 #include "Player.h"
 #include "SectorView.h"
 #include "Space.h"
+#include "TransferPlannerConics.h"
 #include "gameconsts.h"
 #include "graphics/VertexBuffer.h"
 #include "matrix4x4.h"
@@ -35,12 +36,17 @@
 #include "imgui/imgui.h"
 #include "profiler/Profiler.h"
 #include <SDL_keycode.h>
+#include <cmath>
+#include <limits>
 
 using namespace Graphics;
 
 static constexpr Uint16 N_VERTICES_MAX = 100;
-// polyline resolution for the planned pre-burn leg
-static constexpr int N_PLANNER_LEG_SEGMENTS = 96;
+// planned trajectory legs: sampled at steps of this share of the local time
+// scale (distance over speed), with at least / at most this many points
+static constexpr double PLANNER_LEG_STEP_SHARE = 0.02;
+static constexpr int N_PLANNER_LEG_MIN_POINTS = 64;
+static constexpr int N_PLANNER_LEG_MAX_POINTS = 4096;
 // maximum fraction the per-burn segment colours are lerped toward white
 static constexpr float PLANNER_SEG_WHITEN = 0.6f;
 static const float MIN_ZOOM = 1e-30f; // Just to avoid having 0
@@ -311,41 +317,44 @@ void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double t
 		if (m_planner->HasPlan() && m_planner->GetBurnCount() > 0) {
 			const size_t burnCount = m_planner->GetBurnCount();
 
-			// the leg flown before burn 0: the current orbit, clipped to the
-			// window between map time and the start time of burn 0
-			const double t0 = time - m_game->GetTime();
-			const double t1 = m_planner->GetStartTime(0) - m_game->GetTime();
-			if (t1 > t0 && !is_zero_general(playerOrbit.GetSemiMajorAxis())) {
-				std::vector<vector3f> leg;
-				leg.reserve(N_PLANNER_LEG_SEGMENTS + 1);
-				if (playerOrbit.GetEccentricity() < 1.0) {
-					// true-anomaly window between the two endpoints, computed
-					// through OrbitalTimeAtPos and sampled evenly with
-					// EvenSpacedPosTrajectory (t counts fractions of the window)
-					const double period = playerOrbit.Period();
-					const double tau0 = playerOrbit.OrbitalTimeAtPos(playerOrbit.OrbitalPosAtTime(t0), mass);
-					double tau1 = playerOrbit.OrbitalTimeAtPos(playerOrbit.OrbitalPosAtTime(t1), mass);
-					// OrbitalTimeAtPos is phase-wrapped to [0, period), so a
-					// window crossing periapsis reads as a negative span
-					if (period > 0. && tau1 < tau0)
-						tau1 += period;
-					const double frac = (period > 0.) ? Clamp((tau1 - tau0) / period, 0., 1.) : 0.;
-					if (frac > 0.) {
-						for (int i = 0; i <= N_PLANNER_LEG_SEGMENTS; ++i)
-							leg.push_back(vector3f(offset + playerOrbit.EvenSpacedPosTrajectory(frac * double(i) / double(N_PLANNER_LEG_SEGMENTS), t0)));
-					}
-				} else {
-					// hyperbolic escape: sample evenly in time instead
-					for (int i = 0; i <= N_PLANNER_LEG_SEGMENTS; ++i)
-						leg.push_back(vector3f(offset + playerOrbit.OrbitalPosAtTime(t0 + (t1 - t0) * double(i) / double(N_PLANNER_LEG_SEGMENTS))));
+			// The planned trajectory, frame stretch by frame stretch, each drawn
+			// around the body of its frame where that is at map time: a leg that
+			// leaves the Moon's sphere carries on around Earth. Sampled at steps
+			// of a share of the local time scale (distance over speed), so a
+			// fast periapsis pass is drawn as finely as a slow apoapsis; lerped
+			// further toward white in the planner orbit colour along the way.
+			std::vector<TransferPlanner::TrajectorySegment> trajectory;
+			m_planner->GetPlannedTrajectory(std::numeric_limits<double>::infinity(), trajectory);
+			const size_t segCount = trajectory.size();
+			for (size_t s = 0; s < segCount; ++s) {
+				const TransferPlanner::TrajectorySegment &seg = trajectory[s];
+				const double span = seg.end - seg.start;
+				if (!(span > 0.0))
+					continue;
+				vector3d segOffset(0.0);
+				CalculateFramePositionAtTime(seg.frame, time, segOffset);
+				std::vector<vector3d> leg;
+				double t = seg.start;
+				for (int i = 0; i < N_PLANNER_LEG_MAX_POINTS; ++i) {
+					vector3d p, v;
+					if (!seg.conic.At(t, p, v))
+						break;
+					leg.push_back(segOffset + p);
+					if (t >= seg.end)
+						break;
+					const double local = p.Length() / std::max(v.Length(), 1e-3);
+					t = std::min(seg.end, t + Clamp(PLANNER_LEG_STEP_SHARE * local, span / N_PLANNER_LEG_MAX_POINTS, span / N_PLANNER_LEG_MIN_POINTS));
 				}
-				map->SetPlannerLeg(std::move(leg), map->svColor[Col::PLANNER_ORBIT]);
+				const float whiten = (segCount > 1) ? (PLANNER_SEG_WHITEN * float(s) / float(segCount - 1)) : 0.f;
+				Color legColor = map->svColor[Col::PLANNER_ORBIT];
+				map->AddPlannerLeg(std::move(leg), legColor.Tint(whiten));
 			}
 
-			// one conic per burn, propagated from the burn point onwards, each
-			// lerped further toward white in the planner orbit colour. A burn
-			// is drawn around the body of its own frame - a capture burn's
-			// orbit around the moon it is flown inside
+			// The burns: a marker at each burn point, and the whole orbit it
+			// leaves - with its apsis and node markers - when that orbit closes
+			// inside its body's sphere. An orbit that leaves the sphere is drawn
+			// only as its stretch of the trajectory above, never as a conic
+			// running on past the sphere's edge.
 			std::vector<Orbit> segOrbits;
 			std::vector<vector3d> segOffsets;
 			segOrbits.reserve(burnCount);
@@ -361,15 +370,20 @@ void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double t
 				vector3d burnOffset = offset;
 				if (burnFrameId != playerNonRotFrameId)
 					CalculateFramePositionAtTime(burnFrameId, time, burnOffset);
+				segOffsets.push_back(burnOffset);
 				const double burnMass = burnFrame->GetSystemBody()->GetMass();
 				const double burnRadius = burnFrame->GetSystemBody()->GetRadius();
 
-				segOrbits.push_back(Orbit::FromBodyState(m_planner->GetPos(idx), m_planner->GetVel(idx), burnMass));
-				segOffsets.push_back(burnOffset);
-
-				const float whiten = (burnCount > 1) ? (PLANNER_SEG_WHITEN * float(i) / float(burnCount - 1)) : 0.f;
-				Color segColor = map->svColor[Col::PLANNER_ORBIT];
-				map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLANNER, PlayerBody, burnOffset }, &segOrbits.back(), segColor.Tint(whiten), burnRadius);
+				double periapsis, apoapsis;
+				PlannerConics::Apsides(m_planner->GetPos(idx), m_planner->GetVel(idx), G * burnMass, periapsis, apoapsis);
+				const bool closes = std::isfinite(apoapsis) &&
+					(!burnFrame->GetParent().valid() || apoapsis < burnFrame->GetRadius());
+				if (closes) {
+					segOrbits.push_back(Orbit::FromBodyState(m_planner->GetPos(idx), m_planner->GetVel(idx), burnMass));
+					const float whiten = (burnCount > 1) ? (PLANNER_SEG_WHITEN * float(i) / float(burnCount - 1)) : 0.f;
+					Color segColor = map->svColor[Col::PLANNER_ORBIT];
+					map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLANNER, PlayerBody, burnOffset }, &segOrbits.back(), segColor.Tint(whiten), burnRadius);
+				}
 
 				// marker at the exact burn point; the burn index rides along in
 				// orbitIdx (unused for object tracks) so the UI can label it.
@@ -380,23 +394,19 @@ void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double t
 				map->AddObjectTrack(burn);
 			}
 
-			// ghost marker: propagate the conic of the segment whose burn window
-			// contains map time; before burn 0 (or in real time) show burn 0's position
+			// ghost marker: where the plan puts the ship at map time - through
+			// every burn and every sphere crossed on the way - while the map
+			// time is scrubbed; in real time, burn 0's position
 			const bool scrubbed = std::fabs(time - m_game->GetTime()) > 1.;
-			size_t seg = 0;
-			if (scrubbed) {
-				for (size_t i = burnCount; i-- > 0;) {
-					if (time >= m_planner->GetStartTime(int(i))) {
-						seg = i;
-						break;
-					}
-				}
-			}
-			const double segStart = m_planner->GetStartTime(int(seg));
-			if (scrubbed && time >= segStart)
-				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, segOffsets[seg] + segOrbits[seg].OrbitalPosAtTime(time - segStart) });
-			else
+			FrameId plannedFrame;
+			vector3d plannedPos;
+			if (scrubbed && m_planner->GetPlannedPosition(time, plannedFrame, plannedPos)) {
+				vector3d plannedOffset(0.0);
+				CalculateFramePositionAtTime(plannedFrame, time, plannedOffset);
+				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, plannedOffset + plannedPos });
+			} else {
 				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, segOffsets[0] + m_planner->GetPos(0) });
+			}
 		}
 	}
 }
@@ -431,6 +441,21 @@ void SystemView::SetSystemSelectionMode(SystemSelectionMode systemMode)
 	if (m_systemSelectionMode != systemMode) {
 		m_systemSelectionMode = systemMode;
 	}
+}
+
+void SystemView::ViewPlannedShip()
+{
+	// the planner's ghost marker is an object track like any other: the map
+	// keeps the camera on it as it moves with the map time
+	if (!Pi::player || !m_game->IsNormalSpace() || !m_viewingCurrentSystem)
+		return;
+	m_map->SetViewedObject(Projectable(Projectable::OBJECT, Projectable::PLANNER, static_cast<Body *>(Pi::player)));
+}
+
+bool SystemView::IsViewingPlannedShip()
+{
+	const Projectable *viewed = m_map->GetViewedObject();
+	return viewed->type == Projectable::OBJECT && viewed->base == Projectable::PLANNER;
 }
 
 void SystemView::ViewPlayer()
@@ -1093,12 +1118,15 @@ void SystemMapViewport::DrawOrreryView()
 		}
 	}
 
-	// the planned pre-burn leg, drawn as one line strip in view space
-	if (m_plannerLeg.size() > 1) {
-		std::vector<vector3f> legVerts(m_plannerLeg.size());
-		for (size_t i = 0; i < m_plannerLeg.size(); ++i)
-			legVerts[i] = m_plannerLeg[i] - vector3f(m_trans);
-		m_orbits.SetData(Uint32(legVerts.size()), legVerts.data(), m_plannerLegColor);
+	// the planned trajectory, one line strip per leg in view space; the view
+	// offset is taken off in double precision before the vertices go to float
+	for (const PlannerLeg &plannerLeg : m_plannerLegs) {
+		if (plannerLeg.verts.size() < 2)
+			continue;
+		std::vector<vector3f> legVerts(plannerLeg.verts.size());
+		for (size_t i = 0; i < plannerLeg.verts.size(); ++i)
+			legVerts[i] = vector3f(plannerLeg.verts[i] - m_trans);
+		m_orbits.SetData(Uint32(legVerts.size()), legVerts.data(), plannerLeg.color);
 		m_renderer->SetTransform(m_cameraSpace);
 		m_orbits.Draw(m_renderer, m_lineMat.get());
 	}
@@ -1328,7 +1356,7 @@ void SystemMapViewport::Update(float ft)
 	m_objectTracks.clear();
 	m_orbitTracks.clear();
 	m_projected.clear();
-	m_plannerLeg.clear();
+	m_plannerLegs.clear();
 
 	// TODO: add "true" lower/upper bounds to m_zoomTo / m_zoom
 	m_zoomTo = Clamp(m_zoomTo, MIN_ZOOM, MAX_ZOOM);

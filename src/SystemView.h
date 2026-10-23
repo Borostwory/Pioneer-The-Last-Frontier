@@ -223,6 +223,10 @@ public:
 	void SetHudMapFocus(HudMapFocus focus);
 	// centre the main map on the player's ship, zoomed to frame its orbit
 	void ViewPlayer();
+	// keep the main map centred on where the plan puts the ship at map time
+	// (the planner's ghost marker), and whether it is
+	void ViewPlannedShip();
+	bool IsViewingPlannedShip();
 	// the map shows the system the player is in, whichever selection mode
 	// got it there, so the player's ship is on it
 	bool IsViewingCurrentSystem() const { return m_viewingCurrentSystem; }
@@ -328,13 +332,12 @@ public:
 	// Orbit tracks are cleared every frame.
 	void AddOrbitTrack(Projectable p, const Orbit *orbit, Color color, double planetRadius);
 
-	// Submit the planned pre-burn leg as a dynamic vertex list (world space),
-	// drawn as a single line strip in the next orrery pass.
-	// The leg is cleared every frame.
-	void SetPlannerLeg(std::vector<vector3f> &&verts, Color color)
+	// Submit a leg of the planned trajectory as a dynamic vertex list (world
+	// space), drawn as a line strip in the next orrery pass. The legs are
+	// cleared every frame.
+	void AddPlannerLeg(std::vector<vector3d> &&verts, Color color)
 	{
-		m_plannerLeg = std::move(verts);
-		m_plannerLegColor = color;
+		m_plannerLegs.push_back({ std::move(verts), color });
 	}
 
 	RefCountedPtr<StarSystem> GetCurrentSystem();
@@ -422,8 +425,11 @@ private:
 	std::vector<Projectable> m_objectTracks;
 	std::vector<ProjectedOrbit> m_orbitTracks;
 
-	std::vector<vector3f> m_plannerLeg;
-	Color m_plannerLegColor;
+	struct PlannerLeg {
+		std::vector<vector3d> verts;
+		Color color;
+	};
+	std::vector<PlannerLeg> m_plannerLegs;
 
 	std::vector<Projectable> m_projected;
 

@@ -833,7 +833,10 @@ bool TransferPlanner::GetClosestApproach(const Body *target, ClosestApproach &re
 		leg.end = std::min(leg.end, end);
 
 	// Inside the target's own frame the closest approach is the lowest point
-	// of the legs flown there - the target is at the origin.
+	// of the legs flown there - the target is at the origin. Distances within
+	// a metre tie, and the earliest wins: on a circular orbit every point is
+	// as close, and the first is the one that matters.
+	const auto closer = [](double d, double than) { return d < than - 1.0; };
 	double bestTime = 0.0, bestDistance = kInfinity;
 	vector3d bestRelVel;
 	const auto scan = [&](const Leg &leg, const std::function<double(double, vector3d &)> &distanceAt) {
@@ -845,7 +848,7 @@ bool TransferPlanner::GetClosestApproach(const Body *target, ClosestApproach &re
 		for (int i = 0; i <= kApproachSamples; ++i) {
 			const double t = leg.conic.epoch + step * double(i);
 			const double d = distanceAt(t, relVel);
-			if (d < localBest) {
+			if (closer(d, localBest)) {
 				localBest = d;
 				localTime = t;
 			}
@@ -862,10 +865,10 @@ bool TransferPlanner::GetClosestApproach(const Body *target, ClosestApproach &re
 				lo = a;
 		}
 		const double refined = 0.5 * (lo + hi);
-		if (distanceAt(refined, relVel) < localBest)
+		if (closer(distanceAt(refined, relVel), localBest))
 			localTime = refined;
 		const double d = distanceAt(localTime, relVel);
-		if (d < bestDistance) {
+		if (closer(d, bestDistance)) {
 			bestDistance = d;
 			bestTime = localTime;
 			bestRelVel = relVel;

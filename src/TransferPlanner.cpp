@@ -46,6 +46,11 @@ double SweptAngle(const vector3d &a, const vector3d &b, const vector3d &axis)
 	return angle;
 }
 
+// the planned trajectory past the last burn: at most this long, and through
+// at most this many sphere switches
+constexpr double kTrajectoryOpenSpan = 30.0 * 86400.0;
+constexpr int kTrajectoryMaxSwitches = 8;
+
 // the mass a frame's conics are around: its body's
 double FrameMass(const Frame *frame)
 {
@@ -625,6 +630,132 @@ void TransferPlanner::RecomputeChain()
 		segment.vel = burn.vel + GetOffsetVel(burn);
 		segment.epoch = at;
 	}
+}
+
+void TransferPlanner::GetPlannedTrajectory(double until, std::vector<TrajectorySegment> &segments) const
+{
+	using namespace PlannerConics;
+	segments.clear();
+	Frame *frame = PlannerFrame();
+	if (!frame || !frame->GetSystemBody() || !Pi::player)
+		return;
+
+	// the chain as RecomputeChain flies it, seeded from the live state
+	const Frame *segFrame = frame;
+	Conic segment;
+	segment.pos = Pi::player->GetPositionRelTo(frame->GetId());
+	segment.vel = Pi::player->GetVelocityRelTo(frame->GetId());
+	segment.epoch = Pi::game->GetTime();
+	segment.mu = FrameMu(frame);
+	const auto open = [&](const Frame *f, const Conic &c) {
+		if (!segments.empty())
+			segments.back().end = c.epoch;
+		TrajectorySegment s;
+		s.frame = f->GetId();
+		s.conic = c;
+		s.start = c.epoch;
+		s.end = c.epoch;
+		segments.push_back(s);
+	};
+	open(segFrame, segment);
+
+	std::vector<std::pair<const Frame *, Conic>> trace;
+	bool cut = false;
+	for (const Burn &burn : m_burns) {
+		if (burn.status == COMPLETED)
+			continue;
+		const double at = std::max(burn.startTime, segment.epoch);
+		const bool flown = at <= until;
+		// the spheres on the way to the burn's frame - all of them for a burn
+		// that is flown, as far as the ship gets by `until` otherwise
+		if (burn.frame.valid() && burn.frame != segFrame->GetId()) {
+			trace.clear();
+			TransitionTo(segment, segFrame, burn.frame, flown ? at : until, flown, &trace);
+			for (const auto &step : trace)
+				open(step.first, step.second);
+		}
+		if (!flown) {
+			cut = true;
+			break;
+		}
+		vector3d p, v;
+		if (!segment.At(at, p, v))
+			return;
+		segment.pos = p;
+		segment.vel = v + GetOffsetVel(burn);
+		segment.epoch = at;
+		open(segFrame, segment);
+	}
+
+	// past the last burn: a revolution of the orbit it leaves, or 30 days
+	if (!std::isfinite(until)) {
+		const double energy = 0.5 * segment.vel.LengthSqr() - segment.mu / segment.pos.Length();
+		double span = kTrajectoryOpenSpan;
+		if (energy < 0.0 && segment.mu > 0.0) {
+			const double a = -segment.mu / (2.0 * energy);
+			span = std::min(2.0 * M_PI * std::sqrt(a * a * a / segment.mu), kTrajectoryOpenSpan);
+		}
+		until = segment.epoch + span;
+	}
+
+	// and on as the ship would fly: out of each sphere it leaves, into each
+	// sphere of a planet or moon it enters (not a station's: no gravity)
+	for (int k = 0; !cut && k < kTrajectoryMaxSwitches && segment.epoch < until; ++k) {
+		double when = until;
+		const Frame *next = nullptr;
+		Conic switched;
+		double exit;
+		vector3d p, v;
+		if (segFrame->GetParent().valid() &&
+			FindExit(segment, segFrame, segment.epoch, until - segment.epoch, exit, p, v) && exit < when) {
+			when = exit;
+			next = Frame::GetFrame(segFrame->GetParent());
+			switched.pos = p;
+			switched.vel = v;
+		}
+		for (FrameId childId : segFrame->GetChildren()) {
+			const Frame *child = Frame::GetFrame(childId);
+			if (!child || child->IsRotFrame() || !child->GetSystemBody() ||
+				(child->GetBody() && child->GetBody()->IsType(ObjectType::SPACESTATION)))
+				continue;
+			double entry;
+			// a tiny start offset: the segment may have just left this sphere
+			if (FindEntry(segment, child, segment.epoch + 1.0, when, entry, p, v) && entry < when) {
+				when = entry;
+				next = child;
+				switched.pos = p;
+				switched.vel = v;
+			}
+		}
+		if (!next || !next->GetSystemBody())
+			break;
+		switched.epoch = when;
+		switched.mu = FrameMu(next);
+		segFrame = next;
+		segment = switched;
+		open(segFrame, segment);
+	}
+	if (!segments.empty())
+		segments.back().end = std::max(until, segments.back().start);
+}
+
+bool TransferPlanner::GetPlannedPosition(double t, FrameId &frameId, vector3d &pos) const
+{
+	std::vector<TrajectorySegment> segments;
+	GetPlannedTrajectory(t, segments);
+	if (segments.empty() || t < segments.front().start)
+		return false;
+	// the last segment that has started by t
+	const TrajectorySegment *at = &segments.front();
+	for (const TrajectorySegment &s : segments) {
+		if (s.start <= t)
+			at = &s;
+	}
+	vector3d v;
+	if (!at->conic.At(t, pos, v))
+		return false;
+	frameId = at->frame;
+	return true;
 }
 
 bool TransferPlanner::GetIncomingOrbit(int idx, Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const

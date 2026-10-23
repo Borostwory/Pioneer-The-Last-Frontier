@@ -240,6 +240,32 @@ static int l_systemview_is_viewing_current_system(lua_State *l)
 	return 1;
 }
 
+/*
+ * Method: ViewPlannedShip
+ *
+ * > systemView:ViewPlannedShip()
+ *
+ * Keep the map centred on where the transfer plan puts the ship at map time.
+ */
+static int l_systemview_view_planned_ship(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	sv->ViewPlannedShip();
+	return 0;
+}
+
+/*
+ * Method: IsViewingPlannedShip
+ *
+ * > following = systemView:IsViewingPlannedShip()
+ */
+static int l_systemview_is_viewing_planned_ship(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	LuaPush(l, sv->IsViewingPlannedShip());
+	return 1;
+}
+
 static int l_systemview_reset_viewpoint(lua_State *l)
 {
 	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
@@ -772,6 +798,8 @@ void LuaObject<SystemView>::RegisterClass()
 		{ "ViewSelectedObject", l_systemview_view_selected_object },
 		{ "ResetViewpoint", l_systemview_reset_viewpoint },
 		{ "ViewPlayer", l_systemview_view_player },
+		{ "ViewPlannedShip", l_systemview_view_planned_ship },
+		{ "IsViewingPlannedShip", l_systemview_is_viewing_planned_ship },
 		{ "IsViewingCurrentSystem", l_systemview_is_viewing_current_system },
 		{ "SetVisibility", l_systemview_set_visibility },
 		{ "SetColor", l_systemview_set_color },
