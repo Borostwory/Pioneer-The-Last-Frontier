@@ -77,6 +77,10 @@ uniform vec4 MaterialSpecial;
 // how far along their bumps two materials blend (in height units 0..1)
 #define MATERIAL_BLEND_DEPTH 0.2
 
+// bump lighting: height of the textures' bumps as a fraction of the fine
+// tile size
+#define MATERIAL_BUMP_HEIGHT 0.008
+
 // lava glow: average emission of the lava texture (used where it is not
 // sampled), and the glow's colour and strength
 #define MATERIAL_LAVA_MEAN_EMISSION 0.1
@@ -247,10 +251,13 @@ vec3 materialSample(int layer, MaterialMapping m, float level)
 // times MATERIAL_LAVA_GLOW, added after lighting).
 // slots0, slots1: the vertex's slot weights; albedo: unlit vertex colour;
 // mapping: materialMapping() of the pixel; normal, up: view space;
-// altitude: metres above sea level (only used with water)
+// altitude: metres above sea level (only used with water).
+// bump: the blended texture height (x, 0..1) and its scale in metres (y),
+// for terrainBumpNormal()
 vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMapping mapping,
-	float distMetres, vec3 normal, vec3 up, float altitude, bool hasWater)
+	float distMetres, vec3 normal, vec3 up, float altitude, bool hasWater, out vec2 bump)
 {
+	bump = vec2(0.5, 0.0);
 	int lavaSlot = int(MaterialSpecial.w);
 	float lavaWeight = lavaSlot < 0 ? 0.0 : (lavaSlot < 4 ? slots0[lavaSlot] : slots1[lavaSlot - 4]);
 	float farGlow = lavaWeight * MATERIAL_LAVA_MEAN_EMISSION;
@@ -326,6 +333,10 @@ vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMappin
 
 	// detail: the blended materials, the rest of the land neutral
 	float detail = (n1 * d1.y + n2 * d2.y + (landWeight - total)) / landWeight;
+
+	// the bumps, the rest of the land flat
+	bump.x = (n1 * d1.z + n2 * d2.z + 0.5 * (landWeight - total)) / landWeight;
+	bump.y = contrast * MATERIAL_BUMP_HEIGHT * exp2(mapping.level);
 	detail = 1.0 + (detail - 1.0) * contrast;
 
 	// lava glow: the texture's emission near the camera, its average further out
@@ -428,4 +439,24 @@ vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots0, v
 	slope = mat3(cloudAxisX.xyz, cloudAxisY.xyz, cloudAxisZ.xyz) * slope * roughness;
 	slope -= up * dot(slope, up);
 	return normalize(normal - slope);
+}
+
+// ---------------------------------------------------------------- bump lighting
+
+// The normal with the material textures' bumps (bump from
+// terrainMaterialDetail()), from the screen-space derivatives of their
+// height (surface gradient bump mapping): nearly free, the heights are
+// already sampled. Call it outside branches. normal: view space; dpdx,
+// dpdy: screen derivatives of the view-space position.
+vec3 terrainBumpNormal(vec3 normal, vec3 dpdx, vec3 dpdy, vec2 bump)
+{
+	// derivatives of the height alone: the tile size changes with distance
+	vec2 dh = vec2(dFdx(bump.x), dFdy(bump.x)) * bump.y;
+	vec3 r1 = cross(dpdy, normal);
+	vec3 r2 = cross(normal, dpdx);
+	float det = dot(dpdx, r1);
+	if (bump.y <= 0.0 || abs(det) < 1e-20)
+		return normal;
+	vec3 grad = sign(det) * (dh.x * r1 + dh.y * r2);
+	return normalize(abs(det) * normal - grad);
 }

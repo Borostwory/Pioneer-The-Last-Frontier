@@ -71,8 +71,9 @@ void main(void)
 	vec3 materialDx = dFdx(varyingEyepos), materialDy = dFdy(varyingEyepos);
 	vec3 surfaceUp = normalize(eyeposScaled - geosphereCenter);
 	MaterialMapping mapping = materialMapping(varyingEyepos, materialDx, materialDy, surfaceUp);
+	vec2 bump;
 	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, vertexColor.rgb, mapping,
-		dist, varyingNormal, surfaceUp, altitude, hasWater);
+		dist, varyingNormal, surfaceUp, altitude, hasWater, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist);
 	if (patternWeight > 0.0) {
@@ -83,6 +84,8 @@ void main(void)
 
 	// the relief between the mesh and the pixel
 	tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialWeights0, materialWeights1, dist);
+	// and the bumps of the material textures
+	tnorm = terrainBumpNormal(tnorm, materialDx, materialDy, bump);
 
 #ifdef TERRAIN_WITH_WATER
 	// water: sun glint per light here, the rest after the light loop

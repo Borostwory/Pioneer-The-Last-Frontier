@@ -65,8 +65,9 @@ void main(void)
 	float altitude = 1.0e4;
 #endif
 	MaterialMapping mapping = materialMapping(varyingEyepos, materialDx, materialDy, surfaceUp);
+	vec2 bump;
 	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, albedoColor.rgb, mapping,
-		dist, varyingNormal, surfaceUp, altitude, hasWater);
+		dist, varyingNormal, surfaceUp, altitude, hasWater, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist);
 	if (patternWeight > 0.0) {
@@ -78,6 +79,8 @@ void main(void)
 #if (NUM_LIGHTS > 0)
 	// lit per pixel, with the relief between the mesh and the pixel
 	vec3 N = terrainReliefNormal(normalize(varyingNormal), surfaceUp, mapping, materialWeights0, materialWeights1, dist);
+	// and the bumps of the material textures
+	N = terrainBumpNormal(N, materialDx, materialDy, bump);
 	vec3 light = vec3(0.0);
 	for (int i = 0; i < NUM_LIGHTS; ++i)
 		light += lightAtSurface[i] * max(dot(N, normalize(uLight[i].position.xyz)), 0.0);
