@@ -16,6 +16,15 @@ class GeoSphere;
 
 #define BORDER_SIZE 1
 
+// Patch generation statistics, accumulated by the job threads
+struct GeoPatchGenStats {
+	uint64_t jobs = 0;
+	uint64_t patches = 0;
+	uint64_t microseconds = 0;
+};
+GeoPatchGenStats GetGeoPatchGenStats();
+void ResetGeoPatchGenStats();
+
 class SBaseRequest {
 public:
 	SBaseRequest(const vector3d &v0_, const vector3d &v1_, const vector3d &v2_, const vector3d &v3_, const vector3d &cn,

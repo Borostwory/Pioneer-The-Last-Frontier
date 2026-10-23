@@ -8,6 +8,65 @@
 #include "perlin.h"
 #include "profiler/Profiler.h"
 
+#include <atomic>
+#include <chrono>
+
+namespace {
+	std::atomic<uint64_t> s_genJobs(0);
+	std::atomic<uint64_t> s_genPatches(0);
+	std::atomic<uint64_t> s_genMicroseconds(0);
+
+	// adds the lifetime of a patch job to the generation statistics
+	class ScopedGenTimer {
+	public:
+		explicit ScopedGenTimer(const uint64_t numPatches) :
+			m_numPatches(numPatches),
+			m_start(std::chrono::steady_clock::now()) {}
+		~ScopedGenTimer()
+		{
+			const auto elapsed = std::chrono::steady_clock::now() - m_start;
+			s_genMicroseconds += uint64_t(std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count());
+			s_genPatches += m_numPatches;
+			++s_genJobs;
+		}
+
+	private:
+		const uint64_t m_numPatches;
+		const std::chrono::steady_clock::time_point m_start;
+	};
+
+	// debug view: replaces the terrain colour with a colour per patch depth
+	inline bool DebugPatchDepthColours()
+	{
+		return (GeoSphere::GetDebugFlags() & GeoSphere::DebugFlags::DEBUG_PATCHDEPTH) != 0;
+	}
+
+	inline vector3d PatchDepthColour(const int depth)
+	{
+		static const vector3d palette[8] = {
+			{ 0.9, 0.1, 0.1 }, { 0.9, 0.5, 0.1 }, { 0.9, 0.9, 0.1 }, { 0.2, 0.8, 0.2 },
+			{ 0.1, 0.8, 0.8 }, { 0.2, 0.3, 0.9 }, { 0.6, 0.2, 0.9 }, { 0.9, 0.9, 0.9 }
+		};
+		return palette[depth & 7];
+	}
+} // namespace
+
+GeoPatchGenStats GetGeoPatchGenStats()
+{
+	GeoPatchGenStats stats;
+	stats.jobs = s_genJobs;
+	stats.patches = s_genPatches;
+	stats.microseconds = s_genMicroseconds;
+	return stats;
+}
+
+void ResetGeoPatchGenStats()
+{
+	s_genJobs = 0;
+	s_genPatches = 0;
+	s_genMicroseconds = 0;
+}
+
 inline void setColour(Color3ub &r, const vector3d &v)
 {
 	r.r = static_cast<unsigned char>(Clamp(v.x * 255.0, 0.0, 255.0));
@@ -53,6 +112,7 @@ void SSingleSplitRequest::GenerateMesh() const
 	}
 
 	// Generate normals & colors for non-edge vertices since they never change
+	const bool debugDepth = DebugPatchDepthColours();
 	Color3ub *col = colors;
 	vector3f *nrm = normals;
 	double *hts = heights;
@@ -75,7 +135,7 @@ void SSingleSplitRequest::GenerateMesh() const
 
 			// color
 			const vector3d p = GetSpherePoint(v0, v1, v2, v3, (x - BORDER_SIZE) * fracStep, (y - BORDER_SIZE) * fracStep);
-			setColour(*col, pTerrain->GetColor(p, height, n));
+			setColour(*col, debugDepth ? PatchDepthColour(depth) : pTerrain->GetColor(p, height, n));
 			assert(col != &colors[edgeLen * edgeLen]);
 			++col;
 		}
@@ -99,6 +159,7 @@ void SinglePatchJob::OnRun() // RUNS IN ANOTHER THREAD!! MUST BE THREAD SAFE!
 {
 	PROFILE_SCOPED()
 	BasePatchJob::OnRun();
+	ScopedGenTimer timer(1);
 
 	const SSingleSplitRequest &srd = *mData;
 
@@ -137,6 +198,7 @@ void QuadPatchJob::OnRun() // RUNS IN ANOTHER THREAD!! MUST BE THREAD SAFE!
 {
 	PROFILE_SCOPED()
 	BasePatchJob::OnRun();
+	ScopedGenTimer timer(4);
 
 	const SQuadSplitRequest &srd = *mData;
 
@@ -227,6 +289,7 @@ void SQuadSplitRequest::GenerateSubPatchData(
 {
 	PROFILE_SCOPED()
 	// Generate normals & colors for vertices
+	const bool debugDepth = DebugPatchDepthColours();
 	vector3d *vrts = borderVertexs.get();
 	Color3ub *col = colors[quadrantIndex];
 	vector3f *nrm = normals[quadrantIndex];
@@ -254,7 +317,7 @@ void SQuadSplitRequest::GenerateSubPatchData(
 
 			// color
 			const vector3d p = GetSpherePoint(v0, v1, v2, v3, x * fracStep, y * fracStep);
-			setColour(*col, pTerrain->GetColor(p, height, n));
+			setColour(*col, debugDepth ? PatchDepthColour(depth + 1) : pTerrain->GetColor(p, height, n));
 			assert(col != &colors[quadrantIndex][edgeLen * edgeLen]);
 			++col;
 		}

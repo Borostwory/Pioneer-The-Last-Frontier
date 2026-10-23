@@ -5,6 +5,7 @@
 #include "Frame.h"
 #include "Game.h"
 #include "GameConfig.h"
+#include "GeoPatchJobs.h"
 #include "GeoSphere.h"
 #include "Input.h"
 #include "LuaPiGui.h"
@@ -650,22 +651,38 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 	bool showSort = debugFlags & Flags::DEBUG_SORTGEOPATCHES;
 	bool showWire = debugFlags & Flags::DEBUG_WIREFRAME;
 	//bool showFace = debugFlags & Flags::DEBUG_FACELABELS;
+	bool showDepth = debugFlags & Flags::DEBUG_PATCHDEPTH;
 
 	bool changed = ImGui::Checkbox("Distance Sort GeoPatches", &showSort);
 	changed |= ImGui::Checkbox("Show Wireframe", &showWire);
 	//changed |= ImGui::Checkbox("Show Face IDs", &showFace);
+	const bool depthChanged = ImGui::Checkbox("Colour Patches by Depth", &showDepth);
+	changed |= depthChanged;
 
 	/* clang-format off */
 	if (changed) {
 		debugFlags = (showSort ? Flags::DEBUG_SORTGEOPATCHES : 0)
-			| (showWire ? Flags::DEBUG_WIREFRAME : 0);
-			//| (showFace ? Flags::DEBUG_FACELABELS : 0);
+			| (showWire ? Flags::DEBUG_WIREFRAME : 0)
+			//| (showFace ? Flags::DEBUG_FACELABELS : 0)
+			| (showDepth ? Flags::DEBUG_PATCHDEPTH : 0);
 		GeoSphere::SetDebugFlags(debugFlags);
 		Pi::config->SetInt("SortGeoPatches", showSort ? 1 : 0);
 
 		Pi::config->Save();
 	}
 	/* clang-format on */
+
+	// patch colours are baked when a patch is generated, so rebuild them all
+	if (depthChanged)
+		Pi::OnChangeDetailLevel();
+
+	const GeoPatchGenStats stats = GetGeoPatchGenStats();
+	const double totalMs = double(stats.microseconds) / 1000.0;
+	const double perPatchUs = stats.patches ? double(stats.microseconds) / double(stats.patches) : 0.0;
+	ImGui::Text("Patch generation: %llu jobs, %llu patches", (unsigned long long)stats.jobs, (unsigned long long)stats.patches);
+	ImGui::Text("Generation CPU time: %.1f ms total, %.1f us per patch", totalMs, perPatchUs);
+	if (ImGui::Button("Reset Patch Stats"))
+		ResetGeoPatchGenStats();
 }
 
 void PerfInfo::DrawImGuiStats()
