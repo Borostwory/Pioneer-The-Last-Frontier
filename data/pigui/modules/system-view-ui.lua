@@ -743,7 +743,7 @@ local L = {
 	APPROACH_RENDEZVOUS = "Rendezvous",
 	APPROACH_RENDEZVOUS_TIP = "2 burns: meet the target, then match its velocity on arrival",
 	APPROACH_PLAN = "Plan approach",
-	APPROACH_PLAN_TIP = "Add %s after the last planned burn, timed for the least Δv.\nA planet or moon is passed at two of its radii from its centre.",
+	APPROACH_PLAN_TIP = "Replace the plan with %s from your current orbit, timed for the least Δv.\nIf no transfer is found, the plan stays as it was.\nA planet or moon is passed at two of its radii from its centre.",
 	APPROACH_ONE_BURN = "1 burn",
 	APPROACH_TWO_BURNS = "2 burns",
 	APPROACH_STAND_OFF = "Stand-off",
@@ -755,6 +755,15 @@ local L = {
 	APPROACH_SPEED = "Relative speed %s",
 	APPROACH_RESULT_TIP = "Closest approach of the planned trajectory to the target, up to a revolution after the last burn",
 	CIRCULARIZE_NONE = "This burn's orbit cannot be circularized here",
+	-- the plan's delta-v against the ship's
+	DV_PLAN = "Plan",
+	DV_PLAN_TIP = "Δv the burns still to fly need",
+	DV_AVAILABLE = "Available",
+	DV_AVAILABLE_TIP = "Δv the ship's fuel gives at its current mass",
+	DV_AFTER = "After plan",
+	DV_AFTER_TIP = "Δv left once every planned burn is flown",
+	DV_SHORT = "Short by %s",
+	DV_SHORT_TIP = "The plan needs more Δv than the fuel gives",
 	REF_TARGET = "%s's orbit",
 	REF_EQUATOR = "%s's equator",
 }
@@ -868,6 +877,43 @@ local function drawCircularizeButton(idx, width, completed)
 	local variant = not dv and colorset.disabled or nil
 	if ui.button(L.CIRCULARIZE .. "##plannerCircularize" .. idx, Vector2(width, 0), variant, tooltip) and dv then
 		systemView:TransferPlannerCircularize(idx)
+	end
+end
+
+--
+-- Function: drawDeltaVSummary
+--
+-- The Δv the burns still to fly need, the Δv the ship has, and what is left
+-- after the plan - or how much it is short, in the alert colour.
+--
+local function drawDeltaVSummary(count)
+	local planned = 0
+	for idx = 0, count - 1 do
+		if systemView:TransferPlannerGetBurnStatus(idx) ~= BURN_STATUS_COMPLETED then
+			planned = planned + systemView:TransferPlannerGetBurnRemainingDeltaV(idx)
+		end
+	end
+	local available = Game.player:GetRemainingDeltaV()
+	local after = available - planned
+
+	-- one label / value pair per line, values aligned in a column
+	local labelWidth = math.max(ui.calcTextSize(L.DV_PLAN).x, ui.calcTextSize(L.DV_AVAILABLE).x,
+		ui.calcTextSize(L.DV_AFTER).x) + ui.getItemSpacing().x * 2 + ui.getTextLineHeight()
+	local function line(label, tooltip, value, color)
+		local x = ui.getCursorPos().x
+		textIcon(icons.deltav, tooltip)
+		ui.textColored(colors.fontDim, label)
+		ui.sameLine(x + labelWidth)
+		ui.textColored(color or colors.font, value)
+		ui.setItemTooltip(tooltip)
+	end
+
+	line(L.DV_PLAN, L.DV_PLAN_TIP, ui.Format.Speed(planned))
+	line(L.DV_AVAILABLE, L.DV_AVAILABLE_TIP, ui.Format.Speed(available))
+	if after >= 0 then
+		line(L.DV_AFTER, L.DV_AFTER_TIP, ui.Format.Speed(after))
+	else
+		line(L.DV_AFTER, L.DV_SHORT_TIP, string.format(L.DV_SHORT, ui.Format.Speed(-after)), colors.alertRed)
 	end
 end
 
@@ -1166,6 +1212,9 @@ local plannerView = {
 			selectedBurn = systemView:TransferPlannerInsertBurn(selectedBurn)
 			clampSelectedBurn(systemView:TransferPlannerGetBurnCount())
 		end
+
+		ui.separator()
+		drawDeltaVSummary(systemView:TransferPlannerGetBurnCount())
 
 		drawApproachSection()
 	end

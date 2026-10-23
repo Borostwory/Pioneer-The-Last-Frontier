@@ -74,8 +74,8 @@ local MAX_BURN_COUNT = 8
 -- strings the game ships no lang key for; no data/lang entries are added here
 local L = {
 	TITLE = "BURN PLAN",
-	SUMMARY = "%d to go  ·  %s  ·  %s",
-	SUMMARY_TIP = "Burns left, the Δv they still need and their burn time at the current thrust",
+	SUMMARY = "%d to go  ·  %s of %s  ·  %s",
+	SUMMARY_TIP = "Burns left, the Δv they still need of the Δv the ship has, and their burn time at the current thrust",
 	ALL_DONE = "All burns complete",
 	BURN = "Burn %d",
 	NO_BURNS = "No planned burns",
@@ -757,12 +757,18 @@ local function drawTitle(totals, hasRows)
 	end)
 	if not hasRows then return end
 
+	-- the plan's Δv of the ship's: in the alert colour when the fuel falls short
+	local available = Game.player:GetRemainingDeltaV()
 	local summary = totals.burns > 0
-		and string.format(L.SUMMARY, totals.burns, formatSpeed(totals.dv), formatDuration(totals.duration))
+		and string.format(L.SUMMARY, totals.burns, formatSpeed(totals.dv), formatSpeed(available), formatDuration(totals.duration))
 		or L.ALL_DONE
+	local color = colors.fontDim
+	if totals.burns > 0 then
+		color = (totals.dv > available) and colors.alertRed or colors.maneuver
+	end
 	ui.sameLine()
 	ui.withFont(captionFont.name, captionFont.size, function()
-		textRight(summary, totals.burns > 0 and colors.maneuver or colors.fontDim)
+		textRight(summary, color)
 	end)
 	ui.setItemTooltip(L.SUMMARY_TIP)
 end
