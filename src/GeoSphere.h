@@ -130,6 +130,7 @@ private:
 	RefCountedPtr<Graphics::Texture> m_texLo;
 	RefCountedPtr<Graphics::Texture> m_texWater;
 	RefCountedPtr<Graphics::Texture> m_texMaterials;
+	RefCountedPtr<Graphics::Texture> m_texRelief;
 
 	// terrain heights for the cloud shaders, baked on first close approach
 	std::unique_ptr<PlanetClouds::CloudHeightMap> m_cloudHeightMap;

@@ -25,15 +25,19 @@ layout(location = 11) in vec4 a_materials1;
 out vec4 materialWeights0;
 out vec4 materialWeights1;
 
-#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
-// for the per-pixel water (terrain-water.glsl): the encoded altitude, the
-// sunlight reaching the surface from each light, the sky light a flat sea
-// reflects, and the transmittance and in-scattering of the view ray
-out float surfaceHeight;
-out vec3 waterSunLight[NUM_LIGHTS];
-out vec3 waterSkyLight;
+#if (NUM_LIGHTS > 0)
+// for the per-pixel lighting: the sunlight reaching the surface from each
+// light, and the transmittance and in-scattering of the view ray
+out vec3 lightAtSurface[NUM_LIGHTS];
 out vec3 viewTransmittance;
 out vec3 viewInscatter;
+#endif
+
+#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
+// for the per-pixel water (terrain-water.glsl): the encoded altitude and
+// the sky light a flat sea reflects
+out float surfaceHeight;
+out vec3 waterSkyLight;
 #endif
 
 void main(void)
@@ -67,12 +71,12 @@ void main(void)
 
 	vec4 terrainColor = vec4(0.f);
 	vec4 atmosphereColor = vec4(0.f);
+	viewTransmittance = vec3(1.0);
+	viewInscatter = vec3(0.0);
 
 #ifdef TERRAIN_WITH_WATER
 	surfaceHeight = a_color.a * 2.0 - 1.0;
 	waterSkyLight = vec3(0.0);
-	viewTransmittance = vec3(1.0);
-	viewInscatter = vec3(0.0);
 	// The sky a flat sea reflects, seen from just above the surface. Only
 	// below about 1000 m, where pixels can be water.
 	bool nearWater = surfaceHeight < 0.35;
@@ -106,6 +110,7 @@ void main(void)
 		// Atmospheric outscattering along the ray between the light source to the point on terrain
 		sunLight *= calculateRayTransmittance(P, L, scatterLUT);
 #endif
+		lightAtSurface[i] = sunLight;
 		// start with diffuse terrain color
 		vec3 terrain = vertexColor.xyz * sunLight * max(0.f, dot(L, tnorm));
 		lightColor *= intensity;
@@ -120,9 +125,6 @@ void main(void)
 		// the fragment shader.
 
 #ifdef TERRAIN_WITH_WATER
-		// water is shaded per pixel (terrain-water.glsl); vertexColor stays
-		// the land shading, used along the coastline
-		waterSunLight[i] = sunLight;
 #ifdef ATMOSPHERE
 		// the sky colour, as the sky shader computes it (x20 exposure there),
 		// with fewer samples: it varies slowly along the ray
@@ -149,10 +151,8 @@ void main(void)
 		terrain *= calcTransmittance(opticalDistance);
 		// And add the (pre-damped) inscattering over the same length. We multiply by 4 to fake multiple scattering.
 		terrain += inscattering * 4;
-#ifdef TERRAIN_WITH_WATER
 		viewTransmittance = calcTransmittance(opticalDistance);
 		viewInscatter += inscattering * 4;
-#endif
 
 #endif // ATMOSPHERE
 

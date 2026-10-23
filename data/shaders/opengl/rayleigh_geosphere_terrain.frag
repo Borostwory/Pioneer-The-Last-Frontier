@@ -33,12 +33,15 @@ uniform float PatchDetailFrequency;
 #include "terrain-detail.glsl"
 #include "terrain-surface.glsl"
 
-#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
-in float surfaceHeight;
-in vec3 waterSunLight[NUM_LIGHTS];
-in vec3 waterSkyLight;
+#if (NUM_LIGHTS > 0)
+in vec3 lightAtSurface[NUM_LIGHTS];
 in vec3 viewTransmittance;
 in vec3 viewInscatter;
+#endif
+
+#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
+in float surfaceHeight;
+in vec3 waterSkyLight;
 #include "terrain-water.glsl"
 #endif
 
@@ -61,7 +64,8 @@ void main(void)
 #else
 	float altitude = 1.0e4;
 #endif
-	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, albedoColor.rgb, varyingEyepos, materialDx, materialDy,
+	MaterialMapping mapping = materialMapping(varyingEyepos, materialDx, materialDy, surfaceUp);
+	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, albedoColor.rgb, mapping,
 		dist, varyingNormal, surfaceUp, altitude, hasWater);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist);
@@ -71,35 +75,41 @@ void main(void)
 		detailMul.rgb *= mix(1.0, terrainSurfacePatternFor(varyingEyepos, dist, pw, rock), patternWeight);
 	}
 
-	// Use the detail value to multiply the final colour before lighting
-	vec4 ambient = scene.ambient * vertexColor * 0.f;
-	vec4 final = detailMul * vertexColor;
-
-#ifdef ATMOSPHERE
-	final = ambient + final;
-#else
-	// add extra brightness to atmosphere-less planetoids and dim stars
-	final = ambient + final * 2.0;
+#if (NUM_LIGHTS > 0)
+	// lit per pixel, with the relief between the mesh and the pixel
+	vec3 N = terrainReliefNormal(normalize(varyingNormal), surfaceUp, mapping, materialWeights0, materialWeights1, dist);
+	vec3 light = vec3(0.0);
+	for (int i = 0; i < NUM_LIGHTS; ++i)
+		light += lightAtSurface[i] * max(dot(N, normalize(uLight[i].position.xyz)), 0.0);
+	vec3 land = albedoColor.rgb * detailMul.rgb * light;
+#ifdef TERRAIN_WITH_LAVA
+	land += material.emission.xyz * float(NUM_LIGHTS);
 #endif
-
-	frag_color = final;
+	land = land * viewTransmittance + viewInscatter;
+#ifndef ATMOSPHERE
+	// add extra brightness to atmosphere-less planetoids and dim stars
+	land *= 2.0;
+#endif
+	frag_color = vec4(land, 0.0);
+#else
+	frag_color = detailMul * vertexColor;
+#endif
 
 #if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
 	// water: sky reflection, sun glint and the water body, per pixel
 	float waterMask = terrainWaterMask(surfaceHeight);
-	vec3 dpdx = dFdx(varyingEyepos), dpdy = dFdy(varyingEyepos);
 	if (waterMask > 0.0) {
-		vec3 up = normalize(varyingEyepos * geosphereInvRadius - geosphereCenter);
+		vec3 up = surfaceUp;
 		vec3 V = -normalize(varyingEyepos);
-		WaterSurface ws = waterSurface(varyingEyepos, up, dpdx, dpdy);
+		WaterSurface ws = waterSurface(varyingEyepos, up, materialDx, materialDy);
 		float F = waterFresnel(dot(ws.N, V));
 		vec3 bodyLight = 0.3 * waterSkyLight;
 		vec3 water = F * waterSkyLight;
 		for (int i = 0; i < NUM_LIGHTS; ++i) {
 			vec3 L = normalize(uLight[i].position.xyz);
 			// (no glint from tilted waves once the sun has set)
-			water += waterSunLight[i] * waterSpecular(ws, V, L) * smoothstep(-0.02, 0.05, dot(up, L));
-			bodyLight += waterSunLight[i] * max(dot(up, L), 0.0);
+			water += lightAtSurface[i] * waterSpecular(ws, V, L) * smoothstep(-0.02, 0.05, dot(up, L));
+			bodyLight += lightAtSurface[i] * max(dot(up, L), 0.0);
 		}
 		water += waterBody(albedoColor.rgb, max(-terrainAltitude(surfaceHeight), 0.0)) * bodyLight * (1.0 - F);
 		water = water * viewTransmittance + viewInscatter;

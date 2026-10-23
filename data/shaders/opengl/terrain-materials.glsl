@@ -246,10 +246,9 @@ vec3 materialSample(int layer, MaterialMapping m, float level)
 // colour shifts from slope rock, snow and beaches; and the lava glow (a,
 // times MATERIAL_LAVA_GLOW, added after lighting).
 // slots0, slots1: the vertex's slot weights; albedo: unlit vertex colour;
-// eyepos: view-space position in metres; dpdx, dpdy: its screen derivatives
-// (take them outside branches); normal, up: view space; altitude: metres
-// above sea level (only used with water)
-vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, vec3 eyepos, vec3 dpdx, vec3 dpdy,
+// mapping: materialMapping() of the pixel; normal, up: view space;
+// altitude: metres above sea level (only used with water)
+vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMapping mapping,
 	float distMetres, vec3 normal, vec3 up, float altitude, bool hasWater)
 {
 	int lavaSlot = int(MaterialSpecial.w);
@@ -287,7 +286,6 @@ vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, vec3 eyepos, v
 	int l1 = materialSlotLayer(m1), l2 = materialSlotLayer(m2);
 	float w1 = w[m1], w2 = l2 >= 0 ? w[m2] : 0.0;
 	vec3 d1 = vec3(0.0, 1.0, 0.5), d2 = vec3(0.0, 1.0, 0.5);
-	MaterialMapping mapping = materialMapping(eyepos, dpdx, dpdy, up);
 	float coarse = mapping.level + log2(MATERIAL_COARSE_SCALE);
 	if (l1 >= 0) {
 		vec3 f1 = materialSample(l1, mapping, mapping.level);
@@ -334,4 +332,100 @@ vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, vec3 eyepos, v
 	float glow = (l1 == MATERIAL_LAVA ? n1 * d1.x : 0.0) + (l2 == MATERIAL_LAVA ? n2 * d2.x : 0.0);
 	glow = mix(farGlow, glow, contrast);
 	return vec4(colourMul * detail, glow);
+}
+
+// ---------------------------------------------------------------- relief
+
+// Relief shading: slopes of the terrain detail between the mesh and the
+// pixel, from a tileable slope texture (scripts/make_terrain_relief.py, three
+// octaves of waves, 4 to 32 texels) mapped like the materials. Its longest
+// waves are the mesh's shortest, twice the vertex spacing, estimated from
+// the distance and the terrain detail distance (GeoSphere::Render); a
+// second copy 8x smaller continues it down to
+// the pixel near the ground (mipmaps fade it where pixels are larger). As
+// strong as the materials are rough.
+uniform sampler2D terrainRelief;
+// x: vertex spacing per metre of distance, y: smallest vertex spacing in
+// metres, of the deepest patches (GeoSphere::Render)
+uniform vec4 ReliefScale;
+
+#define RELIEF_TEXTURE_SIZE 256.0
+// longest waves in the texture, in texels
+#define RELIEF_LONGEST_WAVE 32.0
+// strength fades to RELIEF_FAR_STRENGTH between these distances (metres)
+#define RELIEF_NEAR_DIST 2.0e4
+#define RELIEF_FAR_DIST 2.0e5
+#define RELIEF_FAR_STRENGTH 0.4
+
+// slope RMS of each material's relief below the mesh
+float materialRoughness(int m)
+{
+	if (m == MATERIAL_ROCK || m == MATERIAL_BASALT) return 0.17;
+	if (m == MATERIAL_LAVA) return 0.12;
+	if (m == MATERIAL_GRAVEL || m == MATERIAL_ASH) return 0.11;
+	if (m == MATERIAL_FOREST) return 0.09;
+	if (m == MATERIAL_SOIL || m == MATERIAL_REGOLITH) return 0.07;
+	if (m == MATERIAL_GRASS) return 0.06;
+	if (m == MATERIAL_SAND || m == MATERIAL_SNOW) return 0.04;
+	if (m == MATERIAL_ICE) return 0.03;
+	return 0.025;
+}
+
+// planet-fixed slope from one cube-face projection
+vec3 reliefPlaneSlope(vec3 q, vec3 qx, vec3 qy, int axis)
+{
+	vec2 s = (textureGrad(terrainRelief, materialPlaneUV(q, axis), materialPlaneUV(qx, axis), materialPlaneUV(qy, axis)).rg * 2.0 - 1.0) * 3.0;
+	return axis == 0 ? vec3(0.0, s.x, s.y) : (axis == 1 ? vec3(s.y, 0.0, s.x) : vec3(s.x, s.y, 0.0));
+}
+
+vec3 reliefTileSlope(MaterialMapping m, float level)
+{
+	float tile = exp2(level);
+	vec3 origin = level <= MATERIAL_FINE_ORIGIN_LEVEL ?
+		fract(MaterialOrigin.xyz * exp2(MATERIAL_FINE_ORIGIN_LEVEL - level)) :
+		fract(MaterialOriginCoarse.xyz * exp2(MATERIAL_MAX_LEVEL - level));
+	vec3 q = m.rel / tile + origin * 5.0;
+	vec3 qx = m.relDx / tile, qy = m.relDy / tile;
+	vec3 s = m.plane.x * reliefPlaneSlope(q, qx, qy, m.axes.x);
+	if (m.plane.y > 0.0)
+		s += m.plane.y * reliefPlaneSlope(q, qx, qy, m.axes.y);
+	return s;
+}
+
+// The surface normal with the relief added. normal, up: view space;
+// m: materialMapping() of the pixel; slots0, slots1: the vertex's material weights
+vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots0, vec4 slots1, float distMetres)
+{
+	float roughness = 0.0;
+	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		int layer = materialSlotLayer(i);
+		if (layer >= 0)
+			roughness += (i < 4 ? slots0[i] : slots1[i - 4]) * materialRoughness(layer);
+	}
+	roughness *= mix(1.0, RELIEF_FAR_STRENGTH, smoothstep(RELIEF_NEAR_DIST, RELIEF_FAR_DIST, distMetres));
+	if (roughness < 0.005)
+		return normal;
+
+	// tile size putting the longest waves at twice the vertex spacing
+	float spacing = max(distMetres * ReliefScale.x, ReliefScale.y);
+	float level = clamp(log2(max(2.0 * spacing * RELIEF_TEXTURE_SIZE / RELIEF_LONGEST_WAVE, 1.0)), 0.0, MATERIAL_MAX_LEVEL - 1.0);
+	float k = floor(level);
+	vec3 slope = mix(reliefTileSlope(m, k), reliefTileSlope(m, k + 1.0), level - k);
+
+	// the copy 8x smaller, where its waves are at least a few pixels long
+	// (near the ground, where the mesh stops getting finer)
+	float footprint = sqrt(length(m.relDx) * length(m.relDy));
+	float finerTexel = exp2(level - 3.0) / RELIEF_TEXTURE_SIZE;
+	float finer = 0.6 * smoothstep(0.5, 1.0, finerTexel / footprint);
+	if (finer > 0.0) {
+		float l = clamp(level - 3.0, 0.0, MATERIAL_MAX_LEVEL - 1.0);
+		float kf = floor(l);
+		slope += finer * mix(reliefTileSlope(m, kf), reliefTileSlope(m, kf + 1.0), l - kf);
+	}
+	slope *= inversesqrt(1.0 + finer * finer);
+
+	// planet-fixed to view space, along the surface only
+	slope = mat3(cloudAxisX.xyz, cloudAxisY.xyz, cloudAxisZ.xyz) * slope * roughness;
+	slope -= up * dot(slope, up);
+	return normalize(normal - slope);
 }

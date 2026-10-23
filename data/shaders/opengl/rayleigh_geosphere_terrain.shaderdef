@@ -11,6 +11,7 @@ Texture sampler2D scatterLUT
 Texture sampler2D cloudHeightTex
 Texture sampler2D waterWaves
 Texture sampler2DArray terrainMaterials
+Texture sampler2D terrainRelief
 
 Buffer LightData binding=0
 Buffer DrawData binding=1
@@ -27,6 +28,7 @@ PushConstant vec4 MaterialOriginCoarse binding=6
 PushConstant vec4 MaterialSlots0 binding=7
 PushConstant vec4 MaterialSlots1 binding=8
 PushConstant vec4 MaterialSpecial binding=9
+PushConstant vec4 ReliefScale binding=10
 
 Vertex "rayleigh_geosphere_terrain.vert"
 Fragment "rayleigh_geosphere_terrain.frag"

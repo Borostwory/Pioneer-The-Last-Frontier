@@ -530,6 +530,17 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		const vector3d camMetres = campos * GetSystemBody()->GetRadius();
 		m_surfaceMaterial->SetPushConstant("MaterialOrigin"_hash, FractionalPart(camMetres / (5.0 * 256.0)), 0.0f);
 		m_surfaceMaterial->SetPushConstant("MaterialOriginCoarse"_hash, FractionalPart(camMetres / (5.0 * 131072.0)), 0.0f);
+
+		// Relief shading adds the detail below the mesh, so it needs the
+		// vertex spacing: patches split within the terrain detail distance K
+		// patch widths, so a patch at distance d is d/K to d/2K wide (about
+		// d / 1.4K), split into the context's vertex gaps.
+		// The deepest patches stop it from getting finer near the ground
+		// (as CalculateMaxPatchDepth() works it out).
+		const double vertexGaps = double(s_patchContext->GetEdgeLen() - 3); // edge length includes the skirt
+		const double deepestSpacing = 2.0 * M_PI * GetSystemBody()->GetRadius() / double(s_patchContext->GetEdgeLen() * 8) / std::pow(2.0, double(m_maxDepth));
+		m_surfaceMaterial->SetPushConstant("ReliefScale"_hash,
+			vector3f(float(1.0 / (1.41 * GetLodDistance() * vertexGaps)), float(deepestSpacing), 0.0f), 0.0f);
 	}
 
 	// cloud data: shadows in the terrain shader now, the clouds themselves in
@@ -691,6 +702,9 @@ void GeoSphere::SetUpMaterials()
 		};
 		m_texMaterials.Reset(Graphics::TextureBuilder::Array(materialFiles, materialFiles.size()).GetOrCreateTexture(Pi::renderer, "terrain-materials"));
 		m_surfaceMaterial->SetTexture("terrainMaterials"_hash, m_texMaterials.Get());
+		// relief below the mesh (terrainReliefNormal() in terrain-materials.glsl)
+		m_texRelief.Reset(Graphics::TextureBuilder::Normal("textures/terrain/relief.png").GetOrCreateTexture(Pi::renderer, "model"));
+		m_surfaceMaterial->SetTexture("terrainRelief"_hash, m_texRelief.Get());
 
 		// this body's material slots: texture layer per slot (-1 unused), and
 		// the slots for steep rock, beaches and lava (-1 none)
