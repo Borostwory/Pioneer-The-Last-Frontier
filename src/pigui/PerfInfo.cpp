@@ -704,6 +704,13 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 	if (ImGui::IsItemDeactivatedAfterEdit())
 		Pi::config->Save();
 
+	// GPU detail tiles (TerrainTiles); off frees the atlas, for A/B comparison
+	bool detailTiles = Pi::config->Int("TerrainDetailTiles", 1) != 0;
+	if (ImGui::Checkbox("GPU Detail Tiles", &detailTiles)) {
+		Pi::config->SetInt("TerrainDetailTiles", detailTiles ? 1 : 0);
+		Pi::config->Save();
+	}
+
 	const GeoPatchGenStats stats = GetGeoPatchGenStats();
 	const double totalMs = double(stats.microseconds) / 1000.0;
 	const double perPatchUs = stats.patches ? double(stats.microseconds) / double(stats.patches) : 0.0;

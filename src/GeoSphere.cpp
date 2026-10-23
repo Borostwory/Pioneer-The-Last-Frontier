@@ -660,7 +660,12 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		for (int i = 0; i < NUM_PATCHES; i++) {
 			m_patches[i]->GatherRenderablePatches(m_visiblePatches, renderer, campos, frustum);
 		}
-		TerrainTiles *tiles = (GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR) ? TerrainTiles::Get(renderer) : nullptr;
+		// config TerrainDetailTiles (Terrain Debug window): 0 frees the atlas
+		TerrainTiles *tiles = nullptr;
+		if (Pi::config->Int("TerrainDetailTiles", 1) == 0)
+			TerrainTiles::Destroy();
+		else if (GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
+			tiles = TerrainTiles::Get(renderer);
 		if (tiles) {
 			// radians per pixel, from the projection and the viewport height
 			const matrix4x4f proj = renderer->GetProjection();
