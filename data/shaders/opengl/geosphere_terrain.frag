@@ -71,9 +71,10 @@ void main(void)
 	vec3 materialDx = dFdx(varyingEyepos), materialDy = dFdy(varyingEyepos);
 	vec3 surfaceUp = normalize(eyeposScaled - geosphereCenter);
 	MaterialMapping mapping = materialMapping(varyingEyepos, materialDx, materialDy, surfaceUp);
+	vec4 tile = terrainTileSample(texCoord0);
 	vec2 bump;
 	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, vertexColor.rgb, mapping,
-		dist, varyingNormal, surfaceUp, altitude, hasWater, bump);
+		dist, varyingNormal, surfaceUp, altitude, hasWater, tile.w, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist);
 	if (patternWeight > 0.0) {
@@ -83,7 +84,7 @@ void main(void)
 	}
 
 	// the relief between the mesh and the pixel
-	tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialWeights0, materialWeights1, dist);
+	tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile);
 	// and the bumps of the material textures
 	tnorm = terrainBumpNormal(tnorm, materialDx, materialDy, bump);
 

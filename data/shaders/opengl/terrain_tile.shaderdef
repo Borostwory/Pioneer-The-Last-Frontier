@@ -1,0 +1,19 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+Shader terrain_tile
+
+Buffer DrawData binding=1
+
+PushConstant vec4 TileSlot binding=0
+PushConstant vec4 TileCorner0 binding=1
+PushConstant vec4 TileCorner1 binding=2
+PushConstant vec4 TileCorner2 binding=3
+PushConstant vec4 TileCorner3 binding=4
+PushConstant vec4 TileCentre binding=5
+PushConstant vec4 TileOctaves binding=6
+PushConstant vec4 TileOrigin binding=7
+PushConstant vec4 TileStyle binding=8
+
+Vertex "cloud_fullscreen.vert"
+Fragment "terrain_tile.frag"

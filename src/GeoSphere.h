@@ -95,6 +95,10 @@ public:
 	void Reset() override;
 
 	inline Sint32 GetMaxDepth() const { return m_maxDepth; }
+	// vertex spacing of the deepest patches, in metres
+	double GetDeepestVertexSpacing() const;
+	// weights of the detail tile styles: rolling, ridged, dunes, craters (TerrainTiles)
+	const float *GetTileStyle() const { return m_tileStyle; }
 
 	// a patch that wants to split; the nearest ones are submitted at the end of the update
 	void AddQuadSplitCandidate(double distance, GeoPatch *patch);
@@ -147,6 +151,9 @@ private:
 
 	// effective terrain detail distance for this frame, see GetLodDistance()
 	double m_lodDistance = 8.0;
+	// see GetTileStyle()
+	float m_tileStyle[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
+	void SetUpTileStyle();
 };
 
 #endif /* _GEOSPHERE_H */

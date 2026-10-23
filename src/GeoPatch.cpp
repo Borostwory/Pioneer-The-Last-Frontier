@@ -17,6 +17,7 @@
 #include "graphics/Types.h"
 #include "graphics/VertexBuffer.h"
 #include "perlin.h"
+#include "TerrainTiles.h"
 #include "profiler/Profiler.h"
 #include "vcacheopt/vcacheopt.h"
 
@@ -107,6 +108,7 @@ GeoPatch::GeoPatch(const RefCountedPtr<GeoPatchContext> &ctx_, GeoSphere *gs,
 
 GeoPatch::~GeoPatch()
 {
+	TerrainTiles::ReleaseSlot(m_tileSlot);
 	m_hasJobRequest = false;
 	for (int i = 0; i < NUM_KIDS; i++) {
 		m_kids[i].reset();
@@ -347,6 +349,11 @@ void GeoPatch::RenderImmediate(Graphics::Renderer *renderer, const vector3d &cam
 		const float fDetailFrequency = pow(2.0f, float(m_geosphere->GetMaxDepth()) - float(m_depth));
 
 		m_geosphere->GetSurfaceMaterial()->SetPushConstant("PatchDetailFrequency"_hash, fDetailFrequency);
+
+		// this patch's detail tile: atlas texture coordinates (origin, size), and whether it has one
+		const TerrainTiles *tiles = m_tileSlot >= 0 ? TerrainTiles::Get(renderer) : nullptr;
+		const vector3f tile = tiles ? tiles->SlotUV(m_tileSlot) : vector3f(0.0f, 0.0f, 0.0f);
+		m_geosphere->GetSurfaceMaterial()->SetPushConstant("PatchTile"_hash, tile, tiles ? 1.0f : 0.0f);
 		renderer->DrawMesh(m_patchVBOData->m_patchMesh.get(), m_geosphere->GetSurfaceMaterial().Get());
 
 #if DEBUG_CENTROIDS
@@ -363,6 +370,11 @@ void GeoPatch::RenderImmediate(Graphics::Renderer *renderer, const vector3d &cam
 #endif
 		renderer->GetStats().AddToStatCount(Graphics::Stats::STAT_PATCHES, 1);
 	}
+}
+
+double GeoPatch::GetVertexSpacing() const
+{
+	return m_edgeLength * m_ctx->GetFrac();
 }
 
 void GeoPatch::GatherRenderablePatches(std::vector<std::pair<double, GeoPatch *>> &visiblePatches, Graphics::Renderer *renderer, const vector3d &campos, const Graphics::Frustum &frustum)

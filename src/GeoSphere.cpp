@@ -11,6 +11,7 @@
 #include "MathUtil.h"
 #include "Pi.h"
 #include "PlanetClouds.h"
+#include "TerrainTiles.h"
 #include "RefCounted.h"
 #include "galaxy/AtmosphereParameters.h"
 #include "galaxy/StarSystem.h"
@@ -113,6 +114,7 @@ static double LodDistanceAtAltitude(const double altitude)
 
 void GeoSphere::UninitGeoSphere()
 {
+	TerrainTiles::Destroy();
 	assert(s_patchContext.Unique());
 	s_patchContext.Reset();
 	PlanetClouds::Uninit();
@@ -399,6 +401,41 @@ void GeoSphere::BuildFirstPatches()
 	m_initStage = eRequestedFirstPatches;
 }
 
+double GeoSphere::GetDeepestVertexSpacing() const
+{
+	// as CalculateMaxPatchDepth() works it out
+	const double circumference = 2.0 * M_PI * m_sbody->GetRadius();
+	return circumference / double(s_patchContext->GetEdgeLen() * 8) / std::pow(2.0, double(m_maxDepth));
+}
+
+// Detail tile styles from the height fractal: craters on airless and
+// cratered bodies, dunes on dune terrains, ridges on mountains and rugged
+// terrain, rolling eroded hills elsewhere.
+void GeoSphere::SetUpTileStyle()
+{
+	const std::string name = m_terrain->GetHeightFractalName();
+	auto has = [&](const char *s) { return name.find(s) != std::string::npos; };
+	float rolling = 1.0f, ridged = 0.0f, dunes = 0.0f, craters = 0.0f;
+	if (has("Dunes")) {
+		rolling = 0.4f;
+		dunes = 0.8f;
+	} else if (has("Mountains") || has("Rugged") || has("Ridged") || has("Barren") || has("Mapped")) {
+		rolling = 0.5f;
+		ridged = 0.6f;
+	}
+	const bool airless = GetSystemBody()->GetVolatileGas() < 0.05;
+	if (has("Crater") || has("Asteroid") || airless) {
+		craters = 1.0f;
+		rolling *= 0.4f;
+		ridged *= 0.4f;
+		dunes = 0.0f;
+	}
+	m_tileStyle[0] = rolling;
+	m_tileStyle[1] = ridged;
+	m_tileStyle[2] = dunes;
+	m_tileStyle[3] = craters;
+}
+
 void GeoSphere::CalculateMaxPatchDepth()
 {
 	const double circumference = 2.0 * M_PI * m_sbody->GetRadius();
@@ -619,9 +656,22 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		// must clear this after each render otherwise it just accumulates every patch ever drawn!
 		m_visiblePatches.clear();
 	} else {
+		// gather the visible patches, bake the detail tiles they need, draw them
 		for (int i = 0; i < NUM_PATCHES; i++) {
-			m_patches[i]->Render(renderer, campos, modelView, frustum);
+			m_patches[i]->GatherRenderablePatches(m_visiblePatches, renderer, campos, frustum);
 		}
+		TerrainTiles *tiles = (GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR) ? TerrainTiles::Get(renderer) : nullptr;
+		if (tiles) {
+			// radians per pixel, from the projection and the viewport height
+			const matrix4x4f proj = renderer->GetProjection();
+			const double pixelAngle = 2.0 / (std::max(double(proj[5]), 1e-6) * std::max(renderer->GetViewport().h, 1));
+			tiles->Update(renderer, this, m_visiblePatches, pixelAngle);
+			m_surfaceMaterial->SetTexture("terrainTiles"_hash, tiles->GetAtlas());
+		}
+		for (std::pair<double, GeoPatch *> &pPatch : m_visiblePatches) {
+			pPatch.second->RenderImmediate(renderer, campos, modelView);
+		}
+		m_visiblePatches.clear();
 	}
 
 	renderer->EndGpuTimer();
@@ -705,6 +755,7 @@ void GeoSphere::SetUpMaterials()
 		// relief below the mesh (terrainReliefNormal() in terrain-materials.glsl)
 		m_texRelief.Reset(Graphics::TextureBuilder::Normal("textures/terrain/relief.png").GetOrCreateTexture(Pi::renderer, "model"));
 		m_surfaceMaterial->SetTexture("terrainRelief"_hash, m_texRelief.Get());
+		SetUpTileStyle();
 
 		// this body's material slots: texture layer per slot (-1 unused), and
 		// the slots for steep rock, beaches and lava (-1 none)

@@ -106,6 +106,14 @@ public:
 		m_needUpdateVBOs = HasHeightData();
 	}
 
+	// terrain detail tile (TerrainTiles): its slot in the atlas, -1 if none
+	int GetTileSlot() const { return m_tileSlot; }
+	void SetTileSlot(int slot) { m_tileSlot = slot; }
+	// a corner (0..3) on the unit sphere
+	const vector3d &GetCorner(int i) const { return i == 0 ? m_corners->m_v0 : i == 1 ? m_corners->m_v1 : i == 2 ? m_corners->m_v2 : m_corners->m_v3; }
+	// distance between vertices on the unit sphere
+	double GetVertexSpacing() const;
+
 
 private:
 	static const int NUM_KIDS = 4;
@@ -163,6 +171,7 @@ private:
 	uint8_t m_patchUpdateState;
 	bool m_needUpdateVBOs;
 	bool m_hasJobRequest;
+	int m_tileSlot = -1;
 #if DEBUG_PATCHES
 #ifdef DEBUG_BOUNDING_SPHERES
 	std::unique_ptr<Graphics::Drawables::Sphere3D> m_boundsphere;

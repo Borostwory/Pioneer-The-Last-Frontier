@@ -36,6 +36,13 @@ uniform vec4 MaterialSlots1;
 // slots for rock on steep slopes, beaches, snow and lava (-1: none)
 uniform vec4 MaterialSpecial;
 
+// the atlas of terrain detail tiles (TerrainTiles in the C++, terrain-tile.glsl)
+uniform sampler2D terrainTiles;
+// xy: atlas coordinates of this patch's tile, z: its size; w: 1 if the patch has one
+uniform vec4 PatchTile;
+// as TILE_SLOPE_RANGE in terrain-tile.glsl
+#define TERRAIN_TILE_SLOPE_RANGE 1.5
+
 // texture layers (TerrainMaterialTable::Layer)
 #define MATERIAL_ROCK 0
 #define MATERIAL_GRAVEL 1
@@ -110,6 +117,17 @@ vec3 materialColour(int m)
 	if (m == MATERIAL_ASH) return vec3(0.18, 0.17, 0.16);
 	if (m == MATERIAL_REGOLITH) return vec3(0.45, 0.44, 0.42);
 	return vec3(0.85, 0.83, 0.78);
+}
+
+// The patch's detail tile at patch coordinates uv: the slope of the
+// landforms below the mesh (xyz, planet-fixed) and the landform value (w:
+// high on crests, ridges and crater rims, low in hollows; 0.5 without a tile).
+vec4 terrainTileSample(vec2 uv)
+{
+	if (PatchTile.w <= 0.0)
+		return vec4(0.0, 0.0, 0.0, 0.5);
+	vec4 t = textureLod(terrainTiles, PatchTile.xy + clamp(uv, 0.0, 1.0) * PatchTile.z, 0.0);
+	return vec4((t.rgb * 2.0 - 1.0) * TERRAIN_TILE_SLOPE_RANGE, t.a);
 }
 
 // texture layer of a slot (-1: unused)
@@ -251,11 +269,12 @@ vec3 materialSample(int layer, MaterialMapping m, float level)
 // times MATERIAL_LAVA_GLOW, added after lighting).
 // slots0, slots1: the vertex's slot weights; albedo: unlit vertex colour;
 // mapping: materialMapping() of the pixel; normal, up: view space;
-// altitude: metres above sea level (only used with water).
+// altitude: metres above sea level (only used with water); landform: from
+// the detail tile (0.5 without one): bare rock on crests and rims.
 // bump: the blended texture height (x, 0..1) and its scale in metres (y),
 // for terrainBumpNormal()
 vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMapping mapping,
-	float distMetres, vec3 normal, vec3 up, float altitude, bool hasWater, out vec2 bump)
+	float distMetres, vec3 normal, vec3 up, float altitude, bool hasWater, float landform, out vec2 bump)
 {
 	bump = vec2(0.5, 0.0);
 	int lavaSlot = int(MaterialSpecial.w);
@@ -273,6 +292,18 @@ vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMappin
 	float w[MATERIAL_SLOTS];
 	terrainSlotWeights(slots0, slots1, 0.0, MATERIAL_BEACH_TOP, hasWater, w0);
 	terrainSlotWeights(slots0, slots1, slope, altitude, hasWater, w);
+	int rockSlot = int(MaterialSpecial.x);
+	float crest = 0.6 * smoothstep(0.7, 0.9, landform);
+	if (rockSlot >= 0 && crest > 0.0) {
+		float moved = 0.0;
+		for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+			if (i == rockSlot || i == int(MaterialSpecial.w))
+				continue;
+			moved += crest * w[i];
+			w[i] *= 1.0 - crest;
+		}
+		w[rockSlot] += moved;
+	}
 
 	// the two strongest slots
 	int m1 = 0, m2 = 1;
@@ -404,8 +435,10 @@ vec3 reliefTileSlope(MaterialMapping m, float level)
 }
 
 // The surface normal with the relief added. normal, up: view space;
-// m: materialMapping() of the pixel; slots0, slots1: the vertex's material weights
-vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots0, vec4 slots1, float distMetres)
+// m: materialMapping() of the pixel; slots0, slots1: the vertex's material
+// weights; tile: terrainTileSample(), which replaces the generic relief's
+// longer waves where the patch has a tile
+vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots0, vec4 slots1, float distMetres, vec4 tile)
 {
 	float roughness = 0.0;
 	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
@@ -421,7 +454,14 @@ vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots0, v
 	float spacing = max(distMetres * ReliefScale.x, ReliefScale.y);
 	float level = clamp(log2(max(2.0 * spacing * RELIEF_TEXTURE_SIZE / RELIEF_LONGEST_WAVE, 1.0)), 0.0, MATERIAL_MAX_LEVEL - 1.0);
 	float k = floor(level);
-	vec3 slope = mix(reliefTileSlope(m, k), reliefTileSlope(m, k + 1.0), level - k);
+	vec3 slope;
+	if (PatchTile.w > 0.0) {
+		// the detail tile: the planet's own landforms, as strong as the
+		// materials are rough (and visible on smooth ones)
+		slope = tile.xyz * clamp(roughness / 0.1, 0.5, 1.6) / roughness;
+	} else {
+		slope = mix(reliefTileSlope(m, k), reliefTileSlope(m, k + 1.0), level - k);
+	}
 
 	// the copy 8x smaller, where its waves are at least a few pixels long
 	// (near the ground, where the mesh stops getting finer)
