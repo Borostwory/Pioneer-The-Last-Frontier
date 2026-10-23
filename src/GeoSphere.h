@@ -116,7 +116,6 @@ private:
 	};
 	std::deque<TDistanceRequest> mQuadSplitRequests;
 
-	static const uint32_t MAX_SPLIT_OPERATIONS = 128;
 	std::deque<SQuadSplitResult *> mQuadSplitResults;
 	std::deque<SSingleSplitResult *> mSingleSplitResults;
 

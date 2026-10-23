@@ -681,7 +681,7 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 
 	// how early terrain patches subdivide (also in the settings window); applies live
 	float lodDistance = float(GeoSphere::GetLodDistanceScale());
-	if (ImGui::SliderFloat("Terrain Detail Distance", &lodDistance, 1.0f, 64.0f, "%.1f patch widths")) {
+	if (ImGui::SliderFloat("Terrain Detail Distance", &lodDistance, 1.0f, 30.0f, "%.1f patch widths")) {
 		GeoSphere::SetLodDistanceScale(lodDistance);
 		Pi::config->SetFloat("PlanetLodDistance", float(GeoSphere::GetLodDistanceScale()));
 	}

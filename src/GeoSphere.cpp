@@ -51,7 +51,7 @@ static double s_lodDistanceScale = 8.0;
 void GeoSphere::InitGeoSphere()
 {
 	s_patchContext.Reset(new GeoPatchContext(detail_edgeLen[Pi::detail.planets > 4 ? 4 : Pi::detail.planets]));
-	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 64.0);
+	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 30.0);
 }
 
 //static
@@ -63,7 +63,7 @@ double GeoSphere::GetLodDistanceScale()
 //static
 void GeoSphere::SetLodDistanceScale(const double scale)
 {
-	s_lodDistanceScale = Clamp(scale, 1.0, 64.0);
+	s_lodDistanceScale = Clamp(scale, 1.0, 30.0);
 }
 
 void GeoSphere::UninitGeoSphere()
@@ -88,7 +88,7 @@ void GeoSphere::UpdateAllGeoSpheres()
 {
 	PROFILE_SCOPED()
 	// terrain detail distance setting; read every frame so the settings slider applies live
-	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 64.0);
+	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 30.0);
 	for (std::vector<GeoSphere *>::iterator i = s_allGeospheres.begin(); i != s_allGeospheres.end(); ++i) {
 		(*i)->Update();
 	}
@@ -247,28 +247,23 @@ GeoSphere::~GeoSphere()
 	s_allGeospheres.erase(std::find(s_allGeospheres.begin(), s_allGeospheres.end(), this));
 }
 
+// Results are always kept. They used to be dropped once 128 were waiting,
+// which left the requesting patch flagged as waiting for a job forever: it
+// never split again and blocked its parent from merging, so it stayed as a
+// coarse flat patch. Higher terrain detail distances finish far more jobs
+// per frame and hit that limit.
 bool GeoSphere::AddQuadSplitResult(SQuadSplitResult *res)
 {
-	bool result = false;
 	assert(res);
-	assert(mQuadSplitResults.size() < MAX_SPLIT_OPERATIONS);
-	if (mQuadSplitResults.size() < MAX_SPLIT_OPERATIONS) {
-		mQuadSplitResults.emplace_back(res);
-		result = true;
-	}
-	return result;
+	mQuadSplitResults.emplace_back(res);
+	return true;
 }
 
 bool GeoSphere::AddSingleSplitResult(SSingleSplitResult *res)
 {
-	bool result = false;
 	assert(res);
-	assert(mSingleSplitResults.size() < MAX_SPLIT_OPERATIONS);
-	if (mSingleSplitResults.size() < MAX_SPLIT_OPERATIONS) {
-		mSingleSplitResults.emplace_back(res);
-		result = true;
-	}
-	return result;
+	mSingleSplitResults.emplace_back(res);
+	return true;
 }
 
 void GeoSphere::ProcessSplitResults()

@@ -234,7 +234,7 @@ local function showVideoOptions()
 	-- TODO: move the label into the language files
 	local lodDistance = Engine.SettingsGetFloat("PlanetLodDistance")
 	local newLodDistance
-	newLodDistance, c = ui.sliderFloat("Terrain detail distance", lodDistance, 1.0, 64.0, "%.0f")
+	newLodDistance, c = ui.sliderFloat("Terrain detail distance", lodDistance, 1.0, 30.0, "%.0f")
 	if ui.isItemHovered() then
 		Engine.pigui.SetTooltip("How far away planet terrain gets its full mesh detail: a terrain patch is refined once you are closer than this many patch widths. Higher is sharper from far away but generates more terrain (CPU) and draws more triangles. 8 = default, 1 = original Pioneer behaviour.")
 	end
