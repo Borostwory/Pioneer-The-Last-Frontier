@@ -18,6 +18,7 @@ uniform int NumShadows;
 #include "cloud-noise.glsl"
 #include "cloud-derive.glsl"
 #include "cloud-march.glsl"
+#include "terrain-detail.glsl"
 
 in float dist;
 
@@ -33,14 +34,8 @@ out vec4 frag_color;
 
 uniform float PatchDetailFrequency;
 
-#define detailScaleHi (PatchDetailFrequency * 4.0)
-#define detailScaleLo (PatchDetailFrequency * 0.5)
-
 void main(void)
 {
-	vec4 hidetail = texture(texture0, texCoord0 * detailScaleHi);
-	vec4 lodetail = texture(texture1, texCoord0 * detailScaleLo);
-
 	vec3 eyeposScaled = varyingEyepos * geosphereInvRadius;
 	vec3 eyenorm = normalize(varyingEyepos);
 	vec3 tnorm = normalize(varyingNormal);
@@ -53,11 +48,8 @@ void main(void)
 	CloudPlanet clouds = cloudDerive();
 #endif
 
-	// calculate the detail texture contribution from hi and lo textures
-	float hiloMix = exp(-0.004 * dist);
-	float detailMix = exp(-0.001 * dist);
-	vec4 detailVal = mix(lodetail, hidetail, hiloMix);
-	vec4 detailMul = mix(vec4(1.0), detailVal, detailMix);
+	// detail texture contribution, at a constant on-screen scale at any distance
+	vec4 detailMul = vec4(vec3(terrainDetail(texture0, texture1, texCoord0, PatchDetailFrequency, dist)), 1.0);
 
 #ifdef TERRAIN_WITH_WATER
 	float specularReflection=0.0;
