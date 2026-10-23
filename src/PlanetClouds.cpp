@@ -53,13 +53,13 @@ namespace {
 
 	// Settings (config.ini, also in the video settings window):
 	//   CloudsEnabled    0/1
-	//   CloudResolution  0..4: effective cloud resolution 360, 540, 720, 1080 lines, or full
-	//   CloudResolutionSpace  0..4: the same, used when the camera is well above the clouds
+	//   CloudResolution  0..5: effective cloud resolution 360, 540, 720, 1080, 1440 lines, or full
+	//   CloudResolutionSpace  0..5: the same, used when the camera is well above the clouds
 	//   CloudQuality     0..3: raymarch steps (CLOUD_QUALITY_STEPS)
 	//   CloudWeatherMaps 0/1: bake the large-scale weather pattern of the nearest planet (UpdateWeatherMaps)
 	//   CloudSpaceDetail 0..200 %: how soon the resolution rises toward the
 	//                    space resolution with distance (scales RES_PIXELS_PER_CELL; 0 = never)
-	//   CloudTemporal    0 off, 1 4x (each frame traces 1 pixel of every 2x2 block), 2 9x (1 of every 3x3)
+	//   CloudTemporal    0 off, 1 4x (each frame traces 1 pixel of every 2x2 block), 2 9x (3x3), 3 16x (4x4)
 	//   CloudSoftness    0..2: upsampling kernel radius
 	//   CloudShadows     0 off, 1 soft (cloud-field average), 2 detailed (per cloud)
 	//   CloudSpeed       1..100: cloud motion and evolution relative to the real wind
@@ -68,7 +68,7 @@ namespace {
 	//   CloudTransparencyLow/Medium/High  25..1000 %: 200 = half the optical thickness
 	//   CloudSystemSizeLow/Medium/High    25..400 %: size of cloud systems and the gaps between them
 	//   CloudClusteringLow/Medium/High    0..100 %: scattered clouds .. solid decks, at the same cover
-	static const int CLOUD_RESOLUTION_LINES[] = { 360, 540, 720, 1080, 0 };
+	static const int CLOUD_RESOLUTION_LINES[] = { 360, 540, 720, 1080, 1440, 0 };
 	static const int CLOUD_QUALITY_STEPS[] = { 16, 24, 32, 48 };
 
 	// Resolution per frame (ChooseFrameResolution). The cloud field has detail
@@ -121,6 +121,8 @@ namespace {
 	// (ordered dither), so a partly refreshed block has no visible pattern.
 	static const int CHECKER_OFFSETS_2[4][2] = { { 0, 0 }, { 1, 1 }, { 1, 0 }, { 0, 1 } };
 	static const int CHECKER_OFFSETS_3[9][2] = { { 0, 0 }, { 1, 2 }, { 2, 1 }, { 2, 0 }, { 0, 2 }, { 1, 1 }, { 0, 1 }, { 1, 0 }, { 2, 2 } };
+	static const int CHECKER_OFFSETS_4[16][2] = { { 0, 0 }, { 2, 2 }, { 2, 0 }, { 0, 2 }, { 1, 1 }, { 3, 3 }, { 3, 1 }, { 1, 3 },
+		{ 1, 0 }, { 3, 2 }, { 3, 0 }, { 1, 2 }, { 0, 1 }, { 2, 3 }, { 2, 1 }, { 0, 3 } }; // 4x4 Bayer order
 
 	// temporal history is dropped when, between two frames, the planet centre
 	// moves more than this (planet radii) or the cloud clock jumps more than this (s)
@@ -147,7 +149,7 @@ namespace {
 		RefCountedPtr<Graphics::Material> shadowMaterial;
 		std::unique_ptr<Graphics::VertexArray> triangle;
 		int width = 0, height = 0;
-		int allocDivisor = 0;			  // the buffers hold this resolution
+		double allocDivisor = 0.0;		  // the buffers hold this resolution (full pixels per history pixel)
 		int maxHistW = 0, maxHistH = 0, maxMarchW = 0, maxMarchH = 0; // march: for 2x2 blocks, the largest
 		int shadowW = 0, shadowH = 0;
 		// this frame: full pixels per history pixel, and the part of the
@@ -343,19 +345,20 @@ namespace {
 		return Pi::config->Int("CloudsEnabled", 1) != 0;
 	}
 
-	int ChooseDivisor(int height, bool space)
+	// full pixels per history pixel for a resolution setting (may be
+	// fractional: 1440 lines on a 2160-line screen is 1.5)
+	double ChooseDivisor(int height, bool space)
 	{
-		const int level = space ? Clamp(Pi::config->Int("CloudResolutionSpace", 4), 0, 4) : Clamp(Pi::config->Int("CloudResolution", 1), 0, 4);
+		const int level = space ? Clamp(Pi::config->Int("CloudResolutionSpace", 5), 0, 5) : Clamp(Pi::config->Int("CloudResolution", 1), 0, 5);
 		const int lines = CLOUD_RESOLUTION_LINES[level];
 		if (lines <= 0)
-			return 1;
-		const int div = int(std::lround(double(height) / lines));
-		return Clamp(div, 1, 8);
+			return 1.0;
+		return Clamp(double(height) / lines, 1.0, 8.0);
 	}
 
 	void EnsurePassResources(Graphics::Renderer *r, int width, int height)
 	{
-		const int divisor = std::min(ChooseDivisor(height, false), ChooseDivisor(height, true));
+		const double divisor = std::min(ChooseDivisor(height, false), ChooseDivisor(height, true));
 		if (s_pass && s_pass->width == width && s_pass->height == height && s_pass->allocDivisor == divisor)
 			return;
 
@@ -395,8 +398,8 @@ namespace {
 		pass.width = width;
 		pass.height = height;
 		pass.allocDivisor = divisor;
-		pass.maxHistW = (width + divisor - 1) / divisor;
-		pass.maxHistH = (height + divisor - 1) / divisor;
+		pass.maxHistW = int(std::ceil(width / divisor));
+		pass.maxHistH = int(std::ceil(height / divisor));
 		pass.maxMarchW = (pass.maxHistW + 1) / 2;
 		pass.maxMarchH = (pass.maxHistH + 1) / 2;
 		pass.shadowW = (width + 1) / 2;
@@ -487,7 +490,7 @@ namespace {
 			s_resDivisor += (target - s_resDivisor) * (1.0 - std::exp(-dt / RES_SMOOTH_TIME));
 		}
 
-		pass.divisor = std::max(s_resDivisor, double(pass.allocDivisor));
+		pass.divisor = std::max(s_resDivisor, pass.allocDivisor);
 		pass.histW = std::min(int(std::ceil(pass.width / pass.divisor)), pass.maxHistW);
 		pass.histH = std::min(int(std::ceil(pass.height / pass.divisor)), pass.maxHistH);
 	}
@@ -740,8 +743,8 @@ namespace PlanetClouds {
 
 		// the nearest planet (largest on screen) gets temporal reconstruction,
 		// tracing 1 pixel of every 2x2 (4x) or 3x3 (9x) block per frame
-		const int temporalMode = Clamp(Pi::config->Int("CloudTemporal", 2), 0, 2);
-		const int temporalBlock = temporalMode == 2 ? 3 : 2;
+		const int temporalMode = Clamp(Pi::config->Int("CloudTemporal", 2), 0, 3);
+		const int temporalBlock = temporalMode + 1; // 2x2, 3x3 or 4x4
 		int temporalEntry = -1;
 		if (temporalMode != 0) {
 			float best = 1e30f;
@@ -779,7 +782,7 @@ namespace PlanetClouds {
 
 			if (temporal) {
 				// trace one pixel of every block, rotating over 4 or 9 frames
-				const int *off = block == 3 ? CHECKER_OFFSETS_3[s_frameIndex % 9] : CHECKER_OFFSETS_2[s_frameIndex % 4];
+				const int *off = block == 4 ? CHECKER_OFFSETS_4[s_frameIndex % 16] : (block == 3 ? CHECKER_OFFSETS_3[s_frameIndex % 9] : CHECKER_OFFSETS_2[s_frameIndex % 4]);
 				const bool historyValid = s_temporal.valid && s_temporal.body == e.body &&
 					s_temporal.lastFrame + 1 == s_frameIndex &&
 					(e.center - s_temporal.center).Length() < HISTORY_MAX_CENTER_JUMP &&

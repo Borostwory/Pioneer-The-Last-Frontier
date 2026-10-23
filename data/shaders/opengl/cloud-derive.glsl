@@ -282,16 +282,16 @@ CloudPlanet cloudDerive()
 	// R2: slots (plan 4.2.3) and R3 geometry (plan 4.3.2)
 	float sH = cp.sH;
 	float lowBot = zb, lowTop = zb + 0.14 * span;
-	float midBot = zb + 0.18 * span, midTop = zb + 0.45 * span;
-	float hiBot = zb + 0.52 * span, hiTop = zb + 0.95 * span;
+	float midBot = zb + 0.28 * span, midTop = zb + 0.56 * span;
+	float hiBot = zb + 0.60 * span, hiTop = zb + 0.95 * span;
 	if (highOnly) {
 		hiBot = zb;
 		hiTop = zb + 0.95 * span;
 	}
 
 	float dLow = min(1200.0 * sH, lowTop - lowBot);
-	float dMid = min(800.0 * sH, midTop - midBot);
-	float dHigh = min(2000.0 * sH, hiTop - hiBot);
+	float dMid = min(1200.0 * sH, midTop - midBot);
+	float dHigh = min(3000.0 * sH, hiTop - hiBot);
 	float midCentre = 0.5 * (midBot + midTop);
 
 	float lowBase = lowBot, lowTopA = lowBot + dLow;

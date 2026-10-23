@@ -278,7 +278,7 @@ local function showVideoOptions()
 		Engine.SettingsSetInt("CloudsEnabled", cloudsEnabled and 1 or 0)
 	end
 	if cloudsEnabled then
-		local cloudResolutionLabels = { "Low (360 lines)", "Medium (540 lines)", "High (720 lines)", "Very high (1080 lines)", "Full screen resolution" }
+		local cloudResolutionLabels = { "Low (360 lines)", "Medium (540 lines)", "High (720 lines)", "Very high (1080 lines)", "Ultra (1440 lines)", "Full screen resolution" }
 		local cloudResolution = Engine.SettingsGetInt("CloudResolution")
 		c,cloudResolution = combo("Cloud resolution", cloudResolution, cloudResolutionLabels,
 			"Resolution the clouds are rendered at near the ground and in the air (the coarsest used), before being scaled to the screen. Higher is sharper and slower.")
@@ -308,10 +308,10 @@ local function showVideoOptions()
 			Engine.SettingsSetInt("CloudQuality", cloudQuality)
 		end
 
-		local cloudTemporalLabels = { "Off", "4x (1 of 4 pixels per frame)", "9x (1 of 9 pixels per frame)" }
+		local cloudTemporalLabels = { "Off", "4x (1 of 4 pixels per frame)", "9x (1 of 9 pixels per frame)", "16x (1 of 16 pixels per frame)" }
 		local cloudTemporal = Engine.SettingsGetInt("CloudTemporal")
 		c,cloudTemporal = combo("Temporal cloud reconstruction", cloudTemporal, cloudTemporalLabels,
-			"Each frame traces only some of the cloud pixels and fills in the rest from previous frames. 4x: a quarter, the picture refreshes every 4 frames. 9x: a ninth, about twice as fast again, refreshing every 9 frames (best at high frame rates; fast turns may briefly smear cloud edges). Off: every pixel every frame, slowest.")
+			"Each frame traces only some of the cloud pixels and fills in the rest from previous frames. 4x: a quarter, the picture refreshes every 4 frames. 9x: a ninth, about twice as fast again, refreshing every 9 frames (best at high frame rates; fast turns may briefly smear cloud edges). 16x: a sixteenth, faster still, refreshing every 16 frames (for 120+ fps; more smearing in fast turns and at the horizon). Off: every pixel every frame, slowest.")
 		if c then
 			Engine.SettingsSetInt("CloudTemporal", cloudTemporal)
 		end

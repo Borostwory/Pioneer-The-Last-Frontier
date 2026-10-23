@@ -298,7 +298,7 @@ float cloudSigmaMax(int li, float st)
 	// depth continuous with stratocumulus as cover approaches overcast
 	if (li == 0) return mix(0.025, 0.05, st);
 	if (li == 1) return 0.02;
-	return 0.0002; // cirrus: semi-transparent veils, vertical optical depth ~0.05-0.3
+	return 0.000135; // cirrus: semi-transparent veils over ~3 km, vertical optical depth ~0.05-0.3
 }
 
 // Wind displacement of a whole layer: every altitude inside a layer moves
