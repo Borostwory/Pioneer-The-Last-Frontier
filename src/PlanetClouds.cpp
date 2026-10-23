@@ -99,18 +99,12 @@ namespace {
 	// When the shader still draws individual cells (cloudShapeDensity in
 	// cloud-march.glsl): low and medium cells while their feature size spans
 	// CLOUD_MIN_CELL_PIXELS pixels, cirrus fibres while the fibre crest spans
-	// a pixel. Smaller ones become a uniform medium, so a finer buffer would
-	// add cost but no detail. Must match the shader.
-	static const double SHADER_FEATURE_M[3] = { 4000.0, 1500.0, 0.2 * 700.0 }; // CLOUD_CELL_LOW_M, CLOUD_CELL_MID_M, cirrus crest
-	static const double SHADER_MIN_PIXELS[3] = { 4.0, 4.0, 1.0 };				 // CLOUD_MIN_CELL_PIXELS, cirrus octaves > 0
-
+	// a pixel. Smaller ones become a uniform medium. Must match the shader.
 	// Above the clouds (refinement weight 1) and with no cells visible as
 	// such, the shadow buffer drops from half to quarter resolution: the
-	// shadows are then the smooth average of the cloud field. With the 3x3
-	// temporal setting the trace also refreshes 1 pixel in 4x4 per frame,
-	// unless time runs faster than ORBIT_TEMPORAL_MAX_ACCEL (fast-moving
-	// clouds would smear).
-	static const double ORBIT_TEMPORAL_MAX_ACCEL = 10.0;
+	// shadows are then the smooth average of the cloud field.
+	static const double SHADER_FEATURE_M[3] = { 4000.0, 1500.0, 0.2 * 700.0 }; // CLOUD_CELL_LOW_M, CLOUD_CELL_MID_M, cirrus crest
+	static const double SHADER_MIN_PIXELS[3] = { 4.0, 4.0, 1.0 };				 // CLOUD_MIN_CELL_PIXELS, cirrus octaves > 0
 
 	// planets further away than this (planet radii) are not given a pass
 	static const float CLOUD_PASS_MAX_DISTANCE = 2000.0f;
@@ -444,10 +438,25 @@ namespace {
 			pass.maxHistW, pass.maxHistH, pass.maxMarchW, pass.maxMarchH, width, height);
 	}
 
-	// Size of the smallest cloud cells of a planet [m] that the shader still
-	// draws as cells when a full-resolution pixel covers pixelM metres; 0 when
-	// none are. Cells scale with the atmosphere's scale height and the
-	// per-layer size settings; layers set to no cover are left out.
+	// Size of the smallest cloud cells of a planet [m]: they scale with the
+	// atmosphere's scale height and the per-layer size settings. Layers set
+	// to no cover are left out.
+	double SmallestCloudCell(const PlanetClouds::CloudDataBlock &d)
+	{
+		const double T = std::max(double(d.atmos[0]), 1.0);
+		const double g = std::max(double(d.atmos[3]), 1e-3);
+		const double H = 8.3144621 * T / (0.02897 * g);
+		const double sH = Clamp(H / 8400.0, 0.5, 4.0);
+		const double cells[3] = { CELL_LOW_M, CELL_MID_M, CIRRUS_DETAIL_M };
+		double smallest = 1e30;
+		for (int i = 0; i < 3; i++)
+			if (d.tuneDensity[i] > 0.0f)
+				smallest = std::min(smallest, cells[i] * sH * std::max(double(d.tuneSize[i]), 0.05));
+		return smallest < 1e29 ? smallest : CELL_LOW_M * sH;
+	}
+
+	// Like SmallestCloudCell, but only cells the shader still draws as cells
+	// when a full-resolution pixel covers pixelM metres; 0 when none are.
 	double SmallestVisibleCloudCell(const PlanetClouds::CloudDataBlock &d, double pixelM)
 	{
 		const double T = std::max(double(d.atmos[0]), 1.0);
@@ -500,14 +509,14 @@ namespace {
 		}
 
 		// resolution at which the smallest cells span RES_PIXELS_PER_CELL pixels,
-		// scaled by the "Cloud detail from space" setting (lower: later, cheaper)
-		// Only cells that are still drawn as cells count: once a layer's cells
-		// are below a few pixels even at full resolution they are drawn as a
-		// uniform medium, and refining for them would only add cost.
+		// scaled by the "Cloud detail from space" setting (lower: later, cheaper).
+		// All cells count, even ones drawn as a uniform medium: the edges of
+		// the cloud fields still need the resolution (refining only for cells
+		// drawn as cells made orbital views blurry).
 		const double detail = Clamp(Pi::config->Int("CloudSpaceDetail", 50), 0, 200) / 100.0;
 		const double pixelAngle = 2.0 / (proj5 * pass.height); // full-resolution pixel [rad]
+		const double divDetail = detail > 0.0 ? SmallestCloudCell(e.cloudData) / (dist * RES_PIXELS_PER_CELL * detail * pixelAngle) : divCoarse;
 		const double visibleCell = SmallestVisibleCloudCell(e.cloudData, dist * pixelAngle);
-		const double divDetail = (detail > 0.0 && visibleCell > 0.0) ? visibleCell / (dist * RES_PIXELS_PER_CELL * detail * pixelAngle) : divCoarse;
 
 		// refinement only well above the clouds
 		const double x = Clamp((alt - REFINE_START * top) / ((REFINE_END - REFINE_START) * top), 0.0, 1.0);
@@ -784,11 +793,7 @@ namespace PlanetClouds {
 		// the nearest planet (largest on screen) gets temporal reconstruction,
 		// tracing 1 pixel of every 2x2 (4x) or 3x3 (9x) block per frame
 		const int temporalMode = Clamp(Pi::config->Int("CloudTemporal", 2), 0, 3);
-		int temporalBlock = temporalMode + 1; // 2x2, 3x3 or 4x4
-		// from orbit the clouds move slowly on screen: refresh over 16 frames
-		const double timeAccel = Pi::game ? Pi::game->GetTimeAccelRate() : 1.0;
-		if (temporalMode == 2 && pass.orbit && timeAccel <= ORBIT_TEMPORAL_MAX_ACCEL)
-			temporalBlock = 4;
+		const int temporalBlock = temporalMode + 1; // 2x2, 3x3 or 4x4
 		int temporalEntry = -1;
 		if (temporalMode != 0) {
 			float best = 1e30f;
