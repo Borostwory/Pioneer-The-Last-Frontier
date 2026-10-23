@@ -346,6 +346,8 @@ public:
 	void AccelerateTime(float step);
 	bool IsRealTime() const { return m_realtime; }
 	void SetRealTime();
+	// jump the map to time t and hold it there
+	void SetTime(double t);
 	void SetReferenceTime(double time) { m_refTime = time; }
 	double GetTime() { return m_time; }
 	const std::vector<Projectable> &GetProjected() const { return m_projected; }

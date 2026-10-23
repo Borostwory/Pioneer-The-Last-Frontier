@@ -1179,9 +1179,17 @@ local plannerView = {
 				if idx >= systemView:TransferPlannerGetBurnCount() then break end
 				local row = plan[idx + 1]
 
-				-- clicking the header selects this burn, the highlight marks the selection
+				-- clicking the header selects this burn, the highlight marks the
+				-- selection; the map time jumps to the burn and holds there (the
+				-- game clock is untouched)
 				if ui.selectable("Burn " .. (idx + 1) .. "##plannerBurnHeader" .. idx, idx == selectedBurn, {"SpanAllColumns"}) then
 					selectedBurn = idx
+					local burnTime = systemView:TransferPlannerGet(idx, "starttime")
+					if burnTime then
+						systemView:SetMapTime(burnTime)
+						-- off "now", so the map is not pulled back to the present
+						time_selected_button_icon = nil
+					end
 				end
 
 				for _, burnRow in ipairs(burnRows) do

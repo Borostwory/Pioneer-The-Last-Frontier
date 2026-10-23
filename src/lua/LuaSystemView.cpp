@@ -349,6 +349,13 @@ static int l_systemview_accelerate_time(lua_State *l)
 	return 0;
 }
 
+static int l_systemview_set_map_time(lua_State *l)
+{
+	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
+	sv->GetMap()->SetTime(LuaPull<double>(l, 2));
+	return 0;
+}
+
 static int l_systemview_set_rotate_mode(lua_State *l)
 {
 	SystemView *sv = LuaObject<SystemView>::CheckFromLua(1);
@@ -794,6 +801,7 @@ void LuaObject<SystemView>::RegisterClass()
 		{ "GetOrbitPlannerStartTime", l_systemview_get_orbit_planner_start_time },
 		{ "GetOrbitPlannerTime", l_systemview_get_orbit_planner_time },
 		{ "AccelerateTime", l_systemview_accelerate_time },
+		{ "SetMapTime", l_systemview_set_map_time },
 		{ "SetSelectedObject", l_systemview_set_selected_object },
 		{ "ViewSelectedObject", l_systemview_view_selected_object },
 		{ "ResetViewpoint", l_systemview_reset_viewpoint },

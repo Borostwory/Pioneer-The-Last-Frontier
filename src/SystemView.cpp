@@ -728,6 +728,13 @@ void SystemMapViewport::SetRealTime()
 	m_realtime = true;
 }
 
+void SystemMapViewport::SetTime(double t)
+{
+	m_realtime = false;
+	m_timeStep = 0.0;
+	m_time = t;
+}
+
 void SystemMapViewport::ResetViewpoint()
 {
 	m_viewedObject.type = Projectable::NONE;
