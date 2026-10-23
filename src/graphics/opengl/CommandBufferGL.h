@@ -79,6 +79,11 @@ namespace Graphics {
 				bool linearFilter;
 			};
 
+			// records a GPU timestamp into the query object (Renderer::BeginGpuTimer)
+			struct GpuTimerCmd {
+				GLuint query;
+			};
+
 			// development asserts to ensure sizes are kept reasonable.
 			// if you need to go beyond these sizes, add a new command instead.
 			static_assert(sizeof(DrawMeshCmd) <= 64);
@@ -101,8 +106,10 @@ namespace Graphics {
 				const ViewportExtents &dstExtents,
 				bool resolveMSAA = false, bool blitDepthBuffer = false, bool linearFilter = true);
 
+			void AddGpuTimerCmd(GLuint query);
+
 		protected:
-			using Cmd = std::variant<DrawMeshCmd, DrawBuffersCmd, RenderPassCmd, BlitRenderTargetCmd>;
+			using Cmd = std::variant<DrawMeshCmd, DrawBuffersCmd, RenderPassCmd, BlitRenderTargetCmd, GpuTimerCmd>;
 			const std::vector<Cmd> &GetDrawCmds() const { return m_drawCmds; }
 
 			bool IsEmpty() const { return m_drawCmds.empty(); }
@@ -128,6 +135,7 @@ namespace Graphics {
 			void ExecuteDrawBuffersCmd(const DrawBuffersCmd &);
 			void ExecuteRenderPassCmd(const RenderPassCmd &);
 			void ExecuteBlitRenderTargetCmd(const BlitRenderTargetCmd &);
+			void ExecuteGpuTimerCmd(const GpuTimerCmd &);
 
 			static BufferBinding<UniformBuffer> *getBufferBindings(const Shader *shader, char *data);
 			static TextureGL **getTextureBindings(const Shader *shader, char *data);

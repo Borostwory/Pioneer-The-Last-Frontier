@@ -313,7 +313,9 @@ void Camera::Draw(const Body *excludeBody)
 	}
 
 	Pi::game->GetSpace()->GetBackground()->SetIntensity(bgIntensity);
+	m_renderer->BeginGpuTimer("background");
 	Pi::game->GetSpace()->GetBackground()->Draw(trans2bg);
+	m_renderer->EndGpuTimer();
 
 	{
 		std::vector<Graphics::Light> rendererLights;
@@ -333,6 +335,7 @@ void Camera::Draw(const Body *excludeBody)
 
 	Graphics::VertexArray billboards(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_NORMAL);
 
+	m_renderer->BeginGpuTimer("bodies");
 	for (std::list<BodyAttrs>::iterator i = m_sortedBodies.begin(); i != m_sortedBodies.end(); ++i) {
 		BodyAttrs *attrs = &(*i);
 
@@ -350,10 +353,13 @@ void Camera::Draw(const Body *excludeBody)
 		attrs->body->Render(m_renderer, this, attrs->viewCoords, attrs->viewTransform);
 	}
 
+	m_renderer->EndGpuTimer();
 	RestoreLighting();
 
 	// clouds over everything drawn so far, using the scene depth
+	m_renderer->BeginGpuTimer("clouds");
 	PlanetClouds::RenderCloudPasses(m_renderer);
+	m_renderer->EndGpuTimer();
 
 	if (!billboards.IsEmpty()) {
 		Graphics::Renderer::MatrixTicket mt(m_renderer, matrix4x4f::Identity);

@@ -490,9 +490,11 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		// make atmosphere sphere slightly bigger than required so
 		// that the edges of the pixel shader atmosphere jizz doesn't
 		// show ugly polygonal angles
+		renderer->BeginGpuTimer("atmosphere");
 		DrawAtmosphereSurface(renderer, trans, campos,
 			m_atmosphereParameters.atmosRadius * 1.02,
 			m_atmosphereMaterial);
+		renderer->EndGpuTimer();
 	}
 
 	Color ambient;
@@ -521,6 +523,7 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 
 	renderer->SetTransform(matrix4x4f(modelView));
 
+	renderer->BeginGpuTimer("terrain");
 	if (s_debugFlags & GeoSphere::DebugFlags::DEBUG_WIREFRAME)
 		renderer->SetWireFrameMode(true);
 
@@ -551,6 +554,7 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		}
 	}
 
+	renderer->EndGpuTimer();
 	if (s_debugFlags & GeoSphere::DebugFlags::DEBUG_WIREFRAME)
 		renderer->SetWireFrameMode(false);
 

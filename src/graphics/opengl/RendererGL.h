@@ -8,6 +8,7 @@
 #include "graphics/Types.h"
 #include "graphics/VertexBuffer.h"
 #include "graphics/UniformBuffer.h"
+#include "OpenGLLibs.h"
 
 typedef void *SDL_GLContext;
 
@@ -88,6 +89,10 @@ namespace Graphics {
 
 		bool FlushCommandBuffers() final;
 
+		void BeginGpuTimer(const char *name) final;
+		void EndGpuTimer() final;
+		const std::vector<GpuTiming> &GetGpuTimings() const final { return m_gpuTimings; }
+
 		bool DrawBuffer(const VertexArray *v, Material *m) final;
 		bool DrawMesh(MeshObject *, Material *) final;
 
@@ -138,6 +143,29 @@ namespace Graphics {
 		bool m_useNVDepthRanged;
 		OGL::RenderTarget *m_activeRenderTarget = nullptr;
 		std::unique_ptr<OGL::CommandList> m_drawCommandList;
+
+		// GPU timers: timestamp queries recorded in the command stream and read
+		// back a few frames later, so the CPU never waits for the GPU
+		struct GpuTimerScope {
+			std::string name;
+			GLuint beginQuery = 0, endQuery = 0;
+			int depth = 0;
+		};
+		struct GpuTimerFrame {
+			std::vector<GpuTimerScope> scopes;
+			bool pending = false; // recorded, not yet read back
+		};
+		static const int NUM_GPU_TIMER_FRAMES = 4;
+		GpuTimerFrame m_gpuTimerFrames[NUM_GPU_TIMER_FRAMES];
+		int m_gpuTimerCurrent = 0;
+		std::vector<int> m_gpuTimerStack; // open scopes, as indices into the current frame
+		std::vector<GLuint> m_gpuQueryPool;
+		std::vector<GpuTiming> m_gpuTimings;
+		int m_gpuTimersSupported = -1; // unknown until first use
+		bool GpuTimersSupported();
+		GLuint AllocGpuQuery();
+		void ResolveGpuTimers();
+		void ReadGpuTimerFrame(GpuTimerFrame &frame);
 
 		matrix4x4f m_modelViewMat;
 		matrix4x4f m_projectionMat;

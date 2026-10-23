@@ -175,6 +175,17 @@ void CommandList::AddBlitRenderTargetCmd(
 	m_drawCmds.emplace_back(std::move(cmd));
 }
 
+void CommandList::AddGpuTimerCmd(GLuint query)
+{
+	assert(!m_executing && "Attempt to append to a command list while it's being executed!");
+	m_drawCmds.emplace_back(GpuTimerCmd{ query });
+}
+
+void CommandList::ExecuteGpuTimerCmd(const GpuTimerCmd &cmd)
+{
+	glQueryCounter(cmd.query, GL_TIMESTAMP);
+}
+
 void CommandList::Reset()
 {
 	assert(!m_executing && "Attempt to reset a command list while it's being executed!");

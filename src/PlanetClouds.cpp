@@ -729,7 +729,9 @@ namespace PlanetClouds {
 			for (size_t i = 1; i < s_queue.size(); i++)
 				if (s_queue[i].center.Length() < s_queue[nearest].center.Length())
 					nearest = i;
+			r->BeginGpuTimer("clouds: weather maps");
 			UpdateWeatherMaps(r, pass, s_queue[nearest]);
+			r->EndGpuTimer();
 		}
 		Graphics::Texture *weatherXY = s_weather ? s_weather->xy->GetColorTexture() : GetFallbackTexture();
 		Graphics::Texture *weatherZ = s_weather ? s_weather->z->GetColorTexture() : GetFallbackTexture();
@@ -760,11 +762,13 @@ namespace PlanetClouds {
 		//    sample the depth buffer they are drawing into
 		SetVec4(passData.proj, proj[0], proj[5], proj[14], pass.divisor);
 		SetVec4(passData.size, pass.histW, pass.histH, width, height);
+		r->BeginGpuTimer("clouds: scene distance");
 		r->SetRenderTarget(pass.distTarget.get());
 		r->SetViewport({ 0, 0, width, height });
 		pass.distMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
 		pass.distMaterial->SetTexture(s_sceneDepthName, mainTarget->GetDepthTexture());
 		r->DrawBuffer(pass.triangle.get(), pass.distMaterial.Get());
+		r->EndGpuTimer();
 
 		for (size_t i = 0; i < s_queue.size(); i++) {
 			PassEntry &e = s_queue[i];
@@ -801,6 +805,7 @@ namespace PlanetClouds {
 			}
 
 			// 2. trace clouds into the march buffer
+			r->BeginGpuTimer("clouds: trace");
 			r->SetRenderTarget(pass.marchTarget.get());
 			r->SetViewport({ 0, 0, marchW, marchH });
 			r->ClearScreen(Color(0, 0, 0, 0), false);
@@ -811,9 +816,11 @@ namespace PlanetClouds {
 			pass.passMaterial->SetTexture(s_weatherXYName, weatherXY);
 			pass.passMaterial->SetTexture(s_weatherZName, weatherZ);
 			r->DrawBuffer(pass.triangle.get(), pass.passMaterial.Get());
+			r->EndGpuTimer();
 
 			// 2b. cloud shadows on the scene (applied by the composite)
 			if (shadows) {
+				r->BeginGpuTimer("clouds: shadow");
 				r->SetRenderTarget(pass.shadowTarget.get());
 				r->SetViewport({ 0, 0, pass.shadowW, pass.shadowH });
 				pass.shadowMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
@@ -823,6 +830,7 @@ namespace PlanetClouds {
 				pass.shadowMaterial->SetTexture(s_weatherXYName, weatherXY);
 				pass.shadowMaterial->SetTexture(s_weatherZName, weatherZ);
 				r->DrawBuffer(pass.triangle.get(), pass.shadowMaterial.Get());
+				r->EndGpuTimer();
 			}
 
 			Graphics::Texture *cloudTex = pass.marchTarget->GetColorTexture();
@@ -830,6 +838,7 @@ namespace PlanetClouds {
 				// 3. reconstruct the full history from the fresh pixels and the
 				//    reprojected previous frame
 				const int next = 1 - s_temporal.current;
+				r->BeginGpuTimer("clouds: reproject");
 				r->SetRenderTarget(pass.historyTarget[next].get());
 				r->SetViewport({ 0, 0, pass.histW, pass.histH });
 				pass.reprojectMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
@@ -838,6 +847,7 @@ namespace PlanetClouds {
 				pass.reprojectMaterial->SetTexture(s_historyTexName, pass.historyTarget[s_temporal.current]->GetColorTexture());
 				pass.reprojectMaterial->SetTexture(s_sceneDistName, pass.distTarget->GetColorTexture());
 				r->DrawBuffer(pass.triangle.get(), pass.reprojectMaterial.Get());
+				r->EndGpuTimer();
 				cloudTex = pass.historyTarget[next]->GetColorTexture();
 
 				s_temporal.current = next;
@@ -862,6 +872,7 @@ namespace PlanetClouds {
 			}
 
 			// 4. depth-aware upsample, blended over the scene
+			r->BeginGpuTimer("clouds: composite");
 			r->SetRenderTarget(mainTarget);
 			r->SetViewport({ 0, 0, width, height });
 			pass.compositeMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
@@ -869,6 +880,7 @@ namespace PlanetClouds {
 			pass.compositeMaterial->SetTexture(s_sceneDistName, pass.distTarget->GetColorTexture());
 			pass.compositeMaterial->SetTexture(s_shadowTexName, pass.shadowTarget->GetColorTexture());
 			r->DrawBuffer(pass.triangle.get(), pass.compositeMaterial.Get());
+			r->EndGpuTimer();
 		}
 
 		s_queue.clear();

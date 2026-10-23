@@ -14,6 +14,8 @@
 #include "matrix4x4.h"
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 struct SDL_Window;
 
@@ -133,6 +135,24 @@ namespace Graphics {
 		// TODO: placeholder API; here until CommandLists are exposed
 		// and all code can safely deal with async drawing
 		virtual bool FlushCommandBuffers() = 0;
+
+		// GPU timing. The draw commands issued between Begin and End are
+		// bracketed by GPU timestamps. Scopes may nest, and a name may be used
+		// several times in a frame (one per planet, say): its times are added
+		// up. Results lag a few frames. Renderers without timer support
+		// ignore these calls and report nothing.
+		struct GpuTiming {
+			std::string name;
+			int depth; // nesting depth of the scope
+			double milliseconds;
+		};
+		virtual void BeginGpuTimer(const char *name) {}
+		virtual void EndGpuTimer() {}
+		virtual const std::vector<GpuTiming> &GetGpuTimings() const
+		{
+			static const std::vector<GpuTiming> none;
+			return none;
+		}
 
 		// All drawing commands are assumed to defer execution of the command
 		// until the next commandlist flush. This is to batch GPU data updates

@@ -33,6 +33,8 @@
 
 #include <SDL.h>
 
+#include <algorithm>
+
 #include <cstddef> //for offsetof
 #include <iterator>
 #include <ostream>
@@ -514,6 +516,7 @@ namespace Graphics {
 		m_renderStateCache->SetProgram(nullptr);
 
 		m_frameNum++;
+		BeginGpuTimer("frame");
 		return true;
 	}
 
@@ -652,10 +655,15 @@ namespace Graphics {
 
 		m_drawCommandList->AddBlitRenderTargetCmd(m_activeRenderTarget, nullptr, ext, ext, isMSAA);
 
+		// close the frame timer and any scope left open
+		while (!m_gpuTimerStack.empty())
+			EndGpuTimer();
+
 		FlushCommandBuffers();
 		CheckRenderErrors(__FUNCTION__, __LINE__);
 
 		SDL_GL_SwapWindow(m_window);
+		ResolveGpuTimers();
 		m_activeRenderTarget = nullptr;
 		m_renderStateCache->ResetFrame();
 		m_stats.NextFrame();
@@ -916,6 +924,8 @@ namespace Graphics {
 				m_drawCommandList->ExecuteRenderPassCmd(*renderPassCmd);
 			else if (auto *blitRenderTargetCmd = std::get_if<OGL::CommandList::BlitRenderTargetCmd>(&cmd))
 				m_drawCommandList->ExecuteBlitRenderTargetCmd(*blitRenderTargetCmd);
+			else if (auto *timerCmd = std::get_if<OGL::CommandList::GpuTimerCmd>(&cmd))
+				m_drawCommandList->ExecuteGpuTimerCmd(*timerCmd);
 		}
 
 		// we don't manually reset the active vertex array after each drawcall for performance,
@@ -927,6 +937,94 @@ namespace Graphics {
 
 		m_stats.AddToStatCount(Stats::STAT_NUM_CMDLIST_FLUSHES, 1);
 		return true;
+	}
+
+	bool RendererOGL::GpuTimersSupported()
+	{
+		// timestamp queries are core in 3.3 and an extension on 3.2
+		if (m_gpuTimersSupported < 0)
+			m_gpuTimersSupported = glewIsSupported("GL_ARB_timer_query") ? 1 : 0;
+		return m_gpuTimersSupported == 1;
+	}
+
+	GLuint RendererOGL::AllocGpuQuery()
+	{
+		if (m_gpuQueryPool.empty()) {
+			GLuint ids[16];
+			glGenQueries(16, ids);
+			m_gpuQueryPool.assign(ids, ids + 16);
+		}
+		const GLuint query = m_gpuQueryPool.back();
+		m_gpuQueryPool.pop_back();
+		return query;
+	}
+
+	void RendererOGL::BeginGpuTimer(const char *name)
+	{
+		if (!m_drawCommandList || !GpuTimersSupported())
+			return;
+		GpuTimerFrame &frame = m_gpuTimerFrames[m_gpuTimerCurrent];
+		GpuTimerScope scope;
+		scope.name = name;
+		scope.depth = int(m_gpuTimerStack.size());
+		scope.beginQuery = AllocGpuQuery();
+		scope.endQuery = AllocGpuQuery();
+		m_gpuTimerStack.push_back(int(frame.scopes.size()));
+		frame.scopes.push_back(scope);
+		m_drawCommandList->AddGpuTimerCmd(scope.beginQuery);
+	}
+
+	void RendererOGL::EndGpuTimer()
+	{
+		if (!m_drawCommandList || m_gpuTimerStack.empty())
+			return;
+		const GpuTimerScope &scope = m_gpuTimerFrames[m_gpuTimerCurrent].scopes[m_gpuTimerStack.back()];
+		m_gpuTimerStack.pop_back();
+		m_drawCommandList->AddGpuTimerCmd(scope.endQuery);
+	}
+
+	// Called after the swap: files the frame just recorded and reads back
+	// pending frames, oldest first. The slot about to be reused is read even
+	// if that means waiting (it is NUM_GPU_TIMER_FRAMES frames old, so it
+	// rarely does); newer ones only if the GPU has finished them.
+	void RendererOGL::ResolveGpuTimers()
+	{
+		GpuTimerFrame &recorded = m_gpuTimerFrames[m_gpuTimerCurrent];
+		recorded.pending = !recorded.scopes.empty();
+		m_gpuTimerCurrent = (m_gpuTimerCurrent + 1) % NUM_GPU_TIMER_FRAMES;
+
+		for (int i = 0; i < NUM_GPU_TIMER_FRAMES; i++) {
+			GpuTimerFrame &frame = m_gpuTimerFrames[(m_gpuTimerCurrent + i) % NUM_GPU_TIMER_FRAMES];
+			if (!frame.pending)
+				continue;
+			if (i > 0) {
+				GLuint available = 0;
+				glGetQueryObjectuiv(frame.scopes.back().endQuery, GL_QUERY_RESULT_AVAILABLE, &available);
+				if (!available)
+					break;
+			}
+			ReadGpuTimerFrame(frame);
+		}
+	}
+
+	void RendererOGL::ReadGpuTimerFrame(GpuTimerFrame &frame)
+	{
+		m_gpuTimings.clear();
+		for (const GpuTimerScope &scope : frame.scopes) {
+			GLuint64 t0 = 0, t1 = 0;
+			glGetQueryObjectui64v(scope.beginQuery, GL_QUERY_RESULT, &t0);
+			glGetQueryObjectui64v(scope.endQuery, GL_QUERY_RESULT, &t1);
+			m_gpuQueryPool.push_back(scope.beginQuery);
+			m_gpuQueryPool.push_back(scope.endQuery);
+			const double ms = double(t1 - t0) * 1e-6;
+			auto it = std::find_if(m_gpuTimings.begin(), m_gpuTimings.end(), [&](const GpuTiming &t) { return t.name == scope.name; });
+			if (it != m_gpuTimings.end())
+				it->milliseconds += ms;
+			else
+				m_gpuTimings.push_back({ scope.name, scope.depth, ms });
+		}
+		frame.scopes.clear();
+		frame.pending = false;
 	}
 
 	static void stat_primitives(Stats &stats, PrimitiveType type, uint32_t count)

@@ -468,6 +468,14 @@ void PerfInfo::DrawRendererStats()
 	ImGui::Text("%u cached render states", numRenderStates);
 	ImGui::Text("%u cached textures, using %.3f MB VRAM", numCachedTextures, double(cachedTextureMemUsage) / scale_MB);
 
+	const std::vector<Graphics::Renderer::GpuTiming> &gpuTimings = Pi::renderer->GetGpuTimings();
+	if (!gpuTimings.empty()) {
+		ImGui::Spacing();
+		ImGui::SeparatorText("GPU time (ms, a few frames old)");
+		for (const Graphics::Renderer::GpuTiming &t : gpuTimings)
+			ImGui::Text("%*s%s: %.2f", t.depth * 2, "", t.name.c_str(), t.milliseconds);
+	}
+
 	if (ImGui::Button("Open Texture Cache Viewer"))
 		m_state->textureCacheViewerOpen = true;
 
