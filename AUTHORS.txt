@@ -307,3 +307,5 @@ and services, without which Pioneer would not be possible:
   randomColorSharped	https://github.com/nathanpjones/randomColorSharped
 
   OpenGameArt	http://opengameart.org (specifically http://opengameart.org/content/smoke-aura)
+  ambientCG	https://ambientcg.com (CC0 photo materials behind data/textures/terrain,
+		Rock030, Ground110, Ground097, Ground109, Grass004, Moss002, Snow008A, Snow014)

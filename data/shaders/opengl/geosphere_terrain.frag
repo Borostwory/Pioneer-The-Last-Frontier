@@ -26,6 +26,8 @@ in float surfaceHeight;
 #include "terrain-water.glsl"
 #endif
 
+#include "terrain-materials.glsl"
+
 in float dist;
 
 in vec3 varyingEyepos;
@@ -54,16 +56,22 @@ void main(void)
 	CloudPlanet clouds = cloudDerive();
 #endif
 
-	// detail texture contribution, at a constant on-screen scale at any distance
-	vec4 detailMul = vec4(vec3(terrainDetail(texture0, texture1, texCoord0, PatchDetailFrequency, dist)), 1.0);
-
-	// surface type patterns: water waves, sand ripples, vegetation clumps, stones
 #ifdef TERRAIN_WITH_WATER
 	const bool hasWater = true;
+	float altitude = terrainAltitude(surfaceHeight);
 #else
 	const bool hasWater = false;
+	float altitude = 1.0e4;
 #endif
-	detailMul.rgb *= terrainSurfacePattern(varyingEyepos, vertexColor.rgb, dist, hasWater);
+
+	// land materials (photo texture detail, slope rock, beaches) near the
+	// camera, procedural surface patterns further out
+	vec3 materialDx = dFdx(varyingEyepos), materialDy = dFdy(varyingEyepos);
+	vec4 detailMul = vec4(terrainMaterialDetail(vertexColor.rgb, varyingEyepos, materialDx, materialDy,
+		dist, varyingNormal, normalize(eyeposScaled - geosphereCenter), altitude, hasWater), 1.0);
+	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist);
+	if (patternWeight > 0.0)
+		detailMul.rgb *= mix(1.0, terrainSurfacePattern(varyingEyepos, vertexColor.rgb, dist, hasWater), patternWeight);
 
 #ifdef TERRAIN_WITH_WATER
 	// water: sun glint per light here, the rest after the light loop

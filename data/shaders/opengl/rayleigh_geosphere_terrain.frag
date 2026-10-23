@@ -40,18 +40,30 @@ in vec3 viewInscatter;
 #include "terrain-water.glsl"
 #endif
 
+#include "terrain-materials.glsl"
+
 void main(void)
 {
-	// detail texture contribution, at a constant on-screen scale at any distance
-	vec4 detailMul = vec4(vec3(terrainDetail(texture0, texture1, texCoord0, PatchDetailFrequency, dist)), 1.0);
-
-	// surface type patterns: water waves, sand ripples, vegetation clumps, stones
 #ifdef TERRAIN_WITH_WATER
 	const bool hasWater = true;
 #else
 	const bool hasWater = false;
 #endif
-	detailMul.rgb *= terrainSurfacePattern(varyingEyepos, albedoColor.rgb, dist, hasWater);
+
+	// land materials (photo texture detail, slope rock, beaches) near the
+	// camera, procedural surface patterns further out
+	vec3 materialDx = dFdx(varyingEyepos), materialDy = dFdy(varyingEyepos);
+	vec3 surfaceUp = normalize(varyingEyepos * geosphereInvRadius - geosphereCenter);
+#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
+	float altitude = terrainAltitude(surfaceHeight);
+#else
+	float altitude = 1.0e4;
+#endif
+	vec4 detailMul = vec4(terrainMaterialDetail(albedoColor.rgb, varyingEyepos, materialDx, materialDy,
+		dist, varyingNormal, surfaceUp, altitude, hasWater), 1.0);
+	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist);
+	if (patternWeight > 0.0)
+		detailMul.rgb *= mix(1.0, terrainSurfacePattern(varyingEyepos, albedoColor.rgb, dist, hasWater), patternWeight);
 
 	// Use the detail value to multiply the final colour before lighting
 	vec4 ambient = scene.ambient * vertexColor * 0.f;

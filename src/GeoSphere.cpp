@@ -52,6 +52,18 @@ static double s_lodDistanceScale = 8.0;
 // 0..1: how much patches seen edge-on split later (see GeoPatch::LODUpdate)
 static double s_lodForeshortening = 1.0;
 
+// fractional part, for the planet-fixed texture origins the terrain shaders
+// cannot compute precisely themselves
+static float FractionalPart(const double v)
+{
+	return float(v - std::floor(v));
+}
+
+static vector3f FractionalPart(const vector3d &v)
+{
+	return vector3f(FractionalPart(v.x), FractionalPart(v.y), FractionalPart(v.z));
+}
+
 static double ReadLodForeshortening()
 {
 	return Clamp(Pi::config->Int("PlanetLodForeshortening", 100), 0, 100) / 100.0;
@@ -497,8 +509,7 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		// wrapped: the shader cannot get them precisely from the full values.
 		const double largestTile = 2048.0;
 		const vector3d tiles = campos * (GetSystemBody()->GetRadius() / (5.0 * largestTile));
-		auto frac = [](const double v) { return float(v - std::floor(v)); };
-		m_surfaceMaterial->SetPushConstant("WaterOrigin"_hash, vector3f(frac(tiles.x), frac(tiles.y), frac(tiles.z)), 0.0f);
+		m_surfaceMaterial->SetPushConstant("WaterOrigin"_hash, FractionalPart(tiles), 0.0f);
 
 		// each layer drifts at the deep water phase speed sqrt(g * wavelength / 2pi)
 		// of its typical waves, 1/8 of the tile
@@ -506,10 +517,19 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		float drift[3];
 		double tile = largestTile;
 		for (float &d : drift) {
-			d = 5.0f * frac(t * std::sqrt(9.81 * (tile / 8.0) / (2.0 * M_PI)) / (5.0 * tile));
+			d = 5.0f * FractionalPart(t * std::sqrt(9.81 * (tile / 8.0) / (2.0 * M_PI)) / (5.0 * tile));
 			tile /= 16.0;
 		}
 		m_surfaceMaterial->SetPushConstant("WaterDrift"_hash, vector3f(drift[0], drift[1], drift[2]), 0.0f);
+	}
+
+	{
+		// Land material textures (terrain-materials.glsl) are planet-fixed
+		// tiles of 1 m to 128 km, wrapping at 5 tiles. Pass the camera's
+		// planet-fixed position in units of five 256 m and five 128 km tiles.
+		const vector3d camMetres = campos * GetSystemBody()->GetRadius();
+		m_surfaceMaterial->SetPushConstant("MaterialOrigin"_hash, FractionalPart(camMetres / (5.0 * 256.0)), 0.0f);
+		m_surfaceMaterial->SetPushConstant("MaterialOriginCoarse"_hash, FractionalPart(camMetres / (5.0 * 131072.0)), 0.0f);
 	}
 
 	// cloud data: shadows in the terrain shader now, the clouds themselves in
@@ -659,6 +679,15 @@ void GeoSphere::SetUpMaterials()
 		m_texLo.Reset(Graphics::TextureBuilder::Model("textures/low.dds").GetOrCreateTexture(Pi::renderer, "model"));
 		m_surfaceMaterial->SetTexture("texture0"_hash, m_texHi.Get());
 		m_surfaceMaterial->SetTexture("texture1"_hash, m_texLo.Get());
+
+		// land material detail (terrain-materials.glsl); the layer order matches
+		// the MATERIAL_* indices there
+		static const std::vector<std::string> materialFiles = {
+			"textures/terrain/rock.dds", "textures/terrain/gravel.dds", "textures/terrain/sand.dds", "textures/terrain/soil.dds",
+			"textures/terrain/grass.dds", "textures/terrain/forest.dds", "textures/terrain/snow.dds", "textures/terrain/ice.dds"
+		};
+		m_texMaterials.Reset(Graphics::TextureBuilder::Array(materialFiles, materialFiles.size()).GetOrCreateTexture(Pi::renderer, "terrain-materials"));
+		m_surfaceMaterial->SetTexture("terrainMaterials"_hash, m_texMaterials.Get());
 
 		// wave slopes for the water shading (terrain-water.glsl)
 		if (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) {
