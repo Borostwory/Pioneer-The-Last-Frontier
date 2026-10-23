@@ -408,7 +408,7 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 			assert(!m_hasJobRequest);
 			m_hasJobRequest = true;
 
-			SQuadSplitRequest *ssrd = new SQuadSplitRequest(m_corners->m_v0, m_corners->m_v1, m_corners->m_v2, m_corners->m_v3, m_clipCentroid.Normalized(), m_depth,
+			SQuadSplitRequest *ssrd = new SQuadSplitRequest(m_corners->m_v0, m_corners->m_v1, m_corners->m_v2, m_corners->m_v3, m_clipCentroid.Normalized(), m_depth, m_geosphere->GetMaxDepth(),
 				m_geosphere->GetSystemBody()->GetPath(), m_PatchID, m_ctx->GetEdgeLen() - 2,
 				m_ctx->GetFrac(), m_geosphere->GetTerrain());
 
@@ -436,7 +436,7 @@ void GeoPatch::RequestSinglePatch()
 	if (!HasHeightData()) {
 		assert(!m_hasJobRequest);
 		m_hasJobRequest = true;
-		SSingleSplitRequest *ssrd = new SSingleSplitRequest(m_corners->m_v0, m_corners->m_v1, m_corners->m_v2, m_corners->m_v3, m_clipCentroid.Normalized(), m_depth,
+		SSingleSplitRequest *ssrd = new SSingleSplitRequest(m_corners->m_v0, m_corners->m_v1, m_corners->m_v2, m_corners->m_v3, m_clipCentroid.Normalized(), m_depth, m_geosphere->GetMaxDepth(),
 			m_geosphere->GetSystemBody()->GetPath(), m_PatchID, m_ctx->GetEdgeLen() - 2, m_ctx->GetFrac(), m_geosphere->GetTerrain());
 		m_job = Pi::GetAsyncJobQueue()->Queue(new SinglePatchJob(ssrd));
 	}

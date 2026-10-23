@@ -28,7 +28,7 @@ void ResetGeoPatchGenStats();
 class SBaseRequest {
 public:
 	SBaseRequest(const vector3d &v0_, const vector3d &v1_, const vector3d &v2_, const vector3d &v3_, const vector3d &cn,
-		const uint32_t depth_, const SystemPath &sysPath_, const GeoPatchID &patchID_, const int edgeLen_, const double fracStep_,
+		const uint32_t depth_, const uint32_t maxDepth_, const SystemPath &sysPath_, const GeoPatchID &patchID_, const int edgeLen_, const double fracStep_,
 		Terrain *pTerrain_) :
 		v0(v0_),
 		v1(v1_),
@@ -36,6 +36,7 @@ public:
 		v3(v3_),
 		centroid(cn),
 		depth(depth_),
+		maxDepth(maxDepth_),
 		sysPath(sysPath_),
 		patchID(patchID_),
 		edgeLen(edgeLen_),
@@ -49,6 +50,7 @@ public:
 	const vector3d v0, v1, v2, v3;
 	const vector3d centroid;
 	const uint32_t depth;
+	const uint32_t maxDepth; // deepest level of the GeoSphere quadtree
 	const SystemPath sysPath;
 	const GeoPatchID patchID;
 	const int edgeLen;
@@ -63,9 +65,9 @@ protected:
 class SQuadSplitRequest : public SBaseRequest {
 public:
 	SQuadSplitRequest(const vector3d &v0_, const vector3d &v1_, const vector3d &v2_, const vector3d &v3_, const vector3d &cn,
-		const uint32_t depth_, const SystemPath &sysPath_, const GeoPatchID &patchID_, const int edgeLen_, const double fracStep_,
+		const uint32_t depth_, const uint32_t maxDepth_, const SystemPath &sysPath_, const GeoPatchID &patchID_, const int edgeLen_, const double fracStep_,
 		Terrain *pTerrain_) :
-		SBaseRequest(v0_, v1_, v2_, v3_, cn, depth_, sysPath_, patchID_, edgeLen_, fracStep_, pTerrain_)
+		SBaseRequest(v0_, v1_, v2_, v3_, cn, depth_, maxDepth_, sysPath_, patchID_, edgeLen_, fracStep_, pTerrain_)
 	{
 		const int numVerts = NUMVERTICES(edgeLen_);
 		for (int i = 0; i < 4; ++i) {
@@ -102,9 +104,9 @@ protected:
 class SSingleSplitRequest : public SBaseRequest {
 public:
 	SSingleSplitRequest(const vector3d &v0_, const vector3d &v1_, const vector3d &v2_, const vector3d &v3_, const vector3d &cn,
-		const uint32_t depth_, const SystemPath &sysPath_, const GeoPatchID &patchID_, const int edgeLen_, const double fracStep_,
+		const uint32_t depth_, const uint32_t maxDepth_, const SystemPath &sysPath_, const GeoPatchID &patchID_, const int edgeLen_, const double fracStep_,
 		Terrain *pTerrain_) :
-		SBaseRequest(v0_, v1_, v2_, v3_, cn, depth_, sysPath_, patchID_, edgeLen_, fracStep_, pTerrain_)
+		SBaseRequest(v0_, v1_, v2_, v3_, cn, depth_, maxDepth_, sysPath_, patchID_, edgeLen_, fracStep_, pTerrain_)
 	{
 		const int numVerts = NUMVERTICES(edgeLen_);
 		heights = new double[numVerts];

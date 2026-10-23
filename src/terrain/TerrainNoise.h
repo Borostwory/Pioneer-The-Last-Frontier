@@ -10,15 +10,52 @@
 
 namespace TerrainNoise {
 
+	// Highest noise frequency (in unit-sphere units) the octave loops may add.
+	// 0 means unlimited. Set per thread with ScopedBandLimit while generating
+	// patches, so octaves finer than the vertex grid are skipped instead of
+	// aliasing. Never set for collision queries.
+	inline thread_local double s_maxFrequency = 0.0;
+
+	class ScopedBandLimit {
+	public:
+		explicit ScopedBandLimit(const double maxFrequency) :
+			m_previous(s_maxFrequency)
+		{
+			s_maxFrequency = maxFrequency;
+		}
+		~ScopedBandLimit() { s_maxFrequency = m_previous; }
+
+		ScopedBandLimit(const ScopedBandLimit &) = delete;
+		ScopedBandLimit &operator=(const ScopedBandLimit &) = delete;
+
+	private:
+		const double m_previous;
+	};
+
+	// weight of an octave: 1 up to half the cutoff, fading to 0 at the cutoff
+	inline double octave_weight(const double frequency, const double maxFrequency)
+	{
+		if (maxFrequency <= 0.0)
+			return 1.0;
+		return Clamp(2.0 - 2.0 * frequency / maxFrequency, 0.0, 1.0);
+	}
+
+	// mean of fabs(noise(p)) over random p, measured for the simplex noise in perlin.cpp
+	static constexpr double NOISE_MEAN_ABS = 0.355;
+
 	// octavenoise functions return range [0,1] if persistence = 0.5
 	inline double octavenoise(const fracdef_t &def, const double persistence, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / def.lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = def.frequency;
 		for (int i = 0; i < def.octaves; i++) {
-			n += amplitude * noise(frequency * p);
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w <= 0.0)
+				break;
+			n += amplitude * w * noise(frequency * p);
 			amplitude *= persistence;
 			frequency *= def.lacunarity;
 		}
@@ -28,11 +65,17 @@ namespace TerrainNoise {
 	inline double river_octavenoise(const fracdef_t &def, const double persistence, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / def.lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = def.frequency;
 		for (int i = 0; i < def.octaves; i++) {
-			n += amplitude * fabs(noise(frequency * p));
+			// skipped octaves add their mean, so band limiting keeps the average height
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w < 1.0)
+				n += amplitude * (1.0 - w) * NOISE_MEAN_ABS;
+			if (w > 0.0)
+				n += amplitude * w * fabs(noise(frequency * p));
 			amplitude *= persistence;
 			frequency *= def.lacunarity;
 		}
@@ -42,11 +85,15 @@ namespace TerrainNoise {
 	inline double ridged_octavenoise(const fracdef_t &def, const double persistence, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / def.lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = def.frequency;
 		for (int i = 0; i < def.octaves; i++) {
-			n += amplitude * noise(frequency * p);
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w <= 0.0)
+				break;
+			n += amplitude * w * noise(frequency * p);
 			amplitude *= persistence;
 			frequency *= def.lacunarity;
 		}
@@ -58,11 +105,15 @@ namespace TerrainNoise {
 	inline double billow_octavenoise(const fracdef_t &def, const double persistence, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / def.lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = def.frequency;
 		for (int i = 0; i < def.octaves; i++) {
-			n += amplitude * noise(frequency * p);
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w <= 0.0)
+				break;
+			n += amplitude * w * noise(frequency * p);
 			amplitude *= persistence;
 			frequency *= def.lacunarity;
 		}
@@ -72,11 +123,15 @@ namespace TerrainNoise {
 	inline double voronoiscam_octavenoise(const fracdef_t &def, const double persistence, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / def.lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = def.frequency;
 		for (int i = 0; i < def.octaves; i++) {
-			n += amplitude * noise(frequency * p);
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w <= 0.0)
+				break;
+			n += amplitude * w * noise(frequency * p);
 			amplitude *= persistence;
 			frequency *= def.lacunarity;
 		}
@@ -86,11 +141,15 @@ namespace TerrainNoise {
 	inline double dunes_octavenoise(const fracdef_t &def, const double persistence, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / def.lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = def.frequency;
 		for (int i = 0; i < 3; i++) {
-			n += amplitude * noise(frequency * p);
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w <= 0.0)
+				break;
+			n += amplitude * w * noise(frequency * p);
 			amplitude *= persistence;
 			frequency *= def.lacunarity;
 		}
@@ -101,11 +160,15 @@ namespace TerrainNoise {
 	inline double octavenoise(int octaves, const double persistence, const double lacunarity, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = 1.0;
 		while (octaves--) {
-			n += amplitude * noise(frequency * p);
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w <= 0.0)
+				break;
+			n += amplitude * w * noise(frequency * p);
 			amplitude *= persistence;
 			frequency *= lacunarity;
 		}
@@ -115,11 +178,17 @@ namespace TerrainNoise {
 	inline double river_octavenoise(int octaves, const double persistence, const double lacunarity, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = 1.0;
 		while (octaves--) {
-			n += amplitude * fabs(noise(frequency * p));
+			// skipped octaves add their mean, so band limiting keeps the average height
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w < 1.0)
+				n += amplitude * (1.0 - w) * NOISE_MEAN_ABS;
+			if (w > 0.0)
+				n += amplitude * w * fabs(noise(frequency * p));
 			amplitude *= persistence;
 			frequency *= lacunarity;
 		}
@@ -129,11 +198,15 @@ namespace TerrainNoise {
 	inline double ridged_octavenoise(int octaves, const double persistence, const double lacunarity, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = 1.0;
 		while (octaves--) {
-			n += amplitude * noise(frequency * p);
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w <= 0.0)
+				break;
+			n += amplitude * w * noise(frequency * p);
 			amplitude *= persistence;
 			frequency *= lacunarity;
 		}
@@ -145,11 +218,15 @@ namespace TerrainNoise {
 	inline double billow_octavenoise(int octaves, const double persistence, const double lacunarity, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = 1.0;
 		while (octaves--) {
-			n += amplitude * noise(frequency * p);
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w <= 0.0)
+				break;
+			n += amplitude * w * noise(frequency * p);
 			amplitude *= persistence;
 			frequency *= lacunarity;
 		}
@@ -159,11 +236,15 @@ namespace TerrainNoise {
 	inline double voronoiscam_octavenoise(int octaves, const double persistence, const double lacunarity, const vector3d &p)
 	{
 		//assert(persistence <= (1.0 / lacunarity));
+		const double maxFrequency = s_maxFrequency;
 		double n = 0;
 		double amplitude = persistence;
 		double frequency = 1.0;
 		while (octaves--) {
-			n += amplitude * noise(frequency * p);
+			const double w = octave_weight(frequency, maxFrequency);
+			if (w <= 0.0)
+				break;
+			n += amplitude * w * noise(frequency * p);
 			amplitude *= persistence;
 			frequency *= lacunarity;
 		}

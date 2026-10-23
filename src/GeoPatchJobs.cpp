@@ -7,6 +7,7 @@
 #include "MathUtil.h"
 #include "perlin.h"
 #include "profiler/Profiler.h"
+#include "terrain/TerrainNoise.h"
 
 #include <atomic>
 #include <chrono>
@@ -41,13 +42,27 @@ namespace {
 		return (GeoSphere::GetDebugFlags() & GeoSphere::DebugFlags::DEBUG_PATCHDEPTH) != 0;
 	}
 
-	inline vector3d PatchDepthColour(const int depth)
+	// highest noise frequency a vertex grid with the given spacing (unit-sphere units) can show
+	inline double NyquistFrequency(const double spacing)
+	{
+		return 0.5 / spacing;
+	}
+
+	// Heights stay full detail on the two deepest levels, where ships fly low
+	// and land, so the rendered ground matches GetTerrainHeight() (collision).
+	inline bool BandLimitHeights(const uint32_t depth, const uint32_t maxDepth)
+	{
+		return depth + 1 < maxDepth;
+	}
+
+	// debug view colour per patch depth; darker where the heights are band limited
+	inline vector3d PatchDepthColour(const uint32_t depth, const uint32_t maxDepth)
 	{
 		static const vector3d palette[8] = {
 			{ 0.9, 0.1, 0.1 }, { 0.9, 0.5, 0.1 }, { 0.9, 0.9, 0.1 }, { 0.2, 0.8, 0.2 },
 			{ 0.1, 0.8, 0.8 }, { 0.2, 0.3, 0.9 }, { 0.6, 0.2, 0.9 }, { 0.9, 0.9, 0.9 }
 		};
-		return palette[depth & 7];
+		return palette[depth & 7] * (BandLimitHeights(depth, maxDepth) ? 0.6 : 1.0);
 	}
 } // namespace
 
@@ -102,9 +117,15 @@ void SSingleSplitRequest::GenerateMesh() const
 		}
 	}
 
+	// skip noise octaves finer than the vertex grid can show
+	const double maxFrequency = NyquistFrequency((v1 - v0).Length() * fracStep);
+
 	vector3d *vrts = borderVertexs.get();
 	double *bhts = borderHeights.get();
-	pTerrain->GetHeights(vrts, bhts, numBorderedVerts);
+	{
+		TerrainNoise::ScopedBandLimit bandLimit(BandLimitHeights(depth, maxDepth) ? maxFrequency : 0.0);
+		pTerrain->GetHeights(vrts, bhts, numBorderedVerts);
+	}
 
 	for (int iHeights = 0; iHeights < numBorderedVerts; iHeights++)
 	{
@@ -112,6 +133,7 @@ void SSingleSplitRequest::GenerateMesh() const
 	}
 
 	// Generate normals & colors for non-edge vertices since they never change
+	TerrainNoise::ScopedBandLimit bandLimit(maxFrequency);
 	const bool debugDepth = DebugPatchDepthColours();
 	Color3ub *col = colors;
 	vector3f *nrm = normals;
@@ -135,7 +157,7 @@ void SSingleSplitRequest::GenerateMesh() const
 
 			// color
 			const vector3d p = GetSpherePoint(v0, v1, v2, v3, (x - BORDER_SIZE) * fracStep, (y - BORDER_SIZE) * fracStep);
-			setColour(*col, debugDepth ? PatchDepthColour(depth) : pTerrain->GetColor(p, height, n));
+			setColour(*col, debugDepth ? PatchDepthColour(depth, maxDepth) : pTerrain->GetColor(p, height, n));
 			assert(col != &colors[edgeLen * edgeLen]);
 			++col;
 		}
@@ -267,9 +289,15 @@ void SQuadSplitRequest::GenerateBorderedData() const
 		}
 	}
 
+	// the bordered grid has the vertex spacing of the child patches (depth + 1)
+	const double maxFrequency = NyquistFrequency((v1 - v0).Length() * fracStep * 0.5);
+
 	vector3d *vrts = borderVertexs.get();
 	double *bhts = borderHeights.get();
-	pTerrain->GetHeights(vrts, bhts, numBorderedVerts);
+	{
+		TerrainNoise::ScopedBandLimit bandLimit(BandLimitHeights(depth + 1, maxDepth) ? maxFrequency : 0.0);
+		pTerrain->GetHeights(vrts, bhts, numBorderedVerts);
+	}
 
 	for (int iHeights = 0; iHeights < numBorderedVerts; iHeights++) {
 		vrts[iHeights] *= (bhts[iHeights] + 1.0);
@@ -289,6 +317,7 @@ void SQuadSplitRequest::GenerateSubPatchData(
 {
 	PROFILE_SCOPED()
 	// Generate normals & colors for vertices
+	TerrainNoise::ScopedBandLimit bandLimit(NyquistFrequency((v1 - v0).Length() * fracStep));
 	const bool debugDepth = DebugPatchDepthColours();
 	vector3d *vrts = borderVertexs.get();
 	Color3ub *col = colors[quadrantIndex];
@@ -317,7 +346,7 @@ void SQuadSplitRequest::GenerateSubPatchData(
 
 			// color
 			const vector3d p = GetSpherePoint(v0, v1, v2, v3, x * fracStep, y * fracStep);
-			setColour(*col, debugDepth ? PatchDepthColour(depth + 1) : pTerrain->GetColor(p, height, n));
+			setColour(*col, debugDepth ? PatchDepthColour(depth + 1, maxDepth) : pTerrain->GetColor(p, height, n));
 			assert(col != &colors[quadrantIndex][edgeLen * edgeLen]);
 			++col;
 		}
