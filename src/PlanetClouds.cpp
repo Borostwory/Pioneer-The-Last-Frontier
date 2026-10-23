@@ -493,7 +493,7 @@ namespace {
 	}
 
 	// bakes the weather map of layer li for cloud cycle cyc into its slot
-	void BakeWeatherMap(Graphics::Renderer *r, const PassResources &pass, WeatherMaps &w, const PassEntry &e, int li, int slot, double cyc)
+	void BakeWeatherMap(Graphics::Renderer *r, const PassResources &pass, WeatherMaps &w, PassEntry &e, int li, int slot, double cyc)
 	{
 		CloudPassBlock bake {};
 		SetVec4(bake.march, slot * (WEATHER_MAP_W + 2), li * WEATHER_MAP_H, 0.0, 0.0);
