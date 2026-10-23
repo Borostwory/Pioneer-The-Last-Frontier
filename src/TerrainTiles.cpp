@@ -10,9 +10,13 @@
 #include "galaxy/SystemBody.h"
 #include "graphics/Graphics.h"
 #include "graphics/Material.h"
+#include "graphics/RenderState.h"
 #include "graphics/RenderTarget.h"
 #include "graphics/Renderer.h"
+#include "graphics/Texture.h"
+#include "graphics/Types.h"
 #include "graphics/VertexArray.h"
+#include "graphics/VertexBuffer.h"
 #include "profiler/Profiler.h"
 
 #include <algorithm>
