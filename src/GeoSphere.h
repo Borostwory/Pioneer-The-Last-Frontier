@@ -81,6 +81,9 @@ public:
 	static void SetLodDistanceScale(double scale);
 	// the setting adjusted for the camera's current altitude above this body
 	double GetLodDistance() const { return m_lodDistance; }
+	// 0..1: how much later patches seen edge-on split (config
+	// PlanetLodForeshortening in percent, re-read every frame)
+	static double GetLodForeshortening();
 
 	// in sbody radii
 	double GetMaxFeatureHeight() const final { return m_terrain->GetMaxHeight(); }

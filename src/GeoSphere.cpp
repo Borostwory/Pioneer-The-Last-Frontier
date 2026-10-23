@@ -48,11 +48,25 @@ static Uint32 s_debugFlags = GeoSphere::DebugFlags::DEBUG_NONE;
 
 // patches split once the camera is closer than this many patch widths
 static double s_lodDistanceScale = 8.0;
+// 0..1: how much patches seen edge-on split later (see GeoPatch::LODUpdate)
+static double s_lodForeshortening = 1.0;
+
+static double ReadLodForeshortening()
+{
+	return Clamp(Pi::config->Int("PlanetLodForeshortening", 100), 0, 100) / 100.0;
+}
 
 void GeoSphere::InitGeoSphere()
 {
 	s_patchContext.Reset(new GeoPatchContext(detail_edgeLen[Pi::detail.planets > 4 ? 4 : Pi::detail.planets]));
 	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 30.0);
+	s_lodForeshortening = ReadLodForeshortening();
+}
+
+//static
+double GeoSphere::GetLodForeshortening()
+{
+	return s_lodForeshortening;
 }
 
 //static
@@ -105,8 +119,9 @@ static void print_info(const SystemBody *sbody, const Terrain *terrain)
 void GeoSphere::UpdateAllGeoSpheres()
 {
 	PROFILE_SCOPED()
-	// terrain detail distance setting; read every frame so the settings slider applies live
+	// terrain detail settings; read every frame so the sliders apply live
 	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 30.0);
+	s_lodForeshortening = ReadLodForeshortening();
 	for (std::vector<GeoSphere *>::iterator i = s_allGeospheres.begin(); i != s_allGeospheres.end(); ++i) {
 		(*i)->Update();
 	}

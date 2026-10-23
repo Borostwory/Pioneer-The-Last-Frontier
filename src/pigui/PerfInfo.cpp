@@ -697,6 +697,13 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 		Pi::config->Save();
 	ImGui::Text("(peak value; reduced near the ground and in high orbit)");
 
+	// how much later patches seen edge-on split (GeoPatch::LODUpdate); applies live
+	int foreshortening = std::max(0, std::min(100, Pi::config->Int("PlanetLodForeshortening", 100)));
+	if (ImGui::SliderInt("Edge-on Terrain Reduction", &foreshortening, 0, 100, "%d%%"))
+		Pi::config->SetInt("PlanetLodForeshortening", foreshortening);
+	if (ImGui::IsItemDeactivatedAfterEdit())
+		Pi::config->Save();
+
 	const GeoPatchGenStats stats = GetGeoPatchGenStats();
 	const double totalMs = double(stats.microseconds) / 1000.0;
 	const double perPatchUs = stats.patches ? double(stats.microseconds) / double(stats.patches) : 0.0;

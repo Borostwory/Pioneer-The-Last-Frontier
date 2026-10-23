@@ -39,6 +39,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["AntiAliasingMode"] = "2";
 	map["JoystickDeadzone"] = "0.2"; // 20% deadzone is common
 	map["PlanetLodDistance"] = "8"; // terrain patches split within this many patch widths of the camera
+	map["PlanetLodForeshortening"] = "100"; // percent: how much later terrain patches seen edge-on split
 	map["CloudsEnabled"] = "1";
 	map["CloudResolution"] = "1"; // 0 low .. 5 full, see PlanetClouds.cpp
 	map["CloudTemporal"] = "2";   // temporal reconstruction: 0 off, 1 4x (2x2 blocks), 2 9x (3x3), 3 16x (4x4)

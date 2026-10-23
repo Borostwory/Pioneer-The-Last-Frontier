@@ -399,7 +399,21 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 		// levels, so distant terrain stayed coarse (quads of ~25 px at 4K).
 		// Also split within a set number of patch widths (the terrain detail
 		// distance setting), read every update so changes apply live.
-		const double splitLength = std::max(m_splitLength, m_geosphere->GetLodDistance() * m_edgeLength);
+		double splitLength = std::max(m_splitLength, m_geosphere->GetLodDistance() * m_edgeLength);
+		// Seen edge-on (towards the limb from orbit, or the horizon from low
+		// down) a patch is squashed on screen along the view direction, and
+		// its triangles shrink to a pixel or two, where the GPU shades every
+		// one of them in 2x2 pixel blocks: a lot of terrain shading for little
+		// visible detail. Such patches split later, by the square root of the
+		// foreshortening (constant triangle area on screen), at most at half
+		// the distance. The detail across the view direction is coarser there
+		// by the same factor. GetLodForeshortening() blends this in (0 = off).
+		const double foreshortening = GeoSphere::GetLodForeshortening();
+		if (foreshortening > 0.0 && centroidDist > 0.0) {
+			const double facing = m_clipCentroid.Dot(campos - m_clipCentroid) / centroidDist;
+			const double shrink = std::sqrt(Clamp(facing, 0.25, 1.0));
+			splitLength *= 1.0 + (shrink - 1.0) * foreshortening;
+		}
 		const bool tooFar = (centroidDist >= splitLength);	// check if the distance is greater than the rough length, which is how far it should be before it can split
 		const bool atMaxDepth = m_depth >= std::min(GEOPATCH_MAX_DEPTH, m_geosphere->GetMaxDepth());
 		if (atMaxDepth || tooFar) {
