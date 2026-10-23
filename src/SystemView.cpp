@@ -343,22 +343,39 @@ void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double t
 			}
 
 			// one conic per burn, propagated from the burn point onwards, each
-			// lerped further toward white in the planner orbit colour
+			// lerped further toward white in the planner orbit colour. A burn
+			// is drawn around the body of its own frame - a capture burn's
+			// orbit around the moon it is flown inside
 			std::vector<Orbit> segOrbits;
+			std::vector<vector3d> segOffsets;
 			segOrbits.reserve(burnCount);
+			segOffsets.reserve(burnCount);
 			for (size_t i = 0; i < burnCount; ++i) {
 				const int idx = int(i);
-				segOrbits.push_back(Orbit::FromBodyState(m_planner->GetPos(idx), m_planner->GetVel(idx), mass));
+				FrameId burnFrameId = m_planner->GetBurnFrame(idx);
+				const Frame *burnFrame = burnFrameId.valid() ? Frame::GetFrame(burnFrameId) : nullptr;
+				if (!burnFrame || !burnFrame->GetSystemBody()) {
+					burnFrameId = playerNonRotFrameId;
+					burnFrame = playerNonRotFrame;
+				}
+				vector3d burnOffset = offset;
+				if (burnFrameId != playerNonRotFrameId)
+					CalculateFramePositionAtTime(burnFrameId, time, burnOffset);
+				const double burnMass = burnFrame->GetSystemBody()->GetMass();
+				const double burnRadius = burnFrame->GetSystemBody()->GetRadius();
+
+				segOrbits.push_back(Orbit::FromBodyState(m_planner->GetPos(idx), m_planner->GetVel(idx), burnMass));
+				segOffsets.push_back(burnOffset);
 
 				const float whiten = (burnCount > 1) ? (PLANNER_SEG_WHITEN * float(i) / float(burnCount - 1)) : 0.f;
 				Color segColor = map->svColor[Col::PLANNER_ORBIT];
-				map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLANNER, PlayerBody, offset }, &segOrbits.back(), segColor.Tint(whiten), planetRadius);
+				map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLANNER, PlayerBody, burnOffset }, &segOrbits.back(), segColor.Tint(whiten), burnRadius);
 
 				// marker at the exact burn point; the burn index rides along in
 				// orbitIdx (unused for object tracks) so the UI can label it.
 				// Submitted as an object track so it is projected in the draw
 				// pass with the live camera transform.
-				Projectable burn(Projectable::OBJECT, Projectable::PLANNER_BURN, PlayerBody, offset + m_planner->GetPos(idx));
+				Projectable burn(Projectable::OBJECT, Projectable::PLANNER_BURN, PlayerBody, burnOffset + m_planner->GetPos(idx));
 				burn.orbitIdx = idx;
 				map->AddObjectTrack(burn);
 			}
@@ -377,9 +394,9 @@ void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double t
 			}
 			const double segStart = m_planner->GetStartTime(int(seg));
 			if (scrubbed && time >= segStart)
-				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + segOrbits[seg].OrbitalPosAtTime(time - segStart) });
+				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, segOffsets[seg] + segOrbits[seg].OrbitalPosAtTime(time - segStart) });
 			else
-				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + m_planner->GetPos(0) });
+				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, segOffsets[0] + m_planner->GetPos(0) });
 		}
 	}
 }

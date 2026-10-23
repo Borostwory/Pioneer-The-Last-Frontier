@@ -743,12 +743,19 @@ local L = {
 	APPROACH_RENDEZVOUS = "Rendezvous",
 	APPROACH_RENDEZVOUS_TIP = "2 burns: meet the target, then match its velocity on arrival",
 	APPROACH_PLAN = "Plan approach",
-	APPROACH_PLAN_TIP = "Replace the plan with %s from your current orbit, timed for the least Δv.\nIf no transfer is found, the plan stays as it was.\nA planet or moon is passed at two of its radii from its centre.",
+	APPROACH_PLAN_TIP = "Replace the plan with %s from your current orbit, timed for the least Δv.\nIf no transfer is found, the plan stays as it was.",
 	APPROACH_ONE_BURN = "1 burn",
 	APPROACH_TWO_BURNS = "2 burns",
 	APPROACH_STAND_OFF = "Stand-off",
 	APPROACH_STAND_OFF_FORMAT = "%.1f km behind",
-	APPROACH_STAND_OFF_TIP = "Meet a ship or station this far behind it, on its own orbit, instead of at its centre. After a rendezvous the ship keeps this gap, since both fly the same orbit. Planets and moons are always passed at two of their radii from the centre.",
+	APPROACH_STAND_OFF_TIP = "Meet a ship or station this far behind it, on its own orbit, instead of at its centre. After a rendezvous the ship keeps this gap, since both fly the same orbit.",
+	APPROACH_FLYBY = "Flyby altitude",
+	APPROACH_FLYBY_FORMAT = "%.0f km",
+	APPROACH_FLYBY_TIP = "Pass a planet or moon this high above its surface. Its own gravity bends the pass once you are inside its sphere of influence; the plan aims so that the bent pass has its lowest point at this altitude.",
+	APPROACH_INTERCEPT_BODY_TIP = "1 burn: fly past the planet or moon at the flyby altitude",
+	APPROACH_RENDEZVOUS_BODY_TIP = "2 burns: fly past the planet or moon at the altitude below, then a retro burn at the closest point, inside its sphere of influence, that leaves you in a circular orbit around it there",
+	APPROACH_ORBIT = "Orbit altitude",
+	APPROACH_ORBIT_TIP = "The altitude of the circular orbit the capture burn leaves you in. The pass is aimed so that, bent by the body's gravity, its lowest point is at this altitude, where the capture burn is made.",
 	APPROACH_RESULT = "%s in %s",
 	APPROACH_ALTITUDE = "%s above the surface",
 	APPROACH_IMPACT = "Impact with the target in %s",
@@ -922,20 +929,27 @@ end
 local approachBurns = 1
 local approachError, approachErrorTarget = nil, nil
 
--- the stand-off: how far behind a ship or station, on its own orbit, the
--- approach ends - in metres, persisted in the game settings. GetConfigInt
--- answers 0 for a missing key, so the value is stored biased by 1
+-- How far from the target the approach ends, in metres, persisted in the game
+-- settings: for a ship or station the stand-off behind it on its own orbit,
+-- for a planet or moon the flyby altitude above its surface. GetConfigInt
+-- answers 0 for a missing key, so the values are stored biased by 1
 local DEFAULT_STAND_OFF_M = 1000
 local STAND_OFF_MAX_M = 100000
+local DEFAULT_FLYBY_ALTITUDE_M = 100000
+local FLYBY_ALTITUDE_MAX_M = 10000000
 local approachStandOff = DEFAULT_STAND_OFF_M
+local approachFlybyAltitude = DEFAULT_FLYBY_ALTITUDE_M
 
 local function loadApproachSettings()
 	local stored = Game.GetConfigInt("OrbitPlanner", "approachStandOffM")
 	approachStandOff = (stored > 0) and math.min(stored - 1, STAND_OFF_MAX_M) or DEFAULT_STAND_OFF_M
+	stored = Game.GetConfigInt("OrbitPlanner", "approachFlybyAltitudeM")
+	approachFlybyAltitude = (stored > 0) and math.min(stored - 1, FLYBY_ALTITUDE_MAX_M) or DEFAULT_FLYBY_ALTITUDE_M
 end
 
 local function saveApproachSettings()
 	Game.SetConfigInt("OrbitPlanner", "approachStandOffM", approachStandOff + 1)
+	Game.SetConfigInt("OrbitPlanner", "approachFlybyAltitudeM", approachFlybyAltitude + 1)
 	Engine.SaveSettings()
 end
 
@@ -979,43 +993,58 @@ local function drawApproachSection()
 	ui.text(string.format(L.APPROACH_TARGET, targetName))
 	ui.setItemTooltip(source)
 
+	-- the plan's closest approach - read first, since a target with a radius
+	-- is a planet or moon, which changes the controls below. On failure the
+	-- second value is the reason
+	local distance, time, speed, radius = systemView:TransferPlannerGetClosestApproach(target)
+	local isBody = distance ~= nil and radius > 0
+
 	local width = ui.getContentRegion().x
 	local spacing = ui.getItemSpacing().x
 	local half = Vector2(math.floor((width - spacing) / 2), 0)
 	if ui.button(L.APPROACH_INTERCEPT .. "##plannerApproach1", half,
-		approachBurns == 1 and colorset.selected or nil, L.APPROACH_INTERCEPT_TIP) then
+		approachBurns == 1 and colorset.selected or nil, isBody and L.APPROACH_INTERCEPT_BODY_TIP or L.APPROACH_INTERCEPT_TIP) then
 		approachBurns = 1
 	end
 	ui.sameLine(0, spacing)
 	if ui.button(L.APPROACH_RENDEZVOUS .. "##plannerApproach2", half,
-		approachBurns == 2 and colorset.selected or nil, L.APPROACH_RENDEZVOUS_TIP) then
+		approachBurns == 2 and colorset.selected or nil, isBody and L.APPROACH_RENDEZVOUS_BODY_TIP or L.APPROACH_RENDEZVOUS_TIP) then
 		approachBurns = 2
 	end
 
-	-- the stand-off, in kilometres
+	-- the stand-off behind a ship or station, or the flyby altitude over a
+	-- planet or moon, in kilometres
+	local label, tip, format = L.APPROACH_STAND_OFF, L.APPROACH_STAND_OFF_TIP, L.APPROACH_STAND_OFF_FORMAT
+	local value, maxValue, step = approachStandOff, STAND_OFF_MAX_M, 0.1
+	if isBody then
+		label, tip, format = L.APPROACH_FLYBY, L.APPROACH_FLYBY_TIP, L.APPROACH_FLYBY_FORMAT
+		if approachBurns == 2 then label, tip = L.APPROACH_ORBIT, L.APPROACH_ORBIT_TIP end
+		value, maxValue, step = approachFlybyAltitude, FLYBY_ALTITUDE_MAX_M, 1
+	end
 	ui.alignTextToFramePadding()
-	ui.text(L.APPROACH_STAND_OFF)
-	ui.setItemTooltip(L.APPROACH_STAND_OFF_TIP)
+	ui.text(label)
+	ui.setItemTooltip(tip)
 	ui.sameLine()
 	ui.pushItemWidth(ui.getContentRegion().x)
-	local km, changed = ui.incrementDrag("##plannerApproachStandOff", approachStandOff / 1000, 0.1,
-		0, STAND_OFF_MAX_M / 1000, L.APPROACH_STAND_OFF_FORMAT, false)
+	local km, changed = ui.incrementDrag("##plannerApproachStandOff", value / 1000, step,
+		0, maxValue / 1000, format, false)
 	ui.popItemWidth()
-	ui.setItemTooltip(L.APPROACH_STAND_OFF_TIP)
+	ui.setItemTooltip(tip)
 	if changed then
-		approachStandOff = math.min(math.max(math.floor(km * 1000 + 0.5), 0), STAND_OFF_MAX_M)
+		value = math.min(math.max(math.floor(km * 1000 + 0.5), 0), maxValue)
+		if isBody then approachFlybyAltitude = value else approachStandOff = value end
 		saveApproachSettings()
 	end
 
 	local planTip = string.format(L.APPROACH_PLAN_TIP, approachBurns == 1 and L.APPROACH_ONE_BURN or L.APPROACH_TWO_BURNS)
 	if ui.button(L.APPROACH_PLAN .. "##plannerApproachPlan", Vector2(width, 0), nil, planTip) then
-		local ok, err = systemView:TransferPlannerPlanApproach(target, approachBurns, approachStandOff)
+		local ok, err = systemView:TransferPlannerPlanApproach(target, approachBurns, value)
 		approachError = not ok and err or nil
 		approachErrorTarget = targetName
+		-- the readout below shows the new plan
+		distance, time, speed, radius = systemView:TransferPlannerGetClosestApproach(target)
 	end
 
-	-- on failure the second value is the reason
-	local distance, time, speed, radius = systemView:TransferPlannerGetClosestApproach(target)
 	if distance then
 		local when = time > Game.time + 1 and ui.Format.Duration(math.floor(time - Game.time)) or lc.NOW
 		if radius > 0 and distance < radius then

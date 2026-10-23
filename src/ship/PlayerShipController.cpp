@@ -740,6 +740,11 @@ bool PlayerShipController::SyncPlanBurnTarget(int idx)
 	const Frame *frame = TransferPlanner::GravityFrame(m_ship->GetFrame());
 	if (!frame || !frame->GetSystemBody() || idx < 0)
 		return false;
+	// a burn is flown in its own frame: a capture burn inside a moon's sphere
+	// waits until the ship is in there
+	const FrameId burnFrame = Pi::planner->GetBurnFrame(idx);
+	if (burnFrame.valid() && burnFrame != frame->GetId())
+		return false;
 	const double mu = G * frame->GetSystemBody()->GetMass();
 	target.bodyRadius = frame->GetSystemBody()->GetRadius();
 

@@ -48,13 +48,20 @@ constexpr int kFlightSteps = 64;
 constexpr double kMinRadiusFactor = 1.05;
 // Lambert transfers whose angle has a smaller sine are refused (see SolveLambert)
 constexpr double kMinTransferSine = 2e-3;
-// a planet or moon is passed this many of its radii from its centre
+// the coarse search aims this many radii from a planet's or moon's centre;
+// the flyby search then sets the real aim from the flyby altitude
 constexpr double kBodyAimFactor = 2.0;
 // closest-approach scan: samples over the span, which is capped
 constexpr int kApproachSamples = 1000;
 constexpr double kMaxApproachSpan = 365.25 * 24 * 3600;
 // the fallback span when no orbit involved is periodic
 constexpr double kDefaultSpan = 24 * 3600;
+// samples of a trajectory searched for its entry into a target's sphere
+constexpr int kSphereSamples = 2000;
+// flyby altitude search: bisection steps on the aim offset, which is at most
+// this share of the target's sphere
+constexpr int kFlybySteps = 40;
+constexpr double kMaxFlybyAimShare = 0.9;
 
 //
 // Where a target is at a game time, relative to the planner frame. A system
@@ -71,6 +78,11 @@ struct TargetTrack {
 	// a stand-off: the track runs this many seconds behind the target, so it
 	// follows the target's own orbit at a distance behind it
 	double lag = 0.0;
+	// a planet or moon with a frame of its own: inside sphere (that frame's
+	// radius) the game applies only the target's gravity, of bodyMass
+	double sphere = 0.0;
+	double bodyMass = 0.0;
+	FrameId sphereFrame;
 
 	vector3d PosAt(double t) const
 	{
@@ -119,8 +131,19 @@ bool MakeTargetTrack(const Body *target, const Frame *frame, TargetTrack &track,
 		track.period = PeriodOf(sbody->GetOrbit());
 		const SystemBody::BodySuperType superType = sbody->GetSuperType();
 		if (superType == SystemBody::SUPERTYPE_ROCKY_PLANET || superType == SystemBody::SUPERTYPE_GAS_GIANT ||
-			superType == SystemBody::SUPERTYPE_STAR)
+			superType == SystemBody::SUPERTYPE_STAR) {
 			track.radius = sbody->GetRadius();
+			// its non-rotating frame, where DynamicBody::CalcExternalForce takes
+			// gravity from it alone (Space::MakeFramesFor sizes it to the Hill
+			// radius)
+			const Frame *bodyFrame = Frame::GetFrame(target->GetFrame());
+			const Frame *ownFrame = bodyFrame ? Frame::GetFrame(bodyFrame->GetNonRotFrame()) : nullptr;
+			if (ownFrame && ownFrame->GetBody() == target && ownFrame->GetRadius() > track.radius) {
+				track.sphere = ownFrame->GetRadius();
+				track.bodyMass = sbody->GetMass();
+				track.sphereFrame = ownFrame->GetId();
+			}
+		}
 		return true;
 	}
 
@@ -261,6 +284,96 @@ bool DipsBelow(const vector3d &r1, const vector3d &v1, const vector3d &r2, doubl
 	return anomaly + transferAngle >= 2.0 * M_PI;
 }
 
+//
+// The first time a ship flying shipState(t, pos, vel) - a state relative to
+// the planner frame - is inside the target's sphere, between from and to, and
+// its target-relative state then. Sampled, then bisected to the boundary.
+// False when it never gets inside.
+//
+template <class ShipState>
+bool FindSphereEntry(const ShipState &shipState, const TargetTrack &track, double from, double to,
+	double &entry, vector3d &relPos, vector3d &relVel)
+{
+	const auto inside = [&](double t) {
+		vector3d pos, vel;
+		shipState(t, pos, vel);
+		return (pos - track.PosAt(t)).Length() < track.sphere;
+	};
+
+	double before = from, after = -1.0;
+	if (inside(from)) {
+		after = from;
+	} else {
+		for (int i = 1; i <= kSphereSamples; ++i) {
+			const double t = from + (to - from) * double(i) / double(kSphereSamples);
+			if (inside(t)) {
+				after = t;
+				break;
+			}
+			before = t;
+		}
+		if (after < 0.0)
+			return false;
+		for (int i = 0; i < 60 && after - before > 1e-3; ++i) {
+			const double mid = 0.5 * (before + after);
+			if (inside(mid))
+				after = mid;
+			else
+				before = mid;
+		}
+	}
+
+	vector3d pos, vel;
+	shipState(after, pos, vel);
+	entry = after;
+	relPos = pos - track.PosAt(after);
+	relVel = vel - track.VelAt(after);
+	return true;
+}
+
+// The time after the sphere entry when the target-relative pass is closest
+// to the target: sampled over four times the time to cross the sphere
+// straight at the entry speed, then golden-section refined.
+double ClosestOnPass(const Orbit &pass, double sphere, double entrySpeed)
+{
+	const double crossing = 4.0 * sphere / std::max(entrySpeed, 1.0);
+	double bestTau = 0.0, best = pass.OrbitalPosAtTime(0.0).Length();
+	for (int i = 1; i <= kApproachSamples; ++i) {
+		const double tau = crossing * double(i) / double(kApproachSamples);
+		const double d = pass.OrbitalPosAtTime(tau).Length();
+		if (d < best) {
+			best = d;
+			bestTau = tau;
+		}
+	}
+	const double step = crossing / double(kApproachSamples);
+	double lo = std::max(0.0, bestTau - step), hi = bestTau + step;
+	const double golden = 0.5 * (std::sqrt(5.0) - 1.0);
+	for (int i = 0; i < 80 && hi - lo > 1e-3; ++i) {
+		const double a = hi - golden * (hi - lo), b = lo + golden * (hi - lo);
+		if (pass.OrbitalPosAtTime(a).Length() < pass.OrbitalPosAtTime(b).Length())
+			hi = b;
+		else
+			lo = a;
+	}
+	const double tau = 0.5 * (lo + hi);
+	return pass.OrbitalPosAtTime(tau).Length() < best ? tau : bestTau;
+}
+
+// the closest a target-relative conic comes to the target from relPos on:
+// its periapsis while that is still ahead, else where it is now
+double PeriapsisAhead(const vector3d &relPos, const vector3d &relVel, double bodyMass)
+{
+	const double mu = G * bodyMass;
+	const double r = relPos.Length();
+	if (relPos.Dot(relVel) >= 0.0)
+		return r;
+	const double hSqr = relPos.Cross(relVel).LengthSqr();
+	const double energy = 0.5 * relVel.LengthSqr() - mu / r;
+	const double e = std::sqrt(std::max(0.0, 1.0 + 2.0 * energy * hSqr / (mu * mu)));
+	return hSqr / mu / (1.0 + e);
+}
+
 } // namespace
 
 bool TransferPlanner::SolveLambert(const vector3d &r1, const vector3d &r2, double tof, double mu, const vector3d &hRef,
@@ -330,8 +443,9 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 	if (!MakeTargetTrack(target, frame, track, error))
 		return false;
 	// a ship or station is met standOff behind it on its own orbit, where a
-	// matched velocity keeps the gap; a planet or moon is passed at a
-	// distance from its centre instead (kBodyAimFactor)
+	// matched velocity keeps the gap; a planet or moon is flown past with its
+	// periapsis standOff above the surface (see the flyby search below), and
+	// a rendezvous with it is a capture into a circular orbit there
 	if (track.radius <= 0.0 && standOff > 0.0) {
 		const double speed = track.VelAt(Pi::game->GetTime()).Length();
 		if (speed > 0.0)
@@ -435,12 +549,118 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 		}
 	}
 	cost(bestDepart, bestTof, dv1, dv2);
+	// the capture burn of a rendezvous with a planet or moon (see below)
+	Burn captureBurn;
+	bool hasCapture = false;
 
-	// the departure burn, split onto the planner's axes at the state the
-	// chain will compute for it
 	const double tau = bestDepart - segmentTime;
 	const vector3d r1 = departure.OrbitalPosAtTime(tau);
 	const vector3d shipVel = departure.OrbitalVelocityAtTime(track.mass, tau);
+
+	// A planet or moon with a sphere of its own: inside it the game flies the
+	// ship around the target alone, which bends the pass inwards - aimed at a
+	// fixed distance in this plan's two-body frame, the ship would hit it.
+	// So the aim is moved sideways, across the arrival direction and away
+	// from the central body, until the target-relative pass flown from the
+	// sphere's edge - exactly as the game flies it - has its periapsis
+	// standOff above the surface. The pass rises with the offset, so the
+	// offset is bisected.
+	if (track.sphere > 0.0) {
+		const double arrive = bestDepart + bestTof;
+		const vector3d centre = track.PosAt(arrive);
+		const double wanted = track.radius + std::max(standOff, 0.0);
+
+		// the side to pass on: away from the central body, square to the
+		// arrival direction relative to the target
+		vector3d v1, v2;
+		double transferAngle;
+		if (!SolveLambert(r1, centre, bestTof, mu, hRef, v1, v2, transferAngle) &&
+			!SolveLambert(r1, centre + centre.Normalized() * (track.radius * kBodyAimFactor), bestTof, mu, hRef, v1, v2, transferAngle)) {
+			error = "No transfer to the target was found";
+			return false;
+		}
+		const vector3d arrival = (v2 - track.VelAt(arrive)).NormalizedSafe();
+		vector3d side = centre.Normalized() - arrival * arrival.Dot(centre.Normalized());
+		if (side.Length() < 1e-6)
+			side = arrival.Cross(hRef);
+		side = side.NormalizedSafe();
+
+		// the periapsis of the pass for an aim offset, and the departure
+		// delta-v it takes; a pass that misses the sphere counts as high
+		const auto periapsisFor = [&](double offset, vector3d &departDv) {
+			vector3d w1, w2;
+			double angle;
+			if (!SolveLambert(r1, centre + side * offset, bestTof, mu, hRef, w1, w2, angle))
+				return -1.0;
+			departDv = w1 - shipVel;
+			const Orbit transfer = Orbit::FromBodyState(r1, w1, track.mass);
+			const auto legState = [&](double t, vector3d &pos, vector3d &vel) {
+				pos = transfer.OrbitalPosAtTime(t - bestDepart);
+				vel = transfer.OrbitalVelocityAtTime(track.mass, t - bestDepart);
+			};
+			double entry;
+			vector3d relPos, relVel;
+			if (!FindSphereEntry(legState, track, bestDepart, arrive + bestTof, entry, relPos, relVel))
+				return kInfinity;
+			return PeriapsisAhead(relPos, relVel, track.bodyMass);
+		};
+
+		double lo = 0.0, hi = kMaxFlybyAimShare * track.sphere;
+		vector3d flybyDv;
+		if (periapsisFor(hi, flybyDv) < wanted) {
+			error = "No flyby that high was found: lower the flyby altitude";
+			return false;
+		}
+		for (int i = 0; i < kFlybySteps; ++i) {
+			const double mid = 0.5 * (lo + hi);
+			vector3d dv;
+			const double rp = periapsisFor(mid, dv);
+			if (rp >= 0.0 && rp < wanted)
+				lo = mid;
+			else
+				hi = mid;
+		}
+		if (periapsisFor(hi, flybyDv) < 0.0) {
+			error = "No transfer to the target was found";
+			return false;
+		}
+		dv1 = flybyDv;
+
+		// A rendezvous with a planet or moon is a capture: a retro burn at
+		// the pass's periapsis, in the target's own frame, that leaves the
+		// ship on a circular orbit at the flyby altitude. RecomputeChain
+		// carries the chain into that frame at the sphere's edge.
+		if (burns > 1) {
+			const Orbit transfer = Orbit::FromBodyState(r1, shipVel + dv1, track.mass);
+			const auto legState = [&](double t, vector3d &pos, vector3d &vel) {
+				pos = transfer.OrbitalPosAtTime(t - bestDepart);
+				vel = transfer.OrbitalVelocityAtTime(track.mass, t - bestDepart);
+			};
+			double entry;
+			vector3d relPos, relVel;
+			if (!FindSphereEntry(legState, track, bestDepart, arrive + bestTof, entry, relPos, relVel)) {
+				error = "The transfer does not reach the target's sphere of influence";
+				return false;
+			}
+			const Orbit pass = Orbit::FromBodyState(relPos, relVel, track.bodyMass);
+			const double tau = ClosestOnPass(pass, track.sphere, relVel.Length());
+			const vector3d p = pass.OrbitalPosAtTime(tau);
+			const vector3d v = pass.OrbitalVelocityAtTime(track.bodyMass, tau);
+			// circular speed along the direction of travel, square to the radius
+			const vector3d horizontal = (v - p.NormalizedSafe() * v.Dot(p.NormalizedSafe())).NormalizedSafe();
+			const vector3d capture = horizontal * std::sqrt(G * track.bodyMass / p.Length()) - v;
+			captureBurn.startTime = entry + tau;
+			captureBurn.frame = track.sphereFrame;
+			if (!DecomposeDv(p, v, capture, captureBurn.dv)) {
+				error = "The capture burn could not be set up";
+				return false;
+			}
+			hasCapture = true;
+		}
+	}
+
+	// the departure burn, split onto the planner's axes at the state the
+	// chain will compute for it
 	Burn departBurn;
 	departBurn.startTime = bestDepart;
 	if (!DecomposeDv(r1, shipVel, dv1, departBurn.dv)) {
@@ -451,7 +671,7 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 	// the arrival burn matches the target's velocity, from the arrival state
 	// as the chain will propagate the transfer
 	Burn arriveBurn;
-	if (burns > 1) {
+	if (burns > 1 && !hasCapture) {
 		const Orbit transfer = Orbit::FromBodyState(r1, shipVel + dv1, track.mass);
 		const vector3d r2 = transfer.OrbitalPosAtTime(bestTof);
 		const vector3d v2 = transfer.OrbitalVelocityAtTime(track.mass, bestTof);
@@ -463,7 +683,9 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 	}
 
 	m_burns.push_back(departBurn);
-	if (burns > 1)
+	if (hasCapture)
+		m_burns.push_back(captureBurn);
+	else if (burns > 1)
 		m_burns.push_back(arriveBurn);
 
 	EnforceOrder();
@@ -497,8 +719,9 @@ bool TransferPlanner::GetClosestApproach(const Body *target, ClosestApproach &re
 							  Pi::player->GetVelocityRelTo(frame->GetId()), mass) });
 	double legStart = now;
 	for (const Burn &burn : m_burns) {
-		// completed burns are already in the live state
-		if (burn.status == COMPLETED)
+		// completed burns are already in the live state; a burn in another
+		// frame (a capture inside a moon's sphere) is past the pass below
+		if (burn.status == COMPLETED || (burn.frame.valid() && burn.frame != frame->GetId()))
 			continue;
 		legStart = std::max(legStart, burn.startTime);
 		legs.push_back({ legStart, Orbit::FromBodyState(burn.pos, burn.vel + GetOffsetVel(burn), mass) });
@@ -523,6 +746,26 @@ bool TransferPlanner::GetClosestApproach(const Body *target, ClosestApproach &re
 	if (span <= 0.0)
 		span = kDefaultSpan;
 	const double end = std::min(legs.back().start + span, now + kMaxApproachSpan);
+
+	// A planet or moon with a sphere of its own: once the ship is inside, the
+	// game flies it around the target alone, so from the sphere's edge on the
+	// approach is the target-relative conic - which its gravity bends inwards,
+	// often into the surface, where the two-body scan below would show a
+	// clean pass. Scanned up to twice the time to cross the sphere straight.
+	if (track.sphere > 0.0) {
+		double entry;
+		vector3d relPos, relVel;
+		if (FindSphereEntry(shipState, track, now, end, entry, relPos, relVel)) {
+			const Orbit pass = Orbit::FromBodyState(relPos, relVel, track.bodyMass);
+			const double bestTau = ClosestOnPass(pass, track.sphere, relVel.Length());
+
+			result.time = entry + bestTau;
+			result.distance = pass.OrbitalPosAtTime(bestTau).Length();
+			result.relativeSpeed = pass.OrbitalVelocityAtTime(track.bodyMass, bestTau).Length();
+			result.targetRadius = track.radius;
+			return true;
+		}
+	}
 
 	double bestTime = now, bestDistance = kInfinity;
 	const double step = (end - now) / double(kApproachSamples);

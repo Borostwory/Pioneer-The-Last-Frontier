@@ -44,7 +44,66 @@ double SweptAngle(const vector3d &a, const vector3d &b, const vector3d &axis)
 		angle += 2.0 * M_PI;
 	return angle;
 }
+
+// the mass a frame's conics are around: its body's
+double FrameMass(const Frame *frame)
+{
+	return (frame && frame->GetSystemBody()) ? frame->GetSystemBody()->GetMass() : 0.0;
+}
+
+// samples of a conic searched for its entry into a child frame's sphere
+constexpr int kChildEntrySamples = 2000;
 } // namespace
+
+bool TransferPlanner::FindChildFrameEntry(const Orbit &seg, double segStart, double mass, const Frame *child,
+	double from, double to, double &entry, vector3d &relPos, vector3d &relVel)
+{
+	const SystemBody *sbody = child ? child->GetSystemBody() : nullptr;
+	if (!sbody || to <= from)
+		return false;
+	// the child frame rides its body's orbit rails (Frame::UpdateOrbitRails)
+	const Orbit &rails = sbody->GetOrbit();
+	const double radius = child->GetRadius();
+	const auto inside = [&](double t) {
+		return (seg.OrbitalPosAtTime(t - segStart) - rails.OrbitalPosAtTime(t)).Length() < radius;
+	};
+
+	double before = from, after = -1.0;
+	if (inside(from)) {
+		after = from;
+	} else {
+		for (int i = 1; i <= kChildEntrySamples; ++i) {
+			const double t = from + (to - from) * double(i) / double(kChildEntrySamples);
+			if (inside(t)) {
+				after = t;
+				break;
+			}
+			before = t;
+		}
+		if (after < 0.0)
+			return false;
+		for (int i = 0; i < 60 && after - before > 1e-3; ++i) {
+			const double mid = 0.5 * (before + after);
+			if (inside(mid))
+				after = mid;
+			else
+				before = mid;
+		}
+	}
+
+	entry = after;
+	relPos = seg.OrbitalPosAtTime(after - segStart) - rails.OrbitalPosAtTime(after);
+	relVel = seg.OrbitalVelocityAtTime(mass, after - segStart) -
+		(rails.OrbitalPosAtTime(after + 1.0) - rails.OrbitalPosAtTime(after - 1.0)) * 0.5;
+	return true;
+}
+
+FrameId TransferPlanner::GetBurnFrame(int idx) const
+{
+	if (idx < 0 || idx >= int(m_burns.size()))
+		return FrameId();
+	return m_burns[idx].frame;
+}
 
 Frame *TransferPlanner::GravityFrame(FrameId frameId)
 {
@@ -223,6 +282,9 @@ int TransferPlanner::InsertBurn(int afterIdx)
 		// start-time stepper is immediately adjustable instead of stuck at NOW
 		burn.startTime = std::max(m_burns[anchor].startTime, Pi::game->GetTime()) +
 			(afterIdx < 0 ? 3600.0 : 0.0);
+		// in the frame of the burn it follows - inside a moon's sphere after
+		// a capture, say; RecomputeChain moves it if the chain cannot get there
+		burn.frame = m_burns[anchor].frame;
 	}
 
 	m_burns.push_back(burn);
@@ -493,18 +555,18 @@ void TransferPlanner::RecomputeChain()
 		return;
 
 	Frame *frame = PlannerFrame();
-	if (!frame)
+	if (!frame || !frame->GetSystemBody())
 		return;
 
-	const double mass = frame->GetSystemBody()->GetMass();
-	const double gameTime = Pi::game->GetTime();
-	double segmentTime = gameTime;
-
-	// seed the first segment from the live player state
-	Orbit segment = Orbit::FromBodyState(
-		Pi::player->GetPositionRelTo(frame->GetId()),
-		Pi::player->GetVelocityRelTo(frame->GetId()),
-		mass);
+	// the segment flown into the next burn: a conic in a frame, with its
+	// state at segmentTime. Seeded from the live player state in the
+	// planner's frame
+	const Frame *segFrame = frame;
+	double mass = FrameMass(segFrame);
+	double segmentTime = Pi::game->GetTime();
+	vector3d segPos = Pi::player->GetPositionRelTo(frame->GetId());
+	vector3d segVel = Pi::player->GetVelocityRelTo(frame->GetId());
+	Orbit segment = Orbit::FromBodyState(segPos, segVel, mass);
 
 	for (Burn &burn : m_burns) {
 		// a completed burn is already in the live state the chain is seeded
@@ -512,12 +574,47 @@ void TransferPlanner::RecomputeChain()
 		// was planned at.
 		if (burn.status == COMPLETED)
 			continue;
+		if (!burn.frame.valid())
+			burn.frame = segFrame->GetId();
+
+		// A burn in a moon's own frame: the segment flies on until it enters
+		// the moon's sphere, where the game switches to the moon's gravity
+		// alone (DynamicBody::CalcExternalForce), and carries on relative to
+		// the moon from there. A burn the segment does not get into the
+		// sphere before is still taken over at its own time, so its frame
+		// survives an edit that breaks the approach for a while; a burn in a
+		// frame the chain cannot reach at all joins the chain's frame.
+		if (burn.frame != segFrame->GetId()) {
+			const Frame *child = Frame::GetFrame(burn.frame);
+			if (child && child->GetParent() == segFrame->GetId() && child->GetSystemBody()) {
+				const double until = std::max(burn.startTime, segmentTime);
+				double entry = until;
+				vector3d relPos, relVel;
+				if (!FindChildFrameEntry(segment, segmentTime, mass, child, segmentTime, until, entry, relPos, relVel)) {
+					const Orbit &rails = child->GetSystemBody()->GetOrbit();
+					relPos = segment.OrbitalPosAtTime(until - segmentTime) - rails.OrbitalPosAtTime(until);
+					relVel = segment.OrbitalVelocityAtTime(mass, until - segmentTime) -
+						(rails.OrbitalPosAtTime(until + 1.0) - rails.OrbitalPosAtTime(until - 1.0)) * 0.5;
+				}
+				segFrame = child;
+				mass = FrameMass(child);
+				segmentTime = entry;
+				segPos = relPos;
+				segVel = relVel;
+				segment = Orbit::FromBodyState(segPos, segVel, mass);
+			} else {
+				burn.frame = segFrame->GetId();
+			}
+		}
 
 		// hyperbolic legs chain exactly like elliptic ones: OrbitalPosAtTime /
 		// OrbitalVelocityAtTime branch on eccentricity internally (the same
 		// hyperbolic solver as Orbit.cpp's MeanAnomalyFromTrueAnomaly branch),
 		// so no special casing is needed here - same mass, non-negative deltaT
 		// only, which std::max(0.0, ...) guarantees.
+		burn.segStart = segmentTime;
+		burn.segPos = segPos;
+		burn.segVel = segVel;
 		const double deltaT = std::max(0.0, burn.startTime - segmentTime);
 
 		burn.pos = segment.OrbitalPosAtTime(deltaT);
@@ -525,7 +622,9 @@ void TransferPlanner::RecomputeChain()
 		segmentTime += deltaT;
 
 		// the burn's offset velocity bends the next segment
-		segment = Orbit::FromBodyState(burn.pos, burn.vel + GetOffsetVel(burn), mass);
+		segPos = burn.pos;
+		segVel = burn.vel + GetOffsetVel(burn);
+		segment = Orbit::FromBodyState(segPos, segVel, mass);
 	}
 }
 
@@ -537,28 +636,32 @@ bool TransferPlanner::GetIncomingOrbit(int idx, Orbit &orbit, vector3d &pos, vec
 	Frame *frame = PlannerFrame();
 	if (!frame || !frame->GetSystemBody())
 		return false;
+	const Burn &burn = m_burns[idx];
 
-	// the same chaining as RecomputeChain: the first burn still to fly takes
-	// the live orbit from now, every later one the orbit the previous burn
-	// still to fly leaves behind, from that burn's start time (never before
-	// now); completed burns are already in the live state
-	segmentTime = Pi::game->GetTime();
-	const Burn *prev = nullptr;
+	// The first burn still to fly, in the planner's frame, takes the live
+	// orbit from now; every other one the segment RecomputeChain left on it -
+	// the orbit the previous burn still to fly leaves behind, or, for a burn
+	// in a moon's frame, the moon-relative conic from the sphere's edge.
+	// Completed burns are already in the live state.
+	bool first = true;
 	for (int i = 0; i < idx; ++i) {
-		if (m_burns[i].status == COMPLETED)
-			continue;
-		segmentTime = std::max(segmentTime, m_burns[i].startTime);
-		prev = &m_burns[i];
+		if (m_burns[i].status != COMPLETED)
+			first = false;
 	}
-	if (!prev) {
+	const Frame *burnFrame = burn.frame.valid() ? Frame::GetFrame(burn.frame) : frame;
+	if (first && burnFrame == frame) {
+		segmentTime = Pi::game->GetTime();
 		pos = Pi::player->GetPositionRelTo(frame->GetId());
 		vel = Pi::player->GetVelocityRelTo(frame->GetId());
 	} else {
-		pos = prev->pos;
-		vel = prev->vel + GetOffsetVel(*prev);
+		if (!burnFrame || !burnFrame->GetSystemBody())
+			return false;
+		segmentTime = burn.segStart;
+		pos = burn.segPos;
+		vel = burn.segVel;
 	}
 
-	orbit = Orbit::FromBodyState(pos, vel, frame->GetSystemBody()->GetMass());
+	orbit = Orbit::FromBodyState(pos, vel, FrameMass(burnFrame));
 	// FromBodyState falls back to a static body for a degenerate state
 	return !is_zero_general(orbit.GetSemiMajorAxis());
 }
@@ -718,7 +821,8 @@ bool TransferPlanner::GetCircularizePlan(int idx, double &time, int &apsis, doub
 	double segmentTime;
 	if (!GetIncomingOrbit(idx, orbit, pos, vel, segmentTime))
 		return false;
-	const double mass = PlannerFrame()->GetSystemBody()->GetMass();
+	const Frame *burnFrame = m_burns[idx].frame.valid() ? Frame::GetFrame(m_burns[idx].frame) : PlannerFrame();
+	const double mass = FrameMass(burnFrame);
 
 	// where to burn: the apsis the burn already sits on (so a periapsis or
 	// apoapsis picked by hand is kept), otherwise the next apsis ahead, and

@@ -64,6 +64,14 @@ public:
 		vector3d vel = vector3d(0., 0., 0.);
 		int status = PENDING;
 		double appliedDeltaV = 0.0; // executed delta-v, accumulated along the burn direction
+		// the gravity frame pos / vel / dv are in: the frame of the body the
+		// ship orbits at the burn - the planner's frame, or a moon's own frame
+		// the chain enters on the way (RecomputeChain). Unset until chained
+		FrameId frame;
+		// the conic leading into the burn, in that frame: its state at segStart
+		double segStart = 0.0;
+		vector3d segPos = vector3d(0., 0., 0.);
+		vector3d segVel = vector3d(0., 0., 0.);
 	};
 
 	TransferPlanner();
@@ -100,6 +108,9 @@ public:
 	vector3d GetVel(int idx) const;
 	vector3d GetOffsetVel(int idx) const;
 	bool HasPlan() const { return !m_burns.empty(); }
+	// the gravity frame burn idx is expressed in (see Burn::frame); invalid
+	// for an unknown index
+	FrameId GetBurnFrame(int idx) const;
 
 	// burn status / executed-delta-v API; the "active" burn is the first one in
 	// start-time order that has not been completed, so completing a burn advances
@@ -146,11 +157,14 @@ public:
 	// PlanApproach replaces the plan with burns from the ship's current orbit:
 	// one that puts the ship on a transfer meeting the target (burns = 1,
 	// intercept), and with burns = 2 a second one on arrival that matches the
-	// target's velocity (rendezvous). The old plan is kept when it fails. Departure and flight time are chosen for the least total
-	// delta-v. A ship or station is met standOff metres behind it on its own
-	// orbit, so a rendezvous parks the ship there instead of running into it;
-	// a planet or moon is passed at two of its radii from its centre, never
-	// aimed at. On failure error says why.
+	// target's velocity (rendezvous). The old plan is kept when it fails.
+	// Departure and flight time are chosen for the least total delta-v. A ship
+	// or station is met standOff metres behind it on its own orbit, so a
+	// rendezvous parks the ship there instead of running into it. A planet or
+	// moon is flown past (intercept only): the aim is set so that the pass
+	// inside its sphere of influence, bent by its own gravity as the game
+	// flies it, has its periapsis standOff metres above the surface. On
+	// failure error says why.
 	bool PlanApproach(const Body *target, int burns, double standOff, std::string &error);
 
 	struct ClosestApproach {
@@ -179,6 +193,11 @@ private:
 	// prograde (along vel), normal (along pos x vel), radial (along pos)
 	static bool DecomposeDv(const vector3d &pos, const vector3d &vel, const vector3d &change, double dv[3]);
 	vector3d GetOffsetVel(const Burn &burn) const;
+	// The first time the conic seg (in a frame, its t = 0 at segStart, around
+	// mass) enters the sphere of child, a moon's own frame inside it, between
+	// from and to, and the state relative to child then. False if it does not.
+	static bool FindChildFrameEntry(const Orbit &seg, double segStart, double mass, const Frame *child,
+		double from, double to, double &entry, vector3d &relPos, vector3d &relVel);
 	// the orbit the plan ends on - after its last burn, or the live one - with
 	// its state at t = 0 and the game time t = 0 corresponds to
 	bool GetFinalOrbit(Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const;
