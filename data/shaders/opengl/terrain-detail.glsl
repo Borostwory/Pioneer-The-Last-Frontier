@@ -22,8 +22,8 @@
 #define DETAIL_LO_PIXELS_PER_TEXEL 16.0
 
 // detail contrast near the camera and far away (distances in metres)
-#define DETAIL_CONTRAST_NEAR 0.6
-#define DETAIL_CONTRAST_FAR 0.3
+#define DETAIL_CONTRAST_NEAR 1.0
+#define DETAIL_CONTRAST_FAR 0.6
 #define DETAIL_CONTRAST_NEAR_DIST 2.0e3
 #define DETAIL_CONTRAST_FAR_DIST 2.0e5
 

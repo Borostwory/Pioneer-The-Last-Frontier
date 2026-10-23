@@ -20,8 +20,7 @@ vector3d TerrainColorFractal<TerrainColorAsteroid>::GetColor(const vector3d &p, 
 {
 	const double h = m_invMaxHeight * height / 2;
 	const double flatness = pow(p.Dot(norm), 6.0);
-	const double equatorial_desert = (2.0) * terrain_colournoise_climate(0.5) *
-		1.0 * (2.0) * (1.0 - p.y * p.y);
+	const double equatorial_desert = 2.0 * terrain_colournoise_climate(0.5) * (1.0 - p.y * p.y);
 
 	static const double bands[] = { 0.02 };
 	return BlendBands(h, bands, 1, [&](const int band, const double n) -> vector3d {

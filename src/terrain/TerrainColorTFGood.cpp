@@ -27,8 +27,7 @@ vector3d TerrainColorFractal<TerrainColorTFGood>::GetColor(const vector3d &p, do
 	if (ice >= 1.0)
 		return iceColor;
 
-	const double equatorial_desert = (2.0 - m_icyness) * terrain_colournoise_climate(0.5) *
-		1.0 * (2.0 - m_icyness) * (1.0 - p.y * p.y);
+	const double equatorial_desert = (2.0 - m_icyness) * terrain_colournoise_climate(0.5) * (1.0 - p.y * p.y);
 
 	auto surfaceColor = [&]() -> vector3d {
 		// water

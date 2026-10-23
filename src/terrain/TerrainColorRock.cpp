@@ -22,8 +22,7 @@ vector3d TerrainColorFractal<TerrainColorRock>::GetColor(const vector3d &p, doub
 	if (h <= 0) return m_darkrockColor[0];
 	const double flatness = pow(p.Dot(norm), 20.0);
 	const vector3d color_cliffs = m_rockColor[0];
-	const double equatorial_desert = (2.0 - m_icyness) * terrain_colournoise_climate(0.05) *
-		1.0 * (2.0 - m_icyness) * (1.0 - p.y * p.y);
+	const double equatorial_desert = (2.0 - m_icyness) * terrain_colournoise_climate(0.05) * (1.0 - p.y * p.y);
 	// Below is to do with variable colours for different heights, it gives a nice effect.
 	const vector3d base = interpolate_color(equatorial_desert, m_rockColor[2], m_darkrockColor[4]);
 	static const double bands[] = { 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1 };

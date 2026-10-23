@@ -22,8 +22,7 @@ vector3d TerrainColorFractal<TerrainColorTFPoor>::GetColor(const vector3d &p, do
 	const double h = m_invMaxHeight * height;
 	const double flatness = pow(p.Dot(norm), 8.0);
 
-	const double equatorial_desert = (2.0 - m_icyness) * terrain_colournoise_climate(0.5) *
-		1.0 * (2.0 - m_icyness) * (1.0 - p.y * p.y);
+	const double equatorial_desert = (2.0 - m_icyness) * terrain_colournoise_climate(0.5) * (1.0 - p.y * p.y);
 
 	// ice on mountains and poles, faded in at the edges
 	const double ice = SmoothStep(0.97, 1.03, fabs(m_icyness * p.y) + m_icyness * h);

@@ -26,8 +26,7 @@ vector3d TerrainColorFractal<TerrainColorEarthLikeHeightmapped>::GetColor(const 
 	const double h = m_invMaxHeight * height;
 	const double flatness = pow(p.Dot(norm), 8.0);
 
-	const double equatorial_desert = (2.0 - m_icyness) * terrain_colournoise_climate(0.5) *
-		1.0 * (2.0 - m_icyness) * (1.0 - p.y * p.y);
+	const double equatorial_desert = (2.0 - m_icyness) * terrain_colournoise_climate(0.5) * (1.0 - p.y * p.y);
 
 	// ice on flat mountain tops and polar ice-caps (land only), faded in at the edges
 	double ice = 0.0;
