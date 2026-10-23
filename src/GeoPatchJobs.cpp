@@ -42,9 +42,13 @@ namespace {
 		return (GeoSphere::GetDebugFlags() & GeoSphere::DebugFlags::DEBUG_PATCHDEPTH) != 0;
 	}
 
-	// highest noise frequency a vertex grid with the given spacing (unit-sphere units) can show
+	// Highest noise frequency a vertex grid with the given spacing (unit-sphere
+	// units) can show, or 0 (no limit) when band limiting is switched off for
+	// A/B comparison in the debug window.
 	inline double NyquistFrequency(const double spacing)
 	{
+		if (GeoSphere::GetDebugFlags() & GeoSphere::DebugFlags::DEBUG_NOBANDLIMIT)
+			return 0.0;
 		return 0.5 / spacing;
 	}
 

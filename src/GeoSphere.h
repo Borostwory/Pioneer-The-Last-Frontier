@@ -68,7 +68,8 @@ public:
 		DEBUG_SORTGEOPATCHES = 0x1,
 		DEBUG_WIREFRAME = 0x2,
 		DEBUG_FACELABELS = 0x4,
-		DEBUG_PATCHDEPTH = 0x8
+		DEBUG_PATCHDEPTH = 0x8,
+		DEBUG_NOBANDLIMIT = 0x10
 	};
 	static void SetDebugFlags(Uint32 flags);
 	static Uint32 GetDebugFlags();

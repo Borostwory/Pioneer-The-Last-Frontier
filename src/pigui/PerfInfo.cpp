@@ -652,19 +652,22 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 	bool showWire = debugFlags & Flags::DEBUG_WIREFRAME;
 	//bool showFace = debugFlags & Flags::DEBUG_FACELABELS;
 	bool showDepth = debugFlags & Flags::DEBUG_PATCHDEPTH;
+	bool noBandLimit = debugFlags & Flags::DEBUG_NOBANDLIMIT;
 
 	bool changed = ImGui::Checkbox("Distance Sort GeoPatches", &showSort);
 	changed |= ImGui::Checkbox("Show Wireframe", &showWire);
 	//changed |= ImGui::Checkbox("Show Face IDs", &showFace);
-	const bool depthChanged = ImGui::Checkbox("Colour Patches by Depth", &showDepth);
-	changed |= depthChanged;
+	bool regenerate = ImGui::Checkbox("Colour Patches by Depth", &showDepth);
+	regenerate |= ImGui::Checkbox("Disable Noise Band Limit (A/B)", &noBandLimit);
+	changed |= regenerate;
 
 	/* clang-format off */
 	if (changed) {
 		debugFlags = (showSort ? Flags::DEBUG_SORTGEOPATCHES : 0)
 			| (showWire ? Flags::DEBUG_WIREFRAME : 0)
 			//| (showFace ? Flags::DEBUG_FACELABELS : 0)
-			| (showDepth ? Flags::DEBUG_PATCHDEPTH : 0);
+			| (showDepth ? Flags::DEBUG_PATCHDEPTH : 0)
+			| (noBandLimit ? Flags::DEBUG_NOBANDLIMIT : 0);
 		GeoSphere::SetDebugFlags(debugFlags);
 		Pi::config->SetInt("SortGeoPatches", showSort ? 1 : 0);
 
@@ -672,8 +675,8 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 	}
 	/* clang-format on */
 
-	// patch colours are baked when a patch is generated, so rebuild them all
-	if (depthChanged)
+	// these options are baked into patches when they are generated, so rebuild them all
+	if (regenerate)
 		Pi::OnChangeDetailLevel();
 
 	const GeoPatchGenStats stats = GetGeoPatchGenStats();
