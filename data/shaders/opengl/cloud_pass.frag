@@ -24,10 +24,10 @@ out vec4 frag_color;
 
 void main(void)
 {
-	// this march pixel traces one history pixel of its 2x2 block (the
+	// this march pixel traces one history pixel of its 2x2 or 3x3 block (the
 	// checkerboard offset rotates every frame), or the block centre when the
 	// planet has no history
-	vec2 histPos = floor(gl_FragCoord.xy) * 2.0 + cloudPassFrame.xy + 0.5;
+	vec2 histPos = floor(gl_FragCoord.xy) * max(cloudPassCenter.w, 1.0) + cloudPassFrame.xy + 0.5;
 	vec2 fullPos = histPos * cloudPassMarch.z;
 	ivec2 ip = ivec2(min(fullPos, cloudPassSize.zw - 1.0));
 	float viewZ = texelFetch(sceneDist, ip, 0).r;

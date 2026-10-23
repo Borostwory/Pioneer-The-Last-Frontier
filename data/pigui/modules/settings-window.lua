@@ -308,11 +308,12 @@ local function showVideoOptions()
 			Engine.SettingsSetInt("CloudQuality", cloudQuality)
 		end
 
-		local cloudTemporal = Engine.SettingsGetInt("CloudTemporal") ~= 0
-		c,cloudTemporal = checkbox("Temporal cloud reconstruction", cloudTemporal,
-			"Each frame traces a quarter of the cloud pixels and fills in the rest from previous frames: about 4x faster at the same resolution. Turn off if you see ghosting.")
+		local cloudTemporalLabels = { "Off", "4x (1 of 4 pixels per frame)", "9x (1 of 9 pixels per frame)" }
+		local cloudTemporal = Engine.SettingsGetInt("CloudTemporal")
+		c,cloudTemporal = combo("Temporal cloud reconstruction", cloudTemporal, cloudTemporalLabels,
+			"Each frame traces only some of the cloud pixels and fills in the rest from previous frames. 4x: a quarter, the picture refreshes every 4 frames. 9x: a ninth, about twice as fast again, refreshing every 9 frames (best at high frame rates; fast turns may briefly smear cloud edges). Off: every pixel every frame, slowest.")
 		if c then
-			Engine.SettingsSetInt("CloudTemporal", cloudTemporal and 1 or 0)
+			Engine.SettingsSetInt("CloudTemporal", cloudTemporal)
 		end
 
 		local cloudSoftnessLabels = { "Sharp", "Soft", "Very soft" }

@@ -56,7 +56,7 @@ namespace {
 	//   CloudQuality     0..3: raymarch steps (CLOUD_QUALITY_STEPS)
 	//   CloudSpaceDetail 0..200 %: how soon the resolution rises toward the
 	//                    space resolution with distance (scales RES_PIXELS_PER_CELL; 0 = never)
-	//   CloudTemporal    0/1: temporal reconstruction (each frame traces 1 of 4 pixels)
+	//   CloudTemporal    0 off, 1 4x (each frame traces 1 pixel of every 2x2 block), 2 9x (1 of every 3x3)
 	//   CloudSoftness    0..2: upsampling kernel radius
 	//   CloudShadows     0 off, 1 soft (cloud-field average), 2 detailed (per cloud)
 	//   CloudSpeed       1..100: cloud motion and evolution relative to the real wind
@@ -113,8 +113,11 @@ namespace {
 	};
 	static_assert(sizeof(CloudPassBlock) == 192, "CloudPassBlock must match the std140 CloudPassData block");
 
-	// 2x2 checkerboard order: every history pixel is traced once per 4 frames
-	static const int CHECKER_OFFSETS[4][2] = { { 0, 0 }, { 1, 1 }, { 1, 0 }, { 0, 1 } };
+	// Temporal trace order within a block of history pixels: every pixel is
+	// traced once per 4 (2x2) or 9 (3x3) frames, consecutive frames far apart
+	// (ordered dither), so a partly refreshed block has no visible pattern.
+	static const int CHECKER_OFFSETS_2[4][2] = { { 0, 0 }, { 1, 1 }, { 1, 0 }, { 0, 1 } };
+	static const int CHECKER_OFFSETS_3[9][2] = { { 0, 0 }, { 1, 2 }, { 2, 1 }, { 2, 0 }, { 0, 2 }, { 1, 1 }, { 0, 1 }, { 1, 0 }, { 2, 2 } };
 
 	// temporal history is dropped when, between two frames, the planet centre
 	// moves more than this (planet radii) or the cloud clock jumps more than this (s)
@@ -142,12 +145,12 @@ namespace {
 		std::unique_ptr<Graphics::VertexArray> triangle;
 		int width = 0, height = 0;
 		int allocDivisor = 0;			  // the buffers hold this resolution
-		int maxHistW = 0, maxHistH = 0, maxMarchW = 0, maxMarchH = 0;
+		int maxHistW = 0, maxHistH = 0, maxMarchW = 0, maxMarchH = 0; // march: for 2x2 blocks, the largest
 		int shadowW = 0, shadowH = 0;
 		// this frame: full pixels per history pixel, and the part of the
-		// buffers in use
+		// history buffers in use (the march size depends on the block size)
 		double divisor = 1.0;
-		int histW = 0, histH = 0, marchW = 0, marchH = 0;
+		int histW = 0, histH = 0;
 	};
 
 	// history of the one planet that gets temporal reconstruction
@@ -460,8 +463,6 @@ namespace {
 		pass.divisor = std::max(s_resDivisor, double(pass.allocDivisor));
 		pass.histW = std::min(int(std::ceil(pass.width / pass.divisor)), pass.maxHistW);
 		pass.histH = std::min(int(std::ceil(pass.height / pass.divisor)), pass.maxHistH);
-		pass.marchW = (pass.histW + 1) / 2;
-		pass.marchH = (pass.histH + 1) / 2;
 	}
 } // namespace
 
@@ -622,9 +623,12 @@ namespace PlanetClouds {
 		const int softness = Clamp(Pi::config->Int("CloudSoftness", 1), 0, 2);
 		SetVec4(passData.histSize, pass.histW, pass.histH, pass.shadowW, pass.shadowH);
 
-		// the nearest planet (largest on screen) gets temporal reconstruction
+		// the nearest planet (largest on screen) gets temporal reconstruction,
+		// tracing 1 pixel of every 2x2 (4x) or 3x3 (9x) block per frame
+		const int temporalMode = Clamp(Pi::config->Int("CloudTemporal", 2), 0, 2);
+		const int temporalBlock = temporalMode == 2 ? 3 : 2;
 		int temporalEntry = -1;
-		if (Pi::config->Int("CloudTemporal", 1) != 0) {
+		if (temporalMode != 0) {
 			float best = 1e30f;
 			for (size_t i = 0; i < s_queue.size(); i++) {
 				if (s_queue[i].center.Length() < best) {
@@ -647,21 +651,26 @@ namespace PlanetClouds {
 		for (size_t i = 0; i < s_queue.size(); i++) {
 			PassEntry &e = s_queue[i];
 			const bool temporal = int(i) == temporalEntry;
+			// history pixels per march pixel (each way); without history the
+			// centre of every 2x2 block is traced
+			const int block = temporal ? temporalBlock : 2;
+			const int marchW = (pass.histW + block - 1) / block;
+			const int marchH = (pass.histH + block - 1) / block;
 
-			SetVec4(passData.center, e.center.x, e.center.y, e.center.z, 0.0);
+			SetVec4(passData.center, e.center.x, e.center.y, e.center.z, block);
 			// softening hides upscaling; a buffer at screen resolution needs none
 			const double compositeDivisor = temporal ? pass.divisor : 2.0 * pass.divisor;
 			SetVec4(passData.atmos, e.atmosColor.r, e.atmosColor.g, e.atmosColor.b, compositeDivisor > 1.01 ? softness : 0);
 
 			if (temporal) {
-				// trace one pixel of every 2x2 block, rotating over 4 frames
-				const int *off = CHECKER_OFFSETS[s_frameIndex % 4];
+				// trace one pixel of every block, rotating over 4 or 9 frames
+				const int *off = block == 3 ? CHECKER_OFFSETS_3[s_frameIndex % 9] : CHECKER_OFFSETS_2[s_frameIndex % 4];
 				const bool historyValid = s_temporal.valid && s_temporal.body == e.body &&
 					s_temporal.lastFrame + 1 == s_frameIndex &&
 					(e.center - s_temporal.center).Length() < HISTORY_MAX_CENTER_JUMP &&
 					std::abs(s_cloudTime - s_temporal.cloudTime) < HISTORY_MAX_CLOCK_JUMP;
 				SetVec4(passData.frame, off[0], off[1], historyValid ? 1.0 : 0.0, shadows ? 1.0 : 0.0);
-				SetVec4(passData.march, pass.marchW, pass.marchH, pass.divisor, pass.divisor);
+				SetVec4(passData.march, marchW, marchH, pass.divisor, pass.divisor);
 				SetVec4(passData.prevCenter, s_temporal.center.x, s_temporal.center.y, s_temporal.center.z, 0.0);
 				std::copy(s_temporal.axisX, s_temporal.axisX + 4, passData.prevAxisX);
 				std::copy(s_temporal.axisY, s_temporal.axisY + 4, passData.prevAxisY);
@@ -670,12 +679,12 @@ namespace PlanetClouds {
 			} else {
 				// no history: trace the centre of every 2x2 block
 				SetVec4(passData.frame, 0.5, 0.5, 0.0, shadows ? 1.0 : 0.0);
-				SetVec4(passData.march, pass.marchW, pass.marchH, pass.divisor, 2.0 * pass.divisor);
+				SetVec4(passData.march, marchW, marchH, pass.divisor, 2.0 * pass.divisor);
 			}
 
 			// 2. trace clouds into the march buffer
 			r->SetRenderTarget(pass.marchTarget.get());
-			r->SetViewport({ 0, 0, pass.marchW, pass.marchH });
+			r->SetViewport({ 0, 0, marchW, marchH });
 			r->ClearScreen(Color(0, 0, 0, 0), false);
 			pass.passMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
 			pass.passMaterial->SetBufferDynamic(s_cloudDataName, &e.cloudData);
@@ -727,7 +736,7 @@ namespace PlanetClouds {
 				SetVec4(passData.size, pass.histW, pass.histH, width, height);
 			} else {
 				SetVec4(passData.proj, proj[0], proj[5], proj[14], 2.0 * pass.divisor);
-				SetVec4(passData.size, pass.marchW, pass.marchH, width, height);
+				SetVec4(passData.size, marchW, marchH, width, height);
 			}
 
 			// 4. depth-aware upsample, blended over the scene

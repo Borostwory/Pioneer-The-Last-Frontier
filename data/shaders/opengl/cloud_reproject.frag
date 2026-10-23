@@ -2,8 +2,8 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 // Temporal reconstruction of the cloud history buffer. Each frame the march
-// pass traces one pixel of every 2x2 history block. This pass writes every
-// history pixel:
+// pass traces one pixel of every 2x2 or 3x3 history block (cloudPassCenter.w).
+// This pass writes every history pixel:
 //  - pixels traced this frame take the fresh sample;
 //  - the others reproject last frame's history through the planet-fixed
 //    frame (planet rotation and camera motion), at the distance of the
@@ -34,11 +34,12 @@ void main(void)
 {
 	ivec2 hp = ivec2(gl_FragCoord.xy);
 	ivec2 off = ivec2(cloudPassFrame.xy);
-	ivec2 mp = hp / 2;
+	int blk = max(int(cloudPassCenter.w + 0.5), 1); // history pixels per march pixel
+	ivec2 mp = hp / blk;
 	ivec2 mMax = ivec2(cloudPassMarch.xy) - 1;
 
 	vec4 fresh = texelFetch(marchTex, min(mp, mMax), 0);
-	if (all(equal(hp - mp * 2, off))) {
+	if (all(equal(hp - mp * blk, off))) {
 		frag_color = fresh;
 		return;
 	}
@@ -55,10 +56,10 @@ void main(void)
 	}
 
 	// spatial estimate: bilinear between the fresh samples, which sit at
-	// history pixel 2m + offset. The buffers are larger than the part in use
+	// history pixel block * m + offset. The buffers are larger than the part in use
 	// (the resolution varies with altitude), so texture coordinates use the
 	// texture size and stay inside the used part.
-	vec2 sp = clamp((vec2(hp) - vec2(off)) * 0.5, vec2(0.0), cloudPassMarch.xy - 1.0);
+	vec2 sp = clamp((vec2(hp) - vec2(off)) / float(blk), vec2(0.0), cloudPassMarch.xy - 1.0);
 	vec4 spatial = texture(marchTex, (sp + 0.5) / vec2(textureSize(marchTex, 0)));
 
 	if (cloudPassFrame.z < 0.5) {
