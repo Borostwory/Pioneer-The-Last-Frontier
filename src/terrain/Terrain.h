@@ -11,6 +11,7 @@
 #include "../Quaternion.h"
 #include "../galaxy/SystemPath.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 
@@ -111,6 +112,57 @@ protected:
 	static const Uint32 MAX_FRACDEFS = 10;
 	fracdef_t m_fracdef[MAX_FRACDEFS];
 	Quaterniond m_quatDefs[MAX_FRACDEFS];
+
+	// Colour noise, owned by the colour fractals so its feature sizes no longer
+	// depend on which height fractal the body uses. Slots 0-8 take over the
+	// m_fracdef slots the colour code used to read; COLOR_FRACDEF_CLIMATE
+	// drives the regional "equatorial desert" variation.
+	static const Uint32 MAX_COLOR_FRACDEFS = 10;
+	static const Uint32 COLOR_FRACDEF_CLIMATE = 9;
+	fracdef_t m_colorFracdef[MAX_COLOR_FRACDEFS];
+	void SetColorFracDef(const unsigned int index, const double featureWidthMeters, const double smallestOctaveMeters);
+
+	static double SmoothStep(const double edge0, const double edge1, const double x)
+	{
+		const double t = std::min(1.0, std::max(0.0, (x - edge0) / (edge1 - edge0)));
+		return t * t * (3.0 - 2.0 * t);
+	}
+
+	// Blends altitude bands smoothly instead of switching at hard thresholds.
+	// thresholds[] holds the lower bound of bands 0..count-1 in descending
+	// order; band count covers everything below the last threshold. band(i, n)
+	// returns the colour of band i at height n; near a threshold it is also
+	// called for heights just outside band i.
+	template <typename BandFn>
+	static vector3d BlendBands(const double n, const double *thresholds, const int count, BandFn band)
+	{
+		int i = 0;
+		while (i < count && n <= thresholds[i])
+			++i;
+
+		// blend across 30% of the narrower neighbouring band on each side
+		auto halfWidth = [&](const int t) {
+			const double above = (t > 0) ? thresholds[t - 1] - thresholds[t] : thresholds[t];
+			const double below = (t + 1 < count) ? thresholds[t] - thresholds[t + 1] : thresholds[t];
+			return 0.3 * std::min(above, below);
+		};
+
+		if (i < count) {
+			const double w = halfWidth(i);
+			if (n < thresholds[i] + w) {
+				const double t = SmoothStep(thresholds[i] - w, thresholds[i] + w, n);
+				return band(i + 1, n) * (1.0 - t) + band(i, n) * t;
+			}
+		}
+		if (i > 0) {
+			const double w = halfWidth(i - 1);
+			if (n > thresholds[i - 1] - w) {
+				const double t = SmoothStep(thresholds[i - 1] - w, thresholds[i - 1] + w, n);
+				return band(i, n) * (1.0 - t) + band(i - 1, n) * t;
+			}
+		}
+		return band(i, n);
+	}
 
 	struct MinBodyData {
 		MinBodyData(const SystemBody *body);

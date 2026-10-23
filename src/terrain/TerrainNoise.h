@@ -284,18 +284,24 @@ namespace TerrainNoise {
 
 // common colours for earthlike worlds
 // XXX better way to do this?
+// These read the colour fractal's own m_colorFracdef slots (see Terrain.h),
+// so the noise scale no longer depends on the height fractal.
 
-#define terrain_colournoise_rock octavenoise(m_fracdef[0], 0.65, p)
-#define terrain_colournoise_rock2 octavenoise(m_fracdef[1], 0.6, p) * 0.6 * ridged_octavenoise(m_fracdef[0], 0.55, p)
+#define terrain_colournoise_rock octavenoise(m_colorFracdef[0], 0.65, p)
+#define terrain_colournoise_rock2 octavenoise(m_colorFracdef[1], 0.6, p) * 0.6 * ridged_octavenoise(m_colorFracdef[0], 0.55, p)
 // #define terrain_colournoise_rock3  0.5*ridged_octavenoise(m_fracdef[0], 0.5, p)*voronoiscam_octavenoise(m_fracdef[0], 0.5, p)*ridged_octavenoise(m_fracdef[1], 0.5, p)
 // #define terrain_colournoise_rock4  0.5*ridged_octavenoise(m_fracdef[1], 0.5, p)*octavenoise(m_fracdef[1], 0.5, p)*octavenoise(m_fracdef[5], 0.5, p)
-#define terrain_colournoise_mud 0.1 * voronoiscam_octavenoise(m_fracdef[1], 0.5, p) * octavenoise(m_fracdef[1], 0.5, p) * m_fracdef[5].amplitude
-#define terrain_colournoise_sand ridged_octavenoise(m_fracdef[0], 0.4, p) * dunes_octavenoise(m_fracdef[2], 0.4, p) + 0.1 * dunes_octavenoise(m_fracdef[1], 0.5, p)
-#define terrain_colournoise_sand2 dunes_octavenoise(m_fracdef[0], 0.6, p) * octavenoise(m_fracdef[4], 0.6, p)
+// mud used to be scaled by a height fracdef amplitude (tiny on most bodies); 0.015 keeps it a subtle tint
+#define terrain_colournoise_mud 0.015 * voronoiscam_octavenoise(m_colorFracdef[1], 0.5, p) * octavenoise(m_colorFracdef[1], 0.5, p)
+#define terrain_colournoise_sand ridged_octavenoise(m_colorFracdef[0], 0.4, p) * dunes_octavenoise(m_colorFracdef[2], 0.4, p) + 0.1 * dunes_octavenoise(m_colorFracdef[1], 0.5, p)
+#define terrain_colournoise_sand2 dunes_octavenoise(m_colorFracdef[0], 0.6, p) * octavenoise(m_colorFracdef[4], 0.6, p)
 // #define terrain_colournoise_sand3  dunes_octavenoise(m_fracdef[2], 0.6, p)*dunes_octavenoise(m_fracdef[6], 0.6, p)
-#define terrain_colournoise_grass billow_octavenoise(m_fracdef[1], 0.8, p)
-#define terrain_colournoise_grass2 billow_octavenoise(m_fracdef[3], 0.6, p) * voronoiscam_octavenoise(m_fracdef[4], 0.6, p) * river_octavenoise(m_fracdef[5], 0.6, p)
-#define terrain_colournoise_forest octavenoise(m_fracdef[1], 0.65, p) * voronoiscam_octavenoise(m_fracdef[2], 0.65, p)
-#define terrain_colournoise_water dunes_octavenoise(m_fracdef[6], 0.6, p)
+#define terrain_colournoise_grass billow_octavenoise(m_colorFracdef[1], 0.8, p)
+#define terrain_colournoise_grass2 billow_octavenoise(m_colorFracdef[3], 0.6, p) * voronoiscam_octavenoise(m_colorFracdef[4], 0.6, p) * river_octavenoise(m_colorFracdef[5], 0.6, p)
+#define terrain_colournoise_forest octavenoise(m_colorFracdef[1], 0.65, p) * voronoiscam_octavenoise(m_colorFracdef[2], 0.65, p)
+#define terrain_colournoise_water dunes_octavenoise(m_colorFracdef[6], 0.6, p)
+
+// regional variation used by the colour fractals as "equatorial_desert", in [-1, 1]
+#define terrain_colournoise_climate(persistence) (-1.0 + 2.0 * octavenoise(m_colorFracdef[COLOR_FRACDEF_CLIMATE], persistence, p))
 
 #endif

@@ -18,31 +18,22 @@ TerrainColorFractal<TerrainColorAsteroid>::TerrainColorFractal(const SystemBody 
 template <>
 vector3d TerrainColorFractal<TerrainColorAsteroid>::GetColor(const vector3d &p, double height, const vector3d &norm) const
 {
-	double n = m_invMaxHeight * height / 2;
+	const double h = m_invMaxHeight * height / 2;
+	const double flatness = pow(p.Dot(norm), 6.0);
+	const double equatorial_desert = (2.0) * terrain_colournoise_climate(0.5) *
+		1.0 * (2.0) * (1.0 - p.y * p.y);
 
-	if (n <= 0.02) {
-		const double flatness = pow(p.Dot(norm), 6.0);
-		const vector3d color_cliffs = m_rockColor[1];
-
-		double equatorial_desert = (2.0) * (-1.0 + 2.0 * octavenoise(12, 0.5, 2.0, (n * 2.0) * p)) *
-			1.0 * (2.0) * (1.0 - p.y * p.y);
-
+	static const double bands[] = { 0.02 };
+	return BlendBands(h, bands, 1, [&](const int band, const double n) -> vector3d {
 		vector3d col;
-		col = interpolate_color(equatorial_desert, m_rockColor[0], m_greyrockColor[3]);
-		col = interpolate_color(n, col, vector3d(1.5, 1.35, 1.3));
-		col = interpolate_color(flatness, color_cliffs, col);
-		return col;
-	} else {
-		const double flatness = pow(p.Dot(norm), 6.0);
-		const vector3d color_cliffs = m_greyrockColor[1];
-
-		double equatorial_desert = (2.0) * (-1.0 + 2.0 * octavenoise(12, 0.5, 2.0, (n * 2.0) * p)) *
-			1.0 * (2.0) * (1.0 - p.y * p.y);
-
-		vector3d col;
-		col = interpolate_color(equatorial_desert, m_greyrockColor[0], m_greyrockColor[2]);
-		col = interpolate_color(n, col, m_rockColor[3]);
-		col = interpolate_color(flatness, color_cliffs, col);
-		return col;
-	}
+		if (band == 0) {
+			col = interpolate_color(equatorial_desert, m_greyrockColor[0], m_greyrockColor[2]);
+			col = interpolate_color(n, col, m_rockColor[3]);
+			return interpolate_color(flatness, m_greyrockColor[1], col);
+		} else {
+			col = interpolate_color(equatorial_desert, m_rockColor[0], m_greyrockColor[3]);
+			col = interpolate_color(n, col, vector3d(1.5, 1.35, 1.3));
+			return interpolate_color(flatness, m_rockColor[1], col);
+		}
+	});
 }

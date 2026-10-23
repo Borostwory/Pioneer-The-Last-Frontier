@@ -495,6 +495,19 @@ Terrain::Terrain(const SystemBody *body) :
 	m_invPlanetRadius = 1.0 / rad;
 	m_planetEarthRadii = rad / EARTH_RADIUS;
 
+	// colour noise; deterministic and without m_rand, so the random sequence
+	// the height fractals draw from stays unchanged
+	SetColorFracDef(0, 10e3, 10.0);
+	SetColorFracDef(1, 25e3, 25.0);
+	SetColorFracDef(2, 2e3, 20.0);
+	SetColorFracDef(3, 1000e3, 10e3);
+	SetColorFracDef(4, 100e3, 1e3);
+	SetColorFracDef(5, 50e3, 50.0);
+	SetColorFracDef(6, 5e3, 50.0);
+	SetColorFracDef(7, 20e3, 200.0);
+	SetColorFracDef(8, 300e3, 3e3);
+	SetColorFracDef(COLOR_FRACDEF_CLIMATE, 2000e3, 20e3);
+
 	// NB: I don't know what this does but only the 1st entry was ever used, and only for Neptune and Jupiter colours
 	m_entropy = m_rand.Double();
 
@@ -628,6 +641,18 @@ void Terrain::SetFracDef(const unsigned int index, const double featureHeightMet
 	m_fracdef[index].octaves = std::max(1, int(ceil(log(featureWidthMeters / smallestOctaveMeters) / log(2.0))));
 	m_fracdef[index].lacunarity = 2.0;
 	//Output("%d octaves\n", m_fracdef[index].octaves); //print
+}
+
+void Terrain::SetColorFracDef(const unsigned int index, const double featureWidthMeters, const double smallestOctaveMeters)
+{
+	assert(index < MAX_COLOR_FRACDEFS);
+	// features wider than the body itself would only give a flat tint on small bodies
+	const double width = std::min(featureWidthMeters, m_planetRadius);
+	const double smallest = std::min(smallestOctaveMeters, width);
+	m_colorFracdef[index].amplitude = 1.0;
+	m_colorFracdef[index].frequency = m_planetRadius / width;
+	m_colorFracdef[index].octaves = std::max(1, int(ceil(log(width / smallest) / log(2.0))));
+	m_colorFracdef[index].lacunarity = 2.0;
 }
 
 double Terrain::BiCubicInterpolation(const vector3d &p) const

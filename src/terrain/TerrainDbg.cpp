@@ -20,4 +20,8 @@ void Terrain::DebugDump() const
 	for (int i = 0; i < 10; i++) {
 		Output("    %d: amp %f  freq %f  lac %f  oct %d\n", i, m_fracdef[i].amplitude, m_fracdef[i].frequency, m_fracdef[i].lacunarity, m_fracdef[i].octaves);
 	}
+	Output("  Colour fracdefs:\n");
+	for (Uint32 i = 0; i < MAX_COLOR_FRACDEFS; i++) {
+		Output("    %u: freq %f  lac %f  oct %d\n", i, m_colorFracdef[i].frequency, m_colorFracdef[i].lacunarity, m_colorFracdef[i].octaves);
+	}
 }
