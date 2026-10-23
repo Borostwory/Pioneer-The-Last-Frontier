@@ -6,6 +6,7 @@
 #include "relativity.glsl"
 
 uniform samplerCube texture0;
+uniform samplerCube snapshot;
 
 in vec3 v_texCoord;
 
@@ -32,6 +33,14 @@ void main(void)
 	// diffuse light: a blackbody of temperature T is seen as one of temperature T * D
 	vec3 restColor = toLinear(texture(texture0, mat3(uViewMatrixInverse) * restDir).rgb * material.emission.rgb * 0.8);
 	vec3 color = dopplerShift(restColor, estimateTemperature(restColor), doppler) * u_lorentz.z;
+
+	// the view all around at the moment of the jump (planets, stations...), captured in
+	// view space, is warped the same way and fades out as the ship leaves it behind
+	if (u_snapshot.x > 0.0) {
+		vec3 snap = toLinear(texture(snapshot, restDir).rgb);
+		snap = dopplerShift(snap, estimateTemperature(snap), doppler) * u_lorentz.z;
+		color = mix(color, snap, u_snapshot.x);
+	}
 
 	// cosmic microwave background, a blackbody of u_cmb.y kelvin at rest. Inside the
 	// central disc the hot spot can be smaller than a pixel, so use its integrated flux.

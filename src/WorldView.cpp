@@ -3,6 +3,8 @@
 
 #include "WorldView.h"
 
+#include "Background.h"
+#include "Camera.h"
 #include "Frame.h"
 #include "Game.h"
 #include "GameConfig.h"
@@ -21,7 +23,10 @@
 #include "graphics/Material.h"
 #include "graphics/Renderer.h"
 #include "graphics/RenderState.h"
+#include "graphics/RenderTarget.h"
+#include "graphics/Texture.h"
 #include "matrix4x4.h"
+#include "profiler/Profiler.h"
 #include "ship/GunManager.h"
 #include "ship/ShipViewController.h"
 #include "sound/Sound.h"
@@ -32,6 +37,64 @@ namespace {
 	static const float HUD_CROSSHAIR_SIZE = 8.0f;
 	static const Color green(0, 255, 0, 204);
 	static const Color red(255, 0, 0, 128);
+
+	// the scene all around the camera as last seen before a hyperspace jump, without the player's ship
+	constexpr Uint16 SNAPSHOT_SIZE = 1024;
+	std::unique_ptr<Graphics::RenderTarget> s_snapshotTarget;
+	RefCountedPtr<Graphics::Texture> s_snapshotCube;
+
+	// cubemap faces in OpenGL order (+X, -X, +Y, -Y, +Z, -Z): view direction and up vector, in view space
+	const vector3d SNAPSHOT_FACES[6][2] = {
+		{ { 1, 0, 0 }, { 0, -1, 0 } },
+		{ { -1, 0, 0 }, { 0, -1, 0 } },
+		{ { 0, 1, 0 }, { 0, 0, 1 } },
+		{ { 0, -1, 0 }, { 0, 0, -1 } },
+		{ { 0, 0, 1 }, { 0, -1, 0 } },
+		{ { 0, 0, -1 }, { 0, -1, 0 } },
+	};
+
+	void CaptureHyperspaceSnapshot(Graphics::Renderer *r, CameraContext *viewContext)
+	{
+		PROFILE_SCOPED()
+		if (!s_snapshotTarget) {
+			s_snapshotTarget.reset(r->CreateRenderTarget({ SNAPSHOT_SIZE, SNAPSHOT_SIZE, Graphics::TEXTURE_NONE, Graphics::TEXTURE_DEPTH, false }));
+			s_snapshotCube.Reset(r->CreateTexture(Graphics::TextureDescriptor(Graphics::TEXTURE_RGBA_8888,
+				vector3f(SNAPSHOT_SIZE, SNAPSHOT_SIZE, 0.0f), vector2f(1.0f, 1.0f), Graphics::LINEAR_CLAMP,
+				false, false, false, 0, Graphics::TEXTURE_CUBE_MAP)));
+		}
+		if (!s_snapshotTarget || !s_snapshotCube.Valid())
+			return;
+
+		// a 90 degree camera at the same place, turned to face each side of the cube in turn
+		RefCountedPtr<CameraContext> context(new CameraContext(SNAPSHOT_SIZE, SNAPSHOT_SIZE, 90.0f, viewContext->GetZNear(), viewContext->GetZFar()));
+		context->SetCameraFrame(viewContext->GetCameraFrame());
+		context->SetCameraPosition(viewContext->GetCameraPos());
+		Camera camera(context, r);
+
+		Graphics::Renderer::StateTicket ticket(r);
+		const Graphics::ViewportExtents extents = { 0, 0, SNAPSHOT_SIZE, SNAPSHOT_SIZE };
+		for (Uint32 face = 0; face < 6; face++) {
+			const vector3d &forward = SNAPSHOT_FACES[face][0];
+			const vector3d &up = SNAPSHOT_FACES[face][1];
+			context->SetCameraOrient(viewContext->GetCameraOrient() * matrix3x3d::FromVectors(forward.Cross(up), up, -forward));
+			context->BeginFrame();
+			camera.Update();
+
+			s_snapshotTarget->SetCubeFaceTexture(face, s_snapshotCube.Get());
+			r->SetRenderTarget(s_snapshotTarget.get());
+			r->SetViewport(extents);
+			r->ClearScreen();
+			context->ApplyDrawTransforms(r);
+			camera.Draw(Pi::player);
+			// render this face before the next one is attached
+			r->FlushCommandBuffers();
+
+			context->EndFrame();
+		}
+		Graphics::SetFov(viewContext->GetFovAng());
+
+		Background::SetHyperspaceSnapshot(s_snapshotCube.Get());
+	}
 } // namespace
 
 REGISTER_INPUT_BINDING(WorldView)
@@ -176,6 +239,11 @@ void WorldView::Draw3D()
 		for (auto it = Pi::player->GetSensors()->GetContacts().begin(); it != Pi::player->GetSensors()->GetContacts().end(); ++it)
 			it->trail->Render(m_renderer);
 	}
+
+	// keep the view all around at the moment of a hyperspace jump, to show it warping away in hyperspace
+	const Ship::FlightState flightState = Pi::player->GetFlightState();
+	if (m_game->IsNormalSpace() && (flightState == Ship::JUMPING || flightState == Ship::HYPERSPACE))
+		CaptureHyperspaceSnapshot(m_renderer, m_cameraContext.Get());
 
 	m_cameraContext->EndFrame();
 

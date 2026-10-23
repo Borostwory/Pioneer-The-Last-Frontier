@@ -11,6 +11,7 @@ layout(std140) uniform RelativityData {
 	vec4 u_cmb;		 // x: CMB radiance -> pixel value, y: CMB temperature at rest, z: angular radius of the core disc, w: max sprite growth
 	vec4 u_cmbCore;	 // rgb: pixel value of the CMB inside the core disc, w: unused
 	vec4 u_glow;	 // rgb: light spread into the glow around the bright point (pixel units), w: unused
+	vec4 u_snapshot; // x: weight of the view all around captured at the jump (0 = not shown)
 };
 
 const vec3 CHANNEL_WAVELENGTH = vec3(610e-9, 550e-9, 465e-9);

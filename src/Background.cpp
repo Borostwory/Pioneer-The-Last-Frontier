@@ -49,6 +49,14 @@ namespace {
 	 * turns into a white-hot point ahead.
 	 */
 	constexpr double PEAK_SHIP_YEARS = 11.0;
+	// departure: during the first SQUEEZE_FRACTION of the way to peak speed the sky squeezes ahead ever
+	// faster (the cone holding its forward half narrows as 1 - u^SQUEEZE_POWER), down to the cone it has
+	// at SQUEEZE_END_RAPIDITY; after that speed keeps building evenly up to the flip
+	constexpr double SQUEEZE_FRACTION = 0.25;
+	constexpr double SQUEEZE_POWER = 2.5;
+	constexpr double SQUEEZE_END_RAPIDITY = 3.0; // 0.995 c: a 6 degree cone
+	// arrival: how sharply speed drops at the end (1 = evenly), so the arrival sky bursts back into place
+	constexpr double ARRIVAL_SHARPNESS = 6.0;
 	constexpr double G_OVER_C = 1.0326; // 1 g in units of c per year
 	constexpr double CMB_TEMPERATURE = 2.725;
 	// starlight of the sky at rest: magnitude -3.1 as 550 nm flux, W m^-2 nm^-1
@@ -59,6 +67,8 @@ namespace {
 	constexpr double STAR_TEMPERATURE = 5800.0;
 	// light (pixel units) below which the bright point does not glow
 	constexpr double GLOW_THRESHOLD = 20.0;
+	// how far (pixels) the view ahead trembles at peak speed; it grows with speed
+	constexpr double SHAKE_PIXELS = 3.0;
 	// a star sprite grows by at most this factor to show light it cannot show as brightness
 	constexpr float MAX_SPRITE_GROWTH = 8.0f;
 	constexpr double CHANNEL_WAVELENGTH[3] = { 610e-9, 550e-9, 465e-9 };
@@ -66,6 +76,8 @@ namespace {
 
 	static RefCountedPtr<Graphics::Material> s_starfieldRelativistic;
 	static RefCountedPtr<Graphics::Material> s_skyboxRelativistic;
+	// the view at the moment of the jump, see SetHyperspaceSnapshot()
+	static RefCountedPtr<Graphics::Texture> s_snapshot;
 
 	// Matches the uniform block RelativityData in relativity.glsl
 	struct RelativityData {
@@ -83,8 +95,23 @@ namespace {
 		float unused0;
 		vector3f glow;
 		float unused1;
+		float snapshotWeight;
+		float unused2[3];
 	};
-	static_assert(sizeof(RelativityData) == 80, "RelativityData must match the std140 layout of the shader");
+	static_assert(sizeof(RelativityData) == 96, "RelativityData must match the std140 layout of the shader");
+
+	// Rapidity at fraction h of the way from rest to peak speed on departure
+	static double DepartureRapidity(double h)
+	{
+		const double peak = G_OVER_C * PEAK_SHIP_YEARS;
+		if (h >= SQUEEZE_FRACTION)
+			return SQUEEZE_END_RAPIDITY + (peak - SQUEEZE_END_RAPIDITY) * (h - SQUEEZE_FRACTION) / (1.0 - SQUEEZE_FRACTION);
+
+		// the forward half of the sky is seen inside a cone of half-angle acos(beta)
+		const double endAngle = std::acos(std::tanh(SQUEEZE_END_RAPIDITY));
+		const double angle = endAngle + (0.5 * M_PI - endAngle) * (1.0 - std::pow(h / SQUEEZE_FRACTION, SQUEEZE_POWER));
+		return std::atanh(std::cos(angle));
+	}
 
 	// Planck spectral radiance B_lambda(T), in W / (m^2 sr nm)
 	static double PlanckRadiance(double lambda, double T)
@@ -153,7 +180,9 @@ namespace {
 			return false;
 
 		const double progress = Clamp((Pi::game->GetHyperspaceProgress() + Pi::GetGameTickAlpha() * Pi::game->GetTimeStep()) / Pi::game->GetHyperspaceDuration(), 0.0, 1.0);
-		const double rapidity = G_OVER_C * PEAK_SHIP_YEARS * (progress < 0.5 ? 2.0 * progress : 2.0 - 2.0 * progress);
+		// fraction of the way to/from peak speed: squeezing ever faster on departure, dropping suddenly on arrival
+		const double half = progress < 0.5 ? 2.0 * progress : 2.0 - 2.0 * progress;
+		const double rapidity = progress < 0.5 ? DepartureRapidity(half) : G_OVER_C * PEAK_SHIP_YEARS * (1.0 - std::pow(1.0 - half, ARRIVAL_SHARPNESS));
 		const double e = std::exp(-2.0 * rapidity);
 
 		// angular size of a pixel at the centre of the view, and a disc of the same area
@@ -175,6 +204,19 @@ namespace {
 
 		data = {};
 		data.axis = axisView.Normalized();
+
+		// tremble: nudge the direction of travel at high frequency, more the faster the ship goes.
+		// Driven by the real time spent in the transit, which is the same for every draw in a frame.
+		{
+			const double t = progress * Pi::game->GetHyperspaceDuration() / Pi::game->GetTimeAccelRate();
+			const double amplitude = SHAKE_PIXELS * pixelAngle * rapidity / (G_OVER_C * PEAK_SHIP_YEARS);
+			const double dx = 0.6 * std::sin(2.0 * M_PI * 47.0 * t) + 0.4 * std::sin(2.0 * M_PI * 83.0 * t + 1.3);
+			const double dy = 0.6 * std::sin(2.0 * M_PI * 59.0 * t + 0.7) + 0.4 * std::sin(2.0 * M_PI * 97.0 * t + 2.1);
+			vector3f right = data.axis.Cross(vector3f(0.0f, 1.0f, 0.0f));
+			right = right.LengthSqr() > 1e-6f ? right.Normalized() : vector3f(1.0f, 0.0f, 0.0f);
+			const vector3f up = right.Cross(data.axis);
+			data.axis = (data.axis + (right * float(dx) + up * float(dy)) * float(amplitude)).Normalized();
+		}
 		data.beta = float(std::tanh(rapidity));
 		data.gamma = float(std::cosh(rapidity));
 		data.oneMinusBeta = float(2.0 * e / (1.0 + e));
@@ -186,6 +228,13 @@ namespace {
 		data.maxSpriteGrowth = MAX_SPRITE_GROWTH;
 		data.cmbCore = vector3f(vector3d(cmbCore.x * toPixels.x, cmbCore.y * toPixels.y, cmbCore.z * toPixels.z) * exposure);
 		data.glow = vector3f(glow);
+
+		// the view at the jump stays until the ship has left it far behind, around 0.99 c
+		if (progress < 0.5 && s_snapshot.Valid()) {
+			const double t = Clamp((std::tanh(rapidity) - 0.5) / (0.99 - 0.5), 0.0, 1.0);
+			data.snapshotWeight = float(1.0 - t * t * (3.0 - 2.0 * t));
+		} else
+			s_snapshot.Reset();
 		return true;
 	}
 
@@ -215,6 +264,11 @@ namespace {
 } // namespace
 
 namespace Background {
+
+	void SetHyperspaceSnapshot(Graphics::Texture *snapshot)
+	{
+		s_snapshot.Reset(snapshot);
+	}
 
 #pragma pack(push, 4)
 	struct MilkyWayVert {
@@ -336,6 +390,8 @@ namespace Background {
 		const vector3f dir = Pi::game ? HyperspaceTravelDir() : vector3f(0.0f);
 		if (GetRelativityData(m_renderer, m_renderer->GetTransform().ApplyRotationOnly(dir), data)) {
 			s_skyboxRelativistic->SetTexture("texture0"_hash, m_cubemap.Get());
+			if (data.snapshotWeight > 0.0f)
+				s_skyboxRelativistic->SetTexture("snapshot"_hash, s_snapshot.Get());
 			s_skyboxRelativistic->SetBufferDynamic("RelativityData"_hash, &data);
 			m_renderer->DrawMesh(m_universeBox.get(), s_skyboxRelativistic.Get());
 		} else

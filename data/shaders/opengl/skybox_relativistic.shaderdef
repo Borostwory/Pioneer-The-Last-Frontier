@@ -4,6 +4,7 @@
 Shader skybox_relativistic
 
 Texture samplerCube texture0
+Texture samplerCube snapshot
 Buffer DrawData binding=1
 Buffer RelativityData binding=2
 

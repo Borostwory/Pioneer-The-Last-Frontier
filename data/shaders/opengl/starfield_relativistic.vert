@@ -22,6 +22,9 @@ void main(void)
 	float T = estimateTemperature(restColor);
 	vec3 color = dopplerShift(restColor, T, doppler) / (doppler * doppler) * u_lorentz.z;
 
+	// the view captured at the jump already shows the stars while it is faded in
+	color *= 1.0 - u_snapshot.x;
+
 	// a sprite cannot get brighter than white: spread the extra light over a larger sprite
 	float peak = max(max(color.r, color.g), color.b);
 	float growth = clamp(sqrt(peak), 1.0, u_cmb.w);
