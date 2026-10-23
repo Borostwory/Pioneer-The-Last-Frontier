@@ -5,6 +5,8 @@ Shader cloud_shadow
 
 Texture sampler2D sceneDist
 Texture sampler2D cloudHeightTex
+Texture sampler2D cloudWeatherXY
+Texture sampler2D cloudWeatherZ
 
 Buffer LightData binding=0
 Buffer DrawData binding=1

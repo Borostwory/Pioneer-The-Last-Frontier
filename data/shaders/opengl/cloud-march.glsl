@@ -32,6 +32,8 @@ struct CloudPhase {
 	float wA;  // weight of phase A (B gets 1 - wA)
 	vec3 offA; // noise offsets (re-seeded every cycle)
 	vec3 offB;
+	float cycA; // cycle numbers of the two phases
+	float cycB;
 };
 
 // Phase k (0 = A, 1 = B) of a CloudPhase. Loops over the active phases use
@@ -43,6 +45,8 @@ void cloudPhaseK(CloudPhase ph, int k, out float t, out vec3 off, out float w)
 	off = k == 0 ? ph.offA : ph.offB;
 	w = k == 0 ? ph.wA : 1.0 - ph.wA;
 }
+
+float cloudPhaseCycle(CloudPhase ph, int k) { return k == 0 ? ph.cycA : ph.cycB; }
 
 int cloudPhaseFirst(CloudPhase ph) { return ph.wA > 0.001 ? 0 : 1; }
 int cloudPhaseLast(CloudPhase ph) { return ph.wA < 0.999 ? 1 : 0; }
@@ -78,10 +82,15 @@ vec2 cloudSphereHit(vec3 o, vec3 d, float r)
 // while its weight is zero; both are evaluated only during the 20% of the
 // time when they overlap. The cloud clock (C++) never runs faster than 100x
 // real time, so high time acceleration stays smooth.
+// noise offset of a layer in cloud cycle cyc (re-seeded every cycle)
+vec3 cloudPhaseOffset(float cyc, float layer)
+{
+	return (cloudHash33(vec3(mod(cyc, 4096.0) + 0.37, cloudTime.z + layer * 7.0, cloudTime.w + floor(cyc / 4096.0))) - 0.5) * 2000.0;
+}
+
 CloudPhase cloudPhases(float period, float layer)
 {
 	CloudPhase ph;
-	float seedLo = cloudTime.z, seedHi = cloudTime.w;
 	float cyclesPerWrap = 1048576.0 / period;
 	float p = cloudTime.x / period;
 	float f = fract(p);
@@ -94,8 +103,10 @@ CloudPhase cloudPhases(float period, float layer)
 	float wA = f < k ? f / k : (f < 0.5 ? 1.0 : (f < 0.5 + k ? 1.0 - (f - 0.5) / k : 0.0));
 	ph.wA = smoothstep(0.0, 1.0, wA);
 
-	ph.offA = (cloudHash33(vec3(mod(cycA, 4096.0) + 0.37, seedLo + layer * 7.0, seedHi + floor(cycA / 4096.0))) - 0.5) * 2000.0;
-	ph.offB = (cloudHash33(vec3(mod(cycB, 4096.0) + 0.37, seedLo + layer * 7.0, seedHi + floor(cycB / 4096.0))) - 0.5) * 2000.0;
+	ph.offA = cloudPhaseOffset(cycA, layer);
+	ph.offB = cloudPhaseOffset(cycB, layer);
+	ph.cycA = cycA;
+	ph.cycB = cycB;
 	return ph;
 }
 
@@ -132,6 +143,21 @@ vec3 cloudRotAxis(vec3 v, vec3 k, float ang)
 //  - a two-scale domain warp folds them into filaments.
 // p: advected planet-fixed unit vector; returns the noise coordinate
 // (1 unit = one weather system, wsize metres).
+// size of a layer's weather systems [m]
+float cloudWeatherSize(CloudPlanet cp, int li)
+{
+	return 1.2e6 * (cp.a / 6.378e6) * cp.L[li].systemSize;
+}
+
+// the weather-noise coordinate of p before the flow organises it: scaled to
+// the weather-system size, offset per cycle, stretched east-west
+vec3 cloudWeatherBase(CloudPlanet cp, vec3 p, float wsize, vec3 off)
+{
+	vec3 x = p * (cp.a / wsize) + off * 0.001;
+	x.y *= CLOUD_WEATHER_ZONAL;
+	return x;
+}
+
 vec3 cloudWeatherDomain(CloudPlanet cp, vec3 p, float wsize, vec3 off)
 {
 	// cyclones: one candidate per cell of a 3D grid over the sphere, kept
@@ -174,14 +200,42 @@ vec3 cloudWeatherDomain(CloudPlanet cp, vec3 p, float wsize, vec3 off)
 		// summed displacements: smooth where cyclones overlap
 		p = normalize(p + disp);
 	}
-	vec3 x = p * (cp.a / wsize) + off * 0.001;
 	// east-west elongation (the spin axis is y)
-	x.y *= CLOUD_WEATHER_ZONAL;
+	vec3 x = cloudWeatherBase(cp, p, wsize, off);
 	// fold into fronts and filaments
 	vec3 w1 = vec3(cloudGradNoise(x * 0.6 + vec3(1.7, 9.2, 3.1)), cloudGradNoise(x * 0.6 + vec3(8.3, 2.8, 5.4)), cloudGradNoise(x * 0.6 + vec3(4.4, 7.1, 0.9)));
 	x += CLOUD_WEATHER_WARP * w1;
 	vec3 w2 = vec3(cloudGradNoise(x * 2.1 + vec3(3.3, 1.2, 7.7)), cloudGradNoise(x * 2.1 + vec3(6.1, 4.9, 2.2)), cloudGradNoise(x * 2.1 + vec3(0.7, 5.5, 8.8)));
 	return x + 0.15 * CLOUD_WEATHER_WARP * w2;
+}
+
+// Texture coordinate of direction p in the weather map atlas for layer li,
+// cycle slot (0/1): the map of slot s, layer li covers texels
+// [s (W + 2), (s + 1) (W + 2)) x [li H, (li + 1) H), with one wrap column
+// on each side so bilinear filtering is seamless across longitude 180.
+vec2 cloudWeatherUV(int li, float slot, vec3 p)
+{
+	float W = float(CLOUD_WEATHER_MAP_W), H = float(CLOUD_WEATHER_MAP_H);
+	float lon = atan(p.x, p.z);
+	float lat = asin(clamp(p.y, -1.0, 1.0));
+	float x = slot * (W + 2.0) + 1.0 + (lon / (2.0 * PI) + 0.5) * W;
+	float y = float(li) * H + clamp((lat / PI + 0.5) * H, 0.5, H - 0.5);
+	return vec2(x, y) / vec2(2.0 * (W + 2.0), 3.0 * H);
+}
+
+// The weather-noise domain, from the baked map when it holds this layer and
+// cycle (cloudWeatherCyc0/1), else computed (cloudWeatherDomain).
+vec3 cloudWeatherCached(CloudPlanet cp, int li, float cyc, vec3 p, float wsize, vec3 off)
+{
+	if (cloudWeatherCyc1.z > 0.5) {
+		vec2 held = li == 0 ? cloudWeatherCyc0.xy : (li == 1 ? cloudWeatherCyc0.zw : cloudWeatherCyc1.xy);
+		float slot = mod(cyc, 2.0);
+		if (abs((slot < 0.5 ? held.x : held.y) - cyc) < 0.5) {
+			vec2 uv = cloudWeatherUV(li, slot, p);
+			return cloudWeatherBase(cp, p, wsize, off) + vec3(texture(cloudWeatherXY, uv).rg, texture(cloudWeatherZ, uv).r);
+		}
+	}
+	return cloudWeatherDomain(cp, p, wsize, off);
 }
 
 // Local coverage of a layer at an (advected) planet-fixed position.
@@ -191,13 +245,13 @@ vec3 cloudWeatherDomain(CloudPlanet cp, vec3 p, float wsize, vec3 off)
 // Returns x = inside-a-cloud-system weight 0..1, y = stratus weight (low
 // layer: overcast regimes, plus the densest few percent of broken cloud
 // fields), z = cloud fraction within a system.
-vec3 cloudCoverage(CloudPlanet cp, int li, vec3 pAdv, vec3 pfDir, float lat, vec3 off, vec3 sunPf, float fp, float maxExtra)
+vec3 cloudCoverage(CloudPlanet cp, int li, vec3 pAdv, vec3 pfDir, float lat, vec3 off, float cyc, vec3 sunPf, float fp, float maxExtra)
 {
-	float wsize = 1.2e6 * (cp.a / 6.378e6) * cp.L[li].systemSize;
+	float wsize = cloudWeatherSize(cp, li);
 	float n = 3.0 + clamp(log2((wsize / 8.0) / max(2.0 * fp, 1.0)), 0.0, maxExtra);
 	float lastW = n - floor(n);
 	int oct = int(ceil(n - 1e-3));
-	float W = cloudFbm(cloudWeatherDomain(cp, pAdv, wsize, off), oct, lastW > 1e-3 ? lastW : 1.0);
+	float W = cloudFbm(cloudWeatherCached(cp, li, cyc, pAdv, wsize, off), oct, lastW > 1e-3 ? lastW : 1.0);
 	float U = cloudUniformize(W, CLOUD_WEATHER_MEAN, CLOUD_WEATHER_SD);
 	// total cover here, split into the fraction of the area inside cloud
 	// systems (r) and the cloud fraction within a system (fill): r * fill = c
@@ -263,10 +317,10 @@ vec3 cloudAdvect(CloudPlanet cp, int li, vec3 pfDir, float lat, float t)
 // expensive, slowly varying part (weather coverage and base undulation).
 // Returns x = inside-a-system weight, y = stratus weight, z = base noise
 // -1..1, w = cloud fraction within a system.
-vec4 cloudColumn(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float t, vec3 off, vec3 sunPf, float fp, float maxExtra)
+vec4 cloudColumn(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float t, vec3 off, float cyc, vec3 sunPf, float fp, float maxExtra)
 {
 	vec3 p = cloudAdvect(cp, li, pfDir, lat, t);
-	vec3 cov = cloudCoverage(cp, li, p, pfDir, lat, off, sunPf, fp, maxExtra);
+	vec3 cov = cloudCoverage(cp, li, p, pfDir, lat, off, cyc, sunPf, fp, maxExtra);
 	float baseN = cov.x > 0.0 ? cloudGradNoise(p * (cp.a / (15000.0 * cp.sH)) + off * 0.37) : 0.0;
 	return vec4(cov.xy, baseN, cov.z);
 }
@@ -466,7 +520,7 @@ vec3 cloudDensity(CloudPlanet cp, int li, CloudPhase ph, vec3 pfDir, float alt, 
 		float t, w;
 		vec3 off;
 		cloudPhaseK(ph, k, t, off, w);
-		vec4 col = cloudColumn(cp, li, pfDir, alt, lat, t, off, sunPf, fp, 5.0);
+		vec4 col = cloudColumn(cp, li, pfDir, alt, lat, t, off, cloudPhaseCycle(ph, k), sunPf, fp, 5.0);
 		r += w * cloudShapeDensity(cp, li, pfDir, alt, lat, hTerr, t, off, col, lod, detailW, full, fp);
 	}
 	return r;
@@ -678,7 +732,7 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 					float tk, wk;
 					vec3 offk;
 					cloudPhaseK(ph, k, tk, offk, wk);
-					cirCol[k] = cloudColumn(cp, li, mDir, (rm - 1.0) * cp.a, mLat, tk, offk, sunPf, fpMid, 5.0);
+					cirCol[k] = cloudColumn(cp, li, mDir, (rm - 1.0) * cp.a, mLat, tk, offk, cloudPhaseCycle(ph, k), sunPf, fpMid, 5.0);
 				}
 			}
 			float ds = segLen / float(CLOUD_CIRRUS_SAMPLES);
@@ -734,7 +788,7 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 					float tk, wk;
 					vec3 offk;
 					cloudPhaseK(ph, k, tk, offk, wk);
-					vec4 cc = cloudColumn(cp, li, cdir, calt, clat, tk, offk, sunPf, fpCol, 3.0);
+					vec4 cc = cloudColumn(cp, li, cdir, calt, clat, tk, offk, cloudPhaseCycle(ph, k), sunPf, fpCol, 3.0);
 					if (k == 0)
 						colA[c] = cc;
 					else
@@ -841,10 +895,10 @@ float cloudTwoStream(float tau)
 // slant: 1 / cos of the sun zenith angle at the layer. A broken field passes
 // (1 - f) + f * T(cell): averaging the optical depth instead would make
 // distant shadows far too weak (or, spread as a uniform deck, far too dark).
-float cloudShadowPhase(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float t, vec3 off, vec3 sunPf, float fp, float slant)
+float cloudShadowPhase(CloudPlanet cp, int li, vec3 pfDir, float alt, float lat, float t, vec3 off, float cyc, vec3 sunPf, float fp, float slant)
 {
 	CloudLayer ly = cp.L[li];
-	vec4 col = cloudColumn(cp, li, pfDir, alt, lat, t, off, sunPf, li == 2 ? max(fp, 20000.0) : fp, 3.0);
+	vec4 col = cloudColumn(cp, li, pfDir, alt, lat, t, off, cyc, sunPf, li == 2 ? max(fp, 20000.0) : fp, 3.0);
 	if (col.x <= 0.0) return 1.0;
 	float st = col.y;
 	float sig = cloudSigmaMax(li, st) * ly.sigmaScale;
@@ -896,7 +950,7 @@ float cloudShadowTerrain(CloudPlanet cp, vec3 pos, vec3 L, float fp)
 			float tk, wk;
 			vec3 offk;
 			cloudPhaseK(ph, k, tk, offk, wk);
-			tl += wk * cloudShadowPhase(cp, li, pfDir, altMid, lat, tk, offk, sunPf, fp, slant);
+			tl += wk * cloudShadowPhase(cp, li, pfDir, altMid, lat, tk, offk, cloudPhaseCycle(ph, k), sunPf, fp, slant);
 		}
 		T *= tl;
 	}
@@ -947,7 +1001,7 @@ vec4 cloudDebugColor(CloudPlanet cp, vec3 pfDir)
 	for (int li = 0; li < 3; li++) {
 		if (cp.L[li].active < 0.5) continue;
 		CloudPhase ph = cloudPhases(cp.L[li].period, float(li));
-		vec3 cv = cloudCoverage(cp, li, cloudAdvect(cp, li, pfDir, lat, ph.tA), pfDir, lat, ph.offA, sunPf, 20000.0, 5.0);
+		vec3 cv = cloudCoverage(cp, li, cloudAdvect(cp, li, pfDir, lat, ph.tA), pfDir, lat, ph.offA, ph.cycA, sunPf, 20000.0, 5.0);
 		c[li] = cv.x * cv.z;
 	}
 	return vec4(c, 0.9);

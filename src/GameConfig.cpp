@@ -45,6 +45,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["CloudShadows"] = "2";    // terrain shadows: 0 off, 1 soft, 2 detailed
 	map["CloudResolutionSpace"] = "4"; // resolution when far above the clouds (4 = full)
 	map["CloudQuality"] = "2";    // raymarch steps: 0 16, 1 24, 2 32, 3 48
+	map["CloudWeatherMaps"] = "1"; // bake the large-scale weather pattern instead of computing it per pixel
 	map["CloudSpaceDetail"] = "50"; // percent: how soon clouds sharpen toward the space resolution with distance
 	map["CloudSpeed"] = "10";     // cloud motion relative to the real wind speed
 	map["CloudDensityLow"] = "100";    // percent, per cloud layer

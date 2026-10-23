@@ -324,6 +324,13 @@ local function showVideoOptions()
 			Engine.SettingsSetInt("CloudSoftness", cloudSoftness)
 		end
 
+		local cloudWeatherMaps = Engine.SettingsGetInt("CloudWeatherMaps") ~= 0
+		c,cloudWeatherMaps = checkbox("Cached weather patterns", cloudWeatherMaps,
+			"Computes the large-scale weather pattern (storms, fronts) of the nearest planet once into a map instead of for every pixel: about 15-20% faster clouds for about 38 MB of video memory. The clouds look the same.")
+		if c then
+			Engine.SettingsSetInt("CloudWeatherMaps", cloudWeatherMaps and 1 or 0)
+		end
+
 		local cloudShadowLabels = { "Off", "Soft", "Detailed" }
 		local cloudShadows = Engine.SettingsGetInt("CloudShadows")
 		c,cloudShadows = combo("Cloud shadows", cloudShadows, cloudShadowLabels,

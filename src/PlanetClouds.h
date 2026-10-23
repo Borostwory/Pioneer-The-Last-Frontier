@@ -50,8 +50,10 @@ namespace PlanetClouds {
 		float tuneTransparency[4]; // user transparency multiplier: low, medium, high layer
 		float tuneSystem[4];	   // user cloud system (weather pattern) size multiplier: low, medium, high
 		float tuneCluster[4];	   // user clustering 0 (scattered) .. 1 (solid decks): low, medium, high
+		float weatherCyc0[4];	   // cloud cycle held by the weather maps: layer 0 slot 0, 1, layer 1 slot 0, 1
+		float weatherCyc1[4];	   // xy: layer 2 slot 0, 1; z: weather maps valid (0/1)
 	};
-	static_assert(sizeof(CloudDataBlock) == 208, "CloudDataBlock must match the std140 CloudData block");
+	static_assert(sizeof(CloudDataBlock) == 240, "CloudDataBlock must match the std140 CloudData block");
 
 	// Coarse equirectangular terrain-height map (metres above sea level),
 	// baked once on the async job queue.

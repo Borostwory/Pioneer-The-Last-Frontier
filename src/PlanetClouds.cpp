@@ -33,6 +33,8 @@ namespace {
 	static const size_t s_marchTexName = "marchTex"_hash;
 	static const size_t s_historyTexName = "historyTex"_hash;
 	static const size_t s_shadowTexName = "shadowTex"_hash;
+	static const size_t s_weatherXYName = "cloudWeatherXY"_hash;
+	static const size_t s_weatherZName = "cloudWeatherZ"_hash;
 
 	// height map resolution, must match the clamp in cloudTerrainHeight (cloud-march.glsl)
 	static const int HEIGHTMAP_WIDTH = 512;
@@ -54,6 +56,7 @@ namespace {
 	//   CloudResolution  0..4: effective cloud resolution 360, 540, 720, 1080 lines, or full
 	//   CloudResolutionSpace  0..4: the same, used when the camera is well above the clouds
 	//   CloudQuality     0..3: raymarch steps (CLOUD_QUALITY_STEPS)
+	//   CloudWeatherMaps 0/1: bake the large-scale weather pattern of the nearest planet (UpdateWeatherMaps)
 	//   CloudSpaceDetail 0..200 %: how soon the resolution rises toward the
 	//                    space resolution with distance (scales RES_PIXELS_PER_CELL; 0 = never)
 	//   CloudTemporal    0 off, 1 4x (each frame traces 1 pixel of every 2x2 block), 2 9x (1 of every 3x3)
@@ -168,6 +171,30 @@ namespace {
 
 	static RefCountedPtr<Graphics::Texture> s_fallbackTexture;
 	static std::unique_ptr<PassResources> s_pass;
+
+	// Weather maps: the large-scale flow of the nearest planet's weather
+	// (cyclones, zonal stretch, folding: cloudWeatherDomain), baked per layer
+	// and cloud cycle by cloud_weather.frag and read by cloudWeatherCached
+	// instead of being computed for every sample. Within a cycle the flow is
+	// static in the advected frame, so a map is baked once per cycle (every
+	// 32768 / 65536 s of cloud time). Each layer has two slots (cycle parity)
+	// for the two cycles of its phases. Must match the shader:
+	// CLOUD_WEATHER_MAP_W/H, the atlas layout in cloudWeatherUV, the layer
+	// periods (cloudDerive) and the cycle numbers (cloudPhases).
+	static const int WEATHER_MAP_W = 1024;
+	static const int WEATHER_MAP_H = 512;
+	static const double WEATHER_LAYER_PERIOD[3] = { 32768.0, 32768.0, 65536.0 };
+
+	struct WeatherMaps {
+		std::unique_ptr<Graphics::RenderTarget> xy; // RG32F atlas, 2 x 3 maps with 1-texel wrap padding
+		std::unique_ptr<Graphics::RenderTarget> z;	// R32F atlas, same layout
+		RefCountedPtr<Graphics::Material> bakeMaterial;
+		const SystemBody *body = nullptr;
+		float system[3] = { 0.0f, 0.0f, 0.0f };
+		double held[3][2]; // cloud cycle in each layer's slot, -1: none
+	};
+	static std::unique_ptr<WeatherMaps> s_weather;
+	static bool s_weatherUnsupported = false; // float render targets missing: always compute
 	static std::vector<PassEntry> s_queue;
 	static bool s_warnedMSAA = false;
 	static TemporalState s_temporal;
@@ -464,6 +491,80 @@ namespace {
 		pass.histW = std::min(int(std::ceil(pass.width / pass.divisor)), pass.maxHistW);
 		pass.histH = std::min(int(std::ceil(pass.height / pass.divisor)), pass.maxHistH);
 	}
+
+	// bakes the weather map of layer li for cloud cycle cyc into its slot
+	void BakeWeatherMap(Graphics::Renderer *r, const PassResources &pass, WeatherMaps &w, const PassEntry &e, int li, int slot, double cyc)
+	{
+		CloudPassBlock bake {};
+		SetVec4(bake.march, slot * (WEATHER_MAP_W + 2), li * WEATHER_MAP_H, 0.0, 0.0);
+		for (int comp = 0; comp < 2; comp++) {
+			SetVec4(bake.frame, li, cyc, 0.0, comp);
+			r->SetRenderTarget(comp == 0 ? w.xy.get() : w.z.get());
+			r->SetViewport({ slot * (WEATHER_MAP_W + 2), li * WEATHER_MAP_H, WEATHER_MAP_W + 2, WEATHER_MAP_H });
+			w.bakeMaterial->SetBufferDynamic(s_cloudPassDataName, &bake);
+			w.bakeMaterial->SetBufferDynamic(s_cloudDataName, &e.cloudData);
+			r->DrawBuffer(pass.triangle.get(), w.bakeMaterial.Get());
+		}
+	}
+
+	// Makes sure the weather maps hold the cycles of both phases of every
+	// layer of planet e (baking what is missing) and tells its shaders which
+	// cycles they hold. Changes the render target and viewport.
+	void UpdateWeatherMaps(Graphics::Renderer *r, const PassResources &pass, PassEntry &e)
+	{
+		if (Pi::config->Int("CloudWeatherMaps", 1) == 0 || s_weatherUnsupported) {
+			s_weather.reset();
+			return;
+		}
+		if (!s_weather) {
+			s_weather.reset(new WeatherMaps());
+			const Uint16 aw = Uint16(2 * (WEATHER_MAP_W + 2)), ah = Uint16(3 * WEATHER_MAP_H);
+			s_weather->xy.reset(r->CreateRenderTarget(Graphics::RenderTargetDesc(aw, ah, Graphics::TEXTURE_RG32F, Graphics::TEXTURE_NONE, false, 0)));
+			s_weather->z.reset(r->CreateRenderTarget(Graphics::RenderTargetDesc(aw, ah, Graphics::TEXTURE_R32F, Graphics::TEXTURE_NONE, false, 0)));
+			if (!s_weather->xy || !s_weather->z) {
+				Log::Warning("Cloud weather maps need float render targets; computing the weather pattern instead.\n");
+				s_weather.reset();
+				s_weatherUnsupported = true;
+				return;
+			}
+
+			Graphics::RenderStateDesc rsd;
+			rsd.blendMode = Graphics::BLEND_SOLID;
+			rsd.cullMode = Graphics::CULL_NONE;
+			rsd.depthTest = false;
+			rsd.depthWrite = false;
+			const Graphics::VertexFormatDesc vfmt = Graphics::VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_UV0);
+			s_weather->bakeMaterial.Reset(r->CreateMaterial("cloud_weather", Graphics::MaterialDescriptor(), rsd, vfmt));
+			s_weather->body = nullptr;
+		}
+		WeatherMaps &w = *s_weather;
+
+		// a different planet or weather-system size: every map is stale
+		const PlanetClouds::CloudDataBlock &d = e.cloudData;
+		if (w.body != e.body || !std::equal(w.system, w.system + 3, d.tuneSystem)) {
+			w.body = e.body;
+			std::copy(d.tuneSystem, d.tuneSystem + 3, w.system);
+			for (auto &layer : w.held)
+				layer[0] = layer[1] = -1.0;
+		}
+
+		// the cycles of phase A and B, computed like cloudPhases from the
+		// same (float) cloud time, so they match the shader exactly
+		for (int li = 0; li < 3; li++) {
+			const double period = WEATHER_LAYER_PERIOD[li];
+			const double base = double(d.time[1]) * (1048576.0 / period);
+			for (int k = 0; k < 2; k++) {
+				const double cyc = base + std::floor(double(d.time[0]) / period + 0.5 * k);
+				const int slot = int(std::fmod(cyc, 2.0));
+				if (w.held[li][slot] != cyc) {
+					BakeWeatherMap(r, pass, w, e, li, slot, cyc);
+					w.held[li][slot] = cyc;
+				}
+			}
+		}
+		SetVec4(e.cloudData.weatherCyc0, w.held[0][0], w.held[0][1], w.held[1][0], w.held[1][1]);
+		SetVec4(e.cloudData.weatherCyc1, w.held[2][0], w.held[2][1], 1.0, 0.0);
+	}
 } // namespace
 
 namespace PlanetClouds {
@@ -544,6 +645,9 @@ namespace PlanetClouds {
 		SetVec4(out.tuneCluster, Clamp(Pi::config->Int("CloudClusteringLow", 75), 0, 100) / 100.0,
 			Clamp(Pi::config->Int("CloudClusteringMedium", 50), 0, 100) / 100.0,
 			Clamp(Pi::config->Int("CloudClusteringHigh", 50), 0, 100) / 100.0, 0.0);
+		// no weather maps until RenderCloudPasses bakes them for the nearest planet
+		SetVec4(out.weatherCyc0, -1.0, -1.0, -1.0, -1.0);
+		SetVec4(out.weatherCyc1, -1.0, -1.0, 0.0, 0.0);
 	}
 
 	void SetMaterialCloudData(Graphics::Material *mat, CloudDataBlock &data, CloudHeightMap *heightMap)
@@ -615,6 +719,17 @@ namespace PlanetClouds {
 
 		// restores the render target, viewport and matrices on scope exit
 		Graphics::Renderer::StateTicket ticket(r);
+
+		// weather maps for the nearest planet
+		{
+			size_t nearest = 0;
+			for (size_t i = 1; i < s_queue.size(); i++)
+				if (s_queue[i].center.Length() < s_queue[nearest].center.Length())
+					nearest = i;
+			UpdateWeatherMaps(r, pass, s_queue[nearest]);
+		}
+		Graphics::Texture *weatherXY = s_weather ? s_weather->xy->GetColorTexture() : GetFallbackTexture();
+		Graphics::Texture *weatherZ = s_weather ? s_weather->z->GetColorTexture() : GetFallbackTexture();
 
 		// infinite reverse-Z projection: depth = near / view distance
 		const matrix4x4f proj = r->GetProjection();
@@ -690,6 +805,8 @@ namespace PlanetClouds {
 			pass.passMaterial->SetBufferDynamic(s_cloudDataName, &e.cloudData);
 			pass.passMaterial->SetTexture(s_sceneDistName, pass.distTarget->GetColorTexture());
 			pass.passMaterial->SetTexture(s_cloudHeightTexName, e.heightTex.Get());
+			pass.passMaterial->SetTexture(s_weatherXYName, weatherXY);
+			pass.passMaterial->SetTexture(s_weatherZName, weatherZ);
 			r->DrawBuffer(pass.triangle.get(), pass.passMaterial.Get());
 
 			// 2b. cloud shadows on the scene (applied by the composite)
@@ -700,6 +817,8 @@ namespace PlanetClouds {
 				pass.shadowMaterial->SetBufferDynamic(s_cloudDataName, &e.cloudData);
 				pass.shadowMaterial->SetTexture(s_sceneDistName, pass.distTarget->GetColorTexture());
 				pass.shadowMaterial->SetTexture(s_cloudHeightTexName, e.heightTex.Get());
+				pass.shadowMaterial->SetTexture(s_weatherXYName, weatherXY);
+				pass.shadowMaterial->SetTexture(s_weatherZName, weatherZ);
 				r->DrawBuffer(pass.triangle.get(), pass.shadowMaterial.Get());
 			}
 
@@ -756,6 +875,7 @@ namespace PlanetClouds {
 	{
 		s_queue.clear();
 		s_pass.reset();
+		s_weather.reset();
 		s_fallbackTexture.Reset();
 	}
 

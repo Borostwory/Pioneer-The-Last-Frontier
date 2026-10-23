@@ -17,7 +17,16 @@ layout(std140) uniform CloudData {
 	vec4 cloudTuneTransparency; // xyz: user transparency multiplier for the low, medium, high layer
 	vec4 cloudTuneSystem;		// xyz: user cloud system (weather pattern) size multiplier per layer
 	vec4 cloudTuneCluster;		// xyz: user clustering 0 (scattered) .. 1 (solid decks) per layer
+	vec4 cloudWeatherCyc0;		// cloud cycle held by the weather maps: layer 0 slot 0, 1, layer 1 slot 0, 1
+	vec4 cloudWeatherCyc1;		// xy: layer 2 slot 0, 1; z: weather maps valid (0/1)
 };
 
 // Equirectangular terrain height in metres (u = longitude, v = latitude)
 uniform sampler2D cloudHeightTex;
+
+// Weather maps baked by PlanetClouds (cloud_weather.frag): the displacement
+// of the weather-noise domain (cyclones, zonal flow, folding) for each layer
+// and cycle slot, in an atlas of 2 x 3 equirectangular maps
+// (cloudWeatherUV). xy in cloudWeatherXY, z in cloudWeatherZ.
+uniform sampler2D cloudWeatherXY;
+uniform sampler2D cloudWeatherZ;

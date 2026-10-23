@@ -93,6 +93,10 @@
 // east-west elongation of weather systems, and the domain warp amplitude
 #define CLOUD_WEATHER_ZONAL 2.5
 #define CLOUD_WEATHER_WARP 0.8
+// size of one baked weather map (texels, without the 1-texel wrap padding
+// on each side); must match WEATHER_MAP_W/H in src/PlanetClouds.cpp
+#define CLOUD_WEATHER_MAP_W 1024
+#define CLOUD_WEATHER_MAP_H 512
 // measured distribution (mean, sd) of the weather fBm on the warped domain
 #define CLOUD_WEATHER_MEAN 0.5
 #define CLOUD_WEATHER_SD 0.09
