@@ -4,11 +4,13 @@
 #pragma once
 
 #include "FrameId.h"
+#include "TransferPlannerConics.h"
 #include "vector3.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 class Body;
@@ -193,16 +195,53 @@ private:
 	// prograde (along vel), normal (along pos x vel), radial (along pos)
 	static bool DecomposeDv(const vector3d &pos, const vector3d &vel, const vector3d &change, double dv[3]);
 	vector3d GetOffsetVel(const Burn &burn) const;
-	// The first time the conic seg (in a frame, its t = 0 at segStart, around
-	// mass) enters the sphere of child, a moon's own frame inside it, between
-	// from and to, and the state relative to child then. False if it does not.
-	static bool FindChildFrameEntry(const Orbit &seg, double segStart, double mass, const Frame *child,
-		double from, double to, double &entry, vector3d &relPos, vector3d &relVel);
-	// the orbit the plan ends on - after its last burn, or the live one - with
-	// its state at t = 0 and the game time t = 0 corresponds to
-	bool GetFinalOrbit(Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const;
-	// PlanApproach's search, appending its burns after the plan's last burn
-	bool AppendApproach(const Body *target, int burns, double standOff, std::string &error);
+	// whether ancestor is frame or one of the frames frame lies in
+	static bool IsAncestorOrSelf(FrameId ancestor, FrameId frame);
+	// Carries seg (a conic in segFrame) through the sphere exits and entries
+	// on the way to the goal frame, as the game switches frames, up to
+	// `until`. A switch the segment does not reach by then is made at `until`
+	// with force, else the carry stops there and false is returned. Each
+	// frame entered is added to trace (with the conic from its switch). False
+	// as well when goal cannot be reached from segFrame at all.
+	static bool TransitionTo(PlannerConics::Conic &seg, const Frame *&segFrame, FrameId goal, double until,
+		bool force = true, std::vector<std::pair<const Frame *, PlannerConics::Conic>> *trace = nullptr);
+
+	// Route planning (TransferPlannerRoute.cpp): a trip is put together from
+	// legs, each starting where the one before ends - a state in a gravity
+	// frame at a time.
+	struct LegState {
+		const Frame *frame = nullptr;
+		double time = 0.0;
+		vector3d pos = vector3d(0.0);
+		vector3d vel = vector3d(0.0);
+	};
+	// how an approach leg searches: its first burn no earlier than earliest,
+	// departures over window seconds (0: automatic), flight times between
+	// tofMin and tofMax (0: automatic)
+	struct LegOptions {
+		double earliest = 0.0;
+		double window = 0.0;
+		double tofMin = 0.0;
+		double tofMax = 0.0;
+	};
+	// PlanApproach's route: the legs from the ship's orbit now to the target,
+	// their burns appended
+	bool PlanRoute(const Body *target, int burns, double standOff, std::string &error);
+	// down or along: the approach to a target orbiting start.frame's body - a
+	// ship, a station, or a planet or moon flown past or captured at - with
+	// the stand-off or pass altitude standOff. end gets the leg's last state
+	bool AppendApproachLeg(const LegState &start, const LegOptions &options, const Body *target, int burns,
+		double standOff, LegState *end, std::string &error);
+	// up: out of start.frame's sphere onto an orbit around the body above,
+	// with an apsis at targetRadius, and with capture a burn there that
+	// circularizes it
+	bool AppendUpLeg(const LegState &start, double earliest, double targetRadius, bool capture, LegState &end,
+		std::string &error);
+	// across: out of start.frame's sphere and over to destination, another
+	// body circling the same body above, flown past or captured at with the
+	// pass altitude altitude
+	bool AppendAcrossLeg(const LegState &start, double earliest, const Body *destination, double altitude,
+		bool capture, LegState &end, std::string &error);
 	// the orbit flown into burn idx, its state vector at t = 0 and the game
 	// time t = 0 corresponds to, as RecomputeChain chains it
 	bool GetIncomingOrbit(int idx, Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const;

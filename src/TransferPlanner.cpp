@@ -9,6 +9,7 @@
 #include "Orbit.h"
 #include "Pi.h"
 #include "Player.h"
+#include "TransferPlannerConics.h"
 #include "galaxy/SystemBody.h"
 #include "gameconsts.h"
 
@@ -50,51 +51,72 @@ double FrameMass(const Frame *frame)
 {
 	return (frame && frame->GetSystemBody()) ? frame->GetSystemBody()->GetMass() : 0.0;
 }
-
-// samples of a conic searched for its entry into a child frame's sphere
-constexpr int kChildEntrySamples = 2000;
 } // namespace
 
-bool TransferPlanner::FindChildFrameEntry(const Orbit &seg, double segStart, double mass, const Frame *child,
-	double from, double to, double &entry, vector3d &relPos, vector3d &relVel)
+bool TransferPlanner::IsAncestorOrSelf(FrameId ancestor, FrameId frame)
 {
-	const SystemBody *sbody = child ? child->GetSystemBody() : nullptr;
-	if (!sbody || to <= from)
-		return false;
-	// the child frame rides its body's orbit rails (Frame::UpdateOrbitRails)
-	const Orbit &rails = sbody->GetOrbit();
-	const double radius = child->GetRadius();
-	const auto inside = [&](double t) {
-		return (seg.OrbitalPosAtTime(t - segStart) - rails.OrbitalPosAtTime(t)).Length() < radius;
-	};
-
-	double before = from, after = -1.0;
-	if (inside(from)) {
-		after = from;
-	} else {
-		for (int i = 1; i <= kChildEntrySamples; ++i) {
-			const double t = from + (to - from) * double(i) / double(kChildEntrySamples);
-			if (inside(t)) {
-				after = t;
-				break;
-			}
-			before = t;
-		}
-		if (after < 0.0)
-			return false;
-		for (int i = 0; i < 60 && after - before > 1e-3; ++i) {
-			const double mid = 0.5 * (before + after);
-			if (inside(mid))
-				after = mid;
-			else
-				before = mid;
-		}
+	for (const Frame *f = Frame::GetFrame(frame); f; f = Frame::GetFrame(f->GetParent())) {
+		if (f->GetId() == ancestor)
+			return true;
+		if (!f->GetParent().valid())
+			break;
 	}
+	return false;
+}
 
-	entry = after;
-	relPos = seg.OrbitalPosAtTime(after - segStart) - rails.OrbitalPosAtTime(after);
-	relVel = seg.OrbitalVelocityAtTime(mass, after - segStart) -
-		(rails.OrbitalPosAtTime(after + 1.0) - rails.OrbitalPosAtTime(after - 1.0)) * 0.5;
+bool TransferPlanner::TransitionTo(PlannerConics::Conic &seg, const Frame *&segFrame, FrameId goal, double until,
+	bool force, std::vector<std::pair<const Frame *, PlannerConics::Conic>> *trace)
+{
+	using namespace PlannerConics;
+	// out through the spheres until the segment's frame holds the goal, then
+	// down into the spheres on the way to it - the frame switches the game
+	// makes on the way (Space's frame changes)
+	while (segFrame->GetId() != goal) {
+		const Frame *next = nullptr;
+		bool exiting = false;
+		if (!IsAncestorOrSelf(segFrame->GetId(), goal)) {
+			next = Frame::GetFrame(segFrame->GetParent());
+			exiting = true;
+		} else {
+			// the child of segFrame on the way down to goal
+			for (const Frame *f = Frame::GetFrame(goal); f; f = Frame::GetFrame(f->GetParent())) {
+				if (f->GetParent() == segFrame->GetId()) {
+					next = f;
+					break;
+				}
+			}
+		}
+		if (!next || !next->GetSystemBody())
+			return false;
+
+		const double from = seg.epoch;
+		const double to = std::max(until, from);
+		double t = to;
+		vector3d pos, vel;
+		const bool found = exiting ? FindExit(seg, segFrame, from, to - from, t, pos, vel) :
+									 FindEntry(seg, next, from, to, t, pos, vel);
+		if (!found) {
+			if (!force)
+				return false;
+			t = to;
+			vector3d p, v;
+			seg.At(t, p, v);
+			if (exiting) {
+				pos = p + FramePos(segFrame, t);
+				vel = v + FrameVel(segFrame, t);
+			} else {
+				pos = p - FramePos(next, t);
+				vel = v - FrameVel(next, t);
+			}
+		}
+		seg.pos = pos;
+		seg.vel = vel;
+		seg.epoch = t;
+		seg.mu = FrameMu(next);
+		segFrame = next;
+		if (trace)
+			trace->push_back({ next, seg });
+	}
 	return true;
 }
 
@@ -558,15 +580,15 @@ void TransferPlanner::RecomputeChain()
 	if (!frame || !frame->GetSystemBody())
 		return;
 
-	// the segment flown into the next burn: a conic in a frame, with its
-	// state at segmentTime. Seeded from the live player state in the
-	// planner's frame
+	// The segment flown into the next burn: a conic in a frame, propagated
+	// exactly as the game flies it (Orbit::PropagateState). Seeded from the
+	// live player state in the planner's frame.
 	const Frame *segFrame = frame;
-	double mass = FrameMass(segFrame);
-	double segmentTime = Pi::game->GetTime();
-	vector3d segPos = Pi::player->GetPositionRelTo(frame->GetId());
-	vector3d segVel = Pi::player->GetVelocityRelTo(frame->GetId());
-	Orbit segment = Orbit::FromBodyState(segPos, segVel, mass);
+	PlannerConics::Conic segment;
+	segment.pos = Pi::player->GetPositionRelTo(frame->GetId());
+	segment.vel = Pi::player->GetVelocityRelTo(frame->GetId());
+	segment.epoch = Pi::game->GetTime();
+	segment.mu = PlannerConics::FrameMu(frame);
 
 	for (Burn &burn : m_burns) {
 		// a completed burn is already in the live state the chain is seeded
@@ -577,54 +599,31 @@ void TransferPlanner::RecomputeChain()
 		if (!burn.frame.valid())
 			burn.frame = segFrame->GetId();
 
-		// A burn in a moon's own frame: the segment flies on until it enters
-		// the moon's sphere, where the game switches to the moon's gravity
-		// alone (DynamicBody::CalcExternalForce), and carries on relative to
-		// the moon from there. A burn the segment does not get into the
-		// sphere before is still taken over at its own time, so its frame
-		// survives an edit that breaks the approach for a while; a burn in a
-		// frame the chain cannot reach at all joins the chain's frame.
+		// A burn in another frame - a moon's or a planet's own, or the frame
+		// of the body above - is reached through the spheres on the way:
+		// the segment flies out of each sphere it leaves and into each it
+		// enters, and carries on relative to the body there. A burn in a
+		// frame the chain cannot reach joins the chain's frame.
 		if (burn.frame != segFrame->GetId()) {
-			const Frame *child = Frame::GetFrame(burn.frame);
-			if (child && child->GetParent() == segFrame->GetId() && child->GetSystemBody()) {
-				const double until = std::max(burn.startTime, segmentTime);
-				double entry = until;
-				vector3d relPos, relVel;
-				if (!FindChildFrameEntry(segment, segmentTime, mass, child, segmentTime, until, entry, relPos, relVel)) {
-					const Orbit &rails = child->GetSystemBody()->GetOrbit();
-					relPos = segment.OrbitalPosAtTime(until - segmentTime) - rails.OrbitalPosAtTime(until);
-					relVel = segment.OrbitalVelocityAtTime(mass, until - segmentTime) -
-						(rails.OrbitalPosAtTime(until + 1.0) - rails.OrbitalPosAtTime(until - 1.0)) * 0.5;
-				}
-				segFrame = child;
-				mass = FrameMass(child);
-				segmentTime = entry;
-				segPos = relPos;
-				segVel = relVel;
-				segment = Orbit::FromBodyState(segPos, segVel, mass);
-			} else {
+			const Frame *goal = Frame::GetFrame(burn.frame);
+			if (!goal || !goal->GetSystemBody() ||
+				!TransitionTo(segment, segFrame, burn.frame, std::max(burn.startTime, segment.epoch)))
 				burn.frame = segFrame->GetId();
-			}
 		}
 
-		// hyperbolic legs chain exactly like elliptic ones: OrbitalPosAtTime /
-		// OrbitalVelocityAtTime branch on eccentricity internally (the same
-		// hyperbolic solver as Orbit.cpp's MeanAnomalyFromTrueAnomaly branch),
-		// so no special casing is needed here - same mass, non-negative deltaT
-		// only, which std::max(0.0, ...) guarantees.
-		burn.segStart = segmentTime;
-		burn.segPos = segPos;
-		burn.segVel = segVel;
-		const double deltaT = std::max(0.0, burn.startTime - segmentTime);
-
-		burn.pos = segment.OrbitalPosAtTime(deltaT);
-		burn.vel = segment.OrbitalVelocityAtTime(mass, deltaT);
-		segmentTime += deltaT;
+		burn.segStart = segment.epoch;
+		burn.segPos = segment.pos;
+		burn.segVel = segment.vel;
+		const double at = std::max(burn.startTime, segment.epoch);
+		if (!segment.At(at, burn.pos, burn.vel)) {
+			burn.pos = segment.pos;
+			burn.vel = segment.vel;
+		}
 
 		// the burn's offset velocity bends the next segment
-		segPos = burn.pos;
-		segVel = burn.vel + GetOffsetVel(burn);
-		segment = Orbit::FromBodyState(segPos, segVel, mass);
+		segment.pos = burn.pos;
+		segment.vel = burn.vel + GetOffsetVel(burn);
+		segment.epoch = at;
 	}
 }
 

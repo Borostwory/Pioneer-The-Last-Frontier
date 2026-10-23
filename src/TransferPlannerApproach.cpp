@@ -1,17 +1,17 @@
 // Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
-// Closest-approach planning for the transfer planner.
+// Closest-approach planning for the transfer planner: the approach leg and
+// the closest-approach readout.
 //
-// A target that orbits the planner's central body is modelled as a track that
-// answers its position and velocity at any game time. PlanApproach searches
+// A target that orbits a frame's body is modelled as a track that answers its
+// position and velocity at any game time. AppendApproachLeg searches
 // departure time x flight time with a Lambert solver for the transfer that
-// meets the target for the least delta-v, and appends it as one burn
-// (intercept) or two (rendezvous). GetClosestApproach scans the planned
-// trajectory against the same track.
-//
-// Everything is two-body, around the planner frame's body, like the rest of
-// the planner: a moon's own gravity, or leaving the frame, is not modelled.
+// meets the target for the least delta-v from a given state, and appends it
+// as one burn (intercept) or two (rendezvous; a capture for a planet or
+// moon). Routes across frames are put together from legs in
+// TransferPlannerRoute.cpp. GetClosestApproach follows the planned
+// trajectory through the frames it crosses and scans it against the target.
 
 #include "TransferPlanner.h"
 
@@ -22,19 +22,19 @@
 #include "Orbit.h"
 #include "Pi.h"
 #include "Player.h"
+#include "TransferPlannerConics.h"
 #include "galaxy/SystemBody.h"
 #include "gameconsts.h"
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <limits>
 
 namespace {
 
 constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
-// the earliest departure after the plan's end, so there is time to turn the ship
-constexpr double kDepartureLead = 120.0;
 // the departure search spans at most this many revolutions of the slower orbit
 constexpr double kMaxWaitRevolutions = 10.0;
 // flight times searched, as fractions of the shorter / longer orbital period
@@ -70,8 +70,7 @@ constexpr double kMaxFlybyAimShare = 0.9;
 //
 struct TargetTrack {
 	const SystemBody *rails = nullptr;
-	Orbit orbit;
-	double epoch = 0.0;
+	PlannerConics::Conic conic; // a ship's coasting conic, from its state now
 	double mass = 0.0;	 // of the central body
 	double radius = 0.0; // a planet's or moon's, 0 for ships and stations
 	double period = 0.0; // 0 when not periodic
@@ -88,14 +87,16 @@ struct TargetTrack {
 	{
 		// the rails are what Frame::UpdateOrbitRails places the body's frame by
 		const double when = t - lag;
-		return rails ? rails->GetOrbit().OrbitalPosAtTime(when) : orbit.OrbitalPosAtTime(when - epoch);
+		return rails ? rails->GetOrbit().OrbitalPosAtTime(when) : conic.PosAt(when);
 	}
 
 	vector3d VelAt(double t) const
 	{
 		if (rails)
 			return (PosAt(t + 1.0) - PosAt(t - 1.0)) * 0.5;
-		return orbit.OrbitalVelocityAtTime(mass, t - lag - epoch);
+		vector3d p, v;
+		conic.At(t - lag, p, v);
+		return v;
 	}
 };
 
@@ -104,6 +105,16 @@ double PeriodOf(const Orbit &orbit)
 	if (is_zero_general(orbit.GetSemiMajorAxis()) || orbit.GetEccentricity() >= 1.0)
 		return 0.0;
 	return orbit.Period();
+}
+
+// a conic's period, 0 on an escape trajectory
+double ConicPeriod(const PlannerConics::Conic &conic)
+{
+	const double energy = 0.5 * conic.vel.LengthSqr() - conic.mu / conic.pos.Length();
+	if (!(energy < 0.0) || !(conic.mu > 0.0))
+		return 0.0;
+	const double a = -conic.mu / (2.0 * energy);
+	return 2.0 * M_PI * std::sqrt(a * a * a / conic.mu);
 }
 
 bool MakeTargetTrack(const Body *target, const Frame *frame, TargetTrack &track, std::string &error)
@@ -147,17 +158,19 @@ bool MakeTargetTrack(const Body *target, const Frame *frame, TargetTrack &track,
 		return true;
 	}
 
-	// ships flying in the planner's frame coast on their current orbit
-	const Frame *targetFrame = Frame::GetFrame(target->GetFrame());
-	if (!sbody && targetFrame && targetFrame->GetNonRotFrame() == frame->GetId()) {
-		track.epoch = Pi::game->GetTime();
-		track.orbit = Orbit::FromBodyState(target->GetPositionRelTo(frame->GetId()),
-			target->GetVelocityRelTo(frame->GetId()), track.mass);
-		if (is_zero_general(track.orbit.GetSemiMajorAxis())) {
+	// ships flying in the frame (or in a station's zone in it) coast on their
+	// current orbit
+	const Frame *targetFrame = TransferPlanner::GravityFrame(target->GetFrame());
+	if (!sbody && targetFrame && targetFrame->GetId() == frame->GetId()) {
+		track.conic.pos = target->GetPositionRelTo(frame->GetId());
+		track.conic.vel = target->GetVelocityRelTo(frame->GetId());
+		track.conic.epoch = Pi::game->GetTime();
+		track.conic.mu = G * track.mass;
+		if (is_zero_general(track.conic.pos.Length())) {
 			error = "The target is not in orbit";
 			return false;
 		}
-		track.period = PeriodOf(track.orbit);
+		track.period = ConicPeriod(track.conic);
 		return true;
 	}
 
@@ -331,33 +344,17 @@ bool FindSphereEntry(const ShipState &shipState, const TargetTrack &track, doubl
 	return true;
 }
 
-// The time after the sphere entry when the target-relative pass is closest
-// to the target: sampled over four times the time to cross the sphere
-// straight at the entry speed, then golden-section refined.
-double ClosestOnPass(const Orbit &pass, double sphere, double entrySpeed)
+// The time from the pass's epoch (its sphere entry) on when the
+// target-relative pass is closest to the target: its next periapsis while that
+// is still ahead - within four sphere-crossings at the entry speed - else the
+// entry itself.
+double ClosestOnPass(const PlannerConics::Conic &pass, double sphere)
 {
-	const double crossing = 4.0 * sphere / std::max(entrySpeed, 1.0);
-	double bestTau = 0.0, best = pass.OrbitalPosAtTime(0.0).Length();
-	for (int i = 1; i <= kApproachSamples; ++i) {
-		const double tau = crossing * double(i) / double(kApproachSamples);
-		const double d = pass.OrbitalPosAtTime(tau).Length();
-		if (d < best) {
-			best = d;
-			bestTau = tau;
-		}
-	}
-	const double step = crossing / double(kApproachSamples);
-	double lo = std::max(0.0, bestTau - step), hi = bestTau + step;
-	const double golden = 0.5 * (std::sqrt(5.0) - 1.0);
-	for (int i = 0; i < 80 && hi - lo > 1e-3; ++i) {
-		const double a = hi - golden * (hi - lo), b = lo + golden * (hi - lo);
-		if (pass.OrbitalPosAtTime(a).Length() < pass.OrbitalPosAtTime(b).Length())
-			hi = b;
-		else
-			lo = a;
-	}
-	const double tau = 0.5 * (lo + hi);
-	return pass.OrbitalPosAtTime(tau).Length() < best ? tau : bestTau;
+	const double horizon = 4.0 * sphere / std::max(pass.vel.Length(), 1.0);
+	double t;
+	if (pass.pos.Dot(pass.vel) < 0.0 && PlannerConics::NextApsis(pass, true, pass.epoch, horizon, t))
+		return t;
+	return pass.epoch;
 }
 
 // the closest a target-relative conic comes to the target from relPos on:
@@ -374,6 +371,36 @@ double PeriapsisAhead(const vector3d &relPos, const vector3d &relVel, double bod
 	return hSqr / mu / (1.0 + e);
 }
 
+// The orbit normal a capture around sbody should share: the way its moons go
+// round - the route on from it - or, with none, the way it goes round itself.
+// A parking orbit the other way would meet its moons head-on.
+vector3d CaptureNormal(const SystemBody *sbody, double t)
+{
+	const SystemBody *ref = sbody;
+	for (const SystemBody *kid : sbody->GetChildren()) {
+		const SystemBody::BodySuperType superType = kid->GetSuperType();
+		if (superType == SystemBody::SUPERTYPE_ROCKY_PLANET || superType == SystemBody::SUPERTYPE_GAS_GIANT) {
+			ref = kid;
+			break;
+		}
+	}
+	const Orbit &orbit = ref->GetOrbit();
+	const vector3d p = orbit.OrbitalPosAtTime(t);
+	const vector3d v = (orbit.OrbitalPosAtTime(t + 1.0) - orbit.OrbitalPosAtTime(t - 1.0)) * 0.5;
+	return p.Cross(v).NormalizedSafe();
+}
+
+// the frame a planet's or moon's own sphere is (its non-rotating frame), or
+// nothing for a ship, a station or a body without one
+const Frame *OwnFrameOf(const Body *body)
+{
+	if (!body)
+		return nullptr;
+	const Frame *bodyFrame = Frame::GetFrame(body->GetFrame());
+	const Frame *ownFrame = bodyFrame ? Frame::GetFrame(bodyFrame->GetNonRotFrame()) : nullptr;
+	return (ownFrame && ownFrame->GetBody() == body) ? ownFrame : nullptr;
+}
+
 } // namespace
 
 bool TransferPlanner::SolveLambert(const vector3d &r1, const vector3d &r2, double tof, double mu, const vector3d &hRef,
@@ -382,59 +409,36 @@ bool TransferPlanner::SolveLambert(const vector3d &r1, const vector3d &r2, doubl
 	return SolveLambertImpl(r1, r2, tof, mu, hRef, v1, v2, transferAngle);
 }
 
-bool TransferPlanner::GetFinalOrbit(Orbit &orbit, vector3d &pos, vector3d &vel, double &segmentTime) const
-{
-	Frame *frame = PlannerFrame();
-	if (!frame || !frame->GetSystemBody())
-		return false;
-
-	// chained as RecomputeChain chains it: the outgoing state of the last
-	// burn still to fly, at its start time (never before now), or the live
-	// state now; completed burns are already in the live state
-	segmentTime = Pi::game->GetTime();
-	const Burn *last = nullptr;
-	for (const Burn &burn : m_burns) {
-		if (burn.status == COMPLETED)
-			continue;
-		segmentTime = std::max(segmentTime, burn.startTime);
-		last = &burn;
-	}
-	if (!last) {
-		pos = Pi::player->GetPositionRelTo(frame->GetId());
-		vel = Pi::player->GetVelocityRelTo(frame->GetId());
-	} else {
-		pos = last->pos;
-		vel = last->vel + GetOffsetVel(*last);
-	}
-
-	orbit = Orbit::FromBodyState(pos, vel, frame->GetSystemBody()->GetMass());
-	return !is_zero_general(orbit.GetSemiMajorAxis());
-}
-
 bool TransferPlanner::PlanApproach(const Body *target, int burns, double standOff, std::string &error)
 {
-	// the approach is a fresh plan: whatever was planned before goes, but
-	// only once a transfer is found - a failed attempt leaves it as it was
+	// The approach is a fresh plan, from the ship's orbit now: whatever was
+	// planned before goes, but only once a route is found - a failed attempt
+	// leaves it as it was. The legs append their burns; the chain is then
+	// recomputed through every frame they cross.
 	std::vector<Burn> previous;
 	previous.swap(m_burns);
-	if (AppendApproach(target, burns, standOff, error))
-		return true;
+	if (PlanRoute(target, burns, standOff, error)) {
+		if (m_burns.size() <= MAX_BURNS) {
+			EnforceOrder();
+			RecomputeChain();
+			// new burns now occupy indices
+			AdvanceDirectionLockSerial();
+			return true;
+		}
+		error = "The trip needs " + std::to_string(m_burns.size()) + " burns, more than the " +
+			std::to_string(MAX_BURNS) + " a plan holds";
+	}
 	m_burns.swap(previous);
 	return false;
 }
 
-bool TransferPlanner::AppendApproach(const Body *target, int burns, double standOff, std::string &error)
+bool TransferPlanner::AppendApproachLeg(const LegState &start, const LegOptions &options, const Body *target,
+	int burns, double standOff, LegState *end, std::string &error)
 {
+	using namespace PlannerConics;
 	burns = std::min(std::max(burns, 1), 2);
-	if (m_burns.size() + burns > MAX_BURNS) {
-		error = "Not enough room: a plan holds at most " + std::to_string(MAX_BURNS) + " burns";
-		return false;
-	}
 
-	// plan against the chain as it stands now
-	RecomputeChain();
-
-	Frame *frame = PlannerFrame();
+	const Frame *frame = start.frame;
 	if (!frame || !frame->GetSystemBody()) {
 		error = "No body to orbit here";
 		return false;
@@ -447,28 +451,26 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 	// periapsis standOff above the surface (see the flyby search below), and
 	// a rendezvous with it is a capture into a circular orbit there
 	if (track.radius <= 0.0 && standOff > 0.0) {
-		const double speed = track.VelAt(Pi::game->GetTime()).Length();
+		const double speed = track.VelAt(start.time).Length();
 		if (speed > 0.0)
 			track.lag = standOff / speed;
 	}
 
-	Orbit departure;
-	vector3d pos0, vel0;
-	double segmentTime;
-	if (!GetFinalOrbit(departure, pos0, vel0, segmentTime)) {
-		error = "The ship is not in orbit";
-		return false;
-	}
-
-	const double mu = G * track.mass;
-	const double bodyRadius = frame->GetSystemBody()->GetRadius();
-	const vector3d hRef = pos0.Cross(vel0);
-	const double earliest = segmentTime + kDepartureLead;
+	Conic departure;
+	departure.pos = start.pos;
+	departure.vel = start.vel;
+	departure.epoch = start.time;
+	departure.mu = FrameMu(frame);
+	const double mu = departure.mu;
+	const double bodyRadius = FrameBodyRadius(frame);
+	const vector3d hRef = start.pos.Cross(start.vel);
+	const double earliest = std::max(options.earliest, start.time);
 
 	// the search box: wait up to a synodic period (so every phasing comes
 	// round once, but at most kMaxWaitRevolutions of the slower orbit, and at
-	// least one revolution of the ship), and fly for a share of the periods
-	const double shipPeriod = PeriodOf(departure);
+	// least one revolution of the ship), and fly for a share of the periods -
+	// unless the leg's options set them
+	const double shipPeriod = ConicPeriod(departure);
 	double shortest = std::min(shipPeriod > 0.0 ? shipPeriod : kInfinity, track.period > 0.0 ? track.period : kInfinity);
 	double longest = std::max(shipPeriod, track.period);
 	if (!std::isfinite(shortest)) {
@@ -481,17 +483,23 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 		const double synodic = rate > 0.0 ? 1.0 / rate : kInfinity;
 		window = std::max(std::min(synodic, kMaxWaitRevolutions * longest), shipPeriod);
 	}
-	const double tofMin = kMinFlightFraction * shortest;
-	const double tofMax = std::max(kMaxFlightFraction * longest, 2.0 * tofMin);
+	if (options.window > 0.0)
+		window = options.window;
+	double tofMin = kMinFlightFraction * shortest;
+	double tofMax = std::max(kMaxFlightFraction * longest, 2.0 * tofMin);
+	if (options.tofMax > options.tofMin && options.tofMin > 0.0) {
+		tofMin = options.tofMin;
+		tofMax = options.tofMax;
+	}
 
 	// total delta-v of departing at depart and flying for tof; infinite for a
 	// transfer that cannot be solved or would hit the central body
 	const auto cost = [&](double depart, double tof, vector3d &dv1, vector3d &dv2) {
 		if (depart < earliest || tof < 0.5 * tofMin)
 			return kInfinity;
-		const double tau = depart - segmentTime;
-		const vector3d r1 = departure.OrbitalPosAtTime(tau);
-		const vector3d shipVel = departure.OrbitalVelocityAtTime(track.mass, tau);
+		vector3d r1, shipVel;
+		if (!departure.At(depart, r1, shipVel))
+			return kInfinity;
 		const double arrive = depart + tof;
 		vector3d r2 = track.PosAt(arrive);
 		if (track.radius > 0.0)
@@ -525,7 +533,7 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 		}
 	}
 	if (!std::isfinite(best)) {
-		error = "No transfer to the target was found that clears " + frame->GetSystemBody()->GetName();
+		error = "No transfer to " + target->GetLabel() + " was found that clears " + frame->GetSystemBody()->GetName();
 		return false;
 	}
 
@@ -549,38 +557,43 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 		}
 	}
 	cost(bestDepart, bestTof, dv1, dv2);
+
+	vector3d r1, shipVel;
+	departure.At(bestDepart, r1, shipVel);
+	const double arrive = bestDepart + bestTof;
+	LegState legEnd;
+
 	// the capture burn of a rendezvous with a planet or moon (see below)
 	Burn captureBurn;
 	bool hasCapture = false;
 
-	const double tau = bestDepart - segmentTime;
-	const vector3d r1 = departure.OrbitalPosAtTime(tau);
-	const vector3d shipVel = departure.OrbitalVelocityAtTime(track.mass, tau);
-
 	// A planet or moon with a sphere of its own: inside it the game flies the
 	// ship around the target alone, which bends the pass inwards - aimed at a
 	// fixed distance in this plan's two-body frame, the ship would hit it.
-	// So the aim is moved sideways, across the arrival direction and away
-	// from the central body, until the target-relative pass flown from the
-	// sphere's edge - exactly as the game flies it - has its periapsis
-	// standOff above the surface. The pass rises with the offset, so the
-	// offset is bisected.
+	// So the aim is moved sideways, square to the arrival direction, until the
+	// target-relative pass flown from the sphere's edge - exactly as the game
+	// flies it - has its periapsis standOff above the surface. The pass rises
+	// with the offset, so the offset is bisected. A flyby passes on the side
+	// away from the central body; a capture on the side that makes its orbit
+	// go round the way the target's moons do.
 	if (track.sphere > 0.0) {
-		const double arrive = bestDepart + bestTof;
 		const vector3d centre = track.PosAt(arrive);
 		const double wanted = track.radius + std::max(standOff, 0.0);
+		const double bodyMu = G * track.bodyMass;
 
-		// the side to pass on: away from the central body, square to the
-		// arrival direction relative to the target
 		vector3d v1, v2;
 		double transferAngle;
 		if (!SolveLambert(r1, centre, bestTof, mu, hRef, v1, v2, transferAngle) &&
 			!SolveLambert(r1, centre + centre.Normalized() * (track.radius * kBodyAimFactor), bestTof, mu, hRef, v1, v2, transferAngle)) {
-			error = "No transfer to the target was found";
+			error = "No transfer to " + target->GetLabel() + " was found";
 			return false;
 		}
 		const vector3d arrival = (v2 - track.VelAt(arrive)).NormalizedSafe();
-		vector3d side = centre.Normalized() - arrival * arrival.Dot(centre.Normalized());
+		vector3d side;
+		if (burns > 1)
+			side = arrival.Cross(CaptureNormal(track.rails, arrive));
+		if (side.Length() < 1e-6)
+			side = centre.Normalized() - arrival * arrival.Dot(centre.Normalized());
 		if (side.Length() < 1e-6)
 			side = arrival.Cross(hRef);
 		side = side.NormalizedSafe();
@@ -593,11 +606,12 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 			if (!SolveLambert(r1, centre + side * offset, bestTof, mu, hRef, w1, w2, angle))
 				return -1.0;
 			departDv = w1 - shipVel;
-			const Orbit transfer = Orbit::FromBodyState(r1, w1, track.mass);
-			const auto legState = [&](double t, vector3d &pos, vector3d &vel) {
-				pos = transfer.OrbitalPosAtTime(t - bestDepart);
-				vel = transfer.OrbitalVelocityAtTime(track.mass, t - bestDepart);
-			};
+			Conic transfer;
+			transfer.pos = r1;
+			transfer.vel = w1;
+			transfer.epoch = bestDepart;
+			transfer.mu = mu;
+			const auto legState = [&](double t, vector3d &pos, vector3d &vel) { transfer.At(t, pos, vel); };
 			double entry;
 			vector3d relPos, relVel;
 			if (!FindSphereEntry(legState, track, bestDepart, arrive + bestTof, entry, relPos, relVel))
@@ -608,7 +622,7 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 		double lo = 0.0, hi = kMaxFlybyAimShare * track.sphere;
 		vector3d flybyDv;
 		if (periapsisFor(hi, flybyDv) < wanted) {
-			error = "No flyby that high was found: lower the flyby altitude";
+			error = "No pass of " + target->GetLabel() + " that high was found: lower the altitude";
 			return false;
 		}
 		for (int i = 0; i < kFlybySteps; ++i) {
@@ -621,41 +635,51 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 				hi = mid;
 		}
 		if (periapsisFor(hi, flybyDv) < 0.0) {
-			error = "No transfer to the target was found";
+			error = "No transfer to " + target->GetLabel() + " was found";
 			return false;
 		}
 		dv1 = flybyDv;
 
-		// A rendezvous with a planet or moon is a capture: a retro burn at
-		// the pass's periapsis, in the target's own frame, that leaves the
-		// ship on a circular orbit at the flyby altitude. RecomputeChain
-		// carries the chain into that frame at the sphere's edge.
+		// the pass inside the sphere, as the chain will fly it
+		Conic transfer;
+		transfer.pos = r1;
+		transfer.vel = shipVel + dv1;
+		transfer.epoch = bestDepart;
+		transfer.mu = mu;
+		const auto legState = [&](double t, vector3d &pos, vector3d &vel) { transfer.At(t, pos, vel); };
+		double entry;
+		vector3d relPos, relVel;
+		if (!FindSphereEntry(legState, track, bestDepart, arrive + bestTof, entry, relPos, relVel)) {
+			error = "The transfer does not reach " + target->GetLabel() + "'s sphere of influence";
+			return false;
+		}
+		Conic pass;
+		pass.pos = relPos;
+		pass.vel = relVel;
+		pass.epoch = entry;
+		pass.mu = bodyMu;
+		const double tp = ClosestOnPass(pass, track.sphere);
+		vector3d p, v;
+		pass.At(tp, p, v);
+		legEnd.frame = Frame::GetFrame(track.sphereFrame);
+		legEnd.time = tp;
+		legEnd.pos = p;
+		legEnd.vel = v;
+
+		// A rendezvous with a planet or moon is a capture: a retro burn at the
+		// pass's periapsis, in the target's own frame, that leaves the ship on
+		// a circular orbit at the pass altitude. RecomputeChain carries the
+		// chain into that frame at the sphere's edge.
 		if (burns > 1) {
-			const Orbit transfer = Orbit::FromBodyState(r1, shipVel + dv1, track.mass);
-			const auto legState = [&](double t, vector3d &pos, vector3d &vel) {
-				pos = transfer.OrbitalPosAtTime(t - bestDepart);
-				vel = transfer.OrbitalVelocityAtTime(track.mass, t - bestDepart);
-			};
-			double entry;
-			vector3d relPos, relVel;
-			if (!FindSphereEntry(legState, track, bestDepart, arrive + bestTof, entry, relPos, relVel)) {
-				error = "The transfer does not reach the target's sphere of influence";
-				return false;
-			}
-			const Orbit pass = Orbit::FromBodyState(relPos, relVel, track.bodyMass);
-			const double tau = ClosestOnPass(pass, track.sphere, relVel.Length());
-			const vector3d p = pass.OrbitalPosAtTime(tau);
-			const vector3d v = pass.OrbitalVelocityAtTime(track.bodyMass, tau);
-			// circular speed along the direction of travel, square to the radius
-			const vector3d horizontal = (v - p.NormalizedSafe() * v.Dot(p.NormalizedSafe())).NormalizedSafe();
-			const vector3d capture = horizontal * std::sqrt(G * track.bodyMass / p.Length()) - v;
-			captureBurn.startTime = entry + tau;
+			const vector3d capture = CircularizeDv(p, v, bodyMu);
+			captureBurn.startTime = tp;
 			captureBurn.frame = track.sphereFrame;
 			if (!DecomposeDv(p, v, capture, captureBurn.dv)) {
 				error = "The capture burn could not be set up";
 				return false;
 			}
 			hasCapture = true;
+			legEnd.vel = v + capture;
 		}
 	}
 
@@ -663,154 +687,261 @@ bool TransferPlanner::AppendApproach(const Body *target, int burns, double stand
 	// chain will compute for it
 	Burn departBurn;
 	departBurn.startTime = bestDepart;
+	departBurn.frame = frame->GetId();
 	if (!DecomposeDv(r1, shipVel, dv1, departBurn.dv)) {
 		error = "The departure burn could not be set up";
 		return false;
 	}
 
-	// the arrival burn matches the target's velocity, from the arrival state
-	// as the chain will propagate the transfer
+	// a ship or station: the arrival, as the chain will propagate the
+	// transfer, and for a rendezvous the burn that matches its velocity there
 	Burn arriveBurn;
-	if (burns > 1 && !hasCapture) {
-		const Orbit transfer = Orbit::FromBodyState(r1, shipVel + dv1, track.mass);
-		const vector3d r2 = transfer.OrbitalPosAtTime(bestTof);
-		const vector3d v2 = transfer.OrbitalVelocityAtTime(track.mass, bestTof);
-		arriveBurn.startTime = bestDepart + bestTof;
-		if (!DecomposeDv(r2, v2, track.VelAt(arriveBurn.startTime) - v2, arriveBurn.dv)) {
-			error = "The arrival burn could not be set up";
-			return false;
+	if (track.sphere <= 0.0) {
+		Conic transfer;
+		transfer.pos = r1;
+		transfer.vel = shipVel + dv1;
+		transfer.epoch = bestDepart;
+		transfer.mu = mu;
+		vector3d r2, v2;
+		transfer.At(arrive, r2, v2);
+		legEnd.frame = frame;
+		legEnd.time = arrive;
+		legEnd.pos = r2;
+		legEnd.vel = v2;
+		if (burns > 1) {
+			arriveBurn.startTime = arrive;
+			arriveBurn.frame = frame->GetId();
+			if (!DecomposeDv(r2, v2, track.VelAt(arrive) - v2, arriveBurn.dv)) {
+				error = "The arrival burn could not be set up";
+				return false;
+			}
+			legEnd.vel = track.VelAt(arrive);
 		}
 	}
 
 	m_burns.push_back(departBurn);
 	if (hasCapture)
 		m_burns.push_back(captureBurn);
-	else if (burns > 1)
+	else if (burns > 1 && track.sphere <= 0.0)
 		m_burns.push_back(arriveBurn);
-
-	EnforceOrder();
-	RecomputeChain();
-	// new burns now occupy indices
-	AdvanceDirectionLockSerial();
+	if (end)
+		*end = legEnd;
 	return true;
 }
 
 bool TransferPlanner::GetClosestApproach(const Body *target, ClosestApproach &result, std::string &error) const
 {
+	using namespace PlannerConics;
 	Frame *frame = PlannerFrame();
 	if (!frame || !frame->GetSystemBody()) {
 		error = "No body to orbit here";
 		return false;
 	}
-	TargetTrack track;
-	if (!MakeTargetTrack(target, frame, track, error))
+	if (!target) {
+		error = "No target: select one on the map or set a navigation target";
 		return false;
-	const double mass = track.mass;
+	}
+	if (target == Pi::player || target == frame->GetBody()) {
+		error = "Choose a target other than your ship and the body you orbit";
+		return false;
+	}
 
-	// the planned trajectory as consecutive conics: the live orbit from now,
-	// then each burn's from its start time, chained as RecomputeChain does
+	// where the target is: a planet's or moon's own frame - which the plan may
+	// get into, its centre at the origin - and the frame it moves in
+	const Frame *ownFrame = OwnFrameOf(target);
+	const Frame *homeFrame = ownFrame ? Frame::GetFrame(ownFrame->GetParent()) : GravityFrame(target->GetFrame());
+	if (!homeFrame && !ownFrame) {
+		error = "The target's whereabouts are unknown";
+		return false;
+	}
+
+	// The planned trajectory, frame by frame, as the chain flies it: the live
+	// orbit, every burn still to fly, and the spheres crossed on the way;
+	// after the last burn it carries on into the target's frame where it can
 	struct Leg {
-		double start;
-		Orbit orbit;
+		const Frame *frame;
+		Conic conic;
+		double end;
 	};
 	std::vector<Leg> legs;
 	const double now = Pi::game->GetTime();
-	legs.push_back({ now, Orbit::FromBodyState(Pi::player->GetPositionRelTo(frame->GetId()),
-							  Pi::player->GetVelocityRelTo(frame->GetId()), mass) });
-	double legStart = now;
+	const Frame *segFrame = frame;
+	Conic segment;
+	segment.pos = Pi::player->GetPositionRelTo(frame->GetId());
+	segment.vel = Pi::player->GetVelocityRelTo(frame->GetId());
+	segment.epoch = now;
+	segment.mu = FrameMu(frame);
+	const auto close = [&](double t) {
+		if (!legs.empty())
+			legs.back().end = t;
+	};
+	const auto open = [&]() { legs.push_back({ segFrame, segment, kInfinity }); };
+	open();
+	std::vector<std::pair<const Frame *, Conic>> trace;
 	for (const Burn &burn : m_burns) {
-		// completed burns are already in the live state; a burn in another
-		// frame (a capture inside a moon's sphere) is past the pass below
-		if (burn.status == COMPLETED || (burn.frame.valid() && burn.frame != frame->GetId()))
+		if (burn.status == COMPLETED)
 			continue;
-		legStart = std::max(legStart, burn.startTime);
-		legs.push_back({ legStart, Orbit::FromBodyState(burn.pos, burn.vel + GetOffsetVel(burn), mass) });
+		const double at = std::max(burn.startTime, segment.epoch);
+		if (burn.frame.valid() && burn.frame != segFrame->GetId()) {
+			trace.clear();
+			if (!TransitionTo(segment, segFrame, burn.frame, at, true, &trace))
+				break;
+			for (const auto &step : trace) {
+				close(step.second.epoch);
+				legs.push_back({ step.first, step.second, kInfinity });
+			}
+		}
+		vector3d p, v;
+		if (!segment.At(at, p, v))
+			break;
+		close(at);
+		segment.pos = p;
+		segment.vel = v + GetOffsetVel(burn);
+		segment.epoch = at;
+		open();
 	}
 
-	const auto shipState = [&](double t, vector3d &pos, vector3d &vel) {
-		size_t i = legs.size() - 1;
-		while (i > 0 && legs[i].start > t)
-			--i;
-		const double tau = t - legs[i].start;
-		pos = legs[i].orbit.OrbitalPosAtTime(tau);
-		vel = legs[i].orbit.OrbitalVelocityAtTime(mass, tau);
-	};
-	const auto distanceAt = [&](double t) {
-		vector3d pos, vel;
-		shipState(t, pos, vel);
-		return (pos - track.PosAt(t)).Length();
-	};
-
-	// scan up to a revolution (of the slower orbit) past the last burn
-	double span = std::max(PeriodOf(legs.back().orbit), track.period);
+	// how far past the last burn to look: a revolution of the slower of the
+	// last orbit and the target's, capped
+	double targetPeriod = 0.0;
+	if (const SystemBody *sbody = target->GetSystemBody())
+		targetPeriod = PeriodOf(sbody->GetOrbit());
+	double span = std::max(ConicPeriod(segment), targetPeriod);
 	if (span <= 0.0)
 		span = kDefaultSpan;
-	const double end = std::min(legs.back().start + span, now + kMaxApproachSpan);
+	const double end = std::min(segment.epoch + span, now + kMaxApproachSpan);
 
-	// A planet or moon with a sphere of its own: once the ship is inside, the
-	// game flies it around the target alone, so from the sphere's edge on the
-	// approach is the target-relative conic - which its gravity bends inwards,
-	// often into the surface, where the two-body scan below would show a
-	// clean pass. Scanned up to twice the time to cross the sphere straight.
-	if (track.sphere > 0.0) {
-		double entry;
-		vector3d relPos, relVel;
-		if (FindSphereEntry(shipState, track, now, end, entry, relPos, relVel)) {
-			const Orbit pass = Orbit::FromBodyState(relPos, relVel, track.bodyMass);
-			const double bestTau = ClosestOnPass(pass, track.sphere, relVel.Length());
+	// on into the target's own frame, or else the frame it moves in
+	trace.clear();
+	const Frame *lastFrame = segFrame;
+	Conic last = segment;
+	bool reached = false;
+	if (ownFrame && ownFrame != segFrame)
+		reached = TransitionTo(last, lastFrame, ownFrame->GetId(), end, false, &trace);
+	if (!reached && homeFrame && homeFrame != segFrame) {
+		trace.clear();
+		lastFrame = segFrame;
+		last = segment;
+		TransitionTo(last, lastFrame, homeFrame->GetId(), end, false, &trace);
+	}
+	for (const auto &step : trace) {
+		close(step.second.epoch);
+		legs.push_back({ step.first, step.second, kInfinity });
+	}
+	close(end);
+	for (Leg &leg : legs)
+		leg.end = std::min(leg.end, end);
 
-			result.time = entry + bestTau;
-			result.distance = pass.OrbitalPosAtTime(bestTau).Length();
-			result.relativeSpeed = pass.OrbitalVelocityAtTime(track.bodyMass, bestTau).Length();
-			result.targetRadius = track.radius;
+	// Inside the target's own frame the closest approach is the lowest point
+	// of the legs flown there - the target is at the origin.
+	double bestTime = 0.0, bestDistance = kInfinity;
+	vector3d bestRelVel;
+	const auto scan = [&](const Leg &leg, const std::function<double(double, vector3d &)> &distanceAt) {
+		if (leg.end <= leg.conic.epoch)
+			return;
+		const double step = (leg.end - leg.conic.epoch) / double(kApproachSamples);
+		double localBest = kInfinity, localTime = leg.conic.epoch;
+		vector3d relVel;
+		for (int i = 0; i <= kApproachSamples; ++i) {
+			const double t = leg.conic.epoch + step * double(i);
+			const double d = distanceAt(t, relVel);
+			if (d < localBest) {
+				localBest = d;
+				localTime = t;
+			}
+		}
+		// golden-section refinement around the best sample
+		double lo = std::max(leg.conic.epoch, localTime - step), hi = std::min(leg.end, localTime + step);
+		const double ratio = 0.5 * (std::sqrt(5.0) - 1.0);
+		for (int i = 0; i < 80 && hi - lo > 1e-3; ++i) {
+			const double a = hi - ratio * (hi - lo), b = lo + ratio * (hi - lo);
+			vector3d dummy;
+			if (distanceAt(a, dummy) < distanceAt(b, dummy))
+				hi = b;
+			else
+				lo = a;
+		}
+		const double refined = 0.5 * (lo + hi);
+		if (distanceAt(refined, relVel) < localBest)
+			localTime = refined;
+		const double d = distanceAt(localTime, relVel);
+		if (d < bestDistance) {
+			bestDistance = d;
+			bestTime = localTime;
+			bestRelVel = relVel;
+		}
+	};
+
+	if (ownFrame) {
+		for (const Leg &leg : legs) {
+			if (leg.frame != ownFrame)
+				continue;
+			scan(leg, [&](double t, vector3d &relVel) {
+				vector3d p;
+				if (!leg.conic.At(t, p, relVel))
+					return kInfinity;
+				return p.Length();
+			});
+		}
+		if (std::isfinite(bestDistance)) {
+			result.time = bestTime;
+			result.distance = bestDistance;
+			result.relativeSpeed = bestRelVel.Length();
+			result.targetRadius = FrameBodyRadius(ownFrame);
 			return true;
 		}
 	}
 
-	double bestTime = now, bestDistance = kInfinity;
-	const double step = (end - now) / double(kApproachSamples);
-	for (int i = 0; i <= kApproachSamples; ++i) {
-		const double t = now + step * double(i);
-		const double d = distanceAt(t);
-		if (d < bestDistance) {
-			bestDistance = d;
-			bestTime = t;
-		}
-	}
-	if (!std::isfinite(bestDistance)) {
-		error = "No approach could be computed";
+	if (!homeFrame) {
+		error = "The plan does not reach " + target->GetLabel() + "'s neighbourhood";
 		return false;
 	}
 
-	// golden-section refinement in the samples around the best one
-	double lo = std::max(now, bestTime - step), hi = std::min(end, bestTime + step);
-	const double ratio = 0.5 * (std::sqrt(5.0) - 1.0);
-	double a = hi - ratio * (hi - lo), b = lo + ratio * (hi - lo);
-	double da = distanceAt(a), db = distanceAt(b);
-	for (int i = 0; i < 80 && hi - lo > 1e-3; ++i) {
-		if (da < db) {
-			hi = b;
-			b = a;
-			db = da;
-			a = hi - ratio * (hi - lo);
-			da = distanceAt(a);
-		} else {
-			lo = a;
-			a = b;
-			da = db;
-			b = lo + ratio * (hi - lo);
-			db = distanceAt(b);
+	// Otherwise in the frame the target moves in, against its track; a planet
+	// or moon whose sphere the plan enters is passed on the target-relative
+	// conic from the sphere's edge, which its gravity bends inwards - often
+	// into the surface, where a two-body scan would show a clean pass.
+	TargetTrack track;
+	if (!MakeTargetTrack(target, homeFrame, track, error))
+		return false;
+	for (const Leg &leg : legs) {
+		if (leg.frame != homeFrame)
+			continue;
+		if (track.sphere > 0.0) {
+			const auto legState = [&](double t, vector3d &pos, vector3d &vel) { leg.conic.At(t, pos, vel); };
+			double entry;
+			vector3d relPos, relVel;
+			if (FindSphereEntry(legState, track, leg.conic.epoch, leg.end, entry, relPos, relVel)) {
+				Conic pass;
+				pass.pos = relPos;
+				pass.vel = relVel;
+				pass.epoch = entry;
+				pass.mu = G * track.bodyMass;
+				const double tp = ClosestOnPass(pass, track.sphere);
+				vector3d p, v;
+				pass.At(tp, p, v);
+				result.time = tp;
+				result.distance = p.Length();
+				result.relativeSpeed = v.Length();
+				result.targetRadius = track.radius;
+				return true;
+			}
 		}
+		scan(leg, [&](double t, vector3d &relVel) {
+			vector3d p, v;
+			if (!leg.conic.At(t, p, v))
+				return kInfinity;
+			relVel = v - track.VelAt(t);
+			return (p - track.PosAt(t)).Length();
+		});
 	}
-	const double refined = 0.5 * (lo + hi);
-	if (distanceAt(refined) < bestDistance)
-		bestTime = refined;
-
-	vector3d pos, vel;
-	shipState(bestTime, pos, vel);
+	if (!std::isfinite(bestDistance)) {
+		error = "The plan does not reach " + target->GetLabel() + "'s neighbourhood";
+		return false;
+	}
 	result.time = bestTime;
-	result.distance = (pos - track.PosAt(bestTime)).Length();
-	result.relativeSpeed = (vel - track.VelAt(bestTime)).Length();
+	result.distance = bestDistance;
+	result.relativeSpeed = bestRelVel.Length();
 	result.targetRadius = track.radius;
 	return true;
 }

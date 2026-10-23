@@ -744,7 +744,7 @@ local L = {
 	APPROACH_RENDEZVOUS = "Rendezvous",
 	APPROACH_RENDEZVOUS_TIP = "2 burns: meet the target, then match its velocity on arrival",
 	APPROACH_PLAN = "Plan approach",
-	APPROACH_PLAN_TIP = "Replace the plan with %s from your current orbit, timed for the least Δv.\nIf no transfer is found, the plan stays as it was.",
+	APPROACH_PLAN_TIP = "Replace the plan with %s from your current orbit, timed for the least Δv. A target around another body is reached in stages, parking in an orbit around each body on the way.\nIf no transfer is found, the plan stays as it was.",
 	APPROACH_ONE_BURN = "1 burn",
 	APPROACH_TWO_BURNS = "2 burns",
 	APPROACH_STAND_OFF = "Stand-off",
@@ -994,11 +994,11 @@ local function drawApproachSection()
 	ui.text(string.format(L.APPROACH_TARGET, targetName))
 	ui.setItemTooltip(source)
 
-	-- the plan's closest approach - read first, since a target with a radius
-	-- is a planet or moon, which changes the controls below. On failure the
-	-- second value is the reason
+	-- a planet, moon or star is flown past or orbited at an altitude, a ship
+	-- or station met at a stand-off behind it
+	local isBody = target:isa("Planet") or target:isa("Star")
+	-- the plan's closest approach; on failure the second value is the reason
 	local distance, time, speed, radius = systemView:TransferPlannerGetClosestApproach(target)
-	local isBody = distance ~= nil and radius > 0
 
 	local width = ui.getContentRegion().x
 	local spacing = ui.getItemSpacing().x
