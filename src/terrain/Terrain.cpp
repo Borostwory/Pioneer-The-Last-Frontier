@@ -686,26 +686,22 @@ double Terrain::BiCubicInterpolation(const vector3d &p) const
 		}
 	}
 
+	// Catmull-Rom spline through the 4 samples, evaluated between p1 and p2.
+	// Unlike Lagrange interpolation its slope is continuous across sample
+	// boundaries, so the heightmap grid does not show up as creases.
+	auto catmullRom = [](const double p0, const double p1, const double p2, const double p3, const double t) {
+		const double a1 = 0.5 * (p2 - p0);
+		const double a2 = p0 - 2.5 * p1 + 2.0 * p2 - 0.5 * p3;
+		const double a3 = 0.5 * (p3 - p0) + 1.5 * (p1 - p2);
+		return p1 + t * (a1 + t * (a2 + t * a3));
+	};
+
 	double c[4];
 	for (int j = 0; j < 4; j++) {
-		const double d0 = map[0][j] - map[1][j];
-		const double d2 = map[2][j] - map[1][j];
-		const double d3 = map[3][j] - map[1][j];
-		const double a0 = map[1][j];
-		const double a1 = -(1 / 3.0) * d0 + d2 - (1 / 6.0) * d3;
-		const double a2 = 0.5 * d0 + 0.5 * d2;
-		const double a3 = -(1 / 6.0) * d0 - 0.5 * d2 + (1 / 6.0) * d3;
-		c[j] = a0 + a1 * dx + a2 * dx * dx + a3 * dx * dx * dx;
+		c[j] = catmullRom(map[0][j], map[1][j], map[2][j], map[3][j], dx);
 	}
 
-	const double d0 = c[0] - c[1];
-	const double d2 = c[2] - c[1];
-	const double d3 = c[3] - c[1];
-	const double a0 = c[1];
-	const double a1 = -(1 / 3.0) * d0 + d2 - (1 / 6.0) * d3;
-	const double a2 = 0.5 * d0 + 0.5 * d2;
-	const double a3 = -(1 / 6.0) * d0 - 0.5 * d2 + (1 / 6.0) * d3;
-	return (0.1 + a0 + a1 * dy + a2 * dy * dy + a3 * dy * dy * dy);
+	return (0.1 + catmullRom(c[0], c[1], c[2], c[3], dy));
 }
 
 Terrain::MinBodyData::MinBodyData(const SystemBody *body)
