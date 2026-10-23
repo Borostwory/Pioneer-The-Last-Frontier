@@ -91,6 +91,7 @@ public:
 	void LODUpdate(const vector3d &campos, const Graphics::Frustum &frustum);
 
 	void RequestSinglePatch();
+	void RequestQuadSplit();
 	void ReceiveHeightmaps(SQuadSplitResult *psr);
 	void ReceiveHeightmap(const SSingleSplitResult *psr);
 	void ReceiveHeightResult(const SSplitResultData &data);

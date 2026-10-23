@@ -28,6 +28,7 @@
 #include "vcacheopt/vcacheopt.h"
 #include <algorithm>
 #include <deque>
+#include <thread>
 
 RefCountedPtr<GeoPatchContext> GeoSphere::s_patchContext;
 
@@ -417,20 +418,31 @@ void GeoSphere::Update()
 	}
 }
 
-void GeoSphere::AddQuadSplitRequest(double dist, SQuadSplitRequest *pReq, GeoPatch *pPatch)
+void GeoSphere::AddQuadSplitCandidate(double distance, GeoPatch *patch)
 {
-	mQuadSplitRequests.emplace_back(dist, pReq, pPatch);
+	mQuadSplitCandidates.emplace_back(distance, patch);
 }
 
+// Submits split jobs nearest first, keeping only a few per worker thread in
+// flight. Previously every candidate was queued at once: at high terrain
+// detail distances that flooded the job queue (which blocks the main thread
+// when full) with work for patches the camera had often moved away from by
+// the time it ran. Candidates not submitted now are re-evaluated on the next
+// update.
 void GeoSphere::ProcessQuadSplitRequests()
 {
-	std::sort(mQuadSplitRequests.begin(), mQuadSplitRequests.end(), [](TDistanceRequest &a, TDistanceRequest &b) { return a.mDistance < b.mDistance; });
+	static const int s_maxJobsInFlight = std::max(8, 3 * int(std::thread::hardware_concurrency()));
 
-	for (auto iter : mQuadSplitRequests) {
-		SQuadSplitRequest *ssrd = iter.mpRequest;
-		iter.mpRequester->ReceiveJobHandle(Pi::GetAsyncJobQueue()->Queue(new QuadPatchJob(ssrd)));
+	const int slots = s_maxJobsInFlight - GetQuadPatchJobsInFlight();
+	if (slots > 0 && !mQuadSplitCandidates.empty()) {
+		const size_t count = std::min(mQuadSplitCandidates.size(), size_t(slots));
+		std::partial_sort(mQuadSplitCandidates.begin(), mQuadSplitCandidates.begin() + count, mQuadSplitCandidates.end(),
+			[](const std::pair<double, GeoPatch *> &a, const std::pair<double, GeoPatch *> &b) { return a.first < b.first; });
+		for (size_t i = 0; i < count; i++) {
+			mQuadSplitCandidates[i].second->RequestQuadSplit();
+		}
 	}
-	mQuadSplitRequests.clear();
+	mQuadSplitCandidates.clear();
 }
 
 void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView, vector3d campos, const float radius, const std::vector<Camera::Shadow> &shadows)

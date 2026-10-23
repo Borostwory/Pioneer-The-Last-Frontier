@@ -44,6 +44,8 @@ namespace PatchMaths{
 
 // tri edge lengths
 static constexpr double GEOPATCH_SUBDIVIDE_AT_CAMDIST = 5.0;
+// children are merged back only beyond this multiple of the split distance
+static constexpr double LOD_MERGE_HYSTERESIS = 1.25;
 
 #if USE_SUB_CENTROID_CLIPPING
 #if NUM_HORIZON_POINTS == 9
@@ -399,8 +401,15 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 		// distance setting), read every update so changes apply live.
 		const double splitLength = std::max(m_splitLength, m_geosphere->GetLodDistance() * m_edgeLength);
 		const bool tooFar = (centroidDist >= splitLength);	// check if the distance is greater than the rough length, which is how far it should be before it can split
-		if (m_depth >= std::min(GEOPATCH_MAX_DEPTH, m_geosphere->GetMaxDepth()) || tooFar) {
+		const bool atMaxDepth = m_depth >= std::min(GEOPATCH_MAX_DEPTH, m_geosphere->GetMaxDepth());
+		if (atMaxDepth || tooFar) {
 			canSplit = false; // we're too deep in the quadtree or too far away so cannot split
+		}
+		// Merge only a little further out than the split distance, so a camera
+		// hovering near the threshold does not split and merge the same patch
+		// over and over (each split regenerates four patches).
+		if (!atMaxDepth && centroidDist < splitLength * LOD_MERGE_HYSTERESIS) {
+			canMerge = false;
 		}
 	}
 
@@ -410,20 +419,17 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 			if (!IsPatchVisible(frustum, campos))
 				return;
 
-			// we can see this patch so submit the jobs!
-			assert(!m_hasJobRequest);
-			m_hasJobRequest = true;
-
-			SQuadSplitRequest *ssrd = new SQuadSplitRequest(m_corners->m_v0, m_corners->m_v1, m_corners->m_v2, m_corners->m_v3, m_clipCentroid.Normalized(), m_depth, m_geosphere->GetMaxDepth(),
-				m_geosphere->GetSystemBody()->GetPath(), m_PatchID, m_ctx->GetEdgeLen() - 2,
-				m_ctx->GetFrac(), m_geosphere->GetTerrain());
-
-			// add to the GeoSphere to be processed at end of all LODUpdate requests
-			m_geosphere->AddQuadSplitRequest(centroidDist, ssrd, this);
+			// the GeoSphere submits the nearest candidates at the end of its update
+			m_geosphere->AddQuadSplitCandidate(centroidDist, this);
 		} else {
 			for (int i = 0; i < NUM_KIDS; i++) {
 				m_kids[i]->LODUpdate(campos, frustum);
 			}
+		}
+	} else if (m_kids[0] && !canMerge) {
+		// between the split and merge distances: keep the children up to date
+		for (int i = 0; i < NUM_KIDS; i++) {
+			m_kids[i]->LODUpdate(campos, frustum);
 		}
 	} else if (canMerge) {
 		for (int i = 0; i < NUM_KIDS; i++) {
@@ -435,6 +441,18 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 			}
 		}
 	}
+}
+
+void GeoPatch::RequestQuadSplit()
+{
+	assert(!m_hasJobRequest);
+	assert(!m_kids[0]);
+	m_hasJobRequest = true;
+
+	SQuadSplitRequest *ssrd = new SQuadSplitRequest(m_corners->m_v0, m_corners->m_v1, m_corners->m_v2, m_corners->m_v3, m_clipCentroid.Normalized(), m_depth, m_geosphere->GetMaxDepth(),
+		m_geosphere->GetSystemBody()->GetPath(), m_PatchID, m_ctx->GetEdgeLen() - 2,
+		m_ctx->GetFrac(), m_geosphere->GetTerrain());
+	ReceiveJobHandle(Pi::GetAsyncJobQueue()->Queue(new QuadPatchJob(ssrd)));
 }
 
 void GeoPatch::RequestSinglePatch()

@@ -25,6 +25,10 @@ struct GeoPatchGenStats {
 GeoPatchGenStats GetGeoPatchGenStats();
 void ResetGeoPatchGenStats();
 
+// number of quad split jobs queued or running, used to throttle submission
+int GetQuadPatchJobsInFlight();
+void CountQuadPatchJob(int delta);
+
 class SBaseRequest {
 public:
 	SBaseRequest(const vector3d &v0_, const vector3d &v1_, const vector3d &v2_, const vector3d &v3_, const vector3d &cn,
@@ -302,7 +306,8 @@ public:
 	QuadPatchJob(SQuadSplitRequest *data) :
 		mData(data),
 		mpResults(NULL)
-	{ /* empty */
+	{
+		CountQuadPatchJob(1);
 	}
 	~QuadPatchJob();
 

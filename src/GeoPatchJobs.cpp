@@ -16,6 +16,7 @@ namespace {
 	std::atomic<uint64_t> s_genJobs(0);
 	std::atomic<uint64_t> s_genPatches(0);
 	std::atomic<uint64_t> s_genMicroseconds(0);
+	std::atomic<int> s_quadJobsInFlight(0);
 
 	// adds the lifetime of a patch job to the generation statistics
 	class ScopedGenTimer {
@@ -77,6 +78,16 @@ GeoPatchGenStats GetGeoPatchGenStats()
 	stats.patches = s_genPatches;
 	stats.microseconds = s_genMicroseconds;
 	return stats;
+}
+
+int GetQuadPatchJobsInFlight()
+{
+	return s_quadJobsInFlight;
+}
+
+void CountQuadPatchJob(const int delta)
+{
+	s_quadJobsInFlight += delta;
 }
 
 void ResetGeoPatchGenStats()
@@ -268,6 +279,7 @@ void QuadPatchJob::OnRun() // RUNS IN ANOTHER THREAD!! MUST BE THREAD SAFE!
 
 QuadPatchJob::~QuadPatchJob()
 {
+	CountQuadPatchJob(-1);
 	if (mpResults) {
 		mpResults->OnCancel();
 		delete mpResults;

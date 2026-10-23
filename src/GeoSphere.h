@@ -93,7 +93,8 @@ public:
 
 	inline Sint32 GetMaxDepth() const { return m_maxDepth; }
 
-	void AddQuadSplitRequest(double, SQuadSplitRequest *, GeoPatch *);
+	// a patch that wants to split; the nearest ones are submitted at the end of the update
+	void AddQuadSplitCandidate(double distance, GeoPatch *patch);
 
 private:
 	void BuildFirstPatches();
@@ -107,16 +108,8 @@ private:
 	std::unique_ptr<GeoPatch> m_patches[6];
 	std::vector<std::pair<double, GeoPatch *>> m_visiblePatches;
 
-	struct TDistanceRequest {
-		TDistanceRequest(double dist, SQuadSplitRequest *pRequest, GeoPatch *pRequester) :
-			mDistance(dist),
-			mpRequest(pRequest),
-			mpRequester(pRequester) {}
-		double mDistance;
-		SQuadSplitRequest *mpRequest;
-		GeoPatch *mpRequester;
-	};
-	std::deque<TDistanceRequest> mQuadSplitRequests;
+	// patches that want to split this update, with their distance to the camera
+	std::vector<std::pair<double, GeoPatch *>> mQuadSplitCandidates;
 
 	std::deque<SQuadSplitResult *> mQuadSplitResults;
 	std::deque<SSingleSplitResult *> mSingleSplitResults;
