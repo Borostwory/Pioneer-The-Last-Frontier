@@ -9,8 +9,7 @@
 #include "GameConfig.h"
 #include "MathUtil.h"
 #include "Pi.h"
-#include "Player.h"
-#include "Space.h"
+#include "Relativity.h"
 #include "StringF.h"
 
 #include "core/TaskGraph.h"
@@ -39,8 +38,20 @@ namespace {
 	constexpr Uint32 BG_STAR_MAX = 500000;
 	constexpr Uint32 BG_STAR_MIN = 1;
 	constexpr Sint32 BG_STAR_RADIUS_MAX = 500;
-	constexpr Uint32 NUM_HYPERSPACE_STARS = 8000;
+	// stars kept on the CPU to estimate the brightness of the sky in hyperspace
+	constexpr Uint32 NUM_STAR_SAMPLES = 2048;
 	static RefCountedPtr<Graphics::Texture> s_defaultCubeMap;
+
+	// the starfield is stored Z-up, the rest of the background Y-up
+	static matrix4x4f ZUpToYUp()
+	{
+		return matrix4x4f::FromRowMajor({
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			1, 0, 0, 0,
+			0, 0, 0, 1
+		});
+	}
 
 	static Uint32 GetNumSkyboxes()
 	{
@@ -163,6 +174,9 @@ namespace Background {
 		m_material.Reset(m_renderer->CreateMaterial("skybox", desc, stateDesc, fmt));
 		m_material->diffuse = Color4f(0.8, 0.8, 0.8, 1.0);
 
+		m_materialRelativistic.Reset(m_renderer->CreateMaterial("skybox_relativistic", desc, stateDesc, fmt));
+		m_materialRelativistic->emissive = Color::WHITE;
+
 		m_universeBox.reset(m_renderer->CreateMeshObject(fmt, vertexBuf));
 		m_numCubemaps = GetNumSkyboxes();
 
@@ -173,6 +187,15 @@ namespace Background {
 	{
 		if (m_cubemap.Valid())
 			m_renderer->DrawMesh(m_universeBox.get(), m_material.Get());
+	}
+
+	void UniverseBox::DrawRelativistic(RelativisticView view)
+	{
+		if (!m_cubemap.Valid())
+			return;
+
+		m_materialRelativistic->SetBufferDynamic("RelativityData"_hash, &view);
+		m_renderer->DrawMesh(m_universeBox.get(), m_materialRelativistic.Get());
 	}
 
 	void UniverseBox::LoadCubeMap(Random &rand)
@@ -191,6 +214,7 @@ namespace Background {
 		}
 
 		m_material->SetTexture("texture0"_hash, m_cubemap.Get());
+		m_materialRelativistic->SetTexture("texture0"_hash, m_cubemap.Get());
 	}
 
 	Starfield::Starfield(Graphics::Renderer *renderer)
@@ -219,13 +243,13 @@ namespace Background {
 		m_material->SetTexture("texture0"_hash, texture);
 		m_material->emissive = Color::WHITE;
 
-		// Create material to be used with hyperjump 'star streaks'
-		Graphics::MaterialDescriptor descStreaks;
-		Graphics::RenderStateDesc stateDescStreaks = stateDesc;
-		Graphics::VertexFormatDesc vtxFormatStreaks = Graphics::VertexFormatDesc::FromAttribSet(ATTRIB_POSITION | ATTRIB_DIFFUSE);
-		stateDescStreaks.primitiveType = Graphics::LINE_SINGLE;
-		m_materialStreaks.Reset(m_renderer->CreateMaterial("vtxColor", descStreaks, stateDescStreaks, vtxFormatStreaks));
-		m_materialStreaks->emissive = Color::WHITE;
+		// Create material for the starfield seen at relativistic speed in hyperspace.
+		// Additive, so that stars crowding into the same pixels add up their light.
+		Graphics::RenderStateDesc stateDescRelativistic = stateDesc;
+		stateDescRelativistic.blendMode = Graphics::BLEND_ALPHA_ONE;
+		m_materialRelativistic.Reset(m_renderer->CreateMaterial("starfield_relativistic", desc, stateDescRelativistic, m_pointSprites->GetVertexFormat()));
+		m_materialRelativistic->SetTexture("texture0"_hash, texture);
+		m_materialRelativistic->emissive = Color::WHITE;
 
 		IniConfig cfg;
 		cfg.Read(FileSystem::gameDataFiles, "configs/Starfield.ini");
@@ -438,22 +462,14 @@ namespace Background {
 		PROFILE_SCOPED()
 
 		const Uint32 NUM_BG_STARS = MathUtil::mix(BG_STAR_MIN, BG_STAR_MAX, Pi::GetAmountBackgroundStars());
-		m_animMesh.reset();
+		m_samples.clear();
+		m_sampleWeight = 0.f;
 
 		// user doesn't want to see stars
 		if (NUM_BG_STARS == BG_STAR_MIN) return;
 
 		const float brightnessApparentSizeFactor = Pi::GetStarFieldStarSizeFactor() / 7.0;
 		// dividing by 7 to make sure that 100% star size isn't too big to clash with UI elements
-
-		m_hyperVtx.reset(new vector3f[NUM_HYPERSPACE_STARS * 3]);
-		m_hyperCol.reset(new Color[NUM_HYPERSPACE_STARS * 3]);
-		{
-			Graphics::VertexFormatDesc fmt = VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_DIFFUSE);
-			// this vertex buffer will be owned by the animMesh object
-			Graphics::VertexBuffer *vtxBuffer = m_renderer->CreateVertexBuffer(Graphics::BUFFER_USAGE_DYNAMIC, NUM_HYPERSPACE_STARS * 2, fmt.bindings[0].stride);
-			m_animMesh.reset(m_renderer->CreateMeshObject(fmt, vtxBuffer));
-		}
 
 		assert(sizeof(StarVert) == 16);
 
@@ -576,17 +592,25 @@ namespace Background {
 		}
 		PROFILE_STOP()
 
-		PROFILE_START_DESC("Fill Hyperspace Stars")
-		for (uint32_t i = 0; i < NUM_HYPERSPACE_STARS; i++) {
-			// this is proper random distribution on a sphere's surface
-			const float theta = float(rand.Double(0.0, 2.0 * M_PI));
-			const float u = float(rand.Double(-1.0, 1.0));
+		PROFILE_START_DESC("Sample Stars")
+		{
+			// keep an evenly spread subset, in the same terms as starfield_relativistic.vert
+			const matrix4x4f toBackground = ZUpToYUp();
+			const Uint32 stride = std::max<Uint32>(1, NUM_BG_STARS / NUM_STAR_SAMPLES);
+			m_samples.reserve(NUM_BG_STARS / stride + 1);
+			for (Uint32 i = 0; i < NUM_BG_STARS; i += stride) {
+				const Color4f col = stars.color[i].ToColor4f();
+				const vector3f linearColor(std::pow(col.r, 2.2f), std::pow(col.g, 2.2f), std::pow(col.b, 2.2f));
+				const float pointSize = 1.0f + std::pow(stars.brightness[i], 3.0f);
 
-			// squeeze the starfield a bit to get more density near horizon using matrix3x3f::Scale
-			const auto star = matrix3x3f::Scale(1.0, 0.4, 1.0) * (vector3f(sqrt(1.0f - u * u) * cos(theta), u, sqrt(1.0f - u * u) * sin(theta)).Normalized() * 1000.0f);
-
-			m_hyperVtx[NUM_HYPERSPACE_STARS * 2 + i] = star;
-			m_hyperCol[NUM_HYPERSPACE_STARS * 2 + i] = Color::WHITE * 0.8;
+				StarSample sample;
+				sample.dir = toBackground.ApplyRotationOnly(stars.pos[i]).Normalized();
+				sample.linearColor = linearColor;
+				sample.area = pointSize * pointSize;
+				sample.temperature = float(Relativity::EstimateTemperature(linearColor));
+				m_samples.push_back(sample);
+			}
+			m_sampleWeight = float(NUM_BG_STARS) / float(m_samples.size());
 		}
 		PROFILE_STOP()
 
@@ -598,43 +622,14 @@ namespace Background {
 	void Starfield::Draw()
 	{
 		PROFILE_SCOPED()
-		// XXX would be nice to get rid of the Pi:: stuff here
-		if (!Pi::game || Pi::player->GetFlightState() != Ship::HYPERSPACE) {
-			m_pointSprites->Draw(m_renderer, m_material.Get());
-		} else {
-			if (!m_animMesh) // user doesn't want to see stars
-				return;
+		m_pointSprites->Draw(m_renderer, m_material.Get());
+	}
 
-			Graphics::VertexBuffer *buffer = m_animMesh->GetVertexBuffer();
-			assert(sizeof(StarVert) == 16);
-			assert(buffer->GetStride() == sizeof(StarVert));
-			auto vtxPtr = buffer->Map<StarVert>(Graphics::BUFFER_MAP_WRITE);
-
-			// roughly, the multiplier gets smaller as the duration gets larger.
-			// the time-looking bits in this are completely arbitrary - I figured
-			// it out by tweaking the numbers until it looked sort of right
-			const double mult = 0.001 / (Pi::player->GetHyperspaceDuration() / (60.0 * 60.0 * 24.0 * 7.0));
-
-			const double hyperspaceProgress = Pi::game->GetHyperspaceProgress();
-
-			const Sint32 numStars = buffer->GetSize() / 2;
-
-			const vector3d oz = Pi::player->GetOrient().VectorZ(); //back vector in Y-up space
-			const vector3d pz = vector3d(oz.z, oz.x, oz.y); // back vector rotated into Z-up space
-
-			for (int i = 0; i < numStars; i++) {
-				vector3f v = m_hyperVtx[numStars * 2 + i] + vector3f(pz * hyperspaceProgress * mult);
-				const Color &c = m_hyperCol[numStars * 2 + i];
-
-				vtxPtr[i * 2].pos = m_hyperVtx[i * 2] = m_hyperVtx[numStars * 2 + i] + v;
-				vtxPtr[i * 2].col = m_hyperCol[i * 2] = c;
-
-				vtxPtr[i * 2 + 1].pos = m_hyperVtx[i * 2 + 1] = v;
-				vtxPtr[i * 2 + 1].col = m_hyperCol[i * 2 + 1] = c;
-			}
-			buffer->Unmap();
-			m_renderer->DrawMesh(m_animMesh.get(), m_materialStreaks.Get());
-		}
+	void Starfield::DrawRelativistic(RelativisticView view)
+	{
+		PROFILE_SCOPED()
+		m_materialRelativistic->SetBufferDynamic("RelativityData"_hash, &view);
+		m_pointSprites->Draw(m_renderer, m_materialRelativistic.Get());
 	}
 
 	MilkyWay::MilkyWay(Graphics::Renderer *renderer)
@@ -735,14 +730,21 @@ namespace Background {
 			m_milkyWay.Draw();
 		}
 		if (DRAW_STARS & m_drawFlags) {
-			auto Zup_to_Yup = matrix4x4f::FromRowMajor({
-				0, 1, 0, 0,
-				0, 0, 1, 0,
-				1, 0, 0, 0,
-				0, 0, 0, 1
-			});
-			m_renderer->SetTransform(matrix4x4f(transform) * Zup_to_Yup);
+			m_renderer->SetTransform(matrix4x4f(transform) * ZUpToYUp());
 			m_starField.Draw();
+		}
+	}
+
+	void Container::DrawRelativistic(const matrix4x4d &transform, const RelativisticView &view)
+	{
+		PROFILE_SCOPED()
+		m_renderer->SetTransform(matrix4x4f(transform));
+		if (DRAW_SKYBOX & m_drawFlags) {
+			m_universeBox.DrawRelativistic(view);
+		}
+		if (DRAW_STARS & m_drawFlags) {
+			m_renderer->SetTransform(matrix4x4f(transform) * ZUpToYUp());
+			m_starField.DrawRelativistic(view);
 		}
 	}
 

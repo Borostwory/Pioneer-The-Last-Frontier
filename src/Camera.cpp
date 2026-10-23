@@ -6,6 +6,7 @@
 #include "Body.h"
 #include "Frame.h"
 #include "Game.h"
+#include "HyperspaceSky.h"
 #include "Pi.h"
 #include "Planet.h"
 #include "Player.h"
@@ -308,8 +309,12 @@ void Camera::Draw(const Body *excludeBody)
 		}
 	}
 
-	Pi::game->GetSpace()->GetBackground()->SetIntensity(bgIntensity);
-	Pi::game->GetSpace()->GetBackground()->Draw(trans2bg);
+	if (HyperspaceSky *hyperspaceSky = Pi::game->GetSpace()->GetHyperspaceSky()) {
+		hyperspaceSky->Draw(trans2bg);
+	} else {
+		Pi::game->GetSpace()->GetBackground()->SetIntensity(bgIntensity);
+		Pi::game->GetSpace()->GetBackground()->Draw(trans2bg);
+	}
 
 	{
 		std::vector<Graphics::Light> rendererLights;

@@ -8,6 +8,8 @@
 #include "galaxy/Galaxy.h"
 #include "galaxy/SystemPath.h"
 #include "gameconsts.h"
+#include "matrix3x3.h"
+#include "vector3.h"
 #include <string>
 
 class GameLog;
@@ -74,6 +76,10 @@ public:
 	double GetHyperspaceArrivalProbability() const;
 	const SystemPath &GetHyperspaceDest() const { return m_hyperspaceDest; }
 	const SystemPath &GetHyperspaceSource() const { return m_hyperspaceSource; }
+	// direction the ship travels in hyperspace (along its nose), in root frame coordinates
+	const vector3d &GetHyperspaceTravelDir() const { return m_hyperspaceTravelDir; }
+	// fraction of the transit done, interpolated to the frame being rendered
+	double GetHyperspaceTransitProgress() const;
 	void RemoveHyperspaceCloud(HyperspaceCloud *);
 
 	enum TimeAccel {
@@ -100,10 +106,11 @@ public:
 	TimeAccel GetRequestedTimeAccel() const { return m_requestedTimeAccel; }
 	bool IsPaused() const { return m_timeAccel == TIMEACCEL_PAUSED; }
 
-	float GetTimeAccelRate() const { return s_timeAccelRates[m_timeAccel]; }
-	float GetInvTimeAccelRate() const { return s_timeInvAccelRates[m_timeAccel]; }
+	// in hyperspace the rate is set so that the transit lasts as long as the jump sound
+	float GetTimeAccelRate() const { return m_timeAccel == TIMEACCEL_HYPERSPACE ? m_hyperspaceTimeAccelRate : s_timeAccelRates[m_timeAccel]; }
+	float GetInvTimeAccelRate() const { return m_timeAccel == TIMEACCEL_HYPERSPACE ? 1.0f / m_hyperspaceTimeAccelRate : s_timeInvAccelRates[m_timeAccel]; }
 
-	float GetTimeStep() const { return s_timeAccelRates[m_timeAccel] * (1.0f / PHYSICS_HZ); }
+	float GetTimeStep() const { return GetTimeAccelRate() * (1.0f / PHYSICS_HZ); }
 
 	SectorView *GetSectorView() const { return m_gameViews->m_sectorView; }
 	SystemView *GetSystemView() const { return m_gameViews->m_systemView; }
@@ -171,6 +178,9 @@ private:
 	double m_hyperspaceProgress;
 	double m_hyperspaceDuration;
 	double m_hyperspaceEndTime;
+	float m_hyperspaceTimeAccelRate = 100000.0f;
+	vector3d m_hyperspaceTravelDir = vector3d(0.0, 0.0, -1.0);
+	matrix3x3d m_hyperspaceOrient = matrix3x3d::Identity;
 
 	TimeAccel m_timeAccel;
 	TimeAccel m_requestedTimeAccel;

@@ -14,6 +14,7 @@
 class Body;
 class Frame;
 class Game;
+class HyperspaceSky;
 enum class ObjectType;
 
 class Space {
@@ -70,8 +71,10 @@ public:
 	IterationProxy<std::vector<Body *>> GetBodies() { return MakeIterationProxy(m_bodies); }
 	const IterationProxy<const std::vector<Body *>> GetBodies() const { return MakeIterationProxy(m_bodies); }
 
-	Background::Container *GetBackground() { return m_background.get(); }
+	Background::Container *GetBackground();
 	void RefreshBackground();
+	// only in hyperspace: the sky as seen during the transit
+	HyperspaceSky *GetHyperspaceSky() { return m_hyperspaceSky.get(); }
 
 	// body finder delegates
 	typedef const std::vector<Body *> BodyNearList;
@@ -148,6 +151,7 @@ private:
 	//background (elements that are infinitely far away,
 	//e.g. starfield and milky way)
 	std::unique_ptr<Background::Container> m_background;
+	std::unique_ptr<HyperspaceSky> m_hyperspaceSky;
 
 	class BodyNearFinder {
 	public:

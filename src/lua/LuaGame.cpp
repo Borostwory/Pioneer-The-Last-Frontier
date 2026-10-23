@@ -16,6 +16,7 @@
 #include "LuaUtils.h"
 #include "Pi.h"
 #include "Player.h"
+#include "Relativity.h"
 #include "SaveGameManager.h"
 #include "SectorView.h"
 #include "Space.h"
@@ -594,6 +595,28 @@ static int l_game_get_hyperspace_travelled_percentage(lua_State *l)
 	return 1;
 }
 
+/*
+ * Function: GetHyperspaceRelativity
+ *
+ * Speed of the relativistic voyage shown during a hyperspace transit
+ *
+ * > beta, oneMinusBeta, gamma = Game.GetHyperspaceRelativity()
+ *
+ * Return:
+ *
+ *   beta - speed as a fraction of c
+ *   oneMinusBeta - 1 - beta, which keeps its precision when beta rounds to 1
+ *   gamma - Lorentz factor
+ */
+static int l_game_get_hyperspace_relativity(lua_State *l)
+{
+	const Relativity::Kinematics k = Relativity::FromTransitProgress(Pi::game->GetHyperspaceTransitProgress());
+	LuaPush(l, k.beta);
+	LuaPush(l, k.oneMinusBeta);
+	LuaPush(l, k.gamma);
+	return 3;
+}
+
 static int l_game_get_parts_from_date_time(lua_State *l)
 {
 	const double time = LuaPull<double>(l, 1);
@@ -706,6 +729,7 @@ void LuaGame::Register()
 		{ "GetTimeAcceleration", l_game_get_time_acceleration },
 		{ "GetRequestedTimeAcceleration", l_game_get_requested_time_acceleration },
 		{ "GetHyperspaceTravelledPercentage", l_game_get_hyperspace_travelled_percentage },
+		{ "GetHyperspaceRelativity", l_game_get_hyperspace_relativity },
 
 		{ "SetWorldCamType", l_game_set_world_cam_type },
 		{ "GetWorldCamType", l_game_get_world_cam_type },

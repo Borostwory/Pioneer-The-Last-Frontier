@@ -9,6 +9,7 @@
 #include "Game.h"
 #include "GameSaveError.h"
 #include "HyperspaceCloud.h"
+#include "HyperspaceSky.h"
 #include "JsonUtils.h"
 #include "Lang.h"
 #include "MathUtil.h"
@@ -204,7 +205,7 @@ Space::Space(Game *game, RefCountedPtr<Galaxy> galaxy, Space *oldSpace) :
 	m_processingFinalizationQueue(false)
 #endif
 {
-	RefreshBackground();
+	m_hyperspaceSky.reset(new HyperspaceSky(Pi::renderer, galaxy, game->GetHyperspaceSource(), game->GetHyperspaceDest()));
 
 	m_rootFrameId = Frame::CreateFrame(FrameId::Invalid, Lang::SYSTEM, Frame::FLAG_DEFAULT, FLT_MAX);
 
@@ -323,15 +324,16 @@ Space::~Space()
 	Frame::DeleteFrames();
 }
 
+Background::Container *Space::GetBackground()
+{
+	return m_hyperspaceSky ? m_hyperspaceSky->GetBackground() : m_background.get();
+}
+
 void Space::RefreshBackground()
 {
 	PROFILE_SCOPED()
 	if (m_starSystem.Valid()) {
-		const SystemPath &path = m_starSystem->GetPath();
-		Uint32 _init[5] = { path.systemIndex, Uint32(path.sectorX), Uint32(path.sectorY), Uint32(path.sectorZ), UNIVERSE_SEED };
-		Random rand(_init, 5);
-		m_background.reset(new Background::Container(Pi::renderer, rand));
-		m_background->GetStarfield()->Fill(rand, &this->GetStarSystem()->GetPath(), m_game->GetGalaxy());
+		m_background = HyperspaceSky::CreateSystemBackground(Pi::renderer, m_game->GetGalaxy(), m_starSystem->GetPath());
 	} else {
 		m_background.reset(new Background::Container(Pi::renderer, Pi::rng));
 		m_background->GetStarfield()->Fill(Pi::rng, nullptr, m_game->GetGalaxy());
