@@ -9,5 +9,6 @@ out vec4 vertexColor;
 void main(void)
 {
 	gl_Position = matrixTransform();
-	vertexColor = a_color;
+	// the colour's alpha holds the altitude above sea level
+	vertexColor = vec4(a_color.rgb, 1.0);
 }

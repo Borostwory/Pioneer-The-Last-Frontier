@@ -19,11 +19,23 @@ out vec4 albedoColor;
 out vec2 texCoord0;
 out float dist;
 
+#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
+// for the per-pixel water (terrain-water.glsl): the encoded altitude, the
+// sunlight reaching the surface from each light, the sky light a flat sea
+// reflects, and the transmittance and in-scattering of the view ray
+out float surfaceHeight;
+out vec3 waterSunLight[NUM_LIGHTS];
+out vec3 waterSkyLight;
+out vec3 viewTransmittance;
+out vec3 viewInscatter;
+#endif
+
 void main(void)
 {
 	gl_Position = matrixTransform();
-	albedoColor = a_color;
-	vertexColor = a_color;
+	// the colour's alpha holds the altitude above sea level
+	albedoColor = vec4(a_color.rgb, 1.0);
+	vertexColor = vec4(a_color.rgb, 1.0);
 	varyingEyepos = vec3(uViewMatrix * a_vertex);
 	varyingNormal = normalize(normalMatrix() * a_normal);
 
@@ -48,6 +60,20 @@ void main(void)
 	vec4 terrainColor = vec4(0.f);
 	vec4 atmosphereColor = vec4(0.f);
 
+#ifdef TERRAIN_WITH_WATER
+	surfaceHeight = a_color.a * 2.0 - 1.0;
+	waterSkyLight = vec3(0.0);
+	viewTransmittance = vec3(1.0);
+	viewInscatter = vec3(0.0);
+	// The sky a flat sea reflects, seen from just above the surface. Only
+	// below about 1000 m, where pixels can be water.
+	bool nearWater = surfaceHeight < 0.35;
+	vec3 seaUp = normalize(P);
+	vec3 skyDir = reflect(eyenorm, seaUp);
+	skyDir = normalize(skyDir + seaUp * max(0.0, 0.02 - dot(skyDir, seaUp)));
+	vec3 skyStart = seaUp * (geosphereRadius + 20.0);
+#endif
+
 	for (int i=0; i<NUM_LIGHTS; ++i) {
 		vec3 terrainDiffIn = vec3(0.f);
 		vec3 terrainDiffOut = vec3(0.f);
@@ -66,9 +92,14 @@ void main(void)
 
 		vec4 lightColor = toLinear(uLight[i].diffuse);
 
+		// sunlight reaching the surface
+		vec3 sunLight = lightColor.xyz * uneclipsed * intensity;
+#ifdef ATMOSPHERE
+		// Atmospheric outscattering along the ray between the light source to the point on terrain
+		sunLight *= calculateRayTransmittance(P, L, scatterLUT);
+#endif
 		// start with diffuse terrain color
-		vec3 terrain = vertexColor.xyz * lightColor.xyz * uneclipsed * max(0.f, dot(L, tnorm)) * intensity;
-
+		vec3 terrain = vertexColor.xyz * sunLight * max(0.f, dot(L, tnorm));
 		lightColor *= intensity;
 
 		// TODO: this should compute inscattering + A/B transmittance and pass
@@ -80,22 +111,20 @@ void main(void)
 		// transmittance and inscattering can be computed for each and passed to
 		// the fragment shader.
 
-#ifdef ATMOSPHERE
-		// Atmospheric outscattering along the ray between the light source to the point on terrain
-		terrain *= calculateRayTransmittance(P, L, scatterLUT);
-
 #ifdef TERRAIN_WITH_WATER
-		//water only for specular
-		if (vertexColor.b > 0.05 && vertexColor.r < 0.05) {
-			// TODO: this could be replaced with calculateRayInscattering, but there is a slight visual difference. Need to track down the cause.
-			waterSpecular = calculateAtmosphereColor(planet, atmosphere, lightColor, reflect(L, V), (P - geosphereCenter) * geosphereRadius, eyenorm, uneclipsed, densityLUT, scatterLUT);
+		// water is shaded per pixel (terrain-water.glsl); vertexColor stays
+		// the land shading, used along the coastline
+		waterSunLight[i] = sunLight;
+#ifdef ATMOSPHERE
+		// the sky colour, as the sky shader computes it (x20 exposure there),
+		// with fewer samples: it varies slowly along the ray
+		if (nearWater) {
+			_iSamples = 4;
+			waterSkyLight += 20.0 * calculateIncidentLight(L, skyDir, skyStart, lightColor, uneclipsed, densityLUT, scatterLUT);
+			_iSamples = 16;
 		}
+#endif
 #endif // TERRAIN_WITH_WATER
-
-		// Water has no diffuse reflection, and is fully specular.
-		// TODO: this formulation is likely incorrect, this needs to be Blinn-Phong (N dot H) * (inscattering + direct light * transmittance)
-		terrain = terrain * step(waterSpecular, vec3(0)) + waterSpecular * 20;
-#endif // ATMOSPHERE
 
 		// add lava glow
 #ifdef TERRAIN_WITH_LAVA
@@ -116,6 +145,10 @@ void main(void)
 		terrain *= calcTransmittance(opticalDistance);
 		// And add the (pre-damped) inscattering over the same length. We multiply by 4 to fake multiple scattering.
 		terrain += inscattering * 4;
+#ifdef TERRAIN_WITH_WATER
+		viewTransmittance = calcTransmittance(opticalDistance);
+		viewInscatter += inscattering * 4;
+#endif
 
 #endif // ATMOSPHERE
 

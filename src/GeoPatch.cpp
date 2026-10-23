@@ -133,7 +133,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 		const double frac = m_ctx->GetFrac();
 		const double *pHts = m_patchVBOData->m_heights.get();
 		const vector3f *pNorm = m_patchVBOData->m_normals.get();
-		const Color3ub *pColr = m_patchVBOData->m_colors.get();
+		const Color4ub *pColr = m_patchVBOData->m_colors.get();
 
 		double minh = DBL_MAX;
 
@@ -164,7 +164,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 				vtxPtr->col[0] = pColr->r;
 				vtxPtr->col[1] = pColr->g;
 				vtxPtr->col[2] = pColr->b;
-				vtxPtr->col[3] = 255;
+				vtxPtr->col[3] = pColr->a; // altitude above sea level, see EncodeAltitude()
 				++pColr; // next colour
 
 				// uv coords

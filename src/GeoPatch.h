@@ -126,7 +126,7 @@ private:
 
 	struct PatchVBOData {
 		PatchVBOData() = delete;
-		PatchVBOData(double* h, vector3f* n, Color3ub* c)
+		PatchVBOData(double* h, vector3f* n, Color4ub* c)
 		{
 			m_heights.reset(h);
 			m_normals.reset(n);
@@ -140,7 +140,7 @@ private:
 		}
 		std::unique_ptr<double[]> m_heights;
 		std::unique_ptr<vector3f[]> m_normals;
-		std::unique_ptr<Color3ub[]> m_colors;
+		std::unique_ptr<Color4ub[]> m_colors;
 		std::unique_ptr<Graphics::MeshObject> m_patchMesh;
 	};
 

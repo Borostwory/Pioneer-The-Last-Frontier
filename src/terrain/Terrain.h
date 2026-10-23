@@ -60,6 +60,11 @@ public:
 
 	double BiCubicInterpolation(const vector3d &p) const;
 
+	// Signed altitude above sea level in metres for a point p on the unit
+	// sphere with terrain height `height` (from GetHeights): negative under
+	// water, where it is the water depth.
+	double GetSurfaceAltitude(const vector3d &p, const double height) const;
+
 	void DebugDump() const;
 
 private:

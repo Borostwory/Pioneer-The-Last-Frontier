@@ -675,6 +675,18 @@ void Terrain::SetColorFracDef(const unsigned int index, const double featureWidt
 	m_colorFracdef[index].lacunarity = 2.0;
 }
 
+double Terrain::GetSurfaceAltitude(const vector3d &p, const double height) const
+{
+	if (height > 0.0 || !(m_surfaceEffects & EFFECT_WATER))
+		return height * m_planetRadius;
+
+	// Under water. The height fractals flatten the sea floor to sea level, so
+	// only bodies with a height map (Earth) know the real depth; elsewhere use
+	// a typical shelf depth, which the water shader shows as open sea.
+	const double depth = m_heightMap ? -BiCubicInterpolation(p) : 60.0;
+	return -Clamp(depth, 2.0, 8000.0);
+}
+
 double Terrain::BiCubicInterpolation(const vector3d &p) const
 {
 	double latitude = -asin(p.y);

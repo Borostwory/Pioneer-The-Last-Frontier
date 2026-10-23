@@ -9,8 +9,10 @@
 #include "profiler/Profiler.h"
 #include "terrain/TerrainNoise.h"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 
 namespace {
 	std::atomic<uint64_t> s_genJobs(0);
@@ -97,11 +99,34 @@ void ResetGeoPatchGenStats()
 	s_genMicroseconds = 0;
 }
 
-inline void setColour(Color3ub &r, const vector3d &v)
+// Signed altitude above sea level (metres, negative under water) for the
+// terrain shaders, which read it from the vertex colour's alpha
+// (terrainAltitude() in terrain-water.glsl): 0.5 +- 0.5 * sqrt(|h| / 8000 m),
+// so the steps are about 0.5 m near sea level and 120 m at 8 km. Land rounds
+// to 128 and up, water to 127 and down, so the coastline lies between them.
+inline unsigned char EncodeAltitude(const double metres)
+{
+	const double s = std::sqrt(std::min(std::abs(metres) / 8000.0, 1.0));
+	if (metres > 0.0)
+		return static_cast<unsigned char>(Clamp(std::round(127.5 + 127.5 * s), 128.0, 255.0));
+	return static_cast<unsigned char>(Clamp(std::round(127.5 - 127.5 * s), 0.0, 127.0));
+}
+
+// Altitude for the vertex colour's alpha. Under water only where the colour
+// fractal painted water (which has no red in it): some paint polar ice over
+// the sea, which becomes ice at sea level, just above the water.
+inline double SurfaceAltitude(const Terrain *terrain, const vector3d &p, const double height, const vector3d &colour)
+{
+	const double altitude = terrain->GetSurfaceAltitude(p, height);
+	return (altitude < 0.0 && colour.x > 0.05) ? 0.5 : altitude;
+}
+
+inline void setColour(Color4ub &r, const vector3d &v, const double altitude)
 {
 	r.r = static_cast<unsigned char>(Clamp(v.x * 255.0, 0.0, 255.0));
 	r.g = static_cast<unsigned char>(Clamp(v.y * 255.0, 0.0, 255.0));
 	r.b = static_cast<unsigned char>(Clamp(v.z * 255.0, 0.0, 255.0));
+	r.a = EncodeAltitude(altitude);
 }
 
 // in patch surface coords, [0,1]
@@ -150,7 +175,7 @@ void SSingleSplitRequest::GenerateMesh() const
 	// Generate normals & colors for non-edge vertices since they never change
 	TerrainNoise::ScopedBandLimit bandLimit(maxFrequency);
 	const bool debugDepth = DebugPatchDepthColours();
-	Color3ub *col = colors;
+	Color4ub *col = colors;
 	vector3f *nrm = normals;
 	double *hts = heights;
 	vrts = borderVertexs.get();
@@ -172,7 +197,12 @@ void SSingleSplitRequest::GenerateMesh() const
 
 			// color
 			const vector3d p = GetSpherePoint(v0, v1, v2, v3, (x - BORDER_SIZE) * fracStep, (y - BORDER_SIZE) * fracStep);
-			setColour(*col, debugDepth ? PatchDepthColour(depth, maxDepth) : pTerrain->GetColor(p, height, n));
+			if (debugDepth) {
+				setColour(*col, PatchDepthColour(depth, maxDepth), pTerrain->GetSurfaceAltitude(p, height));
+			} else {
+				const vector3d colour = pTerrain->GetColor(p, height, n);
+				setColour(*col, colour, SurfaceAltitude(pTerrain.Get(), p, height, colour));
+			}
 			assert(col != &colors[edgeLen * edgeLen]);
 			++col;
 		}
@@ -336,7 +366,7 @@ void SQuadSplitRequest::GenerateSubPatchData(
 	TerrainNoise::ScopedBandLimit bandLimit(NyquistFrequency((v1 - v0).Length() * fracStep));
 	const bool debugDepth = DebugPatchDepthColours();
 	vector3d *vrts = borderVertexs.get();
-	Color3ub *col = colors[quadrantIndex];
+	Color4ub *col = colors[quadrantIndex];
 	vector3f *nrm = normals[quadrantIndex];
 	double *hts = heights[quadrantIndex];
 
@@ -362,7 +392,12 @@ void SQuadSplitRequest::GenerateSubPatchData(
 
 			// color
 			const vector3d p = GetSpherePoint(v0, v1, v2, v3, x * fracStep, y * fracStep);
-			setColour(*col, debugDepth ? PatchDepthColour(depth + 1, maxDepth) : pTerrain->GetColor(p, height, n));
+			if (debugDepth) {
+				setColour(*col, PatchDepthColour(depth + 1, maxDepth), pTerrain->GetSurfaceAltitude(p, height));
+			} else {
+				const vector3d colour = pTerrain->GetColor(p, height, n);
+				setColour(*col, colour, SurfaceAltitude(pTerrain.Get(), p, height, colour));
+			}
 			assert(col != &colors[quadrantIndex][edgeLen * edgeLen]);
 			++col;
 		}

@@ -21,6 +21,11 @@ uniform int NumShadows;
 #include "terrain-detail.glsl"
 #include "terrain-surface.glsl"
 
+#ifdef TERRAIN_WITH_WATER
+in float surfaceHeight;
+#include "terrain-water.glsl"
+#endif
+
 in float dist;
 
 in vec3 varyingEyepos;
@@ -61,7 +66,13 @@ void main(void)
 	detailMul.rgb *= terrainSurfacePattern(varyingEyepos, vertexColor.rgb, dist, hasWater);
 
 #ifdef TERRAIN_WITH_WATER
-	float specularReflection=0.0;
+	// water: sun glint per light here, the rest after the light loop
+	float waterMask = terrainWaterMask(surfaceHeight);
+	vec3 dpdx = dFdx(varyingEyepos), dpdy = dFdy(varyingEyepos);
+	WaterSurface ws;
+	if (waterMask > 0.0)
+		ws = waterSurface(varyingEyepos, normalize(eyeposScaled - geosphereCenter), dpdx, dpdy);
+	vec3 waterGlint = vec3(0.0);
 #endif
 
 #if (NUM_LIGHTS > 0)
@@ -76,16 +87,27 @@ void main(void)
 		CalcPlanetDiffuse(diff, uLight[i].diffuse, L, tnorm, uneclipsed);
 
 #ifdef TERRAIN_WITH_WATER
-		//water only for specular
-	    if (vertexColor.b > 0.05 && vertexColor.r < 0.05) {
-			CalcPlanetSpec(specularReflection, uLight[i], L, tnorm, eyenorm, WATER_SHINE);
-		}
+		if (waterMask > 0.0)
+			waterGlint += uLight[i].diffuse.rgb * uneclipsed * waterSpecular(ws, -eyenorm, L) * smoothstep(-0.02, 0.05, dot(V, L));
 #endif
 	}
 
 	// Use the detail value to multiply the final colour before lighting
 	vec4 ambient = scene.ambient * vertexColor;
 	vec4 final = vertexColor * detailMul * diff;
+
+#ifdef TERRAIN_WITH_WATER
+	vec3 waterReflect = vec3(0.0);
+	if (waterMask > 0.0) {
+		float F = waterFresnel(dot(ws.N, -eyenorm));
+		float depth = max(-terrainAltitude(surfaceHeight), 0.0);
+#ifdef ATMOSPHERE
+		// the sky, approximated by the atmosphere colour at the light level
+		waterReflect = F * atmosColor.rgb * (diff.r + diff.g + diff.b) / 3.0;
+#endif
+		final.rgb = mix(final.rgb, waterBody(vertexColor.rgb, depth) * diff.rgb * (1.0 - F) + waterReflect, waterMask);
+	}
+#endif
 
 #ifdef ATMOSPHERE
 	float ldprod=0.0;
@@ -113,7 +135,7 @@ void main(void)
 	frag_color +=
 		(1.0-fogFactor) * (diff*atmosColor) +
 #ifdef TERRAIN_WITH_WATER
-		  diff * specularReflection * sunset +
+		  vec4(waterGlint * waterMask, 0.0) * sunset +
 #endif
 		  (0.02-clamp(fogFactor,0.0,0.01))*diff*ldprod*sunset +	      //increase fog scatter
 		  (pow((1.0-pow(fogFactor,0.75)),256.0)*0.4*diff*atmosColor)*sunset;  //distant fog.

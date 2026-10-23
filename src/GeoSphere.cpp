@@ -7,6 +7,7 @@
 #include "GeoPatch.h"
 #include "GeoPatchContext.h"
 #include "GeoPatchJobs.h"
+#include "Game.h"
 #include "MathUtil.h"
 #include "Pi.h"
 #include "PlanetClouds.h"
@@ -488,6 +489,29 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	//Update material parameters
 	SetMaterialParameters(trans, radius, shadows, m_atmosphereParameters);
 
+	if (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) {
+		// The water waves (terrain-water.glsl) are a tileable texture in three
+		// layers of 2048 m, 128 m and 8 m tiles around the camera, and wraps
+		// at 5 tiles. Pass the camera's planet-fixed position in units of 5 of
+		// the largest tiles and each layer's drift in its own tiles, both
+		// wrapped: the shader cannot get them precisely from the full values.
+		const double largestTile = 2048.0;
+		const vector3d tiles = campos * (GetSystemBody()->GetRadius() / (5.0 * largestTile));
+		auto frac = [](const double v) { return float(v - std::floor(v)); };
+		m_surfaceMaterial->SetPushConstant("WaterOrigin"_hash, vector3f(frac(tiles.x), frac(tiles.y), frac(tiles.z)), 0.0f);
+
+		// each layer drifts at the deep water phase speed sqrt(g * wavelength / 2pi)
+		// of its typical waves, 1/8 of the tile
+		const double t = Pi::game ? Pi::game->GetTime() : 0.0;
+		float drift[3];
+		double tile = largestTile;
+		for (float &d : drift) {
+			d = 5.0f * frac(t * std::sqrt(9.81 * (tile / 8.0) / (2.0 * M_PI)) / (5.0 * tile));
+			tile /= 16.0;
+		}
+		m_surfaceMaterial->SetPushConstant("WaterDrift"_hash, vector3f(drift[0], drift[1], drift[2]), 0.0f);
+	}
+
 	// cloud data: shadows in the terrain shader now, the clouds themselves in
 	// the screen-space cloud pass after all bodies are drawn (PlanetClouds.h)
 	{
@@ -635,6 +659,12 @@ void GeoSphere::SetUpMaterials()
 		m_texLo.Reset(Graphics::TextureBuilder::Model("textures/low.dds").GetOrCreateTexture(Pi::renderer, "model"));
 		m_surfaceMaterial->SetTexture("texture0"_hash, m_texHi.Get());
 		m_surfaceMaterial->SetTexture("texture1"_hash, m_texLo.Get());
+
+		// wave slopes for the water shading (terrain-water.glsl)
+		if (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) {
+			m_texWater.Reset(Graphics::TextureBuilder::Normal("textures/water_waves.png").GetOrCreateTexture(Pi::renderer, "model"));
+			m_surfaceMaterial->SetTexture("waterWaves"_hash, m_texWater.Get());
+		}
 
 		// surface type patterns (terrain-surface.glsl) classify the terrain
 		// colour using the palette's vegetation and sand hues

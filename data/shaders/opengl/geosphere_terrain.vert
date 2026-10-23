@@ -12,6 +12,11 @@ out vec4 vertexColor;
 out vec2 texCoord0;
 out float dist;
 
+#ifdef TERRAIN_WITH_WATER
+// encoded altitude above sea level, for the per-pixel water (terrain-water.glsl)
+out float surfaceHeight;
+#endif
+
 #ifdef TERRAIN_WITH_LAVA
 out vec4 varyingEmission;
 #endif
@@ -19,7 +24,11 @@ out vec4 varyingEmission;
 void main(void)
 {
 	gl_Position = matrixTransform();
-	vertexColor = a_color;
+	// the colour's alpha holds the altitude above sea level
+	vertexColor = vec4(a_color.rgb, 1.0);
+#ifdef TERRAIN_WITH_WATER
+	surfaceHeight = a_color.a * 2.0 - 1.0;
+#endif
 	varyingEyepos = vec3(uViewMatrix * a_vertex);
 	varyingNormal = normalize(normalMatrix() * a_normal);
 

@@ -31,6 +31,15 @@ uniform float PatchDetailFrequency;
 #include "terrain-detail.glsl"
 #include "terrain-surface.glsl"
 
+#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
+in float surfaceHeight;
+in vec3 waterSunLight[NUM_LIGHTS];
+in vec3 waterSkyLight;
+in vec3 viewTransmittance;
+in vec3 viewInscatter;
+#include "terrain-water.glsl"
+#endif
+
 void main(void)
 {
 	// detail texture contribution, at a constant on-screen scale at any distance
@@ -56,6 +65,30 @@ void main(void)
 #endif
 
 	frag_color = final;
+
+#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
+	// water: sky reflection, sun glint and the water body, per pixel
+	float waterMask = terrainWaterMask(surfaceHeight);
+	vec3 dpdx = dFdx(varyingEyepos), dpdy = dFdy(varyingEyepos);
+	if (waterMask > 0.0) {
+		vec3 up = normalize(varyingEyepos * geosphereInvRadius - geosphereCenter);
+		vec3 V = -normalize(varyingEyepos);
+		WaterSurface ws = waterSurface(varyingEyepos, up, dpdx, dpdy);
+		float F = waterFresnel(dot(ws.N, V));
+		vec3 bodyLight = 0.3 * waterSkyLight;
+		vec3 water = F * waterSkyLight;
+		for (int i = 0; i < NUM_LIGHTS; ++i) {
+			vec3 L = normalize(uLight[i].position.xyz);
+			// (no glint from tilted waves once the sun has set)
+			water += waterSunLight[i] * waterSpecular(ws, V, L) * smoothstep(-0.02, 0.05, dot(up, L));
+			bodyLight += waterSunLight[i] * max(dot(up, L), 0.0);
+		}
+		water += waterBody(albedoColor.rgb, max(-terrainAltitude(surfaceHeight), 0.0)) * bodyLight * (1.0 - F);
+		water = water * viewTransmittance + viewInscatter;
+		frag_color.rgb = mix(frag_color.rgb, water, waterMask);
+	}
+#endif
+
 #ifdef TERRAIN_WITH_LAVA
 	frag_color += vertexColor;
 #endif

@@ -7,6 +7,7 @@ Texture sampler2D texture0
 Texture sampler2D texture1
 
 Texture sampler2D cloudHeightTex
+Texture sampler2D waterWaves
 
 Buffer LightData binding=0
 Buffer DrawData binding=1
@@ -16,6 +17,8 @@ Buffer CloudData binding=3
 PushConstant int NumShadows binding=0
 PushConstant float PatchDetailFrequency binding=1
 PushConstant vec4 SurfaceMaterial binding=2
+PushConstant vec4 WaterOrigin binding=3
+PushConstant vec4 WaterDrift binding=4
 
 Vertex "geosphere_terrain.vert"
 Fragment "geosphere_terrain.frag"
