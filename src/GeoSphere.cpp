@@ -7,6 +7,7 @@
 #include "GeoPatch.h"
 #include "GeoPatchContext.h"
 #include "GeoPatchJobs.h"
+#include "MathUtil.h"
 #include "Pi.h"
 #include "PlanetClouds.h"
 #include "RefCounted.h"
@@ -44,9 +45,25 @@ static const double gs_targetPatchTriLength(100.0);
 static std::vector<GeoSphere *> s_allGeospheres;
 static Uint32 s_debugFlags = GeoSphere::DebugFlags::DEBUG_NONE;
 
+// patches split once the camera is closer than this many patch widths
+static double s_lodDistanceScale = 8.0;
+
 void GeoSphere::InitGeoSphere()
 {
 	s_patchContext.Reset(new GeoPatchContext(detail_edgeLen[Pi::detail.planets > 4 ? 4 : Pi::detail.planets]));
+	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 32.0);
+}
+
+//static
+double GeoSphere::GetLodDistanceScale()
+{
+	return s_lodDistanceScale;
+}
+
+//static
+void GeoSphere::SetLodDistanceScale(const double scale)
+{
+	s_lodDistanceScale = Clamp(scale, 1.0, 32.0);
 }
 
 void GeoSphere::UninitGeoSphere()

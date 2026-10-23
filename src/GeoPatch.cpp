@@ -94,6 +94,10 @@ GeoPatch::GeoPatch(const RefCountedPtr<GeoPatchContext> &ctx_, GeoSphere *gs,
 		distMult = 5.0 / Clamp(m_depth, 1, 5);
 	}
 	m_splitLength = GEOPATCH_SUBDIVIDE_AT_CAMDIST / pow(2.0, m_depth) * distMult;
+	// The rule above shrinks to about 3 patch widths on deep levels, so
+	// distant terrain stayed coarse (quads of ~25 px at 4K). Also split
+	// within a fixed number of patch widths, so detail resolves earlier.
+	m_splitLength = std::max(m_splitLength, GeoSphere::GetLodDistanceScale() * (v1_ - v0_).Length());
 
 #if USE_SUB_CENTROID_CLIPPING
 	for (size_t i = 0; i < NUM_HORIZON_POINTS; i++) {

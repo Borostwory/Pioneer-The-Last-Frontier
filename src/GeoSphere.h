@@ -74,6 +74,12 @@ public:
 	static void SetDebugFlags(Uint32 flags);
 	static Uint32 GetDebugFlags();
 
+	// how early patches subdivide: a patch splits once the camera is closer
+	// than this many patch widths (config PlanetLodDistance). Takes effect
+	// for patches created afterwards.
+	static double GetLodDistanceScale();
+	static void SetLodDistanceScale(double scale);
+
 	// in sbody radii
 	double GetMaxFeatureHeight() const final { return m_terrain->GetMaxHeight(); }
 
