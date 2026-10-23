@@ -94,10 +94,7 @@ GeoPatch::GeoPatch(const RefCountedPtr<GeoPatchContext> &ctx_, GeoSphere *gs,
 		distMult = 5.0 / Clamp(m_depth, 1, 5);
 	}
 	m_splitLength = GEOPATCH_SUBDIVIDE_AT_CAMDIST / pow(2.0, m_depth) * distMult;
-	// The rule above shrinks to about 3 patch widths on deep levels, so
-	// distant terrain stayed coarse (quads of ~25 px at 4K). Also split
-	// within a fixed number of patch widths, so detail resolves earlier.
-	m_splitLength = std::max(m_splitLength, GeoSphere::GetLodDistanceScale() * (v1_ - v0_).Length());
+	m_edgeLength = (v1_ - v0_).Length();
 
 #if USE_SUB_CENTROID_CLIPPING
 	for (size_t i = 0; i < NUM_HORIZON_POINTS; i++) {
@@ -396,7 +393,12 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 	double centroidDist = DBL_MAX;
 	if (m_depth > 0) {
 		centroidDist = (campos - m_clipCentroid).Length();		// distance from camera to centre of the patch
-		const bool tooFar = (centroidDist >= m_splitLength);	// check if the distance is greater than the rough length, which is how far it should be before it can split
+		// The base split length shrinks to about 3 patch widths on deep
+		// levels, so distant terrain stayed coarse (quads of ~25 px at 4K).
+		// Also split within a set number of patch widths (the terrain detail
+		// distance setting), read every update so changes apply live.
+		const double splitLength = std::max(m_splitLength, GeoSphere::GetLodDistanceScale() * m_edgeLength);
+		const bool tooFar = (centroidDist >= splitLength);	// check if the distance is greater than the rough length, which is how far it should be before it can split
 		if (m_depth >= std::min(GEOPATCH_MAX_DEPTH, m_geosphere->GetMaxDepth()) || tooFar) {
 			canSplit = false; // we're too deep in the quadtree or too far away so cannot split
 		}

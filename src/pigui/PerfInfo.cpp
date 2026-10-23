@@ -679,16 +679,14 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 	if (regenerate)
 		Pi::OnChangeDetailLevel();
 
-	// how early terrain patches subdivide; applied by regenerating all patches
+	// how early terrain patches subdivide (also in the settings window); applies live
 	float lodDistance = float(GeoSphere::GetLodDistanceScale());
-	ImGui::SliderFloat("Terrain Detail Distance", &lodDistance, 1.0f, 32.0f, "%.1f patch widths");
-	if (ImGui::IsItemEdited())
+	if (ImGui::SliderFloat("Terrain Detail Distance", &lodDistance, 1.0f, 64.0f, "%.1f patch widths")) {
 		GeoSphere::SetLodDistanceScale(lodDistance);
-	if (ImGui::IsItemDeactivatedAfterEdit()) {
 		Pi::config->SetFloat("PlanetLodDistance", float(GeoSphere::GetLodDistanceScale()));
-		Pi::config->Save();
-		Pi::OnChangeDetailLevel();
 	}
+	if (ImGui::IsItemDeactivatedAfterEdit())
+		Pi::config->Save();
 
 	const GeoPatchGenStats stats = GetGeoPatchGenStats();
 	const double totalMs = double(stats.microseconds) / 1000.0;

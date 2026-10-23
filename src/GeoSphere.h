@@ -75,8 +75,8 @@ public:
 	static Uint32 GetDebugFlags();
 
 	// how early patches subdivide: a patch splits once the camera is closer
-	// than this many patch widths (config PlanetLodDistance). Takes effect
-	// for patches created afterwards.
+	// than this many patch widths (config PlanetLodDistance, re-read every
+	// frame by UpdateAllGeoSpheres)
 	static double GetLodDistanceScale();
 	static void SetLodDistanceScale(double scale);
 

@@ -51,7 +51,7 @@ static double s_lodDistanceScale = 8.0;
 void GeoSphere::InitGeoSphere()
 {
 	s_patchContext.Reset(new GeoPatchContext(detail_edgeLen[Pi::detail.planets > 4 ? 4 : Pi::detail.planets]));
-	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 32.0);
+	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 64.0);
 }
 
 //static
@@ -63,7 +63,7 @@ double GeoSphere::GetLodDistanceScale()
 //static
 void GeoSphere::SetLodDistanceScale(const double scale)
 {
-	s_lodDistanceScale = Clamp(scale, 1.0, 32.0);
+	s_lodDistanceScale = Clamp(scale, 1.0, 64.0);
 }
 
 void GeoSphere::UninitGeoSphere()
@@ -87,6 +87,8 @@ static void print_info(const SystemBody *sbody, const Terrain *terrain)
 void GeoSphere::UpdateAllGeoSpheres()
 {
 	PROFILE_SCOPED()
+	// terrain detail distance setting; read every frame so the settings slider applies live
+	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 64.0);
 	for (std::vector<GeoSphere *>::iterator i = s_allGeospheres.begin(); i != s_allGeospheres.end(); ++i) {
 		(*i)->Update();
 	}

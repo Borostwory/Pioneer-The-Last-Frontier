@@ -153,6 +153,7 @@ private:
 #endif // #if USE_SUB_CENTROID_CLIPPING
 	GeoSphere *m_geosphere;
 	double m_splitLength; // rough length, is how near to the camera the m_clipCentroid should be before it must split
+	double m_edgeLength; // length of a patch edge on the unit sphere
 	double m_clipRadius;
 	const GeoPatchID m_PatchID;
 	Job::Handle m_job;
