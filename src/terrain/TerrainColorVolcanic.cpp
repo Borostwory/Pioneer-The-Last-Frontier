@@ -19,6 +19,15 @@ TerrainColorFractal<TerrainColorVolcanic>::TerrainColorFractal(const SystemBody 
 	}
 
 	SetFracDef(0, m_maxHeightInMeters, m_rand.Double(1e6, 1e7));
+
+	// the colours of GetColor(): dark basalt, red-orange lava, brown ash,
+	// yellow sulphur deposits (as sand), rock cliffs
+	using M = TerrainMaterialTable;
+	m_materials.Add(M::BASALT, { vector3d(.1, 0, 0), vector3d(.2, .1, 0), vector3d(.1, .05, 0), vector3d(.15, .07, 0), vector3d(0, 0, 0) });
+	m_materials.Add(M::LAVA, { vector3d(.9, .3, 0), vector3d(.75, .2, 0), vector3d(1, .45, 0) });
+	m_materials.Add(M::ASH, { vector3d(.3, .2, 0), vector3d(.3, .1, 0) });
+	m_materials.Add(M::SAND, { vector3d(1, 1, 0), vector3d(.75, .6, 0), vector3d(.9, .75, 0) });
+	m_materials.Add(M::ROCK, m_rockColor, 8);
 }
 
 template <>

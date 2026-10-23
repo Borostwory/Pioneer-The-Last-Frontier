@@ -23,6 +23,8 @@ in vec3 varyingEyepos;
 in vec3 varyingNormal;
 in vec4 vertexColor;
 in vec4 albedoColor;
+in vec4 materialWeights0;
+in vec4 materialWeights1;
 
 out vec4 frag_color;
 
@@ -59,11 +61,15 @@ void main(void)
 #else
 	float altitude = 1.0e4;
 #endif
-	vec4 detailMul = vec4(terrainMaterialDetail(albedoColor.rgb, varyingEyepos, materialDx, materialDy,
-		dist, varyingNormal, surfaceUp, altitude, hasWater), 1.0);
+	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, albedoColor.rgb, varyingEyepos, materialDx, materialDy,
+		dist, varyingNormal, surfaceUp, altitude, hasWater);
+	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist);
-	if (patternWeight > 0.0)
-		detailMul.rgb *= mix(1.0, terrainSurfacePattern(varyingEyepos, albedoColor.rgb, dist, hasWater), patternWeight);
+	if (patternWeight > 0.0) {
+		float rock;
+		vec4 pw = terrainPatternWeights(materialWeights0, materialWeights1, rock);
+		detailMul.rgb *= mix(1.0, terrainSurfacePatternFor(varyingEyepos, dist, pw, rock), patternWeight);
+	}
 
 	// Use the detail value to multiply the final colour before lighting
 	vec4 ambient = scene.ambient * vertexColor * 0.f;
@@ -101,9 +107,6 @@ void main(void)
 	}
 #endif
 
-#ifdef TERRAIN_WITH_LAVA
-	frag_color += vertexColor;
-#endif
 
 #ifdef ATMOSPHERE
 #if (CLOUD_TERRAIN_SHADOWS == 1) && (NUM_LIGHTS > 0)
@@ -114,6 +117,11 @@ void main(void)
 	float shadow = cloudShadowTerrain(clouds, surfPos, normalize(uLight[0].position.xyz), max(dist * CLOUD_SHADOW_PIXEL_ANGLE, 1.0));
 	frag_color.rgb *= mix(1.0, shadow, 0.75);
 #endif
+#endif
+
+#ifdef TERRAIN_WITH_LAVA
+	// lava glows, in shadow and at night too
+	frag_color.rgb += surfaceMaterial.a * MATERIAL_LAVA_GLOW;
 #endif
 
 	frag_color = toSRGB(1 - exp(-frag_color));

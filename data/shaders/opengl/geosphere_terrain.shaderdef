@@ -22,6 +22,9 @@ PushConstant vec4 WaterOrigin binding=3
 PushConstant vec4 WaterDrift binding=4
 PushConstant vec4 MaterialOrigin binding=5
 PushConstant vec4 MaterialOriginCoarse binding=6
+PushConstant vec4 MaterialSlots0 binding=7
+PushConstant vec4 MaterialSlots1 binding=8
+PushConstant vec4 MaterialSpecial binding=9
 
 Vertex "geosphere_terrain.vert"
 Fragment "geosphere_terrain.frag"

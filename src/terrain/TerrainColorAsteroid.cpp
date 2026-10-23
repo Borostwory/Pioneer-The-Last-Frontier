@@ -13,6 +13,12 @@ template <>
 TerrainColorFractal<TerrainColorAsteroid>::TerrainColorFractal(const SystemBody *body) :
 	Terrain(body)
 {
+	// regolith in all its shades, bright crater ejecta included; rock on steep slopes
+	using M = TerrainMaterialTable;
+	m_materials.Add(M::REGOLITH, m_greyrockColor, 8);
+	m_materials.Add(M::REGOLITH, m_rockColor, 8);
+	m_materials.Add(M::REGOLITH, { vector3d(1, 1, 1) });
+	m_materials.Add(M::ROCK);
 }
 
 template <>

@@ -6,6 +6,7 @@
 
 #include "FracDef.h"
 #include "SurfaceProfile.h"
+#include "TerrainMaterials.h"
 #include "../Random.h"
 #include "../RefCounted.h"
 #include "../vector3.h"
@@ -55,6 +56,10 @@ public:
 	double GetMaxHeight() const { return m_maxHeight; }
 
 	const SurfaceProfile &GetSurfaceProfile() const { return m_surfaceProfile; }
+
+	// which materials the colour fractal paints, and with which colours;
+	// empty for stars and gas giants
+	const TerrainMaterialTable &GetMaterialTable() const { return m_materials; }
 
 	Uint32 GetSurfaceEffects() const { return m_surfaceEffects; }
 
@@ -184,6 +189,13 @@ protected:
 
 	// surface parameters derived from the body; provides the rocky palettes
 	SurfaceProfile m_surfaceProfile;
+
+	// material tables, filled in by the colour fractals' constructors
+	TerrainMaterialTable m_materials;
+	// the palette materials of the Earth-like colour fractals (EarthLike, TFGood, TFPoor)
+	void AddPaletteMaterials();
+	// barren rock: regolith on the flats, basalt (airless) or gravel in the dark patches
+	void AddBarrenMaterials(const SystemBody *body);
 };
 
 template <typename HeightFractal>

@@ -18,6 +18,7 @@ TerrainColorFractal<TerrainColorEarthLike>::TerrainColorFractal(const SystemBody
 	//SetFracDef(3, m_maxHeightInMeters, 1e8, 50.0);
 	//SetFracDef(2, m_maxHeightInMeters, 10, 10.0);
 	m_surfaceEffects |= Terrain::EFFECT_WATER;
+	AddPaletteMaterials();
 }
 
 template <>

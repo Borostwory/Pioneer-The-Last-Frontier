@@ -12,6 +12,12 @@ out vec4 vertexColor;
 out vec2 texCoord0;
 out float dist;
 
+// the body's material weights (terrain-materials.glsl)
+layout(location = 10) in vec4 a_materials0;
+layout(location = 11) in vec4 a_materials1;
+out vec4 materialWeights0;
+out vec4 materialWeights1;
+
 #ifdef TERRAIN_WITH_WATER
 // encoded altitude above sea level, for the per-pixel water (terrain-water.glsl)
 out float surfaceHeight;
@@ -26,6 +32,8 @@ void main(void)
 	gl_Position = matrixTransform();
 	// the colour's alpha holds the altitude above sea level
 	vertexColor = vec4(a_color.rgb, 1.0);
+	materialWeights0 = a_materials0;
+	materialWeights1 = a_materials1;
 #ifdef TERRAIN_WITH_WATER
 	surfaceHeight = a_color.a * 2.0 - 1.0;
 #endif
@@ -36,12 +44,7 @@ void main(void)
 	dist = length(varyingEyepos);
 
 #ifdef TERRAIN_WITH_LAVA
+	// lava glows per pixel (terrain-materials.glsl)
 	varyingEmission = material.emission;
-	//Glow lava terrains
-	if ( vertexColor.r > 0.4 && vertexColor.g < 0.2 && vertexColor.b < 0.4 )
-	{
-		varyingEmission = 3.0*vertexColor;
-		varyingEmission *= (vertexColor.r+vertexColor.g+vertexColor.b);
-	}
 #endif
 }

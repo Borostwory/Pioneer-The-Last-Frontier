@@ -123,7 +123,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 		m_needUpdateVBOs = false;
 
 		//create buffer and upload data
-		auto vbd = Graphics::VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_NORMAL | Graphics::ATTRIB_DIFFUSE | Graphics::ATTRIB_UV0);
+		auto vbd = GeoPatchContext::GetVertexFormat();
 		Graphics::VertexBuffer *vtxBuffer = renderer->CreateVertexBuffer(Graphics::BUFFER_USAGE_STATIC, m_ctx->NUMVERTICES(), vbd.bindings[0].stride);
 
 		GeoPatchContext::VBOVertex *VBOVtxPtr = vtxBuffer->Map<GeoPatchContext::VBOVertex>(Graphics::BUFFER_MAP_WRITE);
@@ -133,7 +133,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 		const double frac = m_ctx->GetFrac();
 		const double *pHts = m_patchVBOData->m_heights.get();
 		const vector3f *pNorm = m_patchVBOData->m_normals.get();
-		const Color4ub *pColr = m_patchVBOData->m_colors.get();
+		const GeoVertexSurface *pColr = m_patchVBOData->m_colors.get();
 
 		double minh = DBL_MAX;
 
@@ -161,10 +161,8 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 				vtxPtr->norm = norma;
 				++pNorm; // next normal
 
-				vtxPtr->col[0] = pColr->r;
-				vtxPtr->col[1] = pColr->g;
-				vtxPtr->col[2] = pColr->b;
-				vtxPtr->col[3] = pColr->a; // altitude above sea level, see EncodeAltitude()
+				vtxPtr->col = pColr->col; // alpha: altitude above sea level, see EncodeAltitude()
+				std::copy(pColr->materials, pColr->materials + 8, vtxPtr->materials);
 				++pColr; // next colour
 
 				// uv coords
@@ -194,6 +192,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv;
+			std::copy(vtxInr->materials, vtxInr->materials + 8, vtxPtr->materials);
 		}
 		// right-edge
 		for (Sint32 y = 1; y < edgeLen - 1; y++) {
@@ -208,6 +207,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv;
+			std::copy(vtxInr->materials, vtxInr->materials + 8, vtxPtr->materials);
 		}
 		// ----------------------------------------------------
 		const Sint32 innerTop = 1;
@@ -228,6 +228,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv;
+			std::copy(vtxInr->materials, vtxInr->materials + 8, vtxPtr->materials);
 		}
 		// bottom-edge
 		for (Sint32 x = 1; x < edgeLen - 1; x++) {
@@ -242,6 +243,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv;
+			std::copy(vtxInr->materials, vtxInr->materials + 8, vtxPtr->materials);
 		}
 		// ----------------------------------------------------
 		// corners

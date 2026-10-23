@@ -625,7 +625,7 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 void GeoSphere::SetUpMaterials()
 {
 	// XXX: this has to be synced with the vertex format used in GeoPatch
-	auto vtxFormat = Graphics::VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_NORMAL | Graphics::ATTRIB_DIFFUSE | Graphics::ATTRIB_UV0);
+	auto vtxFormat = GeoPatchContext::GetVertexFormat();
 
 	GetSystemBody()->CalcAtmosphereParams(m_atmosphereParameters);
 	// normal star has a different setup path than geosphere terrain does
@@ -682,12 +682,24 @@ void GeoSphere::SetUpMaterials()
 
 		// land material detail (terrain-materials.glsl); the layer order matches
 		// the MATERIAL_* indices there
+		// (TerrainMaterialTable::Layer)
 		static const std::vector<std::string> materialFiles = {
 			"textures/terrain/rock.dds", "textures/terrain/gravel.dds", "textures/terrain/sand.dds", "textures/terrain/soil.dds",
-			"textures/terrain/grass.dds", "textures/terrain/forest.dds", "textures/terrain/snow.dds", "textures/terrain/ice.dds"
+			"textures/terrain/grass.dds", "textures/terrain/forest.dds", "textures/terrain/snow.dds", "textures/terrain/ice.dds",
+			"textures/terrain/basalt.dds", "textures/terrain/lava.dds", "textures/terrain/ash.dds", "textures/terrain/regolith.dds",
+			"textures/terrain/salt.dds"
 		};
 		m_texMaterials.Reset(Graphics::TextureBuilder::Array(materialFiles, materialFiles.size()).GetOrCreateTexture(Pi::renderer, "terrain-materials"));
 		m_surfaceMaterial->SetTexture("terrainMaterials"_hash, m_texMaterials.Get());
+
+		// this body's material slots: texture layer per slot (-1 unused), and
+		// the slots for steep rock, beaches and lava (-1 none)
+		const TerrainMaterialTable &table = m_terrain->GetMaterialTable();
+		auto layer = [&](int slot) { return slot < table.SlotCount() ? float(table.SlotLayer(slot)) : -1.0f; };
+		m_surfaceMaterial->SetPushConstant("MaterialSlots0"_hash, vector3f(layer(0), layer(1), layer(2)), layer(3));
+		m_surfaceMaterial->SetPushConstant("MaterialSlots1"_hash, vector3f(layer(4), layer(5), layer(6)), layer(7));
+		m_surfaceMaterial->SetPushConstant("MaterialSpecial"_hash,
+			vector3f(float(table.RockSlot()), float(table.BeachSlot()), float(table.SlotOf(TerrainMaterialTable::SNOW))), float(table.LavaSlot()));
 
 		// wave slopes for the water shading (terrain-water.glsl)
 		if (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) {

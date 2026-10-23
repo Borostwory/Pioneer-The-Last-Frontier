@@ -121,12 +121,31 @@ inline double SurfaceAltitude(const Terrain *terrain, const vector3d &p, const d
 	return (altitude < 0.0 && colour.x > 0.05) ? 0.5 : altitude;
 }
 
-inline void setColour(Color4ub &r, const vector3d &v, const double altitude)
+inline void setColour(GeoVertexSurface &r, const vector3d &v, const double altitude)
 {
-	r.r = static_cast<unsigned char>(Clamp(v.x * 255.0, 0.0, 255.0));
-	r.g = static_cast<unsigned char>(Clamp(v.y * 255.0, 0.0, 255.0));
-	r.b = static_cast<unsigned char>(Clamp(v.z * 255.0, 0.0, 255.0));
-	r.a = EncodeAltitude(altitude);
+	r.col.r = static_cast<unsigned char>(Clamp(v.x * 255.0, 0.0, 255.0));
+	r.col.g = static_cast<unsigned char>(Clamp(v.y * 255.0, 0.0, 255.0));
+	r.col.b = static_cast<unsigned char>(Clamp(v.z * 255.0, 0.0, 255.0));
+	r.col.a = EncodeAltitude(altitude);
+}
+
+// colour, altitude and material weights of one vertex
+inline void setSurface(GeoVertexSurface &r, const Terrain *terrain, const vector3d &p, const double height, const vector3d &normal, const bool debugDepth, const int depth, const int maxDepth)
+{
+	const TerrainMaterialTable &materials = terrain->GetMaterialTable();
+	if (debugDepth) {
+		setColour(r, PatchDepthColour(depth, maxDepth), terrain->GetSurfaceAltitude(p, height));
+		materials.Single(-1, r.materials);
+		return;
+	}
+	const vector3d colour = terrain->GetColor(p, height, normal);
+	const double altitude = SurfaceAltitude(terrain, p, height, colour);
+	setColour(r, colour, altitude);
+	// under water: the beach material, for the shore
+	if (altitude < 0.0)
+		materials.Single(materials.BeachSlot(), r.materials);
+	else
+		materials.Classify(colour, r.materials);
 }
 
 // in patch surface coords, [0,1]
@@ -175,7 +194,7 @@ void SSingleSplitRequest::GenerateMesh() const
 	// Generate normals & colors for non-edge vertices since they never change
 	TerrainNoise::ScopedBandLimit bandLimit(maxFrequency);
 	const bool debugDepth = DebugPatchDepthColours();
-	Color4ub *col = colors;
+	GeoVertexSurface *col = colors;
 	vector3f *nrm = normals;
 	double *hts = heights;
 	vrts = borderVertexs.get();
@@ -197,12 +216,7 @@ void SSingleSplitRequest::GenerateMesh() const
 
 			// color
 			const vector3d p = GetSpherePoint(v0, v1, v2, v3, (x - BORDER_SIZE) * fracStep, (y - BORDER_SIZE) * fracStep);
-			if (debugDepth) {
-				setColour(*col, PatchDepthColour(depth, maxDepth), pTerrain->GetSurfaceAltitude(p, height));
-			} else {
-				const vector3d colour = pTerrain->GetColor(p, height, n);
-				setColour(*col, colour, SurfaceAltitude(pTerrain.Get(), p, height, colour));
-			}
+			setSurface(*col, pTerrain.Get(), p, height, n, debugDepth, depth, maxDepth);
 			assert(col != &colors[edgeLen * edgeLen]);
 			++col;
 		}
@@ -366,7 +380,7 @@ void SQuadSplitRequest::GenerateSubPatchData(
 	TerrainNoise::ScopedBandLimit bandLimit(NyquistFrequency((v1 - v0).Length() * fracStep));
 	const bool debugDepth = DebugPatchDepthColours();
 	vector3d *vrts = borderVertexs.get();
-	Color4ub *col = colors[quadrantIndex];
+	GeoVertexSurface *col = colors[quadrantIndex];
 	vector3f *nrm = normals[quadrantIndex];
 	double *hts = heights[quadrantIndex];
 
@@ -392,12 +406,7 @@ void SQuadSplitRequest::GenerateSubPatchData(
 
 			// color
 			const vector3d p = GetSpherePoint(v0, v1, v2, v3, x * fracStep, y * fracStep);
-			if (debugDepth) {
-				setColour(*col, PatchDepthColour(depth + 1, maxDepth), pTerrain->GetSurfaceAltitude(p, height));
-			} else {
-				const vector3d colour = pTerrain->GetColor(p, height, n);
-				setColour(*col, colour, SurfaceAltitude(pTerrain.Get(), p, height, colour));
-			}
+			setSurface(*col, pTerrain.Get(), p, height, n, debugDepth, depth + 1, maxDepth);
 			assert(col != &colors[quadrantIndex][edgeLen * edgeLen]);
 			++col;
 		}

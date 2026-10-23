@@ -14,6 +14,13 @@ TerrainColorFractal<TerrainColorTFGood>::TerrainColorFractal(const SystemBody *b
 	Terrain(body)
 {
 	m_surfaceEffects |= Terrain::EFFECT_WATER;
+	AddPaletteMaterials();
+	// the fixed colours of GetColor()
+	using M = TerrainMaterialTable;
+	m_materials.Add(M::SOIL, { vector3d(.45, .43, .2), vector3d(.4, .43, .2), vector3d(.35, .3, 0), vector3d(.4, .3, 0), vector3d(.3, .1, 0),
+								 vector3d(.42, .46, 0), vector3d(.5, .3, 0) });
+	m_materials.Add(M::GRASS, { vector3d(.15, .5, 0), vector3d(.2, .6, 0), vector3d(.45, .6, 0), vector3d(.5, .6, 0) });
+	m_materials.Add(M::ROCK, { vector3d(.2, .28, .2), vector3d(.25, .28, .2) });
 }
 
 template <>

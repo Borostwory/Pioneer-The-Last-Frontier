@@ -13,6 +13,9 @@ template <>
 TerrainColorFractal<TerrainColorMethane>::TerrainColorFractal(const SystemBody *body) :
 	Terrain(body)
 {
+	using M = TerrainMaterialTable;
+	m_materials.Add(M::SOIL, { vector3d(.3, .2, 0), vector3d(.6, .3, 0) });
+	m_materials.Add(M::ROCK);
 }
 
 template <>

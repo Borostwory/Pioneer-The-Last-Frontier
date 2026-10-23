@@ -675,6 +675,28 @@ void Terrain::SetColorFracDef(const unsigned int index, const double featureWidt
 	m_colorFracdef[index].lacunarity = 2.0;
 }
 
+void Terrain::AddPaletteMaterials()
+{
+	using M = TerrainMaterialTable;
+	m_materials.Add(M::ROCK, m_rockColor, 8);
+	m_materials.Add(M::GRAVEL, m_darkrockColor, 8);
+	m_materials.Add(M::SAND, m_sandColor, 8);
+	m_materials.Add(M::SOIL, m_darksandColor, 8);
+	m_materials.Add(M::SOIL, m_dirtColor, 8);
+	m_materials.Add(M::SOIL, m_darkdirtColor, 8);
+	m_materials.Add(M::GRASS, m_plantColor, 8);
+	m_materials.Add(M::FOREST, m_darkplantColor, 8);
+	m_materials.Add(M::SNOW, { vector3d(1.0, 1.0, 1.0), vector3d(0.9, 0.9, 0.9) });
+}
+
+void Terrain::AddBarrenMaterials(const SystemBody *body)
+{
+	using M = TerrainMaterialTable;
+	m_materials.Add(M::REGOLITH, m_rockColor, 8);
+	m_materials.Add(body->GetVolatileGas() < 0.05 ? M::BASALT : M::GRAVEL, m_darkrockColor, 8);
+	m_materials.Add(M::ROCK); // steep slopes
+}
+
 double Terrain::GetSurfaceAltitude(const vector3d &p, const double height) const
 {
 	if (height > 0.0 || !(m_surfaceEffects & EFFECT_WATER))

@@ -13,6 +13,7 @@ template <>
 TerrainColorFractal<TerrainColorBandedRock>::TerrainColorFractal(const SystemBody *body) :
 	Terrain(body)
 {
+	AddBarrenMaterials(body);
 }
 
 template <>

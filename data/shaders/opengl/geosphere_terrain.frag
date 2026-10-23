@@ -33,6 +33,8 @@ in float dist;
 in vec3 varyingEyepos;
 in vec3 varyingNormal;
 in vec4 vertexColor;
+in vec4 materialWeights0;
+in vec4 materialWeights1;
 
 #ifdef TERRAIN_WITH_LAVA
 in vec4 varyingEmission;
@@ -67,11 +69,15 @@ void main(void)
 	// land materials (photo texture detail, slope rock, beaches) near the
 	// camera, procedural surface patterns further out
 	vec3 materialDx = dFdx(varyingEyepos), materialDy = dFdy(varyingEyepos);
-	vec4 detailMul = vec4(terrainMaterialDetail(vertexColor.rgb, varyingEyepos, materialDx, materialDy,
-		dist, varyingNormal, normalize(eyeposScaled - geosphereCenter), altitude, hasWater), 1.0);
+	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, vertexColor.rgb, varyingEyepos, materialDx, materialDy,
+		dist, varyingNormal, normalize(eyeposScaled - geosphereCenter), altitude, hasWater);
+	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist);
-	if (patternWeight > 0.0)
-		detailMul.rgb *= mix(1.0, terrainSurfacePattern(varyingEyepos, vertexColor.rgb, dist, hasWater), patternWeight);
+	if (patternWeight > 0.0) {
+		float rock;
+		vec4 pw = terrainPatternWeights(materialWeights0, materialWeights1, rock);
+		detailMul.rgb *= mix(1.0, terrainSurfacePatternFor(varyingEyepos, dist, pw, rock), patternWeight);
+	}
 
 #ifdef TERRAIN_WITH_WATER
 	// water: sun glint per light here, the rest after the light loop
@@ -135,7 +141,7 @@ void main(void)
 	frag_color =
 		material.emission +
 #ifdef TERRAIN_WITH_LAVA
-		varyingEmission +
+		varyingEmission + vec4(surfaceMaterial.a * MATERIAL_LAVA_GLOW, 0.0) +
 #endif
 		final;
 

@@ -13,6 +13,11 @@ template <>
 TerrainColorFractal<TerrainColorIce>::TerrainColorFractal(const SystemBody *body) :
 	Terrain(body)
 {
+	// the colours of GetColor(): snow fields, darker ice crust, rock cliffs
+	using M = TerrainMaterialTable;
+	m_materials.Add(M::SNOW, { vector3d(.96, .95, .94), vector3d(1, 1, 1) });
+	m_materials.Add(M::ICE, m_darkrockColor, 8);
+	m_materials.Add(M::ROCK, m_rockColor, 8);
 }
 
 template <>

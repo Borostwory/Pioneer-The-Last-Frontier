@@ -308,4 +308,5 @@ and services, without which Pioneer would not be possible:
 
   OpenGameArt	http://opengameart.org (specifically http://opengameart.org/content/smoke-aura)
   ambientCG	https://ambientcg.com (CC0 photo materials behind data/textures/terrain,
-		Rock030, Ground110, Ground097, Ground109, Grass004, Moss002, Snow008A, Snow014)
+		Rock030, Ground110, Ground097, Ground109, Grass004, Moss002, Snow008A, Snow014,
+		Rock035, Lava001, Gravel024, Ground099, Ground101)

@@ -13,6 +13,14 @@ template <>
 TerrainColorFractal<TerrainColorDesert>::TerrainColorFractal(const SystemBody *body) :
 	Terrain(body)
 {
+	// the colours of GetColor()
+	using M = TerrainMaterialTable;
+	m_materials.Add(M::SAND, { vector3d(.8, .75, .5), vector3d(.81, .68, .3), vector3d(.85, .7, 0), vector3d(.8, .77, .5) });
+	m_materials.Add(M::SOIL, { vector3d(.52, .5, .3) });
+	m_materials.Add(M::SALT, { vector3d(.78, .73, .68) });
+	m_materials.Add(M::ROCK, m_rockColor, 8);
+	m_materials.Add(M::GRAVEL, { vector3d(.1, 0, 0), vector3d(0, 0, 0) });
+	m_materials.Add(M::SNOW, { vector3d(1, 1, 1) });
 }
 
 template <>

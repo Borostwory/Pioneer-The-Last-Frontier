@@ -7,6 +7,7 @@
 #include <SDL_stdinc.h>
 
 #include "Color.h"
+#include "GeoPatchContext.h"
 #include "GeoPatchID.h"
 #include "JobQueue.h"
 #include "RefCounted.h"
@@ -126,7 +127,7 @@ private:
 
 	struct PatchVBOData {
 		PatchVBOData() = delete;
-		PatchVBOData(double* h, vector3f* n, Color4ub* c)
+		PatchVBOData(double* h, vector3f* n, GeoVertexSurface* c)
 		{
 			m_heights.reset(h);
 			m_normals.reset(n);
@@ -140,7 +141,7 @@ private:
 		}
 		std::unique_ptr<double[]> m_heights;
 		std::unique_ptr<vector3f[]> m_normals;
-		std::unique_ptr<Color4ub[]> m_colors;
+		std::unique_ptr<GeoVertexSurface[]> m_colors;
 		std::unique_ptr<Graphics::MeshObject> m_patchMesh;
 	};
 

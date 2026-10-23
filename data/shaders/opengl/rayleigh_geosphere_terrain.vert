@@ -19,6 +19,12 @@ out vec4 albedoColor;
 out vec2 texCoord0;
 out float dist;
 
+// the body's material weights (terrain-materials.glsl)
+layout(location = 10) in vec4 a_materials0;
+layout(location = 11) in vec4 a_materials1;
+out vec4 materialWeights0;
+out vec4 materialWeights1;
+
 #if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
 // for the per-pixel water (terrain-water.glsl): the encoded altitude, the
 // sunlight reaching the surface from each light, the sky light a flat sea
@@ -36,6 +42,8 @@ void main(void)
 	// the colour's alpha holds the altitude above sea level
 	albedoColor = vec4(a_color.rgb, 1.0);
 	vertexColor = vec4(a_color.rgb, 1.0);
+	materialWeights0 = a_materials0;
+	materialWeights1 = a_materials1;
 	varyingEyepos = vec3(uViewMatrix * a_vertex);
 	varyingNormal = normalize(normalMatrix() * a_normal);
 
@@ -126,13 +134,9 @@ void main(void)
 #endif
 #endif // TERRAIN_WITH_WATER
 
-		// add lava glow
+		// lava glows per pixel (terrain-materials.glsl)
 #ifdef TERRAIN_WITH_LAVA
-		if ( vertexColor.r > 0.4 && vertexColor.g < 0.2 && vertexColor.b < 0.4 ) {
-			terrain += 3.0 * vertexColor.xyz * (vertexColor.r + vertexColor.g + vertexColor.b);
-		} else {
-			terrain += material.emission.xyz;
-		}
+		terrain += material.emission.xyz;
 #endif // TERRAIN_WITH_LAVA
 
 #ifdef ATMOSPHERE

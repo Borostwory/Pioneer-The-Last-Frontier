@@ -13,9 +13,10 @@ The sources are CC0 photo materials from ambientCG (https://ambientcg.com),
 
 Each becomes a greyscale detail texture, so the planet's own colours still
 show through: the colour photo's brightness with its large-scale shading
-removed, at a set contrast, stored with a mean of 0.5 in RGB (the shader
-doubles it); the displacement map in alpha, used to blend materials along
-their bumps. DXT5 with a full mipmap chain, as texture arrays need DDS.
+removed, at a set contrast, stored with a mean of 0.5 in green and blue (the
+shader doubles it); the displacement map in alpha, used to blend materials
+along their bumps; the emission map, where there is one (lava), in red.
+DXT5 with a full mipmap chain, as texture arrays need DDS.
 
 usage: python make_terrain_materials.py <source_dir> <output_dir>
 needs numpy and Pillow (11 or later, for DXT5 encoding)
@@ -40,6 +41,11 @@ MATERIALS = [
     ("forest", "Moss002", 0.34),
     ("snow", "Snow008A", 0.08),
     ("ice", "Snow014", 0.10),
+    ("basalt", "Rock035", 0.30),
+    ("lava", "Lava001", 0.35),
+    ("ash", "Gravel024", 0.30),
+    ("regolith", "Ground099", 0.16),
+    ("salt", "Ground101", 0.10),
 ]
 
 SIZE = 1024
@@ -79,7 +85,15 @@ def detail_and_height(src_dir, asset, contrast):
         disp = disp[..., 0]
     lo, hi = np.percentile(disp, [1.0, 99.0])
     height = np.clip((disp - lo) / max(hi - lo, 1e-6), 0.0, 1.0)
-    return detail, height
+
+    emission = np.zeros_like(height)
+    emission_path = os.path.join(src_dir, asset, f"{asset}_1K-JPG_Emission.jpg")
+    if os.path.exists(emission_path):
+        e = load(emission_path)
+        if e.ndim == 3:
+            e = srgb_to_linear(e[..., :3]) @ np.array([0.2126, 0.7152, 0.0722])
+        emission = np.clip(e / max(np.percentile(e, 99.5), 1e-6), 0.0, 1.0)
+    return detail, height, emission
 
 
 def encode_dxt5(rgba):
@@ -123,9 +137,9 @@ def main():
     src_dir, out_dir = sys.argv[1], sys.argv[2]
     os.makedirs(out_dir, exist_ok=True)
     for name, asset, contrast in MATERIALS:
-        detail, height = detail_and_height(src_dir, asset, contrast)
+        detail, height, emission = detail_and_height(src_dir, asset, contrast)
         v = np.round(detail * 255.0)
-        rgba = np.stack([v, v, v, np.round(height * 255.0)], axis=-1).astype(np.uint8)
+        rgba = np.stack([np.round(emission * 255.0), v, v, np.round(height * 255.0)], axis=-1).astype(np.uint8)
         path = os.path.join(out_dir, f"{name}.dds")
         write_dds(path, mip_chain(rgba))
         print(f"{path}: {asset}, detail mean {detail.mean() * 2.0:.3f} (x2), "

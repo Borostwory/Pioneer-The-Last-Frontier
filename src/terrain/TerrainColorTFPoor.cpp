@@ -14,6 +14,7 @@ TerrainColorFractal<TerrainColorTFPoor>::TerrainColorFractal(const SystemBody *b
 	Terrain(body)
 {
 	m_surfaceEffects |= Terrain::EFFECT_WATER;
+	AddPaletteMaterials();
 }
 
 template <>
