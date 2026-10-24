@@ -22,6 +22,7 @@
 #endif
 
 class SystemBody;
+class TerrainErosion;
 
 template <typename, typename>
 class TerrainGenerator;
@@ -47,7 +48,15 @@ public:
 		return m_fracdef[index];
 	}
 
-	virtual void GetHeights(const vector3d *vP, double *heightsOut, const size_t count) const = 0;
+	// Heights (unit-sphere units above the radius) at points on the unit
+	// sphere: the height fractal, with river valleys cut in on bodies with
+	// erosion (TerrainErosion). Collision and the terrain patches use this.
+	void GetHeights(const vector3d *vP, double *heightsOut, const size_t count) const;
+	// The height fractal alone; never below GetHeights.
+	virtual void GetBaseHeights(const vector3d *vP, double *heightsOut, const size_t count) const = 0;
+	// Keeps the ground around p (unit sphere) as GetBaseHeights makes it,
+	// for a surface starport's city. Call before the terrain is drawn there.
+	void ProtectSite(const vector3d &p);
 	virtual vector3d GetColor(const vector3d &p, double height, const vector3d &norm) const = 0;
 
 	virtual const char *GetHeightFractalName() const = 0;
@@ -192,6 +201,10 @@ protected:
 
 	// material tables, filled in by the colour fractals' constructors
 	TerrainMaterialTable m_materials;
+
+	// river valleys, null on bodies without erosion
+	std::unique_ptr<TerrainErosion> m_erosion;
+
 	// the palette materials of the Earth-like colour fractals (EarthLike, TFGood, TFPoor)
 	void AddPaletteMaterials();
 	// barren rock: regolith on the flats, basalt (airless) or gravel in the dark patches
@@ -202,7 +215,7 @@ template <typename HeightFractal>
 class TerrainHeightFractal : virtual public Terrain {
 public:
 	TerrainHeightFractal() = delete;
-	void GetHeights(const vector3d *vP, double *heightsOut, const size_t count) const final;
+	void GetBaseHeights(const vector3d *vP, double *heightsOut, const size_t count) const final;
 	const char *GetHeightFractalName() const final;
 
 protected:

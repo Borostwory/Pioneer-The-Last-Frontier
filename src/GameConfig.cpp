@@ -41,6 +41,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["PlanetLodDistance"] = "8"; // terrain patches split within this many patch widths of the camera
 	map["PlanetLodForeshortening"] = "100"; // percent: how much later terrain patches seen edge-on split
 	map["TerrainDetailTiles"] = "1"; // bake GPU detail tiles for nearby terrain patches
+	map["TerrainErosion"] = "1"; // cut river valleys into the mountains of planets with liquid water (TerrainErosion.cpp)
 	map["ShadowQuality"] = "2";   // sun shadows of ships, stations, buildings and terrain: 0 off, 1 1024, 2 2048, 3 4096 maps (SceneShadows.cpp)
 	map["ShadowNearRadius"] = "120"; // metres around the player's ship with sharp shadows, redrawn every frame
 	map["ShadowDistance"] = "2000";  // metres around the camera with shadows of terrain, stations, cities and parked ships

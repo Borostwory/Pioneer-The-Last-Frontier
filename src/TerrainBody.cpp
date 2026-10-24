@@ -10,6 +10,7 @@
 #include "Json.h"
 #include "Space.h"
 #include "galaxy/SystemBody.h"
+#include "terrain/Terrain.h"
 #include "graphics/Renderer.h"
 
 TerrainBody::TerrainBody(SystemBody *sbody) :
@@ -156,6 +157,22 @@ double TerrainBody::GetTerrainHeight(const vector3d &pos_) const
 		assert(0);
 		return radius;
 	}
+}
+
+double TerrainBody::GetBaseTerrainHeight(const vector3d &pos_) const
+{
+	const double radius = m_sbody->GetRadius();
+	if (!m_baseSphere)
+		return radius;
+	double h;
+	m_baseSphere->GetTerrain()->GetBaseHeights(&pos_, &h, 1);
+	return radius * (1.0 + h);
+}
+
+void TerrainBody::ProtectTerrainSite(const vector3d &pos)
+{
+	if (m_baseSphere)
+		m_baseSphere->GetTerrain()->ProtectSite(pos);
 }
 
 //static

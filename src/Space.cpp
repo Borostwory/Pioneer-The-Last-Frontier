@@ -39,6 +39,10 @@ static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vecto
 	rot = sbody->GetOrbit().GetPlane();
 	pos = rot * vector3d(0, 1, 0);
 
+	// Heights without erosion: the city around the starport keeps that ground
+	// (TerrainBody::ProtectTerrainSite after this), and starports land where
+	// they did before erosion existed.
+
 	// Check if height varies too much around the starport center
 	// by sampling 6 points around it. Try up to 100 new positions randomly until a match is found.
 	// This is not guaranteed to find a match but greatly increases the chancessteroids which are not too steep.
@@ -76,18 +80,18 @@ static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vecto
 	for (int tries = 0; tries < 200; tries++) {
 		variationWithinLimits = true;
 
-		const double height = planet->GetTerrainHeight(pos_) - radius; // in m
+		const double height = planet->GetBaseTerrainHeight(pos_) - radius; // in m
 
 		// check height at 6 points around the starport center stays within variation tolerances
 		// GetHeight gives a varying height field in 3 dimensions.
 		// Given it's smoothly varying it's fine to sample it in arbitrary directions to get an idea of how sharply it varies
 		double v[6]{
-			fabs(planet->GetTerrainHeight(vector3d(pos_.x + delta, pos_.y, pos_.z)) - radius - height),
-			fabs(planet->GetTerrainHeight(vector3d(pos_.x - delta, pos_.y, pos_.z)) - radius - height),
-			fabs(planet->GetTerrainHeight(vector3d(pos_.x, pos_.y, pos_.z + delta)) - radius - height),
-			fabs(planet->GetTerrainHeight(vector3d(pos_.x, pos_.y, pos_.z - delta)) - radius - height),
-			fabs(planet->GetTerrainHeight(vector3d(pos_.x, pos_.y + delta, pos_.z)) - radius - height),
-			fabs(planet->GetTerrainHeight(vector3d(pos_.x, pos_.y - delta, pos_.z)) - radius - height),
+			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x + delta, pos_.y, pos_.z)) - radius - height),
+			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x - delta, pos_.y, pos_.z)) - radius - height),
+			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x, pos_.y, pos_.z + delta)) - radius - height),
+			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x, pos_.y, pos_.z - delta)) - radius - height),
+			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x, pos_.y + delta, pos_.z)) - radius - height),
+			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x, pos_.y - delta, pos_.z)) - radius - height),
 		};
 
 		// break if variation for all points is within limits
@@ -294,6 +298,7 @@ Space::Space(Game *game, RefCountedPtr<Galaxy> galaxy, const Json &jsonObj, doub
 					matrix3x3d rot;
 					vector3d pos;
 					RelocateStarportIfNecessary(kid, planet, pos, rot, posAccum);
+					planet->ProtectTerrainSite(pos);
 					// the surface starport's location is stored in its "orbit", as orientation matrix
 					kid->SetOrbitPlane(rot);
 					// accumulate for testing against
@@ -857,6 +862,7 @@ static FrameId MakeFramesFor(const double at_time, SystemBody *sbody, Body *b, F
 		vector3d pos;
 		Planet *planet = static_cast<Planet *>(rotFrame->GetBody());
 		RelocateStarportIfNecessary(sbody, planet, pos, rot, prevPositions);
+		planet->ProtectTerrainSite(pos);
 		sbody->SetOrbitPlane(rot);
 		b->SetPosition(pos * planet->GetTerrainHeight(pos));
 		b->SetOrient(rot);

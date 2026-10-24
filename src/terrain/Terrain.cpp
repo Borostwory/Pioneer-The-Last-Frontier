@@ -2,6 +2,7 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 #include "Terrain.h"
+#include "TerrainErosion.h"
 
 #include "FileSystem.h"
 #include "FloatComparison.h"
@@ -642,10 +643,25 @@ Terrain::Terrain(const SystemBody *body) :
 		std::copy(std::begin(palette.dirt), std::end(palette.dirt), m_dirtColor);
 		std::copy(std::begin(palette.darkdirt), std::end(palette.darkdirt), m_darkdirtColor);
 	}
+
+	m_erosion = TerrainErosion::Create(body, rad);
 }
 
 Terrain::~Terrain()
 {
+}
+
+void Terrain::GetHeights(const vector3d *vP, double *heightsOut, const size_t count) const
+{
+	GetBaseHeights(vP, heightsOut, count);
+	if (m_erosion)
+		m_erosion->Apply(*this, vP, heightsOut, count);
+}
+
+void Terrain::ProtectSite(const vector3d &p)
+{
+	if (m_erosion)
+		m_erosion->AddCity(p);
 }
 
 /**

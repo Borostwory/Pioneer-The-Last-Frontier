@@ -281,7 +281,9 @@ namespace {
 					const double lon = ((col + 0.5) / sw) * 2.0 * M_PI - M_PI;
 					points[col] = vector3d(clat * sin(lon), slat, clat * cos(lon));
 				}
-				m_terrain->GetHeights(points.data(), heights.data(), sw);
+				// without the erosion cuts: they only lower the ground, so the
+				// floor stays conservative, and they would cost 5x the time here
+				m_terrain->GetBaseHeights(points.data(), heights.data(), sw);
 
 				float *texRow = &texels[(row / HEIGHTMAP_SUBSAMPLES) * HEIGHTMAP_WIDTH];
 				for (int col = 0; col < sw; col++) {

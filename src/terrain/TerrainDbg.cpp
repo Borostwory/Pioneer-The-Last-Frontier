@@ -2,6 +2,7 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 #include "Terrain.h"
+#include "TerrainErosion.h"
 
 #include "GameConfig.h"
 #include "Pi.h"
@@ -25,4 +26,8 @@ void Terrain::DebugDump() const
 		Output("    %u: freq %f  lac %f  oct %d\n", i, m_colorFracdef[i].frequency, m_colorFracdef[i].lacunarity, m_colorFracdef[i].octaves);
 	}
 	m_surfaceProfile.Dump();
+	if (m_erosion)
+		m_erosion->Dump();
+	else
+		Output("  Erosion: none\n");
 }

@@ -31,6 +31,10 @@ public:
 	virtual bool OnCollision(Body *b, Uint32 flags, double relVel) override { return true; }
 	double GetMass() const override { return m_mass; }
 	double GetTerrainHeight(const vector3d &pos) const;
+	// the height fractal without erosion (Terrain::GetBaseHeights), metres from the centre
+	double GetBaseTerrainHeight(const vector3d &pos) const;
+	// keeps the ground around pos uneroded (Terrain::ProtectSite)
+	void ProtectTerrainSite(const vector3d &pos);
 	const SystemBody *GetSystemBody() const override { return m_sbody; }
 
 	// returns value in metres
