@@ -43,6 +43,20 @@
 			"density": 1.0
 		}
 	],
+	"forcefield": {
+		"minOxidizing": 0.95,
+		"minDensity": 0.2,
+		"maxDensity": 2.0,
+		"minTemperature": 250,
+		"maxTemperature": 320,
+		"radiusScale": 1.12,
+		"heightRatio": 0.4,
+		"frequency": 5,
+		"colour": [1.0, 1.0, 1.0],
+		"opacity": 0.45,
+		"strutWidth": 1.0,
+		"lethalSpeed": 100
+	},
 	"buildings": {
 		"kbuilding01": {
 			"airless-rarity": 0.8,

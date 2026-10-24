@@ -11,9 +11,12 @@
 #include "matrix4x4.h"
 #include "vector3.h"
 
+class Body;
 class CameraContext;
 class Geom;
+class GeomTree;
 class Planet;
+class Ship;
 class SpaceStation;
 class Frame;
 class SystemPath;
@@ -24,6 +27,7 @@ struct Aabb;
 namespace Graphics {
 	class Renderer;
 	class Material;
+	class MeshObject;
 	class Texture;
 	struct CityLightDataBlock;
 } // namespace Graphics
@@ -74,6 +78,26 @@ public:
 	// the rest is its glow from afar
 	static double LightsFade(double distance);
 
+	// Forcefield: one geodesic dome over the whole city where the air can't
+	// be breathed (see the flavour's ForcefieldDef), built with the city, in
+	// city space. It collides as a static geom of the station flagged
+	// CollisionGeometry::FORCEFIELD: only the player's ship coming in without
+	// landing clearance is stopped (unharmed), everything else passes, and
+	// rays (weapons, the camera) ignore it. It opens round ships crossing it
+	// and sends a wave out from where it stops one. Drawn after everything
+	// solid and the clouds (Camera::Draw), farthest first.
+	bool HasForcefield() const { return bool(m_ffMesh); }
+	// radius round the station holding the forcefield, m; 0 without one
+	double GetForcefieldExtent() const { return m_ffExtent; }
+	// for a contact of the ship with it (Space.cpp): true if it stops the ship
+	bool ForcefieldStops(SpaceStation *station, Ship *ship);
+	// openings round crossing ships, impact waves
+	void UpdateForcefield(float timeStep, SpaceStation *station);
+	// queues it for RenderForcefields() if the camera can see it
+	void QueueForcefield(const CameraContext *camera, const SpaceStation *station, const matrix4x4d &viewTransform) const;
+	static void BeginFrame();
+	static void RenderForcefields(Graphics::Renderer *r);
+
 	static void Init();
 	static void Uninit();
 
@@ -123,10 +147,33 @@ private:
 		float density = 0.0;        // density of buildings within the city
 	};
 
+	// "forcefield" in a city definition file
+	struct ForcefieldDef {
+		// no forcefield where the air is breathable: an O2 atmosphere (as the
+		// planet's description has it) of normal density, neither frozen nor
+		// scorching on average
+		float minOxidizing = 0.95f;
+		float minDensity = 0.2f; // as SystemBody::GetVolatileGas
+		float maxDensity = 2.0f;
+		int minTemperature = 250; // K
+		int maxTemperature = 320;
+		// shape: radius at the ground over the city's (at least: it grows
+		// until every building fits), height over radius, subdivisions of
+		// each icosahedron edge
+		float radiusScale = 1.12f;
+		float heightRatio = 0.4f;
+		int frequency = 5;
+		vector3f colour = vector3f(1.0f);
+		float opacity = 0.45f; // of the struts
+		float strutWidth = 1.0f; // times their usual thickness
+		float lethalSpeed = 100.0f; // m/s into it that destroys a ship it stops; 0 never
+	};
+
 	struct CityFlavourType {
 		std::string flavourName;
 		std::vector<CityRadiusDef> sizeDefs;
 		std::vector<BuildingType> buildingTypes;
+		ForcefieldDef forcefield;
 	};
 
 private:
@@ -141,6 +188,19 @@ private:
 	void BuildLighting();
 	void BakeLightMap(const std::vector<Light> &lights);
 	void BuildLightGrid(const std::vector<Light> &lights);
+
+	static bool NeedsForcefield(const SystemBody *body, const ForcefieldDef &def);
+	void BuildForcefield(SpaceStation *station);
+	// whether it lets the ship through as things are now
+	bool ForcefieldPasses(const SpaceStation *station, const Ship *ship) const;
+	// the player from outside: with landing clearance or soon after leaving
+	bool PlayerMayEnter(const SpaceStation *station, const Ship *player) const;
+	// a wave where it stopped the ship, and its sound
+	void AddForcefieldImpact(const vector3d &point, const Ship *ship);
+	// bounces the player off it when not allowed in; when they last went out
+	void KeepPlayerOut(SpaceStation *station);
+	// a ship stopped coming in this fast (m/s): destroyed if too fast
+	void ForcefieldHit(SpaceStation *station, Ship *ship, double inwardSpeed);
 
 	void SetGridOccupancy(uint32_t x, uint32_t y, const uint8_t size[2]);
 	bool TestGridOccupancy(uint32_t x, uint32_t y, const uint8_t size[2]);
@@ -210,6 +270,44 @@ private:
 	// the textures before the last rebuild, which this frame's draws may still use
 	RefCountedPtr<Graphics::Texture> m_retiredLightMap;
 	RefCountedPtr<Graphics::Texture> m_retiredLightGrid;
+
+	// forcefield, in city space: a cap of the sphere round m_ffCentre
+	struct ForcefieldOpening {
+		const Body *ship; // only compared, never dereferenced
+		vector3d centre;  // where its path meets the field
+		float radius;
+		float open; // 0..1
+		bool nearby;
+	};
+	struct ForcefieldImpact {
+		vector3d point;
+		float reach; // m
+		float time;	 // s since
+	};
+	std::unique_ptr<Graphics::MeshObject> m_ffMesh;
+	std::unique_ptr<Graphics::Material> m_ffBackMaterial; // the far side, drawn first
+	std::unique_ptr<Graphics::Material> m_ffFrontMaterial;
+	std::unique_ptr<Graphics::MeshObject> m_ffStrutMesh; // struts and joints, between the two
+	std::unique_ptr<Graphics::Material> m_ffStrutMaterial;
+	double m_ffStrutRadius = 0.0;
+	std::unique_ptr<GeomTree> m_ffGeomTree;
+	std::unique_ptr<Geom> m_ffGeom;
+	vector3d m_ffCentre;
+	vector3d m_ffUp;
+	double m_ffRadius = 0.0;
+	double m_ffBottom = 0.0; // height of its lowest point over the station
+	double m_ffExtent = 0.0;
+	bool m_ffPlayerInside = false;
+	double m_ffPlayerLeftTime = -1e30; // game time
+	std::vector<ForcefieldOpening> m_ffOpenings;
+	std::vector<ForcefieldImpact> m_ffImpacts;
+
+	struct QueuedForcefield {
+		const CityOnPlanet *city;
+		matrix4x4d modelView;
+		double distance;
+	};
+	static std::vector<QueuedForcefield> s_forcefieldQueue;
 
 	// --------------------------------------------------------
 	// statics

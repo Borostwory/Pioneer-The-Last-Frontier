@@ -128,7 +128,7 @@ void CollisionSpace::TraceRay(const vector3d &start, const vector3d &dir, double
 			assert(idx < m_staticGeoms.size());
 			Geom *g = m_staticGeoms[idx];
 
-			if (g != ignore)
+			if (g != ignore && !g->IsRayTransparent())
 				TraceRayGeom(g, start, dir, len, c);
 		}
 
@@ -141,7 +141,7 @@ void CollisionSpace::TraceRay(const vector3d &start, const vector3d &dir, double
 		for (uint32_t &idx : isect_result) {
 			Geom *g = m_geoms[idx];
 
-			if (g != ignore)
+			if (g != ignore && !g->IsRayTransparent())
 				TraceRayGeom(g, start, dir, len, c);
 		}
 	}

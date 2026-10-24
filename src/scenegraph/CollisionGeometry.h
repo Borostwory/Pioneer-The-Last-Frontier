@@ -45,7 +45,9 @@ namespace SceneGraph {
 
 		enum Flag : unsigned int {
 			DOCKING  = 0x01,
-			ENTRANCE = 0x02
+			ENTRANCE = 0x02,
+			// a city's forcefield dome (CityOnPlanet.h), not from models
+			FORCEFIELD = 0x04
 		};
 
 	protected:

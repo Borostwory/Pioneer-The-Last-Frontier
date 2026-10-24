@@ -33,6 +33,9 @@ public:
 	inline void Enable() { m_active = true; }
 	inline void Disable() { m_active = false; }
 	inline bool IsEnabled() const { return m_active; }
+	// ignored by CollisionSpace::TraceRay (weapons, camera), still collides with bodies
+	inline void SetRayTransparent(bool b) { m_rayTransparent = b; }
+	inline bool IsRayTransparent() const { return m_rayTransparent; }
 	inline const GeomTree *GetGeomTree() const { return m_geomtree; }
 
 	std::vector<CollisionContact> Collide(Geom *b) const;
@@ -61,6 +64,7 @@ private:
 	int m_group;
 	int m_mailboxIndex; // used to avoid duplicate collisions
 	bool m_active;
+	bool m_rayTransparent;
 };
 
 #endif /* _GEOM_H */

@@ -22,7 +22,8 @@ Geom::Geom(const GeomTree *geomtree, const matrix4x4d &m, const vector3d &pos, v
 	m_data(data),
 	m_group(0),
 	m_mailboxIndex(0),
-	m_active(true)
+	m_active(true),
+	m_rayTransparent(false)
 {
 	m_orient.SetTranslate(pos);
 	m_invOrient = m_orient.Inverse();

@@ -12,10 +12,15 @@
 #include "ModelCache.h"
 #include "Pi.h"
 #include "Planet.h"
+#include "Player.h"
+#include "Ship.h"
+#include "Space.h"
 #include "SpaceStation.h"
 
 #include "collider/Geom.h"
+#include "collider/GeomTree.h"
 #include "core/Log.h"
+#include "core/StringHash.h"
 
 #include "graphics/Frustum.h"
 #include "graphics/Graphics.h"
@@ -24,10 +29,14 @@
 #include "graphics/Renderer.h"
 #include "graphics/Texture.h"
 #include "graphics/Types.h"
+#include "graphics/VertexArray.h"
 #include "graphics/VertexBuffer.h"
+#include "lua/LuaEvent.h"
 #include "scenegraph/Animation.h"
+#include "scenegraph/CollisionGeometry.h"
 #include "scenegraph/Model.h"
 #include "scenegraph/ModelSkin.h"
+#include "sound/Sound.h"
 
 #include "matrix3x3.h"
 #include "matrix4x4.h"
@@ -35,6 +44,11 @@
 #include "utils.h"
 
 #include <algorithm>
+#include <cmath>
+#include <map>
+#include <numeric>
+#include <set>
+#include <tuple>
 
 // Night lights (city-lights.glsl). Brightness is the light reaching a
 // surface square on at 1 m, before the inverse square falloff.
@@ -88,8 +102,85 @@ static inline float Luminance(const vector3f &c)
 	return 0.3f * c.x + 0.59f * c.y + 0.11f * c.z;
 }
 
+// Forcefield (forcefield.glsl). Its rim is sampled for the lowest ground under
+// it, and its skirt reaches this far lower (m)
+static constexpr int FORCEFIELD_RIM_SAMPLES = 48;
+static constexpr double FORCEFIELD_SKIRT = 40.0;
+// grown in steps until every building is this far inside it (m)
+static constexpr double FORCEFIELD_CLEARANCE = 20.0;
+static constexpr double FORCEFIELD_FIT_GROWTH = 1.02;
+static constexpr int FORCEFIELD_FIT_STEPS = 60;
+// struts: tubes this share of the sphere's radius thick (times the flavour's
+// strutWidth), within these bounds (m), cut in segments at most this long (m)
+// and at most this many, so the ripples can bend them; joints this much
+// thicker; never thinner than this many pixels across (at 1080 lines)
+static constexpr double FORCEFIELD_STRUT_RADIUS = 0.0012;
+static constexpr double FORCEFIELD_STRUT_RADIUS_MIN = 2.0;
+static constexpr double FORCEFIELD_STRUT_RADIUS_MAX = 12.0;
+static constexpr double FORCEFIELD_STRUT_SEGMENT = 20.0;
+static constexpr int FORCEFIELD_STRUT_MAX_SEGMENTS = 48;
+static constexpr int FORCEFIELD_STRUT_SIDES = 6;
+static constexpr float FORCEFIELD_JOINT_SCALE = 1.8f;
+static constexpr float FORCEFIELD_STRUT_MIN_PX = 1.4f;
+static constexpr float FORCEFIELD_FILL = 0.012f;
+// the far side seen from outside, dimmer so the near struts read
+static constexpr float FORCEFIELD_BACK_FACES = 0.7f;
+// faded out before cities stop being drawn (SpaceStation.cpp), camera distance (m)
+static constexpr double FORCEFIELD_FADE_NEAR = 60000.0;
+static constexpr double FORCEFIELD_FADE_FAR = 95000.0;
+// openings round crossing ships: the ship's clip radius times this, within
+// these bounds (m), open this long (s) before it reaches the field
+static constexpr size_t FORCEFIELD_MAX_OPENINGS = 8;
+static constexpr double FORCEFIELD_OPENING_SCALE = 2.5;
+static constexpr double FORCEFIELD_OPENING_MIN = 30.0;
+static constexpr double FORCEFIELD_OPENING_MAX = 400.0;
+static constexpr double FORCEFIELD_OPENING_LEAD = 0.5;
+static constexpr double FORCEFIELD_OPENING_RANGE = 3000.0; // looked for this far outside it (m)
+// the player may come back in without clearance this long after going out (s);
+// otherwise kept this many of its clip radii outside, and bounced off like this
+static constexpr double FORCEFIELD_RETURN_TIME = 10.0;
+static constexpr double FORCEFIELD_SHIP_SHELL = 1.0;
+static constexpr double FORCEFIELD_BOUNCE = 0.35;
+static constexpr double FORCEFIELD_IMPACT_SPEED = 2.0; // m/s, slower makes no wave
+static constexpr float FORCEFIELD_OPEN_TIME = 0.3f;
+static constexpr float FORCEFIELD_CLOSE_TIME = 1.0f;
+// ripples where it stops a ship: reach the ship's clip radius times this,
+// within these bounds (m), over this long (s, as its sound); no new ones this
+// soon within the reach of the last
+static constexpr size_t FORCEFIELD_MAX_IMPACTS = 4;
+static constexpr double FORCEFIELD_IMPACT_SCALE = 12.0;
+static constexpr double FORCEFIELD_IMPACT_MIN = 300.0;
+static constexpr double FORCEFIELD_IMPACT_MAX = 1200.0;
+static constexpr float FORCEFIELD_IMPACT_TIME = 2.0f;
+static constexpr float FORCEFIELD_IMPACT_REPEAT = 0.4f;
+
+namespace {
+	// as ForcefieldData in forcefield.glsl
+	struct ForcefieldDataBlock {
+		vector3f sphereCentre;
+		float sphereRadius;
+		struct {
+			vector3f centre;
+			float radius;
+		} openings[FORCEFIELD_MAX_OPENINGS];
+		struct {
+			vector3f point;
+			float age;
+		} impacts[FORCEFIELD_MAX_IMPACTS];
+		float impactReach[FORCEFIELD_MAX_IMPACTS];
+		float strutRadius, strutRadiusPerMetre, unused0, unused1; // m, at least this per metre away
+		vector3f colour;
+		float strutOpacity;
+		float fill, backFaces, fade, unused2;
+	};
+	static_assert(sizeof(ForcefieldDataBlock) == 17 * 16, "");
+
+	static const size_t s_forcefieldDataName = "ForcefieldData"_hash;
+} // namespace
+
 std::vector<CityOnPlanet::CityFlavourType> CityOnPlanet::s_cityFlavours;
 std::unique_ptr<Graphics::Material> CityOnPlanet::s_debugMat;
+std::vector<CityOnPlanet::QueuedForcefield> CityOnPlanet::s_forcefieldQueue;
 
 void CityOnPlanet::AddStaticGeomsToCollisionSpace()
 {
@@ -333,6 +424,26 @@ void CityOnPlanet::LoadCityFlavour(const FileSystem::FileInfo &file)
 
 	Log::Verbose("\tLoaded {} building definitions", numBuildingDefs);
 
+	// optional, defaults as ForcefieldDef
+	const Json &ffDef = fileData["forcefield"];
+	if (ffDef.is_object()) {
+		ForcefieldDef &ff = cityType.forcefield;
+		ff.minOxidizing = ffDef.value("minOxidizing", ff.minOxidizing);
+		ff.minDensity = ffDef.value("minDensity", ff.minDensity);
+		ff.maxDensity = ffDef.value("maxDensity", ff.maxDensity);
+		ff.minTemperature = ffDef.value("minTemperature", ff.minTemperature);
+		ff.maxTemperature = ffDef.value("maxTemperature", ff.maxTemperature);
+		ff.radiusScale = ffDef.value("radiusScale", ff.radiusScale);
+		ff.heightRatio = std::max(0.05f, ffDef.value("heightRatio", ff.heightRatio));
+		ff.frequency = std::max(1, ffDef.value("frequency", ff.frequency));
+		const auto colour = ffDef.find("colour");
+		if (colour != ffDef.end() && colour->is_array() && colour->size() == 3)
+			ff.colour = vector3f((*colour)[0].get<float>(), (*colour)[1].get<float>(), (*colour)[2].get<float>());
+		ff.opacity = Clamp(ffDef.value("opacity", ff.opacity), 0.0f, 1.0f);
+		ff.strutWidth = std::max(0.1f, ffDef.value("strutWidth", ff.strutWidth));
+		ff.lethalSpeed = std::max(0.0f, ffDef.value("lethalSpeed", ff.lethalSpeed));
+	}
+
 	s_cityFlavours.emplace_back(std::move(cityType));
 
 	Log::Info("\tCreated city definition flavour #{}", s_cityFlavours.size());
@@ -414,6 +525,8 @@ CityOnPlanet::~CityOnPlanet()
 		f->RemoveStaticGeom(m_buildings[i].geom);
 		delete m_buildings[i].geom;
 	}
+	if (m_ffGeom)
+		Frame::GetFrame(m_frame)->RemoveStaticGeom(m_ffGeom.get());
 }
 
 CityOnPlanet::CityOnPlanet(Planet *planet, SpaceStation *station, const Uint32 seed)
@@ -445,6 +558,9 @@ CityOnPlanet::CityOnPlanet(Planet *planet, SpaceStation *station, const Uint32 s
 	PrecalcInstanceTransforms(station->GetOrient());
 
 	BuildLighting();
+
+	if (NeedsForcefield(m_body, m_cityType->forcefield))
+		BuildForcefield(station);
 }
 
 //static
@@ -1259,4 +1375,482 @@ void CityOnPlanet::RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &f
 		if (!transform[i].empty())
 			m_cityType->buildingTypes[i].model->RenderShadowInstanced(modelView, transform[i]);
 	}
+}
+
+//static
+bool CityOnPlanet::NeedsForcefield(const SystemBody *body, const ForcefieldDef &def)
+{
+	if (!body->HasAtmosphere())
+		return true;
+	const double density = body->GetVolatileGas();
+	const int temperature = body->GetAverageTemp();
+	const bool breathable = body->GetAtmosOxidizing() > def.minOxidizing &&
+		density >= def.minDensity && density < def.maxDensity &&
+		temperature >= def.minTemperature && temperature <= def.maxTemperature;
+	return !breathable;
+}
+
+// The triangles of a geodesic sphere: an icosahedron with each edge cut in
+// freq, one vertex straight up (+y), corners on the unit sphere
+static std::vector<vector3d> GeodesicSphere(int freq)
+{
+	const double phi = (1.0 + std::sqrt(5.0)) / 2.0;
+	vector3d ico[12] = {
+		vector3d(-1.0, phi, 0.0), vector3d(1.0, phi, 0.0), vector3d(-1.0, -phi, 0.0), vector3d(1.0, -phi, 0.0),
+		vector3d(0.0, -1.0, phi), vector3d(0.0, 1.0, phi), vector3d(0.0, -1.0, -phi), vector3d(0.0, 1.0, -phi),
+		vector3d(phi, 0.0, -1.0), vector3d(phi, 0.0, 1.0), vector3d(-phi, 0.0, -1.0), vector3d(-phi, 0.0, 1.0)
+	};
+	static const int faces[20][3] = {
+		{ 0, 11, 5 }, { 0, 5, 1 }, { 0, 1, 7 }, { 0, 7, 10 }, { 0, 10, 11 },
+		{ 1, 5, 9 }, { 5, 11, 4 }, { 11, 10, 2 }, { 10, 7, 6 }, { 7, 1, 8 },
+		{ 3, 9, 4 }, { 3, 4, 2 }, { 3, 2, 6 }, { 3, 6, 8 }, { 3, 8, 9 },
+		{ 4, 9, 5 }, { 2, 4, 11 }, { 6, 2, 10 }, { 8, 6, 7 }, { 9, 8, 1 }
+	};
+	// turn vertex 5 about x to point up
+	const double t = -std::atan2(phi, 1.0), c = std::cos(t), s = std::sin(t);
+	for (vector3d &v : ico) {
+		v = v.Normalized();
+		v = vector3d(v.x, v.y * c - v.z * s, v.y * s + v.z * c);
+	}
+
+	std::vector<vector3d> tris;
+	tris.reserve(20 * freq * freq * 3);
+	for (const auto &f : faces) {
+		const vector3d &A = ico[f[0]], &B = ico[f[1]], &C = ico[f[2]];
+		auto pt = [&](int i, int j) {
+			return (A * double(freq - i - j) + B * double(i) + C * double(j)).Normalized();
+		};
+		for (int i = 0; i < freq; i++) {
+			for (int j = 0; j < freq - i; j++) {
+				tris.push_back(pt(i, j));
+				tris.push_back(pt(i + 1, j));
+				tris.push_back(pt(i, j + 1));
+				if (i + j < freq - 1) {
+					tris.push_back(pt(i + 1, j));
+					tris.push_back(pt(i + 1, j + 1));
+					tris.push_back(pt(i, j + 1));
+				}
+			}
+		}
+	}
+	return tris;
+}
+
+void CityOnPlanet::BuildForcefield(SpaceStation *station)
+{
+	PROFILE_SCOPED()
+	const ForcefieldDef &def = m_cityType->forcefield;
+
+	const vector3d axisX = m_stationOrient.VectorX();
+	const vector3d up = m_stationOrient.VectorY();
+	const vector3d axisZ = m_stationOrient.VectorZ();
+	const vector3d stationPos = station->GetPosition();
+
+	// the outer top corner of each building (the station's in the middle):
+	// distance out from the station and height over it, m
+	std::vector<std::pair<double, double>> tops;
+	tops.reserve(m_buildings.size() + 1);
+	auto addTop = [&tops, &up](const vector3d &pos, const Aabb &aabb) {
+		const double height = pos.Dot(up);
+		const double halfX = std::max(std::abs(aabb.min.x), std::abs(aabb.max.x));
+		const double halfZ = std::max(std::abs(aabb.min.z), std::abs(aabb.max.z));
+		tops.emplace_back((pos - up * height).Length() + std::sqrt(halfX * halfX + halfZ * halfZ), height + aabb.max.y);
+	};
+	addTop(vector3d(0.0), station->GetAabb());
+	for (const BuildingInstance &building : m_buildings)
+		addTop(vector3d(building.pos), m_cityType->buildingTypes[building.instIndex].model->GetCollisionMesh()->GetAabb());
+
+	// a cap of a sphere, radius a at the station's ground and h high, made
+	// big enough to hold every building clear of it
+	double a = m_cityRadius * def.radiusScale;
+	double h = 0.0, rho = 0.0;
+	for (int i = 0; i <= FORCEFIELD_FIT_STEPS; i++) {
+		h = a * def.heightRatio;
+		rho = (a * a + h * h) / (2.0 * h);
+		const double inner = rho - FORCEFIELD_CLEARANCE;
+		const bool fits = std::all_of(tops.begin(), tops.end(), [&](const std::pair<double, double> &top) {
+			const double dy = top.second - (h - rho);
+			return top.first * top.first + dy * dy <= inner * inner;
+		});
+		if (fits || i == FORCEFIELD_FIT_STEPS)
+			break;
+		a *= FORCEFIELD_FIT_GROWTH;
+	}
+
+	// its skirt reaches below the ground all round, which hides it
+	double bottom = 0.0;
+	for (int i = 0; i < FORCEFIELD_RIM_SAMPLES; i++) {
+		const double angle = 2.0 * M_PI * i / FORCEFIELD_RIM_SAMPLES;
+		const vector3d out = axisX * std::cos(angle) + axisZ * std::sin(angle);
+		for (const double share : { 0.8, 1.0 }) {
+			const vector3d dir = (stationPos + out * (a * share)).Normalized();
+			bottom = std::min(bottom, (dir * m_planet->GetTerrainHeight(dir) - stationPos).Dot(up));
+		}
+	}
+	bottom -= FORCEFIELD_SKIRT;
+
+	m_ffUp = up;
+	m_ffCentre = up * (h - rho);
+	m_ffRadius = rho;
+	m_ffBottom = bottom;
+
+	// the field: the triangles reaching above the skirt's foot
+	const std::vector<vector3d> sphere = GeodesicSphere(def.frequency);
+	Graphics::VertexArray va(Graphics::ATTRIB_POSITION, int(sphere.size()));
+	std::vector<vector3f> vertices;
+	vertices.reserve(sphere.size());
+	// and the joints at their corners, and the struts along their edges
+	std::vector<vector3d> joints;
+	std::map<std::tuple<int64_t, int64_t, int64_t>, Uint32> jointIndex;
+	std::set<std::pair<Uint32, Uint32>> edges;
+	auto joint = [&](const vector3d &p) {
+		const auto key = std::make_tuple(int64_t(std::llround(p.x * 100.0)), int64_t(std::llround(p.y * 100.0)), int64_t(std::llround(p.z * 100.0)));
+		const auto it = jointIndex.find(key);
+		if (it != jointIndex.end())
+			return it->second;
+		joints.push_back(p);
+		return jointIndex[key] = Uint32(joints.size() - 1);
+	};
+	for (size_t i = 0; i + 2 < sphere.size(); i += 3) {
+		vector3d p[3];
+		double top = -1e30;
+		for (int k = 0; k < 3; k++) {
+			const vector3d &u = sphere[i + k];
+			p[k] = m_ffCentre + (axisX * u.x + up * u.y + axisZ * u.z) * rho;
+			top = std::max(top, p[k].Dot(up));
+		}
+		if (top < bottom)
+			continue;
+		// counter-clockwise seen from outside
+		if ((p[1] - p[0]).Cross(p[2] - p[0]).Dot(p[0] + p[1] + p[2] - m_ffCentre * 3.0) < 0.0)
+			std::swap(p[1], p[2]);
+		Uint32 j[3];
+		for (int k = 0; k < 3; k++) {
+			va.Add(vector3f(p[k]));
+			vertices.push_back(vector3f(p[k]));
+			m_ffExtent = std::max(m_ffExtent, p[k].Length());
+			j[k] = joint(p[k]);
+		}
+		for (int k = 0; k < 3; k++)
+			edges.insert(std::make_pair(std::min(j[k], j[(k + 1) % 3]), std::max(j[k], j[(k + 1) % 3])));
+	}
+	if (vertices.empty())
+		return;
+
+	// struts: tubes made of rings round their axis, each vertex at the axis
+	// with its normal out, widened in forcefield_struts.vert
+	m_ffStrutRadius = Clamp(rho * FORCEFIELD_STRUT_RADIUS * def.strutWidth, FORCEFIELD_STRUT_RADIUS_MIN, FORCEFIELD_STRUT_RADIUS_MAX);
+	Graphics::VertexArray strutVa(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_NORMAL | Graphics::ATTRIB_UV0);
+	std::vector<Uint32> strutIndices;
+	// a ring's vertices have normals (side1 cos + side2 sin) * spread + lift;
+	// rings follow each other along side2 x side1, so the band between them
+	// is counter-clockwise seen from outside
+	struct Ring {
+		vector3d centre, side1, side2, lift;
+		double spread;
+	};
+	auto addBand = [&](const std::vector<Ring> &rings, float scale) {
+		const Uint32 n = FORCEFIELD_STRUT_SIDES;
+		const Uint32 first = strutVa.GetNumVerts();
+		for (const Ring &ring : rings) {
+			for (Uint32 k = 0; k < n; k++) {
+				const double angle = 2.0 * M_PI * k / n;
+				const vector3d normal = (ring.side1 * std::cos(angle) + ring.side2 * std::sin(angle)) * ring.spread + ring.lift;
+				strutVa.Add(vector3f(ring.centre), vector3f(normal), vector2f(scale, 0.0f));
+			}
+		}
+		for (Uint32 s = 0; s + 1 < rings.size(); s++) {
+			for (Uint32 k = 0; k < n; k++) {
+				const Uint32 a = first + s * n + k, b = first + s * n + (k + 1) % n;
+				for (Uint32 index : { a, b, a + n, b, b + n, a + n })
+					strutIndices.push_back(index);
+			}
+		}
+	};
+	for (const auto &edge : edges) {
+		const vector3d &p0 = joints[edge.first], &p1 = joints[edge.second];
+		const vector3d along = (p1 - p0).Normalized();
+		const vector3d side1 = along.Cross((p0 + p1) * 0.5 - m_ffCentre).Normalized();
+		const vector3d side2 = along.Cross(side1);
+		// cut so the ripples can bend it
+		const int segments = Clamp(int(std::ceil((p1 - p0).Length() / FORCEFIELD_STRUT_SEGMENT)), 1, FORCEFIELD_STRUT_MAX_SEGMENTS);
+		std::vector<Ring> rings;
+		for (int s = 0; s <= segments; s++)
+			rings.push_back({ p0 + (p1 - p0) * (double(s) / segments), side1, side2, vector3d(0.0), 1.0 });
+		addBand(rings, 1.0f);
+	}
+	// joints: balls of rings from their outer pole to their inner one
+	for (const vector3d &p : joints) {
+		const vector3d pole = (p - m_ffCentre).Normalized();
+		const vector3d side1 = pole.Cross(std::abs(pole.Dot(axisX)) < 0.9 ? axisX : axisZ).Normalized();
+		const vector3d side2 = side1.Cross(pole);
+		std::vector<Ring> rings;
+		for (int s = 0; s <= 4; s++) {
+			const double lat = M_PI * s / 4.0;
+			rings.push_back({ p, side1, side2, pole * std::cos(lat), std::sin(lat) });
+		}
+		addBand(rings, FORCEFIELD_JOINT_SCALE);
+	}
+
+	Graphics::Renderer *r = Pi::renderer;
+	m_ffMesh.reset(r->CreateMeshObjectFromArray(&va));
+	Graphics::RenderStateDesc rsd;
+	rsd.blendMode = Graphics::BLEND_ALPHA_PREMULT;
+	rsd.depthWrite = false;
+	rsd.cullMode = Graphics::CULL_FRONT;
+	m_ffBackMaterial.reset(r->CreateMaterial("forcefield", Graphics::MaterialDescriptor(), rsd, m_ffMesh->GetFormat()));
+	rsd.cullMode = Graphics::CULL_BACK;
+	m_ffFrontMaterial.reset(r->CreateMaterial("forcefield", Graphics::MaterialDescriptor(), rsd, m_ffMesh->GetFormat()));
+
+	Graphics::IndexBuffer *strutIndexBuffer = r->CreateIndexBuffer(strutIndices.size(), Graphics::BUFFER_USAGE_STATIC);
+	std::copy(strutIndices.begin(), strutIndices.end(), strutIndexBuffer->Map(Graphics::BUFFER_MAP_WRITE));
+	strutIndexBuffer->Unmap();
+	m_ffStrutMesh.reset(r->CreateMeshObjectFromArray(&strutVa, strutIndexBuffer));
+	// lit by the stars, and drawn into the depth buffer so the near ones hide the far
+	Graphics::MaterialDescriptor strutDesc;
+	strutDesc.lighting = true;
+	rsd.depthWrite = true;
+	m_ffStrutMaterial.reset(r->CreateMaterial("forcefield_struts", strutDesc, rsd, m_ffStrutMesh->GetFormat()));
+
+	// a static geom of the station, so its contacts come to this city (Space.cpp)
+	const int numTris = int(vertices.size() / 3);
+	std::vector<Uint32> indices(vertices.size());
+	std::iota(indices.begin(), indices.end(), 0);
+	const std::vector<Uint32> flags(numTris, SceneGraph::CollisionGeometry::FORCEFIELD);
+	m_ffGeomTree.reset(new GeomTree(int(vertices.size()), numTris, vertices, indices, flags));
+	m_ffGeom.reset(new Geom(m_ffGeomTree.get(), matrix4x4d::Identity, stationPos, static_cast<Body *>(station)));
+	m_ffGeom->SetRayTransparent(true);
+	Frame::GetFrame(m_frame)->AddStaticGeom(m_ffGeom.get());
+
+	// the player may be inside already (a game loaded there)
+	const Player *player = Pi::player;
+	if (player && player->GetFrame() == station->GetFrame())
+		m_ffPlayerInside = (player->GetPosition() - stationPos - m_ffCentre).LengthSqr() < rho * rho;
+
+	Log::Verbose("\tCityOnPlanet: forcefield {:.0f} m across, {:.0f} m high, {} triangles", 2.0 * a, h, numTris);
+}
+
+bool CityOnPlanet::ForcefieldPasses(const SpaceStation *station, const Ship *ship) const
+{
+	// other ships are traffic
+	if (!ship->IsType(ObjectType::PLAYER))
+		return true;
+	// going out, or already in, so nobody is shut in
+	const vector3d rel = ship->GetPosition() - (station->GetPosition() + m_ffCentre);
+	if (m_ffPlayerInside || rel.LengthSqr() < m_ffRadius * m_ffRadius || rel.Dot(ship->GetVelocity()) >= 0.0)
+		return true;
+	return PlayerMayEnter(station, ship);
+}
+
+bool CityOnPlanet::PlayerMayEnter(const SpaceStation *station, const Ship *player) const
+{
+	// with landing clearance, or back soon after leaving
+	return station->GetMyDockingPort(player) != -1 ||
+		Pi::game->GetTime() - m_ffPlayerLeftTime < FORCEFIELD_RETURN_TIME;
+}
+
+void CityOnPlanet::AddForcefieldImpact(const vector3d &point, const Ship *ship)
+{
+	// none where one just started
+	for (const ForcefieldImpact &impact : m_ffImpacts) {
+		if (impact.time < FORCEFIELD_IMPACT_REPEAT && (impact.point - point).LengthSqr() < impact.reach * impact.reach)
+			return;
+	}
+	if (m_ffImpacts.size() >= FORCEFIELD_MAX_IMPACTS)
+		m_ffImpacts.erase(m_ffImpacts.begin());
+	const double reach = Clamp(ship->GetClipRadius() * FORCEFIELD_IMPACT_SCALE, FORCEFIELD_IMPACT_MIN, FORCEFIELD_IMPACT_MAX);
+	m_ffImpacts.push_back({ point, float(reach), 0.0f });
+	Sound::BodyMakeNoise(ship, "MembraneBounce", 1.0f);
+}
+
+bool CityOnPlanet::ForcefieldStops(SpaceStation *station, Ship *ship)
+{
+	if (!HasForcefield() || ForcefieldPasses(station, ship))
+		return false;
+
+	// a wave from where it hit
+	const vector3d n = (ship->GetPosition() - (station->GetPosition() + m_ffCentre)).Normalized();
+	AddForcefieldImpact(m_ffCentre + n * m_ffRadius, ship);
+	ForcefieldHit(station, ship, -ship->GetVelocity().Dot(n));
+	return true;
+}
+
+void CityOnPlanet::ForcefieldHit(SpaceStation *station, Ship *ship, double inwardSpeed)
+{
+	// too fast and it is destroyed, as hitting the ground
+	const float lethal = m_cityType->forcefield.lethalSpeed;
+	if (lethal > 0.0f && inwardSpeed > lethal && !ship->IsDead() && !ship->IsInvulnerable()) {
+		LuaEvent::Queue("onShipDestroyed", ship, static_cast<Body *>(station));
+		ship->Explode();
+	}
+}
+
+void CityOnPlanet::KeepPlayerOut(SpaceStation *station)
+{
+	Ship *player = Pi::player;
+	if (!player || player->GetFrame() != station->GetFrame()) {
+		m_ffPlayerInside = false;
+		return;
+	}
+
+	const vector3d centre = station->GetPosition() + m_ffCentre;
+	vector3d rel = player->GetPosition() - centre;
+	double dist = rel.Length();
+
+	// coming to it from outside, not allowed in: put back at its own radius
+	// outside and bounced off, however fast it came (collisions can miss a
+	// fast ship stepping through)
+	const double shell = m_ffRadius + player->GetClipRadius() * FORCEFIELD_SHIP_SHELL;
+	if (!m_ffPlayerInside && dist < shell && dist > 0.0 && player->GetFlightState() == Ship::FLYING &&
+		(m_ffCentre + rel * (m_ffRadius / dist)).Dot(m_ffUp) > m_ffBottom && !PlayerMayEnter(station, player)) {
+		const vector3d n = rel / dist;
+		player->SetPosition(centre + n * shell);
+		const vector3d vel = player->GetVelocity();
+		const double inward = vel.Dot(n);
+		if (inward < 0.0)
+			player->SetVelocity(vel - n * (inward * (1.0 + FORCEFIELD_BOUNCE)));
+		// not for resting on it
+		if (inward < -FORCEFIELD_IMPACT_SPEED)
+			AddForcefieldImpact(m_ffCentre + n * m_ffRadius, player);
+		ForcefieldHit(station, player, -inward);
+		rel = n * shell;
+		dist = shell;
+	}
+
+	// when the player last went out
+	const bool inside = dist < m_ffRadius;
+	if (m_ffPlayerInside && !inside)
+		m_ffPlayerLeftTime = Pi::game->GetTime();
+	m_ffPlayerInside = inside;
+}
+
+void CityOnPlanet::UpdateForcefield(float timeStep, SpaceStation *station)
+{
+	if (!HasForcefield())
+		return;
+	PROFILE_SCOPED()
+
+	for (ForcefieldImpact &impact : m_ffImpacts)
+		impact.time += timeStep;
+	m_ffImpacts.erase(std::remove_if(m_ffImpacts.begin(), m_ffImpacts.end(),
+						  [](const ForcefieldImpact &impact) { return impact.time >= FORCEFIELD_IMPACT_TIME; }),
+		m_ffImpacts.end());
+
+	KeepPlayerOut(station);
+
+	// open round the ships it lets through as they come to it
+	for (ForcefieldOpening &opening : m_ffOpenings)
+		opening.nearby = false;
+	const vector3d centre = station->GetPosition() + m_ffCentre;
+	for (Body *body : Pi::game->GetSpace()->GetBodiesMaybeNear(station, m_ffExtent + FORCEFIELD_OPENING_RANGE)) {
+		if (!body->IsType(ObjectType::SHIP) || body->GetFrame() != station->GetFrame())
+			continue;
+		const Ship *ship = static_cast<const Ship *>(body);
+		if (ship->GetFlightState() != Ship::FLYING || !ForcefieldPasses(station, ship))
+			continue;
+
+		const vector3d rel = ship->GetPosition() - centre;
+		const double dist = rel.Length();
+		const double radius = Clamp(ship->GetClipRadius() * FORCEFIELD_OPENING_SCALE, FORCEFIELD_OPENING_MIN, FORCEFIELD_OPENING_MAX);
+		if (std::abs(dist - m_ffRadius) > radius + ship->GetVelocity().Length() * FORCEFIELD_OPENING_LEAD)
+			continue;
+		// where it meets the field, if the field is there and not underground
+		const vector3d point = m_ffCentre + rel * (m_ffRadius / dist);
+		if (point.Dot(m_ffUp) < m_ffBottom)
+			continue;
+
+		auto it = std::find_if(m_ffOpenings.begin(), m_ffOpenings.end(),
+			[body](const ForcefieldOpening &opening) { return opening.ship == body; });
+		if (it != m_ffOpenings.end()) {
+			it->centre = point;
+			it->radius = float(radius);
+			it->nearby = true;
+		} else if (m_ffOpenings.size() < FORCEFIELD_MAX_OPENINGS) {
+			m_ffOpenings.push_back({ body, point, float(radius), 0.0f, true });
+			Sound::BodyMakeNoise(ship, "MembranePass", 1.0f);
+		}
+	}
+
+	for (ForcefieldOpening &opening : m_ffOpenings) {
+		opening.open = opening.nearby ?
+			std::min(1.0f, opening.open + timeStep / FORCEFIELD_OPEN_TIME) :
+			std::max(0.0f, opening.open - timeStep / FORCEFIELD_CLOSE_TIME);
+	}
+	m_ffOpenings.erase(std::remove_if(m_ffOpenings.begin(), m_ffOpenings.end(),
+						   [](const ForcefieldOpening &opening) { return !opening.nearby && opening.open <= 0.0f; }),
+		m_ffOpenings.end());
+}
+
+void CityOnPlanet::QueueForcefield(const CameraContext *camera, const SpaceStation *station, const matrix4x4d &viewTransform) const
+{
+	if (!HasForcefield())
+		return;
+	const matrix4x4d modelView = viewTransform * matrix4x4d::Translation(station->GetInterpPosition());
+	const vector3d origin = modelView * vector3d(0.0);
+	if (!camera->GetFrustum().TestSphere(origin, m_ffExtent))
+		return;
+	s_forcefieldQueue.push_back({ this, modelView, origin.Length() });
+}
+
+//static
+void CityOnPlanet::BeginFrame()
+{
+	s_forcefieldQueue.clear();
+}
+
+//static
+void CityOnPlanet::RenderForcefields(Graphics::Renderer *r)
+{
+	PROFILE_SCOPED()
+	std::sort(s_forcefieldQueue.begin(), s_forcefieldQueue.end(),
+		[](const QueuedForcefield &a, const QueuedForcefield &b) { return a.distance > b.distance; });
+
+	for (const QueuedForcefield &queued : s_forcefieldQueue) {
+		const CityOnPlanet *city = queued.city;
+		const double t = Clamp((FORCEFIELD_FADE_FAR - queued.distance) / (FORCEFIELD_FADE_FAR - FORCEFIELD_FADE_NEAR), 0.0, 1.0);
+		if (t <= 0.0)
+			continue;
+
+		ForcefieldDataBlock data = {};
+		data.sphereCentre = vector3f(city->m_ffCentre);
+		data.sphereRadius = float(city->m_ffRadius);
+		size_t numOpenings = 0;
+		for (const ForcefieldOpening &opening : city->m_ffOpenings) {
+			if (opening.open <= 0.0f)
+				continue;
+			const float open = opening.open * opening.open * (3.0f - 2.0f * opening.open);
+			data.openings[numOpenings].centre = vector3f(opening.centre);
+			data.openings[numOpenings].radius = opening.radius * open;
+			if (++numOpenings == FORCEFIELD_MAX_OPENINGS)
+				break;
+		}
+		for (size_t i = 0; i < FORCEFIELD_MAX_IMPACTS; i++) {
+			if (i < city->m_ffImpacts.size()) {
+				const ForcefieldImpact &impact = city->m_ffImpacts[i];
+				data.impacts[i].point = vector3f(impact.point);
+				data.impacts[i].age = impact.time / FORCEFIELD_IMPACT_TIME;
+				data.impactReach[i] = impact.reach;
+			} else {
+				data.impacts[i].age = -1.0f;
+			}
+		}
+		data.strutRadius = float(city->m_ffStrutRadius);
+		// half the least width, in radians a pixel spans
+		data.strutRadiusPerMetre = 0.5f * FORCEFIELD_STRUT_MIN_PX * float(Graphics::GetFovFactor()) / float(r->GetWindowHeight());
+		data.colour = city->m_cityType->forcefield.colour;
+		data.strutOpacity = city->m_cityType->forcefield.opacity;
+		data.fill = FORCEFIELD_FILL;
+		data.backFaces = FORCEFIELD_BACK_FACES;
+		data.fade = float(t * t * (3.0 - 2.0 * t));
+
+		city->m_ffBackMaterial->SetBufferDynamic(s_forcefieldDataName, &data);
+		city->m_ffFrontMaterial->SetBufferDynamic(s_forcefieldDataName, &data);
+		city->m_ffStrutMaterial->SetBufferDynamic(s_forcefieldDataName, &data);
+		Graphics::Renderer::MatrixTicket mt(r, matrix4x4f(queued.modelView));
+		// the far side of the field, the struts, the near side
+		r->DrawMesh(city->m_ffMesh.get(), city->m_ffBackMaterial.get());
+		r->DrawMesh(city->m_ffStrutMesh.get(), city->m_ffStrutMaterial.get());
+		r->DrawMesh(city->m_ffMesh.get(), city->m_ffFrontMaterial.get());
+	}
+	s_forcefieldQueue.clear();
 }

@@ -24,6 +24,7 @@
 #include "galaxy/Galaxy.h"
 #include "lua/LuaEvent.h"
 #include "lua/LuaTimer.h"
+#include "scenegraph/CollisionGeometry.h"
 
 #include "profiler/Profiler.h"
 
@@ -908,6 +909,18 @@ void Space::GenBody(const double at_time, SystemBody *sbody, FrameId fId, std::v
 
 static bool OnCollision(Body *o1, Body *o2, CollisionContact *c, double relativeVel)
 {
+	// a city's forcefield (owned by its station) stops only the player's ship
+	// coming in without clearance, and does no damage (CityOnPlanet.h)
+	if (c->geomFlag & SceneGraph::CollisionGeometry::FORCEFIELD) {
+		Body *station = (o1 && o1->IsType(ObjectType::SPACESTATION)) ? o1 : o2;
+		Body *other = station == o1 ? o2 : o1;
+		if (station && other && station->IsType(ObjectType::SPACESTATION)) {
+			CityOnPlanet *city = static_cast<SpaceStation *>(station)->GetAdjacentCity();
+			return city && other->IsType(ObjectType::SHIP) &&
+				city->ForcefieldStops(static_cast<SpaceStation *>(station), static_cast<Ship *>(other));
+		}
+	}
+
 	/* XXX: if you create a new class inheriting from Object instead of Body, this code must be updated */
 	if (o1 && !o1->OnCollision(o2, c->geomFlag, relativeVel)) return false;
 	if (o2 && !o2->OnCollision(o1, c->geomFlag, relativeVel)) return false;

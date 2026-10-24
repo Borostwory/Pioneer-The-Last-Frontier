@@ -1,0 +1,13 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# The struts and joints of a city's forcefield dome (CityOnPlanet::RenderForcefields)
+
+Shader forcefield_struts
+
+Buffer LightData binding=0
+Buffer DrawData binding=1
+Buffer ForcefieldData binding=2
+
+Vertex "forcefield_struts.vert"
+Fragment "forcefield_struts.frag"

@@ -721,6 +721,8 @@ void SpaceStation::StaticUpdate(const float timeStep)
 {
 	DockingUpdate(timeStep);
 	m_navLights->Update(timeStep);
+	if (m_adjacentCity)
+		m_adjacentCity->UpdateForcefield(timeStep, this);
 }
 
 void SpaceStation::TimeStepUpdate(const float timeStep)
@@ -798,11 +800,12 @@ void SpaceStation::Render(Graphics::Renderer *r, const Camera *camera, const vec
 
 		if (!m_adjacentCity) {
 			m_adjacentCity = new CityOnPlanet(static_cast<Planet *>(b), this, m_sbody->GetSeed());
-			// Update clipping radius
-			SetClipRadius(m_adjacentCity->GetClipRadius());
+			// Update clipping radius, the forcefield included
+			SetClipRadius(std::max(double(m_adjacentCity->GetClipRadius()), m_adjacentCity->GetForcefieldExtent()));
 		}
 
 		m_adjacentCity->Render(r, camera->GetContext(), this, viewCoords, viewTransform);
+		m_adjacentCity->QueueForcefield(camera->GetContext(), this, viewTransform);
 
 		RenderModel(r, camera, viewCoords, viewTransform);
 		m_navLights->Render(r);

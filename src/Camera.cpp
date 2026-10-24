@@ -300,6 +300,8 @@ void Camera::Draw(const Body *excludeBody)
 
 	// planets queue their clouds while being drawn, see PlanetClouds.h
 	PlanetClouds::BeginFrame();
+	// and stations their cities' forcefields
+	CityOnPlanet::BeginFrame();
 
 	matrix4x4d trans2bg;
 	Frame::GetFrameTransform(rootFrameId, camFrameId, trans2bg);
@@ -411,6 +413,12 @@ void Camera::Draw(const Body *excludeBody)
 	PlanetClouds::RenderCloudPasses(m_renderer);
 	m_renderer->EndGpuTimer();
 	m_renderer->SetCityLightData(nullptr, nullptr, nullptr);
+
+	// city forcefields queued by their stations, over everything solid and
+	// the clouds, without hiding what comes after (CityOnPlanet.h)
+	m_renderer->BeginGpuTimer("forcefields");
+	CityOnPlanet::RenderForcefields(m_renderer);
+	m_renderer->EndGpuTimer();
 
 	if (!billboards.IsEmpty()) {
 		Graphics::Renderer::MatrixTicket mt(m_renderer, matrix4x4f::Identity);
