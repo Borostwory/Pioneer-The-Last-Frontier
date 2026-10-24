@@ -128,10 +128,16 @@ void main(void)
 		BlinnPhongDirectionalLight(uLight[i], intensity[i], surface, eyePos, diffuse, specular);
 	}
 
-	// night lights of the nearest city
+	// night lights of the nearest city; models are lit by the star at full
+	// strength even where the terrain is dim (far from the star), so the
+	// city's light gives way on their sunlit sides
+	float sunlit = 0.0;
+	for (int i=0; i<NUM_LIGHTS; ++i)
+		sunlit += intensity[i] * dot(uLight[i].diffuse.rgb, vec3(0.3, 0.59, 0.11)) * max(dot(surface.normal, normalize(uLight[i].position.xyz)), 0.0);
+	float cityGain = CITY_MODEL_GAIN * (1.0 - CITY_SUNLIT_DIMMING * smoothstep(0.0, 0.3, sunlit));
 	vec3 citySpecular = vec3(0.0);
-	diffuse += surface.color.xyz * cityLightAt(eyePos, surface.normal, surface.shininess, citySpecular);
-	specular += surface.specular * citySpecular;
+	diffuse += surface.color.xyz * cityGain * cityLightAt(eyePos, surface.normal, surface.shininess, citySpecular);
+	specular += surface.specular * cityGain * citySpecular;
 
 #if 0
 	// sturnclaw: toying with spherical gaussian indirect lighting.

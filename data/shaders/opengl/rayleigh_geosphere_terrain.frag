@@ -90,15 +90,7 @@ void main(void)
 	vec3 light = vec3(0.0);
 	for (int i = 0; i < NUM_LIGHTS; ++i)
 		light += lightAtSurface[i] * max(dot(N, normalize(uLight[i].position.xyz)), 0.0) * (i == 0 ? sunLit : 1.0);
-	// night lights of the nearest city
-	vec3 citySpecular = vec3(0.0);
-	vec3 cityLight = cityLightAt(varyingEyepos, N, 0.0, citySpecular);
-	vec3 land = albedoColor.rgb * detailMul.rgb * (light + cityLight);
-	// and of the cities seen from afar, where the starlight on level ground is dim
-	vec3 daylight = vec3(0.0);
-	for (int i = 0; i < NUM_LIGHTS; ++i)
-		daylight += lightAtSurface[i] * max(dot(surfaceUp, normalize(uLight[i].position.xyz)), 0.0);
-	land += cityGlowAt(surfaceUp, geosphereRadius, max(length(materialDx), length(materialDy)), dot(daylight, vec3(0.3, 0.59, 0.11)));
+	vec3 land = albedoColor.rgb * detailMul.rgb * light;
 #ifdef TERRAIN_WITH_LAVA
 	land += material.emission.xyz * float(NUM_LIGHTS);
 #endif
@@ -107,6 +99,18 @@ void main(void)
 	// add extra brightness to atmosphere-less planetoids and dim stars
 	land *= 2.0;
 #endif
+
+	// night lights of the nearest city (after the brightening for dim stars,
+	// which is not theirs), on paved ground (CITY_GROUND_ALBEDO_*)
+	vec3 citySpecular = vec3(0.0);
+	vec3 cityLight = cityLightAt(varyingEyepos, N, 0.0, citySpecular);
+	vec3 cityLand = clamp(albedoColor.rgb * detailMul.rgb, vec3(CITY_GROUND_ALBEDO_MIN), vec3(CITY_GROUND_ALBEDO_MAX)) * cityLight;
+	// and of the cities seen from afar, where the starlight on level ground is dim
+	vec3 daylight = vec3(0.0);
+	for (int i = 0; i < NUM_LIGHTS; ++i)
+		daylight += lightAtSurface[i] * max(dot(surfaceUp, normalize(uLight[i].position.xyz)), 0.0);
+	cityLand += cityGlowAt(surfaceUp, geosphereRadius, max(length(materialDx), length(materialDy)), dot(daylight, vec3(0.3, 0.59, 0.11)));
+	land += cityLand * viewTransmittance;
 	frag_color = vec4(land, 0.0);
 #else
 	frag_color = detailMul * vertexColor;

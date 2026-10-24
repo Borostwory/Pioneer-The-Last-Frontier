@@ -38,6 +38,22 @@ uniform sampler2D cityLightGrid;
 // light bounced off the lit ground onto surfaces facing down
 #define CITY_GROUND_BOUNCE 0.2
 #define CITY_BOUNCE_HEIGHT 150.0
+// a little of the light around reaching the walls, near and far: the glow
+// of the lit streets, windows and the lamps further away, fading over this
+// height above the ground [m]
+#define CITY_WALL_FILL 0.35
+#define CITY_WALL_FILL_HEIGHT 300.0
+// the models' lighting is written out as it is, while the terrain's is
+// tone mapped (1 - exp(-x)) and sRGB encoded, which brightens dim light:
+// the city's light on models is raised to match
+#define CITY_MODEL_GAIN 1.6
+// share of the city's light models lose where the star lights them
+#define CITY_SUNLIT_DIMMING 0.7
+// the city's light on the terrain falls on paved ground of this lightness
+// (the ground's own, kept within it), so it shows alike on dark grass and
+// soil and on bright rock and ice
+#define CITY_GROUND_ALBEDO_MIN 0.25
+#define CITY_GROUND_ALBEDO_MAX 0.35
 
 float cityComponent(vec4 v, int c)
 {
@@ -129,6 +145,7 @@ vec3 cityLightAt(vec3 viewPos, vec3 viewN, float shininess, inout vec3 specular)
 	if (nearShare < 1.0)
 		E += (1.0 - nearShare) * m.rgb * exp(-h / CITY_MAP_HEIGHT) * mix(CITY_MAP_WALL, 1.0, max(n.y, 0.0));
 	E += m.rgb * CITY_GROUND_BOUNCE * max(-n.y, 0.0) * exp(-h / CITY_BOUNCE_HEIGHT);
+	E += m.rgb * CITY_WALL_FILL * (1.0 - abs(n.y)) * exp(-h / CITY_WALL_FILL_HEIGHT);
 
 	return E * cityState.x;
 }

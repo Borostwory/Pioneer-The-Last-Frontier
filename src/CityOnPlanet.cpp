@@ -42,14 +42,20 @@
 static constexpr float NO_CELL_HEIGHT = -1e30f;
 static constexpr float LAMP_HEIGHT = 8.0f;
 static constexpr float LAMP_RADIUS = 40.0f;
-static constexpr float LAMP_BRIGHTNESS = 50.0f;
+static constexpr float LAMP_BRIGHTNESS = 80.0f;
 // lights at the foot of the buildings' facades
 static constexpr float FACADE_HEIGHT = 4.0f;
 static constexpr float FACADE_OFFSET = 4.0f;
 // floodlights around the spaceport
 static constexpr float FLOOD_HEIGHT = 18.0f;
 static constexpr float FLOOD_RADIUS = 90.0f;
-static constexpr float FLOOD_BRIGHTNESS = 350.0f;
+static constexpr float FLOOD_BRIGHTNESS = 400.0f;
+// floodlights over each landing pad: four around its centre, this far out
+// along each axis and this high above it (m)
+static constexpr float PAD_LIGHT_OFFSET = 35.0f;
+static constexpr float PAD_LIGHT_HEIGHT = 30.0f;
+static constexpr float PAD_LIGHT_RADIUS = 110.0f;
+static constexpr float PAD_LIGHT_BRIGHTNESS = 700.0f;
 static constexpr float FLOOD_SPACING = 60.0f;
 // the light map's texels are at least this size (m), and at most this many across
 static constexpr float LIGHT_MAP_TEXEL = 16.0f;
@@ -220,23 +226,23 @@ void CityOnPlanet::LoadBuildingType(std::string_view key, const Json &buildingDe
 	switch (out.buildingKind) {
 	case SectorKind::Industry:
 		out.lightColour = vector3f(1.0f, 0.62f, 0.3f);
-		out.lightIntensity = 30.0f;
+		out.lightIntensity = 48.0f;
 		break;
 	case SectorKind::Storage:
 		out.lightColour = vector3f(0.82f, 0.9f, 1.0f);
-		out.lightIntensity = 12.0f;
+		out.lightIntensity = 20.0f;
 		break;
 	case SectorKind::Monument:
 		out.lightColour = vector3f(0.95f, 0.95f, 1.0f);
-		out.lightIntensity = 45.0f;
+		out.lightIntensity = 70.0f;
 		break;
 	case SectorKind::Habitat:
 		out.lightColour = vector3f(1.0f, 0.82f, 0.6f);
-		out.lightIntensity = 22.0f;
+		out.lightIntensity = 35.0f;
 		break;
 	default:
 		out.lightColour = vector3f(1.0f, 0.78f, 0.55f);
-		out.lightIntensity = 15.0f;
+		out.lightIntensity = 25.0f;
 		break;
 	}
 	const auto lightColour = buildingDef.find("light-colour");
@@ -818,6 +824,16 @@ void CityOnPlanet::GenerateFixedLights(const SpaceStation *station, uint32_t cit
 		for (int i = 0; i < count; i++) {
 			const vector3d p = a + (b - a) * ((i + 0.5) / count);
 			m_fixedLights.push_back({ vector3f(p) + vector3f(0.0f, FLOOD_HEIGHT, 0.0f), FLOOD_RADIUS, floodColour, FLOOD_HEIGHT });
+		}
+	}
+
+	// floodlights over the landing pads, where docked ships stand
+	const vector3f padColour = vector3f(0.92f, 0.96f, 1.0f) * PAD_LIGHT_BRIGHTNESS;
+	for (int bay = 0; bay < station->GetDockingPortCount(); bay++) {
+		const vector3f pad = station->GetStationType()->GetStageTransform(bay, DockStage::DOCKED).GetTranslate();
+		for (int i = 0; i < 4; i++) {
+			const vector3f offset((i & 1 ? 1.0f : -1.0f) * PAD_LIGHT_OFFSET, PAD_LIGHT_HEIGHT, (i & 2 ? 1.0f : -1.0f) * PAD_LIGHT_OFFSET);
+			m_fixedLights.push_back({ pad + offset, PAD_LIGHT_RADIUS, padColour, PAD_LIGHT_HEIGHT });
 		}
 	}
 
