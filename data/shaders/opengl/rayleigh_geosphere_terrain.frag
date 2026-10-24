@@ -48,9 +48,7 @@ in vec3 waterSkyLight;
 #include "terrain-materials.glsl"
 #include "shadows.glsl"
 #include "city-lights.glsl"
-#if (NUM_LIGHTS > 0)
 #include "city-glow.glsl"
-#endif
 
 void main(void)
 {
@@ -96,8 +94,11 @@ void main(void)
 	vec3 citySpecular = vec3(0.0);
 	vec3 cityLight = cityLightAt(varyingEyepos, N, 0.0, citySpecular);
 	vec3 land = albedoColor.rgb * detailMul.rgb * (light + cityLight);
-	// and of the settlements seen from afar
-	land += cityGlowAt(surfaceUp, max(length(materialDx), length(materialDy)));
+	// and of the cities seen from afar, where the starlight on level ground is dim
+	vec3 daylight = vec3(0.0);
+	for (int i = 0; i < NUM_LIGHTS; ++i)
+		daylight += lightAtSurface[i] * max(dot(surfaceUp, normalize(uLight[i].position.xyz)), 0.0);
+	land += cityGlowAt(surfaceUp, geosphereRadius, max(length(materialDx), length(materialDy)), dot(daylight, vec3(0.3, 0.59, 0.11)));
 #ifdef TERRAIN_WITH_LAVA
 	land += material.emission.xyz * float(NUM_LIGHTS);
 #endif

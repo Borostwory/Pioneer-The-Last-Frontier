@@ -62,6 +62,17 @@ namespace Graphics {
 	};
 	static_assert(sizeof(CityLightDataBlock) == 112, "CityLightDataBlock must match the std140 layout of CityLightData");
 
+	// Layout of the CityGlowData uniform buffer (std140, see city-glow.glsl):
+	// a planet's starport cities seen from afar
+	struct CityGlowDataBlock {
+		static constexpr int MAX_CITIES = 16;
+
+		float params[4];			  // unused, number of cities, brightness, unused
+		float cities[MAX_CITIES][4]; // planet-fixed direction to the city, its radius (m)
+		float fade[MAX_CITIES];		  // brightness of each city
+	};
+	static_assert(sizeof(CityGlowDataBlock) == 336, "CityGlowDataBlock must match the std140 layout of CityGlowData");
+
 	// Renderer base, functions return false if
 	// failed/unsupported
 	class Renderer {

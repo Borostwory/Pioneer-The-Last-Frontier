@@ -19,6 +19,7 @@
 class Body;
 class Frame;
 class SceneShadows;
+class SpaceStation;
 
 namespace Graphics {
 	class Material;
@@ -139,6 +140,8 @@ public:
 
 private:
 	void SetCityLights() const;
+	double CityDarkness(const SpaceStation *station, const vector3d &up) const;
+	void DrawCityDots(FrameId camFrameId) const;
 
 	std::vector<float> oldLightIntensities;
 
@@ -146,6 +149,7 @@ private:
 	Graphics::Renderer *m_renderer;
 
 	std::unique_ptr<Graphics::Material> m_billboardMaterial;
+	std::unique_ptr<Graphics::Material> m_cityDotMaterial;
 	std::unique_ptr<SceneShadows> m_shadows;
 
 	// temp attrs for sorting and drawing

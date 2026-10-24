@@ -26,6 +26,7 @@
 namespace {
 	static const size_t s_cloudDataName = "CloudData"_hash;
 	static const size_t s_cloudPassDataName = "CloudPassData"_hash;
+	static const size_t s_cityGlowDataName = "CityGlowData"_hash;
 	static const size_t s_cloudHeightTexName = "cloudHeightTex"_hash;
 	static const size_t s_sceneDepthName = "sceneDepth"_hash;
 	static const size_t s_sceneDistName = "sceneDist"_hash;
@@ -145,6 +146,7 @@ namespace {
 		vector3f center;
 		Color4f atmosColor;
 		RefCountedPtr<Graphics::Texture> heightTex;
+		Graphics::CityGlowDataBlock cityGlow;
 	};
 
 	struct PassResources {
@@ -712,7 +714,8 @@ namespace PlanetClouds {
 		AdvanceCloudClock();
 	}
 
-	void QueueCloudPass(const SystemBody *sbody, const CloudDataBlock &data, const vector3f &center, const Color4f &atmosColor, CloudHeightMap *heightMap)
+	void QueueCloudPass(const SystemBody *sbody, const CloudDataBlock &data, const vector3f &center, const Color4f &atmosColor, CloudHeightMap *heightMap,
+		const Graphics::CityGlowDataBlock &cityGlow)
 	{
 		// only planets that can have clouds; the shaders decide the rest
 		if (sbody->GetType() != SystemBody::TYPE_PLANET_TERRESTRIAL || !sbody->HasAtmosphere() || !Pi::game || !CloudsEnabled())
@@ -726,6 +729,7 @@ namespace PlanetClouds {
 		e.center = center;
 		e.atmosColor = atmosColor;
 		e.heightTex.Reset(heightMap ? heightMap->GetTexture() : GetFallbackTexture());
+		e.cityGlow = cityGlow;
 		s_queue.push_back(e);
 	}
 
@@ -874,6 +878,7 @@ namespace PlanetClouds {
 				r->SetViewport({ 0, 0, pass.shadowUsedW, pass.shadowUsedH });
 				pass.shadowMaterial->SetBufferDynamic(s_cloudPassDataName, &passData);
 				pass.shadowMaterial->SetBufferDynamic(s_cloudDataName, &e.cloudData);
+				pass.shadowMaterial->SetBufferDynamic(s_cityGlowDataName, &e.cityGlow);
 				pass.shadowMaterial->SetTexture(s_sceneDistName, pass.distTarget->GetColorTexture());
 				pass.shadowMaterial->SetTexture(s_cloudHeightTexName, e.heightTex.Get());
 				pass.shadowMaterial->SetTexture(s_weatherXYName, weatherXY);

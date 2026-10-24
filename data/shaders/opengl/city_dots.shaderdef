@@ -1,0 +1,11 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# Lights of distant cities as soft dots (Camera::DrawCityDots)
+
+Shader city_dots
+
+Buffer DrawData binding=1
+
+Vertex "city_dots.vert"
+Fragment "city_dots.frag"

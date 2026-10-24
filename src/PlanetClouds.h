@@ -21,6 +21,7 @@ namespace Graphics {
 	class Material;
 	class Renderer;
 	class Texture;
+	struct CityGlowDataBlock;
 } // namespace Graphics
 
 // Volumetric clouds for terrestrial planets.
@@ -96,7 +97,9 @@ namespace PlanetClouds {
 
 	// Called by GeoSphere::Render: draw clouds for this planet in this frame's
 	// cloud pass. center: planet centre in view space [planet radii].
-	void QueueCloudPass(const SystemBody *sbody, const CloudDataBlock &data, const vector3f &center, const Color4f &atmosColor, CloudHeightMap *heightMap);
+	// cityGlow: the planet's cities seen from afar, which the cloud shadows leave lit (city-glow.glsl)
+	void QueueCloudPass(const SystemBody *sbody, const CloudDataBlock &data, const vector3f &center, const Color4f &atmosColor, CloudHeightMap *heightMap,
+		const Graphics::CityGlowDataBlock &cityGlow);
 
 	// Called by Camera::Draw after all bodies are drawn: renders the queued
 	// clouds over the current render target.

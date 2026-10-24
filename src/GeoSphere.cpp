@@ -515,20 +515,13 @@ void GeoSphere::ProcessQuadSplitRequests()
 	mQuadSplitCandidates.clear();
 }
 
-// Layout of the CityGlowData uniform buffer (std140, see city-glow.glsl)
-static constexpr int CITY_GLOW_MAX = 16;
-struct CityGlowDataBlock {
-	float params[4];				// unused, number of cities, brightness, unused
-	float cities[CITY_GLOW_MAX][4]; // planet-fixed direction to the city, its radius (m)
-	float fade[CITY_GLOW_MAX];		// brightness of each city
-};
-static_assert(sizeof(CityGlowDataBlock) == 336, "CityGlowDataBlock must match the std140 layout of CityGlowData");
-
 // The night lights seen from afar: the starport cities, faded out where the
 // camera is close enough to see their own lights. campos: the camera,
-// planet-fixed, in planet radii.
-void GeoSphere::SetCityGlowData(const vector3d &campos)
+// planet-fixed, in planet radii. Sets them on the surface material, and
+// fills data for the cloud shadows.
+void GeoSphere::SetCityGlowData(const vector3d &campos, Graphics::CityGlowDataBlock &data)
 {
+	using Graphics::CityGlowDataBlock;
 	if (!m_glowCitiesFound && Pi::game && Pi::game->GetSpace()) {
 		m_glowCitiesFound = true;
 		for (const SystemBody *kid : GetSystemBody()->GetChildren()) {
@@ -544,12 +537,12 @@ void GeoSphere::SetCityGlowData(const vector3d &campos)
 		}
 	}
 
-	CityGlowDataBlock data{};
-	data.params[1] = float(std::min<size_t>(m_glowCities.size(), CITY_GLOW_MAX));
+	data = CityGlowDataBlock{};
+	data.params[1] = float(std::min<size_t>(m_glowCities.size(), CityGlowDataBlock::MAX_CITIES));
 	data.params[2] = Pi::config->Int("CityGlow") / 100.0f;
 
 	const double radius = GetSystemBody()->GetRadius();
-	for (size_t i = 0; i < m_glowCities.size() && i < size_t(CITY_GLOW_MAX); i++) {
+	for (size_t i = 0; i < m_glowCities.size() && i < size_t(CityGlowDataBlock::MAX_CITIES); i++) {
 		const GlowCity &city = m_glowCities[i];
 		const vector3d dir = city.pos.Normalized();
 		data.cities[i][0] = float(dir.x);
@@ -592,8 +585,9 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 
 	//Update material parameters
 	SetMaterialParameters(trans, radius, shadows, m_atmosphereParameters);
+	Graphics::CityGlowDataBlock cityGlow{};
 	if (GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
-		SetCityGlowData(campos);
+		SetCityGlowData(campos, cityGlow);
 
 	if (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) {
 		// The water waves (terrain-water.glsl) are a tileable texture in three
@@ -647,7 +641,7 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		PlanetClouds::FillCloudData(cloudData, GetSystemBody(), trans, GetMaxFeatureHeight(), m_cloudHeightMap.get());
 		PlanetClouds::SetMaterialCloudData(m_surfaceMaterial.Get(), cloudData, m_cloudHeightMap.get());
 		PlanetClouds::QueueCloudPass(GetSystemBody(), cloudData, vector3f(trans * vector3d(0.0)) / radius,
-			m_atmosphereParameters.atmosCol.ToColor4f(), m_cloudHeightMap.get());
+			m_atmosphereParameters.atmosCol.ToColor4f(), m_cloudHeightMap.get(), cityGlow);
 	}
 
 	if (m_atmosphereMaterial.Valid() && m_atmosphereParameters.atmosDensity > 0.0) {

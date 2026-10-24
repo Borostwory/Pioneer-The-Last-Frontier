@@ -16,6 +16,7 @@
 namespace Graphics {
 	class Renderer;
 	class Texture;
+	struct CityGlowDataBlock;
 }
 
 class SystemBody;
@@ -152,7 +153,7 @@ private:
 	};
 	std::vector<GlowCity> m_glowCities;
 	bool m_glowCitiesFound = false;
-	void SetCityGlowData(const vector3d &campos);
+	void SetCityGlowData(const vector3d &campos, Graphics::CityGlowDataBlock &data);
 
 	enum EGSInitialisationStage {
 		eBuildFirstPatches = 0,

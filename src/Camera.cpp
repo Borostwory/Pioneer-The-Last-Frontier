@@ -39,6 +39,17 @@ static const double CITY_LIGHTS_DARK = 0.03;
 static const double CITY_LIGHTS_BRIGHT = 0.12;
 // share of the starlight an Earth-like sky takes out per air mass overhead (about 20%)
 static const double CITY_AIR_EXTINCTION = 0.22;
+// cities seen from afar as dots (DrawCityDots): the smallest dot in pixels at
+// 1080 lines; the city's width in pixels below which it is all dot, and above
+// which all glow on the terrain; the dot's brightness; how far toward the
+// camera it is drawn (share of its distance); the smallest planet in pixels
+// across that gets dots
+static const float CITY_DOT_SIZE = 2.5f;
+static const double CITY_DOT_FULL = 3.0;
+static const double CITY_DOT_GONE = 10.0;
+static const double CITY_DOT_BRIGHTNESS = 0.6;
+static const double CITY_DOT_LIFT = 0.01;
+static const double CITY_DOT_MIN_PLANET = 32.0;
 
 CameraContext::CameraContext(float width, float height, float fovAng, float zNear, float zFar) :
 	m_width(width),
@@ -140,6 +151,14 @@ Camera::Camera(RefCountedPtr<CameraContext> context, Graphics::Renderer *rendere
 	m_billboardMaterial.reset(m_renderer->CreateMaterial("billboards", desc, rsd, vfmt));
 	m_billboardMaterial->SetTexture("texture0"_hash,
 		Graphics::TextureBuilder::Billboard("textures/planet_billboard.dds").GetOrCreateTexture(m_renderer, "billboard"));
+
+	// lights of distant cities, added to the scene behind them
+	Graphics::RenderStateDesc dotRsd;
+	dotRsd.blendMode = Graphics::BLEND_ADDITIVE;
+	dotRsd.depthWrite = false;
+	dotRsd.primitiveType = Graphics::POINTS;
+	m_cityDotMaterial.reset(m_renderer->CreateMaterial("city_dots", Graphics::MaterialDescriptor(), dotRsd,
+		Graphics::VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_DIFFUSE | Graphics::ATTRIB_NORMAL)));
 }
 
 Camera::~Camera()
@@ -382,12 +401,16 @@ void Camera::Draw(const Body *excludeBody)
 	m_renderer->EndGpuTimer();
 	RestoreLighting();
 	m_shadows->End();
-	m_renderer->SetCityLightData(nullptr, nullptr, nullptr);
 
-	// clouds over everything drawn so far, using the scene depth
+	// the lights of cities too far away to see on the terrain
+	DrawCityDots(camFrameId);
+
+	// clouds over everything drawn so far, using the scene depth; their
+	// shadows leave the city lights alone, so those stay set until then
 	m_renderer->BeginGpuTimer("clouds");
 	PlanetClouds::RenderCloudPasses(m_renderer);
 	m_renderer->EndGpuTimer();
+	m_renderer->SetCityLightData(nullptr, nullptr, nullptr);
 
 	if (!billboards.IsEmpty()) {
 		Graphics::Renderer::MatrixTicket mt(m_renderer, matrix4x4f::Identity);
@@ -402,6 +425,106 @@ void Camera::Draw(const Body *excludeBody)
 		illuminationFactor = std::pow(illuminationFactor, 1.5);
 	}
 	SfxManager::RenderAll(m_renderer, rootFrameId, camFrameId, illuminationFactor);
+}
+
+// How far a city's lights are on (0..1) as the daylight over it fades: the
+// starlight on level ground, dimmed by the distance to the star (as the
+// terrain shaders do), by the air above and by eclipses (city-glow.glsl does
+// the same per pixel). up: the view-space direction up at the city.
+double Camera::CityDarkness(const SpaceStation *station, const vector3d &up) const
+{
+	double airMass = 0.0; // the air overhead relative to Earth's
+	const Body *planet = Frame::GetFrame(station->GetFrame())->GetBody();
+	if (planet && planet->IsType(ObjectType::PLANET)) {
+		double pressure, density;
+		static_cast<const Planet *>(planet)->GetAtmosphericState(station->GetPosition().Length(), &pressure, &density);
+		airMass = density / EARTH_ATMOSPHERE_SURFACE_DENSITY;
+	}
+	double daylight = 0.0;
+	for (size_t i = 0; i < m_lightSources.size(); i++) {
+		const LightSource &source = m_lightSources[i];
+		if (!source.GetBody()) {
+			// the stand-in light where there are no stars
+			daylight = 1.0;
+			break;
+		}
+		const vector3d toStar(source.GetLight().GetPosition());
+		const double sunUp = up.Dot(toStar.Normalized());
+		if (sunUp <= 0.0)
+			continue;
+		const double starLight = source.GetLight().GetDiffuse().GetLuminance() / 255.0 * AU / toStar.Length();
+		daylight += starLight * sunUp * std::exp(-CITY_AIR_EXTINCTION * airMass / std::max(sunUp, 0.05)) * ShadowedIntensity(int(i), station);
+	}
+	const double t = Clamp((CITY_LIGHTS_BRIGHT - daylight) / (CITY_LIGHTS_BRIGHT - CITY_LIGHTS_DARK), 0.0, 1.0);
+	return t * t * (3.0 - 2.0 * t);
+}
+
+// From far away, where a city is only a few pixels across, its lights are
+// drawn as a dot of at least CITY_DOT_SIZE pixels, so they stay visible as a
+// faint point; closer, the city's glow on the terrain (city-glow.glsl) takes
+// over. Drawn before the clouds, which cover them.
+void Camera::DrawCityDots(FrameId camFrameId) const
+{
+	const int brightness = Pi::config->Int("CityGlow");
+	if (brightness <= 0 || !Pi::game)
+		return;
+
+	const double pixelsPerRadian = m_renderer->GetWindowHeight() / Graphics::GetFovFactor();
+	const float minSize = CITY_DOT_SIZE * m_renderer->GetWindowHeight() / 1080.0f;
+
+	Graphics::VertexArray dots(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_DIFFUSE | Graphics::ATTRIB_NORMAL);
+	for (const Body *b : Pi::game->GetSpace()->GetBodies()) {
+		if (!b->IsType(ObjectType::SPACESTATION) || !static_cast<const SpaceStation *>(b)->IsGroundStation())
+			continue;
+		const SpaceStation *station = static_cast<const SpaceStation *>(b);
+		Frame *frame = Frame::GetFrame(station->GetFrame());
+		const Body *planet = frame->GetBody();
+		if (!planet || !planet->IsType(ObjectType::PLANET))
+			continue;
+
+		matrix4x4d frameToView = frame->GetInterpOrientRelTo(camFrameId);
+		frameToView.SetTranslate(frame->GetInterpPositionRelTo(camFrameId));
+		const vector3d planetPos = frameToView * vector3d(0.0);
+		const vector3d pos = frameToView * station->GetInterpPosition();
+		const double dist = pos.Length();
+
+		// only on planets drawn as more than a dot themselves
+		const double planetRadius = planet->GetSystemBody()->GetRadius();
+		if (2.0 * planetRadius * pixelsPerRadian < CITY_DOT_MIN_PLANET * planetPos.Length())
+			continue;
+
+		// on the side of the planet facing the camera, fading at the horizon
+		const vector3d up = (pos - planetPos).Normalized();
+		const double facing = -up.Dot(pos) / dist;
+		if (facing <= 0.0)
+			continue;
+
+		double cityRadius;
+		if (!CityOnPlanet::GetCitySummary(planet->GetSystemBody(), station, cityRadius))
+			continue;
+		// all dot below CITY_DOT_FULL pixels across, all glow on the terrain from CITY_DOT_GONE
+		const double across = 2.0 * cityRadius * pixelsPerRadian / dist;
+		const double t = Clamp((CITY_DOT_GONE - across) / (CITY_DOT_GONE - CITY_DOT_FULL), 0.0, 1.0);
+		const double farShare = t * t * (3.0 - 2.0 * t);
+		if (farShare <= 0.0)
+			continue;
+
+		const double light = farShare * CityDarkness(station, up) * std::min(1.0, facing * 10.0) * (brightness / 100.0) *
+			CITY_DOT_BRIGHTNESS * Clamp(std::sqrt(cityRadius / 10000.0), 0.5, 1.5);
+		if (light <= 0.0)
+			continue;
+
+		// pulled toward the camera along the line of sight, so the terrain
+		// mesh, coarse from afar, does not hide it; it stays in place on screen
+		const vector3d lifted = pos * (1.0 - CITY_DOT_LIFT);
+		const float size = std::max(minSize, float(across));
+		dots.Add(vector3f(lifted), Color(255, 179, 107), vector3f(float(light), 0.0f, size));
+	}
+
+	if (!dots.IsEmpty()) {
+		Graphics::Renderer::MatrixTicket mt(m_renderer, matrix4x4f::Identity);
+		m_renderer->DrawBuffer(&dots, m_cityDotMaterial.get());
+	}
 }
 
 // Hands the renderer the night lights of the city nearest the camera, if any
@@ -427,34 +550,8 @@ void Camera::SetCityLights() const
 	const SpaceStation *station = static_cast<const SpaceStation *>(nearest->body);
 	const matrix4x4d cityToView = nearest->viewTransform * matrix4x4d(station->GetInterpOrient(), station->GetInterpPosition());
 
-	// the lights come on as the daylight over the city fades: the starlight on
-	// level ground, dimmed by the distance to the star (as the terrain shaders
-	// do), by the air above and by eclipses (city-glow.glsl does the same per pixel)
 	const vector3d up = cityToView.ApplyRotationOnly(vector3d(0.0, 1.0, 0.0));
-	double airMass = 0.0; // the air overhead relative to Earth's
-	const Body *planet = Frame::GetFrame(station->GetFrame())->GetBody();
-	if (planet && planet->IsType(ObjectType::PLANET)) {
-		double pressure, density;
-		static_cast<const Planet *>(planet)->GetAtmosphericState(station->GetPosition().Length(), &pressure, &density);
-		airMass = density / EARTH_ATMOSPHERE_SURFACE_DENSITY;
-	}
-	double daylight = 0.0;
-	for (size_t i = 0; i < m_lightSources.size(); i++) {
-		const LightSource &source = m_lightSources[i];
-		if (!source.GetBody()) {
-			// the stand-in light where there are no stars
-			daylight = 1.0;
-			break;
-		}
-		const vector3d toStar(source.GetLight().GetPosition());
-		const double sunUp = up.Dot(toStar.Normalized());
-		if (sunUp <= 0.0)
-			continue;
-		const double starLight = source.GetLight().GetDiffuse().GetLuminance() / 255.0 * AU / toStar.Length();
-		daylight += starLight * sunUp * std::exp(-CITY_AIR_EXTINCTION * airMass / std::max(sunUp, 0.05)) * ShadowedIntensity(int(i), station);
-	}
-	const double t = Clamp((CITY_LIGHTS_BRIGHT - daylight) / (CITY_LIGHTS_BRIGHT - CITY_LIGHTS_DARK), 0.0, 1.0);
-	const double strength = t * t * (3.0 - 2.0 * t) * CityOnPlanet::LightsFade(nearest->camDist) * (brightness / 100.0);
+	const double strength = CityDarkness(station, up) * CityOnPlanet::LightsFade(nearest->camDist) * (brightness / 100.0);
 	if (strength <= 0.0)
 		return;
 

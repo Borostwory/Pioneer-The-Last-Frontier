@@ -7,11 +7,15 @@ Texture sampler2D sceneDist
 Texture sampler2D cloudHeightTex
 Texture sampler2D cloudWeatherXY
 Texture sampler2D cloudWeatherZ
+Texture sampler2D cityLightMap
+Texture sampler2D cityLightGrid
 
 Buffer LightData binding=0
 Buffer DrawData binding=1
 Buffer CloudPassData binding=2
 Buffer CloudData binding=3
+Buffer CityLightData binding=5
+Buffer CityGlowData binding=6
 
 Vertex "cloud_fullscreen.vert"
 Fragment "cloud_shadow.frag"
