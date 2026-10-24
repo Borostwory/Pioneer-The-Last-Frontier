@@ -7,7 +7,9 @@
 #include "FrameId.h"
 #include "Random.h"
 #include "JsonFwd.h"
+#include "RefCounted.h"
 #include "matrix4x4.h"
+#include "vector3.h"
 
 class CameraContext;
 class Geom;
@@ -22,6 +24,8 @@ struct Aabb;
 namespace Graphics {
 	class Renderer;
 	class Material;
+	class Texture;
+	struct CityLightDataBlock;
 } // namespace Graphics
 
 namespace FileSystem {
@@ -44,6 +48,31 @@ public:
 	void RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const SpaceStation *station, const Aabb &lightBox);
 	inline Planet *GetPlanet() const { return m_planet; }
 	float GetClipRadius() const { return m_clipRadius; }
+
+	// Night lights (city-lights.glsl): street lamps, building and spaceport
+	// lights, in city space (the station's frame, metres, y up). Baked into a
+	// map of the light reaching the ground and a grid listing the lights of
+	// each cell, rebuilt when the detail level changes the buildings.
+	struct Light {
+		vector3f pos;	 // city space
+		float radius;	 // reach, m
+		vector3f colour; // brightness included
+		float height;	 // above the ground, m
+	};
+
+	bool HasLights() const { return m_lightMap.Valid(); }
+	// the city's part of the scene's light data: all but the view transform and the strength
+	void GetLightData(Graphics::CityLightDataBlock &out) const;
+	Graphics::Texture *GetLightMap() const { return m_lightMap.Get(); }
+	Graphics::Texture *GetLightGrid() const { return m_lightGrid.Get(); }
+
+	// The radius (m) of the city a ground station will have, without generating
+	// it, for the planet's night lights seen from afar (city-glow.glsl).
+	// False if it will have none.
+	static bool GetCitySummary(const SystemBody *planet, const SpaceStation *station, double &radius);
+	// share of a city's light shown by its own lights at a camera distance (m);
+	// the rest is its glow from afar
+	static double LightsFade(double distance);
 
 	static void Init();
 	static void Uninit();
@@ -78,6 +107,10 @@ private:
 
 		SectorKind buildingKind = SectorKind::None;
 
+		// lights at the foot of each facade at night
+		vector3f lightColour;
+		float lightIntensity = 0;
+
 		SceneGraph::Model *model;
 		SceneGraph::Animation *idleAnimation;
 	};
@@ -99,7 +132,15 @@ private:
 private:
 
 	void Generate(SpaceStation *station);
-	void CalcCityRadius(const SystemBody *body);
+	static void CalcCityRadius(const CityFlavourType &cityType, const SystemBody *body, Random &rand, double &radius, double &density);
+
+	// street lamps and spaceport floodlights, while the occupancy grid exists;
+	// cellHeights: the ground above the planet's radius of the taken cells
+	void GenerateFixedLights(const SpaceStation *station, uint32_t cityExtents, const vector3d &incX, const vector3d &incZ, const std::vector<float> &cellHeights);
+	// all the lights of the enabled buildings, baked into the light map and grid
+	void BuildLighting();
+	void BakeLightMap(const std::vector<Light> &lights);
+	void BuildLightGrid(const std::vector<Light> &lights);
 
 	void SetGridOccupancy(uint32_t x, uint32_t y, const uint8_t size[2]);
 	bool TestGridOccupancy(uint32_t x, uint32_t y, const uint8_t size[2]);
@@ -158,6 +199,17 @@ private:
 	vector3d m_gridOrigin;
 
 	CityFlavourType *m_cityType;
+
+	// night lights: city space is the station's frame around its position
+	matrix3x3d m_stationOrient;
+	std::vector<Light> m_fixedLights; // street lamps, spaceport floodlights
+	float m_lightRect[4] = {};		  // as CityLightDataBlock::mapRect
+	float m_lightGridInfo[4] = {};	  // as CityLightDataBlock::grid
+	RefCountedPtr<Graphics::Texture> m_lightMap;
+	RefCountedPtr<Graphics::Texture> m_lightGrid;
+	// the textures before the last rebuild, which this frame's draws may still use
+	RefCountedPtr<Graphics::Texture> m_retiredLightMap;
+	RefCountedPtr<Graphics::Texture> m_retiredLightGrid;
 
 	// --------------------------------------------------------
 	// statics

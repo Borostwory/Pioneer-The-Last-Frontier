@@ -38,6 +38,9 @@ namespace Graphics {
 		static size_t s_lightIntensityName = "lightIntensity"_hash;
 		static size_t s_shadowDataName = "ShadowData"_hash;
 		static size_t s_shadowMapNames[ShadowDataBlock::NUM_CASCADES] = { "shadowMapNear"_hash, "shadowMapMid"_hash, "shadowMapFar"_hash };
+		static size_t s_cityLightDataName = "CityLightData"_hash;
+		static size_t s_cityLightMapName = "cityLightMap"_hash;
+		static size_t s_cityLightGridName = "cityLightGrid"_hash;
 
 		// XXX potential target for allocation optimization
 		// (e.g. use renderer-owned freelist block allocator and align and group all three buffers into one allocation?)
@@ -71,6 +74,7 @@ namespace Graphics {
 
 			m_perDrawBinding = s->GetBufferBindingInfo(s_drawDataName).binding;
 			m_shadowDataBinding = s->GetBufferBindingInfo(s_shadowDataName).binding;
+			m_cityLightBinding = s->GetBufferBindingInfo(s_cityLightDataName).binding;
 		}
 
 		Program *Material::EvaluateVariant()
@@ -116,6 +120,13 @@ namespace Graphics {
 				SetBuffer(s_shadowDataName, m_renderer->GetShadowUniformBuffer());
 				for (int i = 0; i < ShadowDataBlock::NUM_CASCADES; i++)
 					SetTexture(s_shadowMapNames[i], m_renderer->GetShadowMap(i));
+			}
+
+			// night lights of the nearest city, see CityOnPlanet.h
+			if (m_cityLightBinding != Shader::InvalidBinding) {
+				SetBuffer(s_cityLightDataName, m_renderer->GetCityLightUniformBuffer());
+				SetTexture(s_cityLightMapName, m_renderer->GetCityLightMap());
+				SetTexture(s_cityLightGridName, m_renderer->GetCityLightGrid());
 			}
 
 			// this should always be present, but just in case...

@@ -53,6 +53,15 @@ namespace Graphics {
 	};
 	static_assert(sizeof(ShadowDataBlock) == 256, "ShadowDataBlock must match the std140 layout of ShadowData");
 
+	// Layout of the CityLightData uniform buffer (std140, see city-lights.glsl)
+	struct CityLightDataBlock {
+		matrix4x4f viewToCity; // view space -> city space (the station's frame, metres, y up)
+		float mapRect[4];	   // x, z of the light map's corner in city space, 1 / map size, grid cell size (m)
+		float grid[4];		   // grid width and height (cells), first index texel, first light texel
+		float state[4];		   // x: strength (0: no city lights), y: distance (m) out to which lights are evaluated one by one, z: height range (m)
+	};
+	static_assert(sizeof(CityLightDataBlock) == 112, "CityLightDataBlock must match the std140 layout of CityLightData");
+
 	// Renderer base, functions return false if
 	// failed/unsupported
 	class Renderer {
@@ -147,6 +156,12 @@ namespace Graphics {
 		// The maps must stay alive until the end of the frame.
 		// maps: one depth texture per cascade (ShadowDataBlock::NUM_CASCADES)
 		virtual void SetShadowData(const ShadowDataBlock *data, Texture *const *maps) {}
+
+		// Night lights of the city nearest the camera (see CityOnPlanet.h), used by
+		// every material whose shader declares the CityLightData buffer (city-lights.glsl).
+		// Pass nullptr to switch them off; the renderer also does at the end of the frame.
+		// The textures must stay alive until the end of the frame.
+		virtual void SetCityLightData(const CityLightDataBlock *data, Texture *lightMap, Texture *lightGrid) {}
 
 		//drawing functions
 		// TODO: placeholder API; here until CommandLists are exposed

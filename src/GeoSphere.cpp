@@ -4,6 +4,7 @@
 #include "GeoSphere.h"
 
 #include "Aabb.h"
+#include "CityOnPlanet.h"
 
 #include "GameConfig.h"
 #include "GeoPatch.h"
@@ -13,6 +14,8 @@
 #include "MathUtil.h"
 #include "Pi.h"
 #include "PlanetClouds.h"
+#include "Space.h"
+#include "SpaceStation.h"
 #include "TerrainTiles.h"
 #include "RefCounted.h"
 #include "galaxy/AtmosphereParameters.h"
@@ -512,6 +515,56 @@ void GeoSphere::ProcessQuadSplitRequests()
 	mQuadSplitCandidates.clear();
 }
 
+// Layout of the CityGlowData uniform buffer (std140, see city-glow.glsl)
+static constexpr int CITY_GLOW_MAX = 16;
+struct CityGlowDataBlock {
+	float params[4];				// unused, number of cities, brightness, unused
+	float cities[CITY_GLOW_MAX][4]; // planet-fixed direction to the city, its radius (m)
+	float fade[CITY_GLOW_MAX];		// brightness of each city
+};
+static_assert(sizeof(CityGlowDataBlock) == 336, "CityGlowDataBlock must match the std140 layout of CityGlowData");
+
+// The night lights seen from afar: the starport cities, faded out where the
+// camera is close enough to see their own lights. campos: the camera,
+// planet-fixed, in planet radii.
+void GeoSphere::SetCityGlowData(const vector3d &campos)
+{
+	if (!m_glowCitiesFound && Pi::game && Pi::game->GetSpace()) {
+		m_glowCitiesFound = true;
+		for (const SystemBody *kid : GetSystemBody()->GetChildren()) {
+			if (kid->GetType() != SystemBody::TYPE_STARPORT_SURFACE)
+				continue;
+			const Body *body = Pi::game->GetSpace()->FindBodyForPath(&kid->GetPath());
+			if (!body || !body->IsType(ObjectType::SPACESTATION))
+				continue;
+			const SpaceStation *station = static_cast<const SpaceStation *>(body);
+			double cityRadius;
+			if (CityOnPlanet::GetCitySummary(GetSystemBody(), station, cityRadius))
+				m_glowCities.push_back({ station, station->GetPosition(), cityRadius });
+		}
+	}
+
+	CityGlowDataBlock data{};
+	data.params[1] = float(std::min<size_t>(m_glowCities.size(), CITY_GLOW_MAX));
+	data.params[2] = Pi::config->Int("CityGlow") / 100.0f;
+
+	const double radius = GetSystemBody()->GetRadius();
+	for (size_t i = 0; i < m_glowCities.size() && i < size_t(CITY_GLOW_MAX); i++) {
+		const GlowCity &city = m_glowCities[i];
+		const vector3d dir = city.pos.Normalized();
+		data.cities[i][0] = float(dir.x);
+		data.cities[i][1] = float(dir.y);
+		data.cities[i][2] = float(dir.z);
+		data.cities[i][3] = float(city.radius);
+
+		const CityOnPlanet *lights = city.station->GetAdjacentCity();
+		const double distance = (campos * radius - city.pos).Length();
+		data.fade[i] = (lights && lights->HasLights()) ? float(1.0 - CityOnPlanet::LightsFade(distance)) : 1.0f;
+	}
+
+	m_surfaceMaterial->SetBufferDynamic("CityGlowData"_hash, &data);
+}
+
 void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView, vector3d campos, const float radius, const std::vector<Camera::Shadow> &shadows)
 {
 	PROFILE_SCOPED()
@@ -539,6 +592,8 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 
 	//Update material parameters
 	SetMaterialParameters(trans, radius, shadows, m_atmosphereParameters);
+	if (GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
+		SetCityGlowData(campos);
 
 	if (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) {
 		// The water waves (terrain-water.glsl) are a tileable texture in three

@@ -75,6 +75,8 @@ public:
 
 	const SpaceStationType *GetStationType() const { return m_type; }
 	bool IsGroundStation() const;
+	// the city around a ground station, once it has been close enough to be drawn
+	const CityOnPlanet *GetAdjacentCity() const { return m_adjacentCity; }
 
 	bool AllocateStaticSlot(int &slot);
 

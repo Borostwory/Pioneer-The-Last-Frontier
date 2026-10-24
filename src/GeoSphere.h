@@ -19,6 +19,7 @@ namespace Graphics {
 }
 
 class SystemBody;
+class SpaceStation;
 class GeoPatch;
 class GeoPatchContext;
 class SQuadSplitRequest;
@@ -141,6 +142,17 @@ private:
 
 	// terrain heights for the cloud shaders, baked on first close approach
 	std::unique_ptr<PlanetClouds::CloudHeightMap> m_cloudHeightMap;
+
+	// the starport cities, for the night lights seen from afar (city-glow.glsl);
+	// found on the first draw in a game
+	struct GlowCity {
+		const SpaceStation *station;
+		vector3d pos;  // planet-fixed, m
+		double radius; // m
+	};
+	std::vector<GlowCity> m_glowCities;
+	bool m_glowCitiesFound = false;
+	void SetCityGlowData(const vector3d &campos);
 
 	enum EGSInitialisationStage {
 		eBuildFirstPatches = 0,

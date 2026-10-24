@@ -20,6 +20,8 @@ namespace Graphics {
 		TEXTURE_R8,
 		TEXTURE_R32F,
 		TEXTURE_RG32F,
+		TEXTURE_RGBA16F, // data is uploaded as 32-bit floats
+		TEXTURE_RGBA32F,
 
 		TEXTURE_DXT1, // data is expected to be pre-compressed
 		TEXTURE_DXT5,

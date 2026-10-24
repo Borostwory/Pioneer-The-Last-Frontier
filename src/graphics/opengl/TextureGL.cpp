@@ -19,6 +19,8 @@ namespace Graphics {
 			case TEXTURE_R8: return GL_RED;
 			case TEXTURE_R32F: return GL_R32F;
 			case TEXTURE_RG32F: return GL_RG32F;
+			case TEXTURE_RGBA16F: return GL_RGBA16F;
+			case TEXTURE_RGBA32F: return GL_RGBA32F;
 			case TEXTURE_DXT5: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 			case TEXTURE_DXT1: return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 			case TEXTURE_DEPTH: return GL_DEPTH_COMPONENT32F;
@@ -37,6 +39,8 @@ namespace Graphics {
 			case TEXTURE_R8: return GL_RED;
 			case TEXTURE_R32F: return GL_R32F;
 			case TEXTURE_RG32F: return GL_RG32F;
+			case TEXTURE_RGBA16F: return GL_RGBA16F;
+			case TEXTURE_RGBA32F: return GL_RGBA32F;
 			case TEXTURE_DXT5: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 			case TEXTURE_DXT1: return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 			default: assert(0); return 0;
@@ -52,6 +56,8 @@ namespace Graphics {
 			case TEXTURE_R8: return GL_RED;
 			case TEXTURE_R32F: return GL_RED;
 			case TEXTURE_RG32F: return GL_RG;
+			case TEXTURE_RGBA16F: return GL_RGBA;
+			case TEXTURE_RGBA32F: return GL_RGBA;
 			case TEXTURE_DXT5: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 			case TEXTURE_DXT1: return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 			case TEXTURE_DEPTH: return GL_DEPTH_COMPONENT;
@@ -74,6 +80,8 @@ namespace Graphics {
 			switch (format) {
 			case TEXTURE_R32F: return GL_FLOAT;
 			case TEXTURE_RG32F: return GL_FLOAT;
+			case TEXTURE_RGBA16F: return GL_FLOAT;
+			case TEXTURE_RGBA32F: return GL_FLOAT;
 			default: return GL_UNSIGNED_BYTE;
 			}
 		}

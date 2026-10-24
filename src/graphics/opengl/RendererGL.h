@@ -87,6 +87,7 @@ namespace Graphics {
 		Uint32 GetNumLights() const final { return m_numLights; }
 		bool SetAmbientColor(const Color &c) final;
 		void SetShadowData(const ShadowDataBlock *data, Texture *const *maps) final;
+		void SetCityLightData(const CityLightDataBlock *data, Texture *lightMap, Texture *lightGrid) final;
 
 		bool FlushCommandBuffers() final;
 
@@ -117,6 +118,10 @@ namespace Graphics {
 		// the shadow state for this frame; allocates a "shadows off" block if none was set
 		const BufferBinding<UniformBuffer> &GetShadowUniformBuffer();
 		Texture *GetShadowMap(int cascade) const { return m_shadowMaps[cascade]; }
+		// the city lights for this frame; allocates a "lights off" block if none was set
+		const BufferBinding<UniformBuffer> &GetCityLightUniformBuffer();
+		Texture *GetCityLightMap() const { return m_cityLightMap; }
+		Texture *GetCityLightGrid() const { return m_cityLightGrid; }
 		OGL::UniformLinearBuffer *GetDrawUniformBuffer(Uint32 size);
 		OGL::RenderStateCache *GetStateCache() { return m_renderStateCache.get(); }
 
@@ -146,6 +151,9 @@ namespace Graphics {
 		BufferBinding<UniformBuffer> m_lightUniformBuffer;
 		BufferBinding<UniformBuffer> m_shadowUniformBuffer;
 		Texture *m_shadowMaps[ShadowDataBlock::NUM_CASCADES] = {};
+		BufferBinding<UniformBuffer> m_cityLightUniformBuffer;
+		Texture *m_cityLightMap = nullptr;
+		Texture *m_cityLightGrid = nullptr;
 		bool m_useNVDepthRanged;
 		OGL::RenderTarget *m_activeRenderTarget = nullptr;
 		std::unique_ptr<OGL::CommandList> m_drawCommandList;

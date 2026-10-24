@@ -47,6 +47,8 @@ GameConfig::GameConfig(const map_string &override_)
 	map["ShadowDistance"] = "2000";  // metres around the camera with shadows of terrain, stations, cities and parked ships
 	map["ShadowStrength"] = "75";    // percent of the sunlight a shadow removes under an Earth-like sky (always 100 in vacuum)
 	map["ShadowDebug"] = "0";        // 1: tint by shadow map, near red, mid green, far blue
+	map["CityLights"] = "100";       // percent: brightness of the cities' street lamps and building lights at night, 0 off (CityOnPlanet.h)
+	map["CityGlow"] = "100";         // percent: brightness of the starport cities' lights seen from afar at night, 0 off (city-glow.glsl)
 	map["CloudsEnabled"] = "1";
 	map["CloudResolution"] = "1"; // 0 low .. 5 full, see PlanetClouds.cpp
 	map["CloudTemporal"] = "2";   // temporal reconstruction: 0 off, 1 4x (2x2 blocks), 2 9x (3x3), 3 16x (4x4)

@@ -4,8 +4,10 @@
 #include "Camera.h"
 
 #include "Body.h"
+#include "CityOnPlanet.h"
 #include "Frame.h"
 #include "Game.h"
+#include "GameConfig.h"
 #include "Pi.h"
 #include "Planet.h"
 #include "PlanetClouds.h"
@@ -30,6 +32,13 @@ static const float OBJECT_HIDDEN_PIXEL_THRESHOLD = 2.0f;
 
 // if a terrain object would render smaller than this many pixels, draw a billboard instead
 static const float BILLBOARD_PIXEL_THRESHOLD = 8.0f;
+
+// city lights are fully on below this daylight on level ground and off above
+// that (1: the Sun overhead on an airless body at 1 AU; CITY_LIGHTS_* in city-glow.glsl)
+static const double CITY_LIGHTS_DARK = 0.03;
+static const double CITY_LIGHTS_BRIGHT = 0.12;
+// share of the starlight an Earth-like sky takes out per air mass overhead (about 20%)
+static const double CITY_AIR_EXTINCTION = 0.22;
 
 CameraContext::CameraContext(float width, float height, float fovAng, float zNear, float zFar) :
 	m_width(width),
@@ -349,6 +358,9 @@ void Camera::Draw(const Body *excludeBody)
 		m_renderer->EndGpuTimer();
 	}
 
+	// night lights of the nearest city, for the lit shaders (city-lights.glsl)
+	SetCityLights();
+
 	m_renderer->BeginGpuTimer("bodies");
 	for (std::list<BodyAttrs>::iterator i = m_sortedBodies.begin(); i != m_sortedBodies.end(); ++i) {
 		BodyAttrs *attrs = &(*i);
@@ -370,6 +382,7 @@ void Camera::Draw(const Body *excludeBody)
 	m_renderer->EndGpuTimer();
 	RestoreLighting();
 	m_shadows->End();
+	m_renderer->SetCityLightData(nullptr, nullptr, nullptr);
 
 	// clouds over everything drawn so far, using the scene depth
 	m_renderer->BeginGpuTimer("clouds");
@@ -389,6 +402,68 @@ void Camera::Draw(const Body *excludeBody)
 		illuminationFactor = std::pow(illuminationFactor, 1.5);
 	}
 	SfxManager::RenderAll(m_renderer, rootFrameId, camFrameId, illuminationFactor);
+}
+
+// Hands the renderer the night lights of the city nearest the camera, if any
+// is close enough and it is dark there (see CityOnPlanet.h).
+void Camera::SetCityLights() const
+{
+	const int brightness = Pi::config->Int("CityLights");
+	if (brightness <= 0)
+		return;
+
+	const BodyAttrs *nearest = nullptr;
+	for (const BodyAttrs &attrs : m_sortedBodies) {
+		if (!attrs.body->IsType(ObjectType::SPACESTATION))
+			continue;
+		const CityOnPlanet *city = static_cast<const SpaceStation *>(attrs.body)->GetAdjacentCity();
+		if (city && city->HasLights() && (!nearest || attrs.camDist < nearest->camDist))
+			nearest = &attrs;
+	}
+	if (!nearest)
+		return;
+
+	// city space: the station's frame around its position
+	const SpaceStation *station = static_cast<const SpaceStation *>(nearest->body);
+	const matrix4x4d cityToView = nearest->viewTransform * matrix4x4d(station->GetInterpOrient(), station->GetInterpPosition());
+
+	// the lights come on as the daylight over the city fades: the starlight on
+	// level ground, dimmed by the distance to the star (as the terrain shaders
+	// do), by the air above and by eclipses (city-glow.glsl does the same per pixel)
+	const vector3d up = cityToView.ApplyRotationOnly(vector3d(0.0, 1.0, 0.0));
+	double airMass = 0.0; // the air overhead relative to Earth's
+	const Body *planet = Frame::GetFrame(station->GetFrame())->GetBody();
+	if (planet && planet->IsType(ObjectType::PLANET)) {
+		double pressure, density;
+		static_cast<const Planet *>(planet)->GetAtmosphericState(station->GetPosition().Length(), &pressure, &density);
+		airMass = density / EARTH_ATMOSPHERE_SURFACE_DENSITY;
+	}
+	double daylight = 0.0;
+	for (size_t i = 0; i < m_lightSources.size(); i++) {
+		const LightSource &source = m_lightSources[i];
+		if (!source.GetBody()) {
+			// the stand-in light where there are no stars
+			daylight = 1.0;
+			break;
+		}
+		const vector3d toStar(source.GetLight().GetPosition());
+		const double sunUp = up.Dot(toStar.Normalized());
+		if (sunUp <= 0.0)
+			continue;
+		const double starLight = source.GetLight().GetDiffuse().GetLuminance() / 255.0 * AU / toStar.Length();
+		daylight += starLight * sunUp * std::exp(-CITY_AIR_EXTINCTION * airMass / std::max(sunUp, 0.05)) * ShadowedIntensity(int(i), station);
+	}
+	const double t = Clamp((CITY_LIGHTS_BRIGHT - daylight) / (CITY_LIGHTS_BRIGHT - CITY_LIGHTS_DARK), 0.0, 1.0);
+	const double strength = t * t * (3.0 - 2.0 * t) * CityOnPlanet::LightsFade(nearest->camDist) * (brightness / 100.0);
+	if (strength <= 0.0)
+		return;
+
+	const CityOnPlanet *city = station->GetAdjacentCity();
+	Graphics::CityLightDataBlock data;
+	city->GetLightData(data);
+	data.viewToCity = matrix4x4f(cityToView.Inverse());
+	data.state[0] = float(strength);
+	m_renderer->SetCityLightData(&data, city->GetLightMap(), city->GetLightGrid());
 }
 
 // Calculates the ambiently and directly lit portions of the lighting model taking into account the atmosphere and sun positions at a given location

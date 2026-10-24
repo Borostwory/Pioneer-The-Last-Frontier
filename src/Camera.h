@@ -138,6 +138,8 @@ public:
 	void RestoreLighting() const;
 
 private:
+	void SetCityLights() const;
+
 	std::vector<float> oldLightIntensities;
 
 	RefCountedPtr<CameraContext> m_context;

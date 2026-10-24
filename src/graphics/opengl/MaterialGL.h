@@ -69,6 +69,7 @@ namespace Graphics {
 
 			uint32_t m_perDrawBinding;
 			uint32_t m_shadowDataBinding;
+			uint32_t m_cityLightBinding;
 
 			std::unique_ptr<char[]> m_pushConstants;
 			std::unique_ptr<Texture *[]> m_textureBindings;

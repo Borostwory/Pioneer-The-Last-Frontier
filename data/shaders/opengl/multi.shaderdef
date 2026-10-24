@@ -19,12 +19,16 @@ Texture sampler2D shadowMapNear
 Texture sampler2D shadowMapMid
 Texture sampler2D shadowMapFar
 
+Texture sampler2D cityLightMap
+Texture sampler2D cityLightGrid
+
 PushConstant vec4 lightIntensity binding=1
 PushConstant vec4 heatingNormal
 
 Buffer LightData binding=0
 Buffer DrawData binding=1
 Buffer ShadowData binding=4
+Buffer CityLightData binding=5
 
 Vertex "multi.vert"
 Fragment "multi.frag"

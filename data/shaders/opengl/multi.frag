@@ -5,6 +5,7 @@
 #include "lib.glsl"
 #include "sgaussian.glsl"
 #include "shadows.glsl"
+#include "city-lights.glsl"
 
 #ifdef TEXTURE0
 uniform sampler2D texture0; //diffuse
@@ -126,6 +127,11 @@ void main(void)
 	for (int i=0; i<NUM_LIGHTS; ++i) {
 		BlinnPhongDirectionalLight(uLight[i], intensity[i], surface, eyePos, diffuse, specular);
 	}
+
+	// night lights of the nearest city
+	vec3 citySpecular = vec3(0.0);
+	diffuse += surface.color.xyz * cityLightAt(eyePos, surface.normal, surface.shininess, citySpecular);
+	specular += surface.specular * citySpecular;
 
 #if 0
 	// sturnclaw: toying with spherical gaussian indirect lighting.
