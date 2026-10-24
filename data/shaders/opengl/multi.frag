@@ -4,6 +4,7 @@
 #include "attributes.glsl"
 #include "lib.glsl"
 #include "sgaussian.glsl"
+#include "shadows.glsl"
 
 #ifdef TEXTURE0
 uniform sampler2D texture0; //diffuse
@@ -119,6 +120,8 @@ void main(void)
 		lightIntensity.z,
 		lightIntensity.w
 	);
+	// shadows of other objects (and itself) from the main star
+	intensity[0] *= sceneShadow(eyePos, normalize(normal));
 
 	for (int i=0; i<NUM_LIGHTS; ++i) {
 		BlinnPhongDirectionalLight(uLight[i], intensity[i], surface, eyePos, diffuse, specular);
@@ -145,7 +148,7 @@ void main(void)
 #endif
 
 	vec3 final_color = diffuse * surface.ambientOcclusion + surface.emissive + specular;
-	frag_color = vec4(final_color, surface.color.w);
+	frag_color = vec4(final_color * sceneShadowTint(eyePos, normalize(normal)), surface.color.w);
 
 #ifdef HEAT_COLOURING
 	if (heatingNormal.a > 0.0)

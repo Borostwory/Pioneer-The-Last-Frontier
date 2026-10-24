@@ -3,6 +3,8 @@
 
 #include "GeoSphere.h"
 
+#include "Aabb.h"
+
 #include "GameConfig.h"
 #include "GeoPatch.h"
 #include "GeoPatchContext.h"
@@ -686,6 +688,19 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	renderer->SetAmbientColor(oldAmbient);
 
 	renderer->GetStats().AddToStatCount(Graphics::Stats::STAT_PLANETS, 1);
+}
+
+void GeoSphere::RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d &unitToLight, double radius, const Aabb &lightBox)
+{
+	PROFILE_SCOPED()
+	if (!m_shadowMaterial) {
+		Graphics::RenderStateDesc rsd;
+		rsd.cullMode = Graphics::CULL_NONE;
+		m_shadowMaterial.Reset(renderer->CreateMaterial("shadowcaster", Graphics::MaterialDescriptor(), rsd, GeoPatchContext::GetVertexFormat()));
+	}
+	for (int i = 0; i < NUM_PATCHES; i++)
+		if (m_patches[i])
+			m_patches[i]->RenderShadowCaster(renderer, unitToLight, radius, lightBox, m_shadowMaterial.Get());
 }
 
 void GeoSphere::SetUpMaterials()

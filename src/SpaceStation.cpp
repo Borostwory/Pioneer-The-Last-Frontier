@@ -811,6 +811,14 @@ void SpaceStation::Render(Graphics::Renderer *r, const Camera *camera, const vec
 	}
 }
 
+void SpaceStation::RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const Aabb &lightBox)
+{
+	ModelBody::RenderShadowCaster(r, frameToLight, lightBox);
+	// the city is created by the first Render() close enough to see it
+	if (m_adjacentCity)
+		m_adjacentCity->RenderShadowCaster(r, frameToLight, this, lightBox);
+}
+
 void SpaceStation::SetLabel(const std::string &label)
 {
 	assert(GetModel());

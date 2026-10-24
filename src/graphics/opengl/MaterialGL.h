@@ -68,6 +68,7 @@ namespace Graphics {
 			size_t m_vertexFormatHash;
 
 			uint32_t m_perDrawBinding;
+			uint32_t m_shadowDataBinding;
 
 			std::unique_ptr<char[]> m_pushConstants;
 			std::unique_ptr<Texture *[]> m_textureBindings;

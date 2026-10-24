@@ -104,6 +104,7 @@ public:
 	virtual void SetLandedOn(Planet *p, float latitude, float longitude);
 
 	void Render(Graphics::Renderer *r, const Camera *camera, const vector3d &viewCoords, const matrix4x4d &viewTransform) override;
+	void RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const Aabb &lightBox) override;
 
 	inline void ClearThrusterState()
 	{

@@ -119,6 +119,10 @@ namespace SceneGraph {
 		void Render(const matrix4x4f &trans, const RenderData *rd = 0);				 //ModelNode can override RD
 		void RenderInstanced(const matrix4x4f &trans, const std::vector<matrix4x4f> &instTrans, const RenderData *rd = 0); //ModelNode can override RD
 
+		// draw the solid geometry depth-only into the current shadow map (see SceneShadows.h)
+		void RenderShadow(const matrix4x4f &trans);
+		void RenderShadowInstanced(const matrix4x4f &trans, const std::vector<matrix4x4f> &instTrans);
+
 		RefCountedPtr<CollMesh> CreateCollisionMesh();
 		RefCountedPtr<CollMesh> GetCollisionMesh() const { return m_collMesh; }
 		void SetCollisionMesh(RefCountedPtr<CollMesh> collMesh) { m_collMesh.Reset(collMesh.Get()); }

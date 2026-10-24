@@ -86,6 +86,7 @@ namespace Graphics {
 		bool SetLights(Uint32 numlights, const Light *l) final;
 		Uint32 GetNumLights() const final { return m_numLights; }
 		bool SetAmbientColor(const Color &c) final;
+		void SetShadowData(const ShadowDataBlock *data, Texture *const *maps) final;
 
 		bool FlushCommandBuffers() final;
 
@@ -113,6 +114,9 @@ namespace Graphics {
 		const RenderStateDesc &GetMaterialRenderState(const Graphics::Material *m) final;
 
 		const BufferBinding<UniformBuffer> &GetLightUniformBuffer();
+		// the shadow state for this frame; allocates a "shadows off" block if none was set
+		const BufferBinding<UniformBuffer> &GetShadowUniformBuffer();
+		Texture *GetShadowMap(int cascade) const { return m_shadowMaps[cascade]; }
 		OGL::UniformLinearBuffer *GetDrawUniformBuffer(Uint32 size);
 		OGL::RenderStateCache *GetStateCache() { return m_renderStateCache.get(); }
 
@@ -140,6 +144,8 @@ namespace Graphics {
 		std::vector<std::unique_ptr<OGL::UniformLinearBuffer>> m_drawUniformBuffers;
 		std::unique_ptr<OGL::RenderStateCache> m_renderStateCache;
 		BufferBinding<UniformBuffer> m_lightUniformBuffer;
+		BufferBinding<UniformBuffer> m_shadowUniformBuffer;
+		Texture *m_shadowMaps[ShadowDataBlock::NUM_CASCADES] = {};
 		bool m_useNVDepthRanged;
 		OGL::RenderTarget *m_activeRenderTarget = nullptr;
 		std::unique_ptr<OGL::CommandList> m_drawCommandList;

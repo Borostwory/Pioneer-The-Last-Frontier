@@ -49,6 +49,7 @@ public:
 	bool OnCollision(Body *b, Uint32 flags, double relVel) override;
 	bool DoShipDamage(Ship *s, Uint32 flags, double relVel);
 	void Render(Graphics::Renderer *r, const Camera *camera, const vector3d &viewCoords, const matrix4x4d &viewTransform) override;
+	void RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const Aabb &lightBox) override;
 	void StaticUpdate(const float timeStep) override;
 	void TimeStepUpdate(const float timeStep) override;
 

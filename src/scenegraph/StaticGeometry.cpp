@@ -48,11 +48,47 @@ namespace SceneGraph {
 		nv.ApplyStaticGeometry(*this);
 	}
 
+	// vertex format of a mesh drawn with per-instance transforms
+	static Graphics::VertexFormatDesc InstancedVertexFormat(const Graphics::MeshObject *mesh)
+	{
+		Graphics::VertexFormatDesc vtxFormat = mesh->GetFormat();
+		vtxFormat.attribs[vtxFormat.GetNumAttribs()] = { Graphics::ATTRIB_FORMAT_MAT4x4, 6, 1, 0 };
+		vtxFormat.bindings[1] = { sizeof(matrix4x4f), true, Graphics::ATTRIB_RATE_INSTANCE };
+		return vtxFormat;
+	}
+
+	Graphics::Material *StaticGeometry::GetShadowMaterial(size_t mesh, bool instanced)
+	{
+		std::vector<RefCountedPtr<Graphics::Material>> &materials = instanced ? m_shadowInstanceMaterials : m_shadowMaterials;
+		if (materials.empty()) {
+			Graphics::Renderer *r = GetRenderer();
+
+			Graphics::MaterialDescriptor desc;
+			desc.instanced = instanced;
+
+			// thin and open geometry has to cast from both sides
+			Graphics::RenderStateDesc rsd;
+			rsd.cullMode = Graphics::CULL_NONE;
+
+			for (auto &it : m_meshes) {
+				const Graphics::VertexFormatDesc vtxFormat = instanced ? InstancedVertexFormat(it.meshObject.Get()) : it.meshObject->GetFormat();
+				materials.emplace_back(r->CreateMaterial("shadowcaster", desc, rsd, vtxFormat));
+			}
+		}
+		return materials[mesh].Get();
+	}
+
 	void StaticGeometry::Render(const matrix4x4f &trans, const RenderData *rd)
 	{
 		PROFILE_SCOPED()
 		Graphics::Renderer *r = GetRenderer();
 		r->SetTransform(trans);
+		if (rd && rd->shadowPass) {
+			for (size_t i = 0; i < m_meshes.size(); i++)
+				r->DrawMesh(m_meshes[i].meshObject.Get(), GetShadowMaterial(i, false));
+			return;
+		}
+
 		for (auto &it : m_meshes)
 			r->DrawMesh(it.meshObject.Get(), it.material.Get());
 
@@ -82,7 +118,8 @@ namespace SceneGraph {
 			ib.buffer->UnmapRange(false); // will be flushed at end-of-frame
 		}
 
-		if (m_instanceMaterials.empty()) {
+		const bool shadowPass = rd && rd->shadowPass;
+		if (!shadowPass && m_instanceMaterials.empty()) {
 			// process each mesh
 			for (auto &it : m_meshes) {
 				// Due to the shader needing to change we have to get the material and force it to the instanced variant
@@ -93,9 +130,7 @@ namespace SceneGraph {
 
 				// Set up the vertex format descriptor for instanced rendering
 				// This ideally should be done significantly before now (at load time, probably)
-				Graphics::VertexFormatDesc vtxFormat = it.meshObject->GetFormat();
-				vtxFormat.attribs[vtxFormat.GetNumAttribs()] = { Graphics::ATTRIB_FORMAT_MAT4x4, 6, 1, 0 };
-				vtxFormat.bindings[1] = { sizeof(matrix4x4f), true, Graphics::ATTRIB_RATE_INSTANCE };
+				const Graphics::VertexFormatDesc vtxFormat = InstancedVertexFormat(it.meshObject.Get());
 
 				// create the "new" material with the instanced description
 				RefCountedPtr<Graphics::Material> mat(r->CloneMaterial(it.material.Get(), mdesc, oldDesc, vtxFormat));
@@ -111,7 +146,7 @@ namespace SceneGraph {
 			r->Draw(
 				{ it.meshObject->GetVertexBuffer(), ib },
 				it.meshObject->GetIndexBuffer(),
-				m_instanceMaterials[i].Get(),
+				shadowPass ? GetShadowMaterial(i, true) : m_instanceMaterials[i].Get(),
 				numElems, numTrans
 			);
 			++i;

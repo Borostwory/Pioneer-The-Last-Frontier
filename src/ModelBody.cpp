@@ -304,6 +304,11 @@ void ModelBody::RenderModel(Graphics::Renderer *r, const Camera *camera, const v
 	m_model->Render(matrix4x4f(viewTransform * GetInterpMatrix()));
 }
 
+void ModelBody::RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const Aabb &lightBox)
+{
+	m_model->RenderShadow(matrix4x4f(frameToLight * GetInterpMatrix()));
+}
+
 void ModelBody::TimeStepUpdate(const float timestep)
 {
 	if (m_idleAnimation)

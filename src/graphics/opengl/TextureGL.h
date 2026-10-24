@@ -22,6 +22,7 @@ namespace Graphics {
 			void Unbind() final;
 
 			void SetSampleMode(TextureSampleMode) final;
+			void SetDepthCompare(bool enabled) final;
 			void BuildMipmaps(const uint32_t validMips = 1) final;
 			uint32_t GetTextureID() const final
 			{

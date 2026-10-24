@@ -48,8 +48,13 @@ namespace SceneGraph {
 
 	protected:
 		~StaticGeometry();
+		// depth-only material for drawing mesh into a shadow map, created on first use
+		Graphics::Material *GetShadowMaterial(size_t mesh, bool instanced);
+
 		std::vector<Mesh> m_meshes;
 		std::vector<RefCountedPtr<Graphics::Material>> m_instanceMaterials;
+		std::vector<RefCountedPtr<Graphics::Material>> m_shadowMaterials;
+		std::vector<RefCountedPtr<Graphics::Material>> m_shadowInstanceMaterials;
 	};
 
 } // namespace SceneGraph

@@ -90,6 +90,12 @@ namespace Graphics {
 			GLuint texId = t ? static_cast<TextureGL *>(t)->GetTextureID() : 0;
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 				GetDesc().numSamples ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texId, 0);
+			// a depth-only target (e.g. a shadow map) is incomplete while it
+			// still reads from / draws to the missing color attachment
+			if (GetDesc().colorFormat == TEXTURE_NONE) {
+				glDrawBuffer(GL_NONE);
+				glReadBuffer(GL_NONE);
+			}
 			m_depthTexture.Reset(t);
 		}
 

@@ -40,6 +40,8 @@ public:
 	virtual ~CityOnPlanet();
 
 	void Render(Graphics::Renderer *r, const CameraContext *camera, const SpaceStation *station, const vector3d &viewCoords, const matrix4x4d &viewTransform);
+	// draws the buildings inside lightBox into the current sun shadow map, see ModelBody::RenderShadowCaster
+	void RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const SpaceStation *station, const Aabb &lightBox);
 	inline Planet *GetPlanet() const { return m_planet; }
 	float GetClipRadius() const { return m_clipRadius; }
 

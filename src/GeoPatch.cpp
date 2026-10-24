@@ -3,6 +3,8 @@
 
 #include "GeoPatch.h"
 
+#include "Aabb.h"
+
 #include "GeoPatchContext.h"
 #include "GeoPatchJobs.h"
 #include "GeoSphere.h"
@@ -369,6 +371,25 @@ void GeoPatch::RenderImmediate(Graphics::Renderer *renderer, const vector3d &cam
 		}
 #endif
 		renderer->GetStats().AddToStatCount(Graphics::Stats::STAT_PATCHES, 1);
+	}
+}
+
+void GeoPatch::RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d &unitToLight, double radius, const Aabb &lightBox, Graphics::Material *material) const
+{
+	const vector3d centre = unitToLight * m_clipCentroid;
+	const double r = m_clipRadius * radius;
+	if (centre.x + r < lightBox.min.x || centre.x - r > lightBox.max.x ||
+		centre.y + r < lightBox.min.y || centre.y - r > lightBox.max.y ||
+		centre.z + r < lightBox.min.z || centre.z - r > lightBox.max.z)
+		return;
+
+	// the same patches as GatherRenderablePatches picks, without the camera's culling
+	if (m_kids[0]) {
+		for (int i = 0; i < NUM_KIDS; i++)
+			m_kids[i]->RenderShadowCaster(renderer, unitToLight, radius, lightBox, material);
+	} else if (HasHeightData() && m_patchVBOData->m_patchMesh) {
+		renderer->SetTransform(matrix4x4f(unitToLight * matrix4x4d::Translation(m_clipCentroid)));
+		renderer->DrawMesh(m_patchVBOData->m_patchMesh.get(), material);
 	}
 }
 

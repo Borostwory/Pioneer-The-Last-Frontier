@@ -15,11 +15,16 @@ Texture sampler2D texture6 name=normal
 
 Texture sampler2D heatGradient
 
+Texture sampler2D shadowMapNear
+Texture sampler2D shadowMapMid
+Texture sampler2D shadowMapFar
+
 PushConstant vec4 lightIntensity binding=1
 PushConstant vec4 heatingNormal
 
 Buffer LightData binding=0
 Buffer DrawData binding=1
+Buffer ShadowData binding=4
 
 Vertex "multi.vert"
 Fragment "multi.frag"

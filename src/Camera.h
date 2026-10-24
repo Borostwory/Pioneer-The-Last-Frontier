@@ -18,6 +18,7 @@
 
 class Body;
 class Frame;
+class SceneShadows;
 
 namespace Graphics {
 	class Material;
@@ -88,6 +89,7 @@ private:
 class Camera {
 public:
 	Camera(RefCountedPtr<CameraContext> context, Graphics::Renderer *renderer);
+	~Camera();
 
 	const CameraContext *GetContext() const { return m_context.Get(); }
 
@@ -142,6 +144,7 @@ private:
 	Graphics::Renderer *m_renderer;
 
 	std::unique_ptr<Graphics::Material> m_billboardMaterial;
+	std::unique_ptr<SceneShadows> m_shadows;
 
 	// temp attrs for sorting and drawing
 	struct BodyAttrs {

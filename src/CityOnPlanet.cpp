@@ -785,3 +785,37 @@ void CityOnPlanet::Render(Graphics::Renderer *r, const CameraContext *camera, co
 	r->GetStats().AddToStatCount(Graphics::Stats::STAT_BUILDINGS, uCount);
 	r->GetStats().AddToStatCount(Graphics::Stats::STAT_CITIES, 1);
 }
+
+void CityOnPlanet::RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const SpaceStation *station, const Aabb &lightBox)
+{
+	PROFILE_SCOPED()
+
+	// instance transforms are rebuilt by Render() when the detail level changes
+	if (!m_cityType || m_detailLevel != Pi::detail.cities)
+		return;
+
+	// the station-centered frame-oriented coordinate system the buildings are positioned in (see Render)
+	const matrix4x4d cityToLight = frameToLight * matrix4x4d::Translation(station->GetInterpPosition());
+
+	const uint32_t numBuildings = m_cityType->buildingTypes.size();
+	std::vector<std::vector<matrix4x4f>> transform(numBuildings);
+
+	for (size_t i = 0; i < m_enabledBuildings.size(); i++) {
+		const auto &building = m_enabledBuildings[i];
+
+		const vector3d pos = cityToLight * vector3d(building.pos);
+		const double rad = building.clipRadius;
+		if (pos.x + rad < lightBox.min.x || pos.x - rad > lightBox.max.x ||
+			pos.y + rad < lightBox.min.y || pos.y - rad > lightBox.max.y ||
+			pos.z + rad < lightBox.min.z || pos.z - rad > lightBox.max.z)
+			continue;
+
+		transform[building.instIndex].emplace_back(m_instanceTransforms[i]);
+	}
+
+	const matrix4x4f modelView(cityToLight);
+	for (uint32_t i = 0; i < numBuildings; i++) {
+		if (!transform[i].empty())
+			m_cityType->buildingTypes[i].model->RenderShadowInstanced(modelView, transform[i]);
+	}
+}

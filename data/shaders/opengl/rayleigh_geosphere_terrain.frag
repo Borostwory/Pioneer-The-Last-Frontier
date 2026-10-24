@@ -46,6 +46,7 @@ in vec3 waterSkyLight;
 #endif
 
 #include "terrain-materials.glsl"
+#include "shadows.glsl"
 
 void main(void)
 {
@@ -82,9 +83,11 @@ void main(void)
 	vec3 N = terrainReliefNormal(normalize(varyingNormal), surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile);
 	// and the bumps of the material textures
 	N = terrainBumpNormal(N, materialDx, materialDy, bump);
+	// shadows of ships, stations and buildings from the main star
+	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
 	vec3 light = vec3(0.0);
 	for (int i = 0; i < NUM_LIGHTS; ++i)
-		light += lightAtSurface[i] * max(dot(N, normalize(uLight[i].position.xyz)), 0.0);
+		light += lightAtSurface[i] * max(dot(N, normalize(uLight[i].position.xyz)), 0.0) * (i == 0 ? sunLit : 1.0);
 	vec3 land = albedoColor.rgb * detailMul.rgb * light;
 #ifdef TERRAIN_WITH_LAVA
 	land += material.emission.xyz * float(NUM_LIGHTS);
@@ -111,9 +114,10 @@ void main(void)
 		vec3 water = F * waterSkyLight;
 		for (int i = 0; i < NUM_LIGHTS; ++i) {
 			vec3 L = normalize(uLight[i].position.xyz);
+			vec3 lightIn = lightAtSurface[i] * (i == 0 ? sunLit : 1.0);
 			// (no glint from tilted waves once the sun has set)
-			water += lightAtSurface[i] * waterSpecular(ws, V, L) * smoothstep(-0.02, 0.05, dot(up, L));
-			bodyLight += lightAtSurface[i] * max(dot(up, L), 0.0);
+			water += lightIn * waterSpecular(ws, V, L) * smoothstep(-0.02, 0.05, dot(up, L));
+			bodyLight += lightIn * max(dot(up, L), 0.0);
 		}
 		water += waterBody(albedoColor.rgb, max(-terrainAltitude(surfaceHeight), 0.0)) * bodyLight * (1.0 - F);
 		water = water * viewTransmittance + viewInscatter;
@@ -139,4 +143,7 @@ void main(void)
 #endif
 
 	frag_color = toSRGB(1 - exp(-frag_color));
+#if (NUM_LIGHTS > 0)
+	frag_color.rgb *= sceneShadowTint(varyingEyepos, normalize(varyingNormal));
+#endif
 }

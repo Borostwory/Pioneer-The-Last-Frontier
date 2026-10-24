@@ -279,6 +279,39 @@ local function showVideoOptions()
 		needBackgroundStarRefresh = true
 	end
 
+	-- Sun shadows of ships, stations and buildings (src/SceneShadows.cpp); applied immediately
+	-- TODO: move the labels into the language files
+	ui.separator()
+	local shadowQualityLabels = { "Off", "Low (1024)", "Medium (2048)", "High (4096)" }
+	local shadowQuality = Engine.SettingsGetInt("ShadowQuality")
+	c,shadowQuality = combo("Shadows", shadowQuality, shadowQualityLabels,
+		"Sun shadows cast by ships, stations, city buildings and the terrain, on the ground and on each other. The number is the shadow map resolution: higher is sharper and uses more video memory (about 12 / 48 / 192 MB). Sharp shadows around your ship are redrawn every frame; shadows further away are reused until the sun or the camera has moved, so they cost little.")
+	if c then
+		Engine.SettingsSetInt("ShadowQuality", shadowQuality)
+	end
+	if shadowQuality > 0 then
+		local shadowDistance = Engine.SettingsGetInt("ShadowDistance")
+		c,shadowDistance = slider("Shadow distance (m)", shadowDistance, 500, 10000,
+			"How far from the camera stations, cities and parked ships cast shadows. Further spreads the same shadow map over a larger area, so distant shadows get coarser.")
+		if c then
+			Engine.SettingsSetInt("ShadowDistance", shadowDistance)
+		end
+
+		local shadowStrength = Engine.SettingsGetInt("ShadowStrength")
+		c,shadowStrength = slider("Shadow darkness (%)", shadowStrength, 0, 100,
+			"How much of the sunlight a shadow takes away under a sky like Earth's; the rest stands for the light of the sky, which still reaches shadowed places. Thinner atmospheres make shadows darker, up to completely dark in vacuum.")
+		if c then
+			Engine.SettingsSetInt("ShadowStrength", shadowStrength)
+		end
+
+		local shadowDebug = Engine.SettingsGetInt("ShadowDebug") ~= 0
+		c,shadowDebug = checkbox("Show shadow maps (debug)", shadowDebug,
+			"Tints everything by the shadow map it uses: red the sharp map around your ship, green the middle one, blue the far one.")
+		if c then
+			Engine.SettingsSetInt("ShadowDebug", shadowDebug and 1 or 0)
+		end
+	end
+
 	-- Volumetric clouds (src/PlanetClouds.cpp); applied immediately
 	-- TODO: move the labels into the language files
 	ui.separator()

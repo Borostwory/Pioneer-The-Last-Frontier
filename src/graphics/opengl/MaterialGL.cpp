@@ -36,6 +36,8 @@ namespace Graphics {
 		static size_t s_lightDataName = "LightData"_hash;
 		static size_t s_drawDataName = "DrawData"_hash;
 		static size_t s_lightIntensityName = "lightIntensity"_hash;
+		static size_t s_shadowDataName = "ShadowData"_hash;
+		static size_t s_shadowMapNames[ShadowDataBlock::NUM_CASCADES] = { "shadowMapNear"_hash, "shadowMapMid"_hash, "shadowMapFar"_hash };
 
 		// XXX potential target for allocation optimization
 		// (e.g. use renderer-owned freelist block allocator and align and group all three buffers into one allocation?)
@@ -68,6 +70,7 @@ namespace Graphics {
 			}
 
 			m_perDrawBinding = s->GetBufferBindingInfo(s_drawDataName).binding;
+			m_shadowDataBinding = s->GetBufferBindingInfo(s_shadowDataName).binding;
 		}
 
 		Program *Material::EvaluateVariant()
@@ -106,6 +109,13 @@ namespace Graphics {
 					intensity[i] = m_renderer->GetLight(i).GetIntensity();
 
 				SetPushConstant(s_lightIntensityName, Color4f(intensity[0], intensity[1], intensity[2], intensity[3]));
+			}
+
+			// sun shadow maps of the scene, see SceneShadows.h
+			if (m_shadowDataBinding != Shader::InvalidBinding) {
+				SetBuffer(s_shadowDataName, m_renderer->GetShadowUniformBuffer());
+				for (int i = 0; i < ShadowDataBlock::NUM_CASCADES; i++)
+					SetTexture(s_shadowMapNames[i], m_renderer->GetShadowMap(i));
 			}
 
 			// this should always be present, but just in case...

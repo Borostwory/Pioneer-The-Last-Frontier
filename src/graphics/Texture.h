@@ -115,6 +115,9 @@ namespace Graphics {
 		typedef std::vector<void *> vecDataPtr;
 		virtual void Update(const vecDataPtr &data, const vector3f &dataSize, const TextureFormat format, const unsigned int numMips = 0) = 0;
 		virtual void SetSampleMode(TextureSampleMode) = 0;
+		// Depth textures only: sample as a shadow map (sampler2DShadow), comparing
+		// the reference depth with GEQUAL as the reverse-Z depth buffer does
+		virtual void SetDepthCompare(bool enabled) {}
 		// Call this function to update the texture's mipmaps.
 		// validMips is the number of mipmaps which already have valid data uploaded, and is mostly for internal use.
 		virtual void BuildMipmaps(const uint32_t validMips = 1) = 0;

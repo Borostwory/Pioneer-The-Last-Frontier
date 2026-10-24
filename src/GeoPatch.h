@@ -33,9 +33,11 @@ namespace Graphics {
 
 namespace Graphics {
 	class Renderer;
+	class Material;
 	class MeshObject;
 } // namespace Graphics
 
+struct Aabb;
 class GeoPatchContext;
 class GeoSphere;
 class BasePatchJob;
@@ -113,6 +115,10 @@ public:
 	const vector3d &GetCorner(int i) const { return i == 0 ? m_corners->m_v0 : i == 1 ? m_corners->m_v1 : i == 2 ? m_corners->m_v2 : m_corners->m_v3; }
 	// distance between vertices on the unit sphere
 	double GetVertexSpacing() const;
+
+	// draws the patches drawn this frame that touch lightBox into the current
+	// sun shadow map, see GeoSphere::RenderShadowCaster
+	void RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d &unitToLight, double radius, const Aabb &lightBox, Graphics::Material *material) const;
 
 
 private:

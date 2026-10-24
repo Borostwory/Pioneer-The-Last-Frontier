@@ -1,0 +1,11 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# Depth-only drawing of models into the sun shadow maps (see SceneShadows.h)
+
+Shader shadowcaster
+
+Buffer DrawData binding=1
+
+Vertex "shadowcaster.vert"
+Fragment "shadowcaster.frag"

@@ -8,6 +8,7 @@
 #include "JsonFwd.h"
 #include "matrix4x4.h"
 
+struct Aabb;
 class BaseSphere;
 class Camera;
 class Frame;
@@ -23,6 +24,8 @@ public:
 	OBJDEF(TerrainBody, Body, TERRAINBODY);
 
 	void Render(Graphics::Renderer *r, const Camera *camera, const vector3d &viewCoords, const matrix4x4d &viewTransform) override;
+	// draws the nearby surface into the current sun shadow map, see ModelBody::RenderShadowCaster
+	void RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const Aabb &lightBox);
 	virtual void SubRender(Graphics::Renderer *r, const matrix4x4d &modelView, const vector3d &camPos) {}
 	void SetFrame(FrameId fId) override;
 	virtual bool OnCollision(Body *b, Uint32 flags, double relVel) override { return true; }

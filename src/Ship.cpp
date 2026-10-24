@@ -1695,6 +1695,13 @@ void Ship::Render(Graphics::Renderer *renderer, const Camera *camera, const vect
 	}
 }
 
+void Ship::RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const Aabb &lightBox)
+{
+	if (IsDead() || m_flightState == HYPERSPACE)
+		return;
+	ModelBody::RenderShadowCaster(r, frameToLight, lightBox);
+}
+
 bool Ship::SpawnCargo(CargoBody *c_body)
 {
 	if (m_flightState != FLYING) {

@@ -527,6 +527,16 @@ namespace Graphics {
 			CHECKERRORS();
 		}
 
+		void TextureGL::SetDepthCompare(bool enabled)
+		{
+			assert(GetDescriptor().format == TEXTURE_DEPTH && m_target == GL_TEXTURE_2D);
+			glBindTexture(m_target, m_texture);
+			glTexParameteri(m_target, GL_TEXTURE_COMPARE_MODE, enabled ? GL_COMPARE_REF_TO_TEXTURE : GL_NONE);
+			glTexParameteri(m_target, GL_TEXTURE_COMPARE_FUNC, GL_GEQUAL);
+			glBindTexture(m_target, 0);
+			CHECKERRORS();
+		}
+
 		void TextureGL::BuildMipmaps(const uint32_t validMips)
 		{
 			const TextureDescriptor &descriptor = GetDescriptor();

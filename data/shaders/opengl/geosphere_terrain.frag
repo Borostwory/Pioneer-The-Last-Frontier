@@ -27,6 +27,7 @@ in float surfaceHeight;
 #endif
 
 #include "terrain-materials.glsl"
+#include "shadows.glsl"
 
 in float dist;
 
@@ -100,10 +101,14 @@ void main(void)
 
 #if (NUM_LIGHTS > 0)
 	vec3 V = normalize(eyeposScaled - geosphereCenter);
+	// shadows of ships, stations and buildings from the main star
+	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
 
 	for (int i=0; i<NUM_LIGHTS; ++i) {
 		vec3 L = normalize(uLight[i].position.xyz);
 		float uneclipsed = clamp(calcUneclipsed(eclipse, NumShadows, V, L), 0.0, 1.0);
+		if (i == 0)
+			uneclipsed *= sunLit;
 #if defined(ATMOSPHERE) && (CLOUD_TERRAIN_SHADOWS == 1)
 		uneclipsed *= cloudShadowTerrain(clouds, eyeposScaled - geosphereCenter, L, max(dist * CLOUD_SHADOW_PIXEL_ANGLE, 1.0));
 #endif
@@ -163,6 +168,8 @@ void main(void)
 		  (0.02-clamp(fogFactor,0.0,0.01))*diff*ldprod*sunset +	      //increase fog scatter
 		  (pow((1.0-pow(fogFactor,0.75)),256.0)*0.4*diff*atmosColor)*sunset;  //distant fog.
 #endif //ATMOSPHERE
+
+	frag_color.rgb *= sceneShadowTint(varyingEyepos, normalize(varyingNormal));
 
 #else // NUM_LIGHTS > 0 -- unlit rendering - stars
 	//emission is used to boost colour of stars, which is a bit odd

@@ -235,6 +235,30 @@ namespace SceneGraph {
 			m_renderer->SetWireFrameMode(false);
 	}
 
+	void Model::RenderShadow(const matrix4x4f &trans)
+	{
+		PROFILE_SCOPED()
+		RenderData params = m_renderData;
+		params.boundingRadius = GetDrawClipRadius();
+		params.nodemask = NODE_SOLID; // transparent geometry casts no shadow
+		params.shadowPass = true;
+
+		m_renderer->SetTransform(trans);
+		m_root->Render(trans, &params);
+	}
+
+	void Model::RenderShadowInstanced(const matrix4x4f &trans, const std::vector<matrix4x4f> &inst)
+	{
+		PROFILE_SCOPED()
+		RenderData params = m_renderData;
+		params.boundingRadius = GetDrawClipRadius();
+		params.nodemask = NODE_SOLID;
+		params.shadowPass = true;
+
+		m_renderer->SetTransform(trans);
+		m_root->RenderInstanced(inst, &params);
+	}
+
 	RefCountedPtr<CollMesh> Model::CreateCollisionMesh()
 	{
 		CollisionVisitor cv;

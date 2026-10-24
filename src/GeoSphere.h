@@ -38,6 +38,7 @@ public:
 
 	void Update() override;
 	void Render(Graphics::Renderer *renderer, const matrix4x4d &modelView, vector3d campos, const float radius, const std::vector<Camera::Shadow> &shadows) override;
+	void RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d &unitToLight, double radius, const Aabb &lightBox) override;
 
 	double GetTerrainHeight(const vector3d &p) const final
 	{
@@ -113,6 +114,8 @@ private:
 	void ProcessQuadSplitRequests();
 
 	std::unique_ptr<GeoPatch> m_patches[6];
+	// depth-only material for the patches in the sun shadow maps, created on first use
+	RefCountedPtr<Graphics::Material> m_shadowMaterial;
 	std::vector<std::pair<double, GeoPatch *>> m_visiblePatches;
 
 	// patches that want to split this update, with their distance to the camera

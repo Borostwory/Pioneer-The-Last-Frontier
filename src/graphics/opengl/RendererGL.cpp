@@ -584,6 +584,9 @@ namespace Graphics {
 		stat.SetStatCount(Stats::STAT_NUM_SHADER_PROGRAMS, numShaderPrograms);
 
 		m_lightUniformBuffer = {};
+		m_shadowUniformBuffer = {};
+		for (Texture *&map : m_shadowMaps)
+			map = nullptr;
 
 		return true;
 	}
@@ -832,6 +835,20 @@ namespace Graphics {
 	{
 		m_ambient = c;
 		return true;
+	}
+
+	void RendererOGL::SetShadowData(const ShadowDataBlock *data, Texture *const *maps)
+	{
+		m_shadowUniformBuffer = {};
+		for (int i = 0; i < ShadowDataBlock::NUM_CASCADES; i++)
+			m_shadowMaps[i] = data ? maps[i] : nullptr;
+		if (!data)
+			return;
+
+		// ScopedMap will be released at the end of the function
+		auto shadowData = GetDrawUniformBuffer(sizeof(ShadowDataBlock))->Allocate<ShadowDataBlock>(m_shadowUniformBuffer);
+		assert(shadowData.isValid());
+		*shadowData.data() = *data;
 	}
 
 	bool RendererOGL::DrawBuffer(const VertexArray *v, Material *m)
@@ -1282,6 +1299,17 @@ namespace Graphics {
 	const BufferBinding<UniformBuffer> &RendererOGL::GetLightUniformBuffer()
 	{
 		return m_lightUniformBuffer;
+	}
+
+	const BufferBinding<UniformBuffer> &RendererOGL::GetShadowUniformBuffer()
+	{
+		if (!m_shadowUniformBuffer.buffer) {
+			// shaders reading ShadowData always need a valid block; this one turns shadows off
+			auto shadowData = GetDrawUniformBuffer(sizeof(ShadowDataBlock))->Allocate<ShadowDataBlock>(m_shadowUniformBuffer);
+			assert(shadowData.isValid());
+			*shadowData.data() = ShadowDataBlock {};
+		}
+		return m_shadowUniformBuffer;
 	}
 
 	OGL::UniformLinearBuffer *RendererOGL::GetDrawUniformBuffer(Uint32 size)

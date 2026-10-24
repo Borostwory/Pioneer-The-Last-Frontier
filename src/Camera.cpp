@@ -10,6 +10,7 @@
 #include "Planet.h"
 #include "PlanetClouds.h"
 #include "Player.h"
+#include "SceneShadows.h"
 #include "Sfx.h"
 #include "Space.h"
 #include "SpaceStation.h"
@@ -114,7 +115,8 @@ bool Camera::BodyAttrs::sort_BodyAttrs(const BodyAttrs &a, const BodyAttrs &b)
 
 Camera::Camera(RefCountedPtr<CameraContext> context, Graphics::Renderer *renderer) :
 	m_context(context),
-	m_renderer(renderer)
+	m_renderer(renderer),
+	m_shadows(new SceneShadows(renderer))
 {
 	Graphics::MaterialDescriptor desc;
 	desc.textures = 1;
@@ -129,6 +131,10 @@ Camera::Camera(RefCountedPtr<CameraContext> context, Graphics::Renderer *rendere
 	m_billboardMaterial.reset(m_renderer->CreateMaterial("billboards", desc, rsd, vfmt));
 	m_billboardMaterial->SetTexture("texture0"_hash,
 		Graphics::TextureBuilder::Billboard("textures/planet_billboard.dds").GetOrCreateTexture(m_renderer, "billboard"));
+}
+
+Camera::~Camera()
+{
 }
 
 static void position_system_lights(Frame *camFrame, Frame *frame, std::vector<Camera::LightSource> &lights)
@@ -335,6 +341,14 @@ void Camera::Draw(const Body *excludeBody)
 
 	Graphics::VertexArray billboards(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_NORMAL);
 
+	// shadows of ships, stations and buildings from the main star (not the
+	// stand-in light used where there are no stars)
+	if (m_lightSources[0].GetBody()) {
+		m_renderer->BeginGpuTimer("shadows");
+		m_shadows->Begin(m_context.Get(), m_lightSources[0].GetLight());
+		m_renderer->EndGpuTimer();
+	}
+
 	m_renderer->BeginGpuTimer("bodies");
 	for (std::list<BodyAttrs>::iterator i = m_sortedBodies.begin(); i != m_sortedBodies.end(); ++i) {
 		BodyAttrs *attrs = &(*i);
@@ -355,6 +369,7 @@ void Camera::Draw(const Body *excludeBody)
 
 	m_renderer->EndGpuTimer();
 	RestoreLighting();
+	m_shadows->End();
 
 	// clouds over everything drawn so far, using the scene depth
 	m_renderer->BeginGpuTimer("clouds");

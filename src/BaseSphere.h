@@ -10,6 +10,8 @@
 #include "terrain/Terrain.h"
 #include "vector3.h"
 
+struct Aabb;
+
 namespace Graphics {
 	class Renderer;
 	class RenderState;
@@ -27,6 +29,11 @@ public:
 	virtual void Render(Graphics::Renderer *renderer, const matrix4x4d &modelView, vector3d campos, const float radius, const std::vector<Camera::Shadow> &shadows) = 0;
 
 	virtual double GetTerrainHeight(const vector3d &p) const = 0;
+
+	// Draws the surface depth-only into the current sun shadow map (see SceneShadows.h).
+	// unitToLight: from planet radii, centred on the body in its frame's orientation,
+	// to the map's light space in metres; lightBox: the volume the map covers
+	virtual void RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d &unitToLight, double radius, const Aabb &lightBox) {}
 
 	static void Init(Graphics::Renderer *renderer);
 	static void Uninit();

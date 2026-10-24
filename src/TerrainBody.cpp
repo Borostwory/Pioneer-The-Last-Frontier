@@ -124,6 +124,14 @@ void TerrainBody::Render(Graphics::Renderer *renderer, const Camera *camera, con
 		renderer->ClearDepthBuffer();
 }
 
+void TerrainBody::RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const Aabb &lightBox)
+{
+	// the surface is in planet radii, centred on the body in its frame's orientation (see Render)
+	const double rad = m_sbody->GetRadius();
+	const matrix4x4d unitToLight = frameToLight * matrix4x4d::Translation(GetInterpPosition()) * matrix4x4d::ScaleMatrix(rad);
+	m_baseSphere->RenderShadowCaster(r, unitToLight, rad, lightBox);
+}
+
 void TerrainBody::SetFrame(FrameId fId)
 {
 	Frame *f = Frame::GetFrame(GetFrame());

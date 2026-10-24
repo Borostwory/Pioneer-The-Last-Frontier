@@ -47,6 +47,11 @@ public:
 
 	void RenderModel(Graphics::Renderer *r, const Camera *camera, const vector3d &viewCoords, const matrix4x4d &viewTransform);
 
+	// Draws the body depth-only into the current sun shadow map (see SceneShadows.h).
+	// frameToLight: from the body's frame to the shadow map's light space;
+	// lightBox: the light-space volume the map covers, for culling parts of the body
+	virtual void RenderShadowCaster(Graphics::Renderer *r, const matrix4x4d &frameToLight, const Aabb &lightBox);
+
 	void TimeStepUpdate(const float timeStep) override;
 
 protected:

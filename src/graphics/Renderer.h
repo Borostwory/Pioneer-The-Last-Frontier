@@ -43,6 +43,16 @@ namespace Graphics {
 	struct RenderStateDesc;
 	struct RenderTargetDesc;
 
+	// Layout of the ShadowData uniform buffer (std140, see shadows.glsl)
+	struct ShadowDataBlock {
+		static constexpr int NUM_CASCADES = 3; // near, mid, far
+
+		matrix4x4f cascadeMatrix[NUM_CASCADES]; // view space -> shadow map coordinates (xy 0..1, z depth)
+		float cascadeParams[NUM_CASCADES][4];	 // normal offset (m), depth bias, unused, unused
+		float state[4];							 // x: 1 while the shadow maps are valid, y: share of the sunlight a shadow removes
+	};
+	static_assert(sizeof(ShadowDataBlock) == 256, "ShadowDataBlock must match the std140 layout of ShadowData");
+
 	// Renderer base, functions return false if
 	// failed/unsupported
 	class Renderer {
@@ -130,6 +140,13 @@ namespace Graphics {
 		virtual Uint32 GetNumLights() const { return 0; }
 		virtual bool SetAmbientColor(const Color &c) = 0;
 		const Color &GetAmbientColor() const { return m_ambient; }
+
+		// Sun shadow maps for the scene being drawn (see SceneShadows.h), used by
+		// every material whose shader declares the ShadowData buffer (shadows.glsl).
+		// Pass nullptr to stop shadowing; the renderer also stops at the end of the frame.
+		// The maps must stay alive until the end of the frame.
+		// maps: one depth texture per cascade (ShadowDataBlock::NUM_CASCADES)
+		virtual void SetShadowData(const ShadowDataBlock *data, Texture *const *maps) {}
 
 		//drawing functions
 		// TODO: placeholder API; here until CommandLists are exposed
