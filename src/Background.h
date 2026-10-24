@@ -112,6 +112,9 @@ namespace Background {
 		Uint32 m_drawFlags;
 	};
 
+	// Image of the view at the moment of a hyperspace jump, shown warping away as the ship accelerates
+	void SetHyperspaceSnapshot(Graphics::Texture *snapshot);
+
 } //namespace Background
 
 #endif

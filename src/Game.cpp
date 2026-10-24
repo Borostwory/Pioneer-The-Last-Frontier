@@ -536,7 +536,8 @@ void Game::SwitchToHyperspace()
 	m_space.reset(); // HACK: Here because next line will create Frames *before* deleting existing ones
 	m_space.reset(new Space(this, m_galaxy, m_space.get()));
 
-	m_space->GetBackground()->SetDrawFlags(Background::Container::DRAW_STARS);
+	// the skybox carries the cosmic microwave background seen at relativistic speed
+	m_space->GetBackground()->SetDrawFlags(Background::Container::DRAW_SKYBOX | Background::Container::DRAW_STARS);
 
 	// Reset planner
 	Pi::planner->ResetStartTime();
@@ -556,6 +557,9 @@ void Game::SwitchToHyperspace()
 	m_hyperspaceProgress = 0;
 	m_hyperspaceDuration = m_player->GetHyperspaceDuration();
 	m_hyperspaceEndTime = Pi::game->GetTime() + m_hyperspaceDuration;
+	// the transit lasts as long as the jump sound (Hyperdrive_Jump.ogg), whatever the length of the jump
+	constexpr double HYPERSPACE_REAL_DURATION = 15.5;
+	m_hyperspaceTimeAccelRate = float(std::max(1.0, m_hyperspaceDuration / HYPERSPACE_REAL_DURATION));
 
 	m_state = State::HYPERSPACE;
 	m_wantHyperspace = false;

@@ -100,10 +100,11 @@ public:
 	TimeAccel GetRequestedTimeAccel() const { return m_requestedTimeAccel; }
 	bool IsPaused() const { return m_timeAccel == TIMEACCEL_PAUSED; }
 
-	float GetTimeAccelRate() const { return s_timeAccelRates[m_timeAccel]; }
-	float GetInvTimeAccelRate() const { return s_timeInvAccelRates[m_timeAccel]; }
+	// in hyperspace the rate is set so that every transit takes the same real time
+	float GetTimeAccelRate() const { return m_timeAccel == TIMEACCEL_HYPERSPACE ? m_hyperspaceTimeAccelRate : s_timeAccelRates[m_timeAccel]; }
+	float GetInvTimeAccelRate() const { return m_timeAccel == TIMEACCEL_HYPERSPACE ? 1.0f / m_hyperspaceTimeAccelRate : s_timeInvAccelRates[m_timeAccel]; }
 
-	float GetTimeStep() const { return s_timeAccelRates[m_timeAccel] * (1.0f / PHYSICS_HZ); }
+	float GetTimeStep() const { return GetTimeAccelRate() * (1.0f / PHYSICS_HZ); }
 
 	SectorView *GetSectorView() const { return m_gameViews->m_sectorView; }
 	SystemView *GetSystemView() const { return m_gameViews->m_systemView; }
@@ -171,6 +172,7 @@ private:
 	double m_hyperspaceProgress;
 	double m_hyperspaceDuration;
 	double m_hyperspaceEndTime;
+	float m_hyperspaceTimeAccelRate = 100000.0f;
 
 	TimeAccel m_timeAccel;
 	TimeAccel m_requestedTimeAccel;
