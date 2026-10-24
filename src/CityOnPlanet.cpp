@@ -148,7 +148,8 @@ void CityOnPlanet::LoadBuildingType(std::string_view key, const Json &buildingDe
 	}
 
 	out.rarityAirless = buildingDef.value("airless-rarity", 1.0);
-	out.rarityAtmo = buildingDef.value("atmo-rarity", 1.0);
+	// configs use "atmospheric-rarity"; "atmo-rarity" is accepted for compatibility
+	out.rarityAtmo = buildingDef.value("atmospheric-rarity", buildingDef.value("atmo-rarity", 1.0));
 
 	std::string kind = buildingDef.value("kind", "");
 
@@ -390,8 +391,10 @@ void CityOnPlanet::Generate(SpaceStation *station)
 
 	m_gridLen = m_gridPitch * m_citySize;
 
-	m_gridBitset.reset(new uint8_t[m_gridLen]);
-	std::memset(m_gridBitset.get(), 0, m_gridLen);
+	// 64-bit accesses start on 4-byte boundaries, so the last row can read up
+	// to 4 bytes past m_gridLen; pad the allocation to keep them in bounds
+	m_gridBitset.reset(new uint8_t[m_gridLen + 8]);
+	std::memset(m_gridBitset.get(), 0, m_gridLen + 8);
 
 	// Setup the station model position relative to the city grid
 	// ==========================================
@@ -522,6 +525,8 @@ void CityOnPlanet::Generate(SpaceStation *station)
 					continue;
 				}
 
+				// found a building that fits and passed its rarity roll
+				break;
 			}
 
 			// if we cannot find a building type, leave the cell empty and move on
@@ -623,7 +628,8 @@ void CityOnPlanet::CalcCityRadius(const SystemBody *body)
 static inline uint64_t CalcBitmaskForGrid(uint32_t x, uint32_t xsize)
 {
 	uint32_t maskOffset = x & CityOnPlanet::CELLMASK;
-	uint64_t bitmask = uint64_t((1 << xsize) - 1) << maskOffset;
+	// 64-bit shift: a 32-bit shift by xsize == CELLMAX would be undefined
+	uint64_t bitmask = ((uint64_t(1) << xsize) - 1) << maskOffset;
 	// note: need crossplatform bswap_64 here for big-endian compat
 	// we should be able to swap the bitmask rather than the in-memory bytes and have the same effect
 
