@@ -46,6 +46,7 @@ in vec3 waterSkyLight;
 #endif
 
 #include "terrain-materials.glsl"
+#include "terrain-far.glsl"
 #include "shadows.glsl"
 #include "city-lights.glsl"
 #include "city-glow.glsl"
@@ -62,18 +63,37 @@ void main(void)
 	// camera, procedural surface patterns further out
 	vec3 materialDx = dFdx(varyingEyepos), materialDy = dFdy(varyingEyepos);
 	vec3 surfaceUp = normalize(varyingEyepos * geosphereInvRadius - geosphereCenter);
+
+	// colour, altitude and normal from the far texture where the mesh is
+	// coarser than it (terrain-far.glsl)
+	float farWeight = terrainFarWeight(dist);
+	vec3 albedo = albedoColor.rgb;
+	vec3 farNormal = surfaceUp;
 #if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
-	float altitude = terrainAltitude(surfaceHeight);
+	float seaHeight = surfaceHeight;
+#endif
+	if (FarTexture.y > 0.0) {
+		FarSurface farSurface = terrainFarSample(surfaceUp);
+		albedo = mix(albedo, farSurface.albedo, farWeight);
+		farNormal = farSurface.normal;
+#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
+		seaHeight = mix(surfaceHeight, farSurface.height, farWeight);
+#endif
+	}
+
+#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
+	float altitude = terrainAltitude(seaHeight);
 #else
 	float altitude = 1.0e4;
 #endif
 	MaterialMapping mapping = materialMapping(varyingEyepos, materialDx, materialDy, surfaceUp);
 	vec4 tile = terrainTileSample(texCoord0);
 	vec2 bump;
-	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, albedoColor.rgb, mapping,
+	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, albedo, mapping,
 		dist, varyingNormal, surfaceUp, altitude, hasWater, tile.w, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
-	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist);
+	// (the patterns stand in for detail the far texture has)
+	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - farWeight);
 	if (patternWeight > 0.0) {
 		float rock;
 		vec4 pw = terrainPatternWeights(materialWeights0, materialWeights1, rock);
@@ -85,12 +105,15 @@ void main(void)
 	vec3 N = terrainReliefNormal(normalize(varyingNormal), surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile);
 	// and the bumps of the material textures
 	N = terrainBumpNormal(N, materialDx, materialDy, bump);
+	// or the far texture's
+	if (farWeight > 0.0)
+		N = normalize(mix(N, farNormal, farWeight));
 	// shadows of ships, stations and buildings from the main star
 	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
 	vec3 light = vec3(0.0);
 	for (int i = 0; i < NUM_LIGHTS; ++i)
 		light += lightAtSurface[i] * max(dot(N, normalize(uLight[i].position.xyz)), 0.0) * (i == 0 ? sunLit : 1.0);
-	vec3 land = albedoColor.rgb * detailMul.rgb * light;
+	vec3 land = albedo * detailMul.rgb * light;
 #ifdef TERRAIN_WITH_LAVA
 	land += material.emission.xyz * float(NUM_LIGHTS);
 #endif
@@ -104,7 +127,7 @@ void main(void)
 	// which is not theirs), on paved ground (CITY_GROUND_ALBEDO_*)
 	vec3 citySpecular = vec3(0.0);
 	vec3 cityLight = cityLightAt(varyingEyepos, N, 0.0, citySpecular);
-	vec3 cityLand = clamp(albedoColor.rgb * detailMul.rgb, vec3(CITY_GROUND_ALBEDO_MIN), vec3(CITY_GROUND_ALBEDO_MAX)) * cityLight;
+	vec3 cityLand = clamp(albedo * detailMul.rgb, vec3(CITY_GROUND_ALBEDO_MIN), vec3(CITY_GROUND_ALBEDO_MAX)) * cityLight;
 	// and of the cities seen from afar, where the starlight on level ground is dim
 	vec3 daylight = vec3(0.0);
 	for (int i = 0; i < NUM_LIGHTS; ++i)
@@ -118,7 +141,7 @@ void main(void)
 
 #if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
 	// water: sky reflection, sun glint and the water body, per pixel
-	float waterMask = terrainWaterMask(surfaceHeight);
+	float waterMask = terrainWaterMask(seaHeight);
 	if (waterMask > 0.0) {
 		vec3 up = surfaceUp;
 		vec3 V = -normalize(varyingEyepos);
@@ -133,7 +156,7 @@ void main(void)
 			water += lightIn * waterSpecular(ws, V, L) * smoothstep(-0.02, 0.05, dot(up, L));
 			bodyLight += lightIn * max(dot(up, L), 0.0);
 		}
-		water += waterBody(albedoColor.rgb, max(-terrainAltitude(surfaceHeight), 0.0)) * bodyLight * (1.0 - F);
+		water += waterBody(albedo, max(-terrainAltitude(seaHeight), 0.0)) * bodyLight * (1.0 - F);
 		water = water * viewTransmittance + viewInscatter;
 		frag_color.rgb = mix(frag_color.rgb, water, waterMask);
 	}

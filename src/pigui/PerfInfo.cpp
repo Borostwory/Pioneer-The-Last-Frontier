@@ -13,6 +13,7 @@
 #include "Player.h"
 #include "SectorView.h"
 #include "Space.h"
+#include "TerrainFarTexture.h"
 #include "core/Log.h"
 #include "graphics/Renderer.h"
 #include "graphics/Stats.h"
@@ -710,6 +711,22 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 		Pi::config->SetInt("TerrainDetailTiles", detailTiles ? 1 : 0);
 		Pi::config->Save();
 	}
+
+	// the planets' far textures (TerrainFarTexture); off frees them, for A/B
+	// comparison; a new size bakes them again
+	bool farTexture = Pi::config->Int("PlanetFarTexture", 1) != 0;
+	if (ImGui::Checkbox("Far Terrain Texture", &farTexture)) {
+		Pi::config->SetInt("PlanetFarTexture", farTexture ? 1 : 0);
+		Pi::config->Save();
+	}
+	const int farSize = Pi::config->Int("PlanetFarTextureSize", 1024);
+	int farSizeIndex = farSize >= 2048 ? 2 : (farSize >= 1024 ? 1 : 0);
+	if (ImGui::Combo("Far Texture Size", &farSizeIndex, "512\0" "1024\0" "2048\0")) {
+		Pi::config->SetInt("PlanetFarTextureSize", 512 << farSizeIndex);
+		Pi::config->Save();
+	}
+	if (!TerrainFarTexture::GetLastBakeInfo().empty())
+		ImGui::Text("Last far texture: %s", TerrainFarTexture::GetLastBakeInfo().c_str());
 
 	const GeoPatchGenStats stats = GetGeoPatchGenStats();
 	const double totalMs = double(stats.microseconds) / 1000.0;

@@ -27,6 +27,7 @@ in float surfaceHeight;
 #endif
 
 #include "terrain-materials.glsl"
+#include "terrain-far.glsl"
 #include "shadows.glsl"
 
 in float dist;
@@ -59,9 +60,28 @@ void main(void)
 	CloudPlanet clouds = cloudDerive();
 #endif
 
+	vec3 surfaceUp = normalize(eyeposScaled - geosphereCenter);
+
+	// colour, altitude and normal from the far texture where the mesh is
+	// coarser than it (terrain-far.glsl)
+	float farWeight = terrainFarWeight(dist);
+	vec4 albedo = vertexColor;
+	vec3 farNormal = surfaceUp;
+#ifdef TERRAIN_WITH_WATER
+	float seaHeight = surfaceHeight;
+#endif
+	if (FarTexture.y > 0.0) {
+		FarSurface farSurface = terrainFarSample(surfaceUp);
+		albedo.rgb = mix(albedo.rgb, farSurface.albedo, farWeight);
+		farNormal = farSurface.normal;
+#ifdef TERRAIN_WITH_WATER
+		seaHeight = mix(surfaceHeight, farSurface.height, farWeight);
+#endif
+	}
+
 #ifdef TERRAIN_WITH_WATER
 	const bool hasWater = true;
-	float altitude = terrainAltitude(surfaceHeight);
+	float altitude = terrainAltitude(seaHeight);
 #else
 	const bool hasWater = false;
 	float altitude = 1.0e4;
@@ -70,14 +90,14 @@ void main(void)
 	// land materials (photo texture detail, slope rock, beaches) near the
 	// camera, procedural surface patterns further out
 	vec3 materialDx = dFdx(varyingEyepos), materialDy = dFdy(varyingEyepos);
-	vec3 surfaceUp = normalize(eyeposScaled - geosphereCenter);
 	MaterialMapping mapping = materialMapping(varyingEyepos, materialDx, materialDy, surfaceUp);
 	vec4 tile = terrainTileSample(texCoord0);
 	vec2 bump;
-	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, vertexColor.rgb, mapping,
+	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, albedo.rgb, mapping,
 		dist, varyingNormal, surfaceUp, altitude, hasWater, tile.w, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
-	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist);
+	// (the patterns stand in for detail the far texture has)
+	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - farWeight);
 	if (patternWeight > 0.0) {
 		float rock;
 		vec4 pw = terrainPatternWeights(materialWeights0, materialWeights1, rock);
@@ -88,10 +108,13 @@ void main(void)
 	tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile);
 	// and the bumps of the material textures
 	tnorm = terrainBumpNormal(tnorm, materialDx, materialDy, bump);
+	// or the far texture's
+	if (farWeight > 0.0)
+		tnorm = normalize(mix(tnorm, farNormal, farWeight));
 
 #ifdef TERRAIN_WITH_WATER
 	// water: sun glint per light here, the rest after the light loop
-	float waterMask = terrainWaterMask(surfaceHeight);
+	float waterMask = terrainWaterMask(seaHeight);
 	vec3 dpdx = dFdx(varyingEyepos), dpdy = dFdy(varyingEyepos);
 	WaterSurface ws;
 	if (waterMask > 0.0)
@@ -121,19 +144,19 @@ void main(void)
 	}
 
 	// Use the detail value to multiply the final colour before lighting
-	vec4 ambient = scene.ambient * vertexColor;
-	vec4 final = vertexColor * detailMul * diff;
+	vec4 ambient = scene.ambient * albedo;
+	vec4 final = albedo * detailMul * diff;
 
 #ifdef TERRAIN_WITH_WATER
 	vec3 waterReflect = vec3(0.0);
 	if (waterMask > 0.0) {
 		float F = waterFresnel(dot(ws.N, -eyenorm));
-		float depth = max(-terrainAltitude(surfaceHeight), 0.0);
+		float depth = max(-terrainAltitude(seaHeight), 0.0);
 #ifdef ATMOSPHERE
 		// the sky, approximated by the atmosphere colour at the light level
 		waterReflect = F * atmosColor.rgb * (diff.r + diff.g + diff.b) / 3.0;
 #endif
-		final.rgb = mix(final.rgb, waterBody(vertexColor.rgb, depth) * diff.rgb * (1.0 - F) + waterReflect, waterMask);
+		final.rgb = mix(final.rgb, waterBody(albedo.rgb, depth) * diff.rgb * (1.0 - F) + waterReflect, waterMask);
 	}
 #endif
 

@@ -14,6 +14,7 @@ namespace Graphics {
 			void Update(const void *data, const vector2f &pos, const vector3f &dataSize, TextureFormat format, const unsigned int numMips) final;
 			void Update(const TextureCubeData &data, const vector3f &dataSize, TextureFormat format, const unsigned int numMips) final;
 			void Update(const vecDataPtr &data, const vector3f &dataSize, const TextureFormat format, const unsigned int numMips) final;
+			void UpdateCubeFace(unsigned int face, const void *data, const vector3f &dataSize, TextureFormat format, bool buildMipmaps) final;
 
 			TextureGL(const TextureDescriptor &descriptor, const bool useCompressed, const bool useAnisoFiltering, const Uint16 numSamples = 0);
 			virtual ~TextureGL();

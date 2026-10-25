@@ -417,6 +417,22 @@ namespace Graphics {
 			CHECKERRORS();
 		}
 
+		void TextureGL::UpdateCubeFace(const unsigned int face, const void *data, const vector3f &dataSize, TextureFormat format, const bool buildMipmaps)
+		{
+			PROFILE_SCOPED()
+			assert(m_target == GL_TEXTURE_CUBE_MAP && face < 6 && !IsCompressed(format));
+			glActiveTexture(GL_TEXTURE0);
+			// keep the cube map the render state cache has bound there
+			GLint previous = 0;
+			glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &previous);
+			glBindTexture(m_target, m_texture);
+			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, 0, 0, dataSize.x, dataSize.y, GLImageFormat(format), GLImageType(format), data);
+			if (buildMipmaps && GetDescriptor().generateMipmaps)
+				glGenerateMipmap(m_target);
+			glBindTexture(m_target, GLuint(previous));
+			CHECKERRORS();
+		}
+
 		void TextureGL::Update(const vecDataPtr &data, const vector3f &dataSize, const TextureFormat format, const unsigned int numMips)
 		{
 			assert(m_target == GL_TEXTURE_2D_ARRAY);

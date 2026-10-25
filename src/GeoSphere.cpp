@@ -16,6 +16,7 @@
 #include "PlanetClouds.h"
 #include "Space.h"
 #include "SpaceStation.h"
+#include "TerrainFarTexture.h"
 #include "TerrainTiles.h"
 #include "RefCounted.h"
 #include "galaxy/AtmosphereParameters.h"
@@ -103,8 +104,9 @@ void GeoSphere::SetLodDistanceScale(const double scale)
 // The detail distance setting applies in full at mid altitude (about 200 to
 // 2,000 km on Earth), where it shows most. Near the ground the terrain close
 // by is already at full detail and the extra patches cost the most; in high
-// orbit the planet's data, not the mesh, limits what you see. Both get a
-// reduced value. Altitude is in planet radii, so this scales with body size.
+// orbit the far texture (TerrainFarTexture) draws the detail instead of the
+// mesh. Both get a reduced value. Altitude is in planet radii, so this scales
+// with body size.
 static double LodDistanceAtAltitude(const double altitude)
 {
 	auto smoothStep = [](const double edge0, const double edge1, const double x) {
@@ -260,6 +262,10 @@ void GeoSphere::Reset()
 			m_patches[p].reset();
 		}
 	}
+
+	// baked from the terrain the patches had
+	m_farTexture.reset();
+	m_farTextureIdle = 0.0;
 
 	CalculateMaxPatchDepth();
 
@@ -455,6 +461,10 @@ void GeoSphere::CalculateMaxPatchDepth()
 
 void GeoSphere::Update()
 {
+	// keeps a bake going while the planet is out of view (it fades in as drawn)
+	if (m_farTexture)
+		m_farTexture->Update(0.0f);
+
 	switch (m_initStage) {
 	case eBuildFirstPatches:
 		BuildFirstPatches();
@@ -558,6 +568,53 @@ void GeoSphere::SetCityGlowData(const vector3d &campos, Graphics::CityGlowDataBl
 	m_surfaceMaterial->SetBufferDynamic("CityGlowData"_hash, &data);
 }
 
+// The far terrain texture: baked once the planet is large on screen, freed
+// once it has been small for a while; drawn (terrain-far.glsl) where the
+// patches' vertices are further apart than its texels.
+void GeoSphere::SetFarTexture(const vector3d &campos, const double pixelAngle, const double spacingPerMetre)
+{
+	const int size = TerrainFarTexture::ConfiguredSize();
+	const bool star = GetSystemBody()->GetSuperType() == SystemBody::SUPERTYPE_STAR;
+	if (size == 0 || star || (m_farTexture && m_farTexture->GetSize() != size))
+		m_farTexture.reset();
+
+	// apparent size in pixels
+	const double camDist = std::max(campos.Length(), 1.0);
+	const double discPixels = 2.0 * std::asin(1.0 / camDist) / pixelAngle;
+	if (size > 0 && !star && discPixels >= TerrainFarTexture::START_PIXELS) {
+		m_farTextureIdle = 0.0;
+		if (!m_farTexture && TerrainFarTexture::CanStart())
+			m_farTexture.reset(new TerrainFarTexture(m_terrain, GetSystemBody()->GetName(), GetSystemBody()->GetRadius(), size));
+	} else if (m_farTexture && discPixels < TerrainFarTexture::RELEASE_PIXELS) {
+		m_farTextureIdle += Pi::GetFrameTime();
+		if (m_farTextureIdle > TerrainFarTexture::RELEASE_SECONDS)
+			m_farTexture.reset();
+	} else {
+		m_farTextureIdle = 0.0;
+	}
+
+	// the distance where the vertex spacing reaches the texel size: the
+	// texture fades in from there to twice it
+	float fade = 0.0f;
+	double handover = 0.0;
+	if (m_farTexture) {
+		m_farTexture->Update(Pi::GetFrameTime());
+		if (m_farTexture->IsReady()) {
+			handover = m_farTexture->GetTexelMetres() / spacingPerMetre;
+			// none of it shows when all the ground in sight (to the horizon,
+			// and mountains beyond it) is nearer, nor in the patch depth view
+			const double top = 1.0 + GetMaxFeatureHeight();
+			const double farthest = (std::sqrt(camDist * camDist - 1.0) + std::sqrt(top * top - 1.0)) * GetSystemBody()->GetRadius();
+			if (farthest > handover && !(s_debugFlags & DebugFlags::DEBUG_PATCHDEPTH))
+				fade = m_farTexture->GetFade();
+		}
+	}
+	// never leave the material with textures that may be freed
+	m_surfaceMaterial->SetTexture("farColour"_hash, fade > 0.0f ? m_farTexture->GetColour() : nullptr);
+	m_surfaceMaterial->SetTexture("farNormal"_hash, fade > 0.0f ? m_farTexture->GetNormal() : nullptr);
+	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(float(handover), fade, 0.0f), 0.0f);
+}
+
 void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView, vector3d campos, const float radius, const std::vector<Camera::Shadow> &shadows)
 {
 	PROFILE_SCOPED()
@@ -627,8 +684,13 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		// (as CalculateMaxPatchDepth() works it out).
 		const double vertexGaps = double(s_patchContext->GetEdgeLen() - 3); // edge length includes the skirt
 		const double deepestSpacing = 2.0 * M_PI * GetSystemBody()->GetRadius() / double(s_patchContext->GetEdgeLen() * 8) / std::pow(2.0, double(m_maxDepth));
+		const double spacingPerMetre = 1.0 / (1.41 * GetLodDistance() * vertexGaps);
 		m_surfaceMaterial->SetPushConstant("ReliefScale"_hash,
-			vector3f(float(1.0 / (1.41 * GetLodDistance() * vertexGaps)), float(deepestSpacing), 0.0f), 0.0f);
+			vector3f(float(spacingPerMetre), float(deepestSpacing), 0.0f), 0.0f);
+
+		// radians per pixel, from the projection and the viewport height
+		const double pixelAngle = 2.0 / (std::max(proj[5], 1e-6) * std::max(renderer->GetViewport().h, 1));
+		SetFarTexture(campos, pixelAngle, spacingPerMetre);
 	}
 
 	// cloud data: shadows in the terrain shader now, the clouds themselves in

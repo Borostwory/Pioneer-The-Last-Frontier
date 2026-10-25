@@ -114,6 +114,11 @@ namespace Graphics {
 			Update(data, vector2f(0, 0), dataSize, format, numMips);
 		}
 		virtual void Update(const TextureCubeData &data, const vector3f &dataSize, TextureFormat format, const unsigned int numMips = 0) = 0;
+		// Cube maps, uncompressed: replaces the base level of one face (0..5:
+		// +X, -X, +Y, -Y, +Z, -Z), so a large cube map can be uploaded over
+		// several frames; buildMipmaps on the last face. Leaves the texture
+		// bindings as they were.
+		virtual void UpdateCubeFace(unsigned int face, const void *data, const vector3f &dataSize, TextureFormat format, bool buildMipmaps) {}
 		typedef std::vector<void *> vecDataPtr;
 		virtual void Update(const vecDataPtr &data, const vector3f &dataSize, const TextureFormat format, const unsigned int numMips = 0) = 0;
 		virtual void SetSampleMode(TextureSampleMode) = 0;

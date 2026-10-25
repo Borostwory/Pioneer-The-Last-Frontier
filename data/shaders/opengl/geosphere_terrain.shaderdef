@@ -11,6 +11,8 @@ Texture sampler2D waterWaves
 Texture sampler2DArray terrainMaterials
 Texture sampler2D terrainRelief
 Texture sampler2D terrainTiles
+Texture samplerCube farColour
+Texture samplerCube farNormal
 
 Texture sampler2D shadowMapNear
 Texture sampler2D shadowMapMid
@@ -34,6 +36,7 @@ PushConstant vec4 MaterialSlots1 binding=8
 PushConstant vec4 MaterialSpecial binding=9
 PushConstant vec4 ReliefScale binding=10
 PushConstant vec4 PatchTile binding=11
+PushConstant vec4 FarTexture binding=12
 
 Vertex "geosphere_terrain.vert"
 Fragment "geosphere_terrain.frag"

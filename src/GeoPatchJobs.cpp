@@ -99,28 +99,6 @@ void ResetGeoPatchGenStats()
 	s_genMicroseconds = 0;
 }
 
-// Signed altitude above sea level (metres, negative under water) for the
-// terrain shaders, which read it from the vertex colour's alpha
-// (terrainAltitude() in terrain-water.glsl): 0.5 +- 0.5 * sqrt(|h| / 8000 m),
-// so the steps are about 0.5 m near sea level and 120 m at 8 km. Land rounds
-// to 128 and up, water to 127 and down, so the coastline lies between them.
-inline unsigned char EncodeAltitude(const double metres)
-{
-	const double s = std::sqrt(std::min(std::abs(metres) / 8000.0, 1.0));
-	if (metres > 0.0)
-		return static_cast<unsigned char>(Clamp(std::round(127.5 + 127.5 * s), 128.0, 255.0));
-	return static_cast<unsigned char>(Clamp(std::round(127.5 - 127.5 * s), 0.0, 127.0));
-}
-
-// Altitude for the vertex colour's alpha. Under water only where the colour
-// fractal painted water (which has no red in it): some paint polar ice over
-// the sea, which becomes ice at sea level, just above the water.
-inline double SurfaceAltitude(const Terrain *terrain, const vector3d &p, const double height, const vector3d &colour)
-{
-	const double altitude = terrain->GetSurfaceAltitude(p, height);
-	return (altitude < 0.0 && colour.x > 0.05) ? 0.5 : altitude;
-}
-
 inline void setColour(GeoVertexSurface &r, const vector3d &v, const double altitude)
 {
 	r.col.r = static_cast<unsigned char>(Clamp(v.x * 255.0, 0.0, 255.0));

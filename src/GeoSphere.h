@@ -26,6 +26,7 @@ class GeoPatchContext;
 class SQuadSplitRequest;
 class SQuadSplitResult;
 class SSingleSplitResult;
+class TerrainFarTexture;
 
 namespace PlanetClouds {
 	class CloudHeightMap;
@@ -143,6 +144,15 @@ private:
 
 	// terrain heights for the cloud shaders, baked on first close approach
 	std::unique_ptr<PlanetClouds::CloudHeightMap> m_cloudHeightMap;
+
+	// colour, altitude and normals for the far view (TerrainFarTexture.h),
+	// baked once the planet is large on screen
+	std::unique_ptr<TerrainFarTexture> m_farTexture;
+	// seconds the planet has been too small on screen to keep it
+	double m_farTextureIdle = 0.0;
+	// campos: planet radii; pixelAngle: radians per pixel; spacingPerMetre:
+	// the patches' estimated vertex spacing per metre of distance
+	void SetFarTexture(const vector3d &campos, double pixelAngle, double spacingPerMetre);
 
 	// the starport cities, for the night lights seen from afar (city-glow.glsl);
 	// found on the first draw in a game
