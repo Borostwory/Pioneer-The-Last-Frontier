@@ -457,16 +457,16 @@ vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots0, v
 	float spacing = max(distMetres * ReliefScale.x, ReliefScale.y) * baseScale;
 	float level = clamp(log2(max(2.0 * spacing * RELIEF_TEXTURE_SIZE / RELIEF_LONGEST_WAVE, 1.0)), 0.0, MATERIAL_MAX_LEVEL - 1.0);
 	float k = floor(level);
-	// the detail tile: the planet's own landforms, as strong as the
-	// materials are rough (and visible on smooth ones). They reach down to a
-	// quarter of the vertex spacing, so they fade out for the generic relief
-	// where the surface below is that detailed already (the far texture)
-	float landforms = PatchTile.w > 0.0 ? smoothstep(0.25, 0.5, baseScale) : 0.0;
-	vec3 slope = vec3(0.0);
-	if (landforms < 1.0)
+	vec3 slope;
+	if (PatchTile.w > 0.0) {
+		// the detail tile: the planet's own landforms, as strong as the
+		// materials are rough (and visible on smooth ones). Kept whatever the
+		// surface below: fading them where it is the far texture left patches
+		// without a surface tile smooth next to those with one
+		slope = tile.xyz * clamp(roughness / 0.1, 0.5, 1.6) / roughness;
+	} else {
 		slope = mix(reliefTileSlope(m, k), reliefTileSlope(m, k + 1.0), level - k);
-	if (landforms > 0.0)
-		slope = mix(slope, tile.xyz * clamp(roughness / 0.1, 0.5, 1.6) / roughness, landforms);
+	}
 
 	// the copy 8x smaller, where its waves are at least a few pixels long
 	// (near the ground, where the mesh stops getting finer)

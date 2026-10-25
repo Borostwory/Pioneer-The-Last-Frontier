@@ -27,7 +27,12 @@ void TerrainHeightFractal<TerrainHeightMapped2>::GetBaseHeights(const vector3d *
 
 		v += 0.1;
 		double h = 1.5 * v * v * v * ridged_octavenoise(16, 4.0 * v, 4.0, p);
-		h += 30000.0 * v * v * v * v * v * v * v * ridged_octavenoise(16, 5.0 * v, 20.0 * v, p);
+		// The lacunarity used to be 20 * v: octave frequencies (20 v)^i that
+		// change with the height squeezed the noise into rings along the
+		// height contours on every crater wall, which finely sampled terrain
+		// (the far texture, the surface tiles) showed as wood grain. Now the
+		// value at the mean level (v = 0.1), the same ridges without the rings.
+		h += 30000.0 * v * v * v * v * v * v * v * ridged_octavenoise(16, 5.0 * v, 2.0, p);
 		h += v;
 		h -= 0.09;
 

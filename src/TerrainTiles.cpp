@@ -4,6 +4,7 @@
 #include "TerrainTiles.h"
 
 #include "GeoPatch.h"
+#include "GeoPatchContext.h"
 #include "GeoSphere.h"
 #include "core/Log.h"
 #include "core/StringHash.h"
@@ -137,8 +138,7 @@ void TerrainTiles::Update(Graphics::Renderer *r, GeoSphere *sphere, const std::v
 	PROFILE_SCOPED()
 	++m_frame;
 
-	// patches whose vertices are far enough apart on screen to show the
-	// detail below the mesh, nearest first
+	// patches large enough on screen to show the landforms, nearest first
 	std::vector<std::pair<double, GeoPatch *>> wanted;
 	for (const auto &v : visible) {
 		GeoPatch *patch = v.second;
@@ -147,8 +147,8 @@ void TerrainTiles::Update(Graphics::Renderer *r, GeoSphere *sphere, const std::v
 			continue;
 		}
 		const double dist = std::max(std::sqrt(v.first), 1e-9);
-		const double vertexPixels = patch->GetVertexSpacing() / (dist * pixelAngle);
-		if (vertexPixels >= MIN_VERTEX_PIXELS)
+		const double patchPixels = patch->GetVertexSpacing() / GeoPatchContext::GetFrac() / (dist * pixelAngle);
+		if (patchPixels >= MIN_PATCH_PIXELS)
 			wanted.push_back(v);
 	}
 	if (wanted.empty())
@@ -164,12 +164,13 @@ void TerrainTiles::Update(Graphics::Renderer *r, GeoSphere *sphere, const std::v
 		const int slot = Allocate(v.second);
 		if (slot < 0)
 			break;
-		Bake(r, sphere, v.second, slot);
+		const double footprint = std::sqrt(v.first) * sphere->GetSystemBody()->GetRadius() * pixelAngle;
+		Bake(r, sphere, v.second, slot, footprint);
 		++baked;
 	}
 }
 
-void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patch, const int slot)
+void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patch, const int slot, const double footprint)
 {
 	const double radius = sphere->GetSystemBody()->GetRadius();
 
@@ -179,10 +180,14 @@ void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patc
 	const vector3d centre = centreDir * radius;
 
 	// octaves of the detail: wavelengths on a fixed ladder (so neighbouring
-	// tiles agree), from twice the vertex spacing down to half of it
+	// tiles agree), the largest twice the vertex spacing and at least
+	// LANDFORM_PIXELS on screen (so the landforms do not depend on the
+	// terrain detail distance), down to a quarter of that: at least two
+	// tile texels, as a tile has four texels per vertex gap
 	const double spacing = patch->GetVertexSpacing() * radius;
 	const double ladderBase = sphere->GetDeepestVertexSpacing() * 0.5;
-	const double index = std::round(std::log2(std::max(2.0 * spacing / ladderBase, 1.0)));
+	const double largest = std::max(2.0 * spacing, LANDFORM_PIXELS * footprint);
+	const double index = std::round(std::log2(std::max(largest / ladderBase, 1.0)));
 	const double longest = ladderBase * std::pow(2.0, index);
 
 	const int x0 = (slot % SLOTS_PER_ROW) * SLOT_STRIDE;
