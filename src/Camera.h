@@ -140,6 +140,7 @@ public:
 
 private:
 	void SetCityLights() const;
+	void SetCityGround() const;
 	double CityDarkness(const SpaceStation *station, const vector3d &up) const;
 	void DrawCityDots(FrameId camFrameId) const;
 

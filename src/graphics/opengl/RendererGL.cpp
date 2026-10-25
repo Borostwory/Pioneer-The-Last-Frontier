@@ -589,6 +589,8 @@ namespace Graphics {
 			map = nullptr;
 		m_cityLightUniformBuffer = {};
 		m_cityLightMap = m_cityLightGrid = nullptr;
+		m_cityGroundUniformBuffer = {};
+		m_cityRoads = m_cityLots = nullptr;
 
 		return true;
 	}
@@ -865,6 +867,20 @@ namespace Graphics {
 		auto cityData = GetDrawUniformBuffer(sizeof(CityLightDataBlock))->Allocate<CityLightDataBlock>(m_cityLightUniformBuffer);
 		assert(cityData.isValid());
 		*cityData.data() = *data;
+	}
+
+	void RendererOGL::SetCityGroundData(const CityGroundDataBlock *data, Texture *roads, Texture *lots)
+	{
+		m_cityGroundUniformBuffer = {};
+		m_cityRoads = data ? roads : nullptr;
+		m_cityLots = data ? lots : nullptr;
+		if (!data)
+			return;
+
+		// ScopedMap will be released at the end of the function
+		auto groundData = GetDrawUniformBuffer(sizeof(CityGroundDataBlock))->Allocate<CityGroundDataBlock>(m_cityGroundUniformBuffer);
+		assert(groundData.isValid());
+		*groundData.data() = *data;
 	}
 
 	bool RendererOGL::DrawBuffer(const VertexArray *v, Material *m)
@@ -1337,6 +1353,17 @@ namespace Graphics {
 			*cityData.data() = CityLightDataBlock {};
 		}
 		return m_cityLightUniformBuffer;
+	}
+
+	const BufferBinding<UniformBuffer> &RendererOGL::GetCityGroundUniformBuffer()
+	{
+		if (!m_cityGroundUniformBuffer.buffer) {
+			// shaders reading CityGroundData always need a valid block; this one has no city
+			auto groundData = GetDrawUniformBuffer(sizeof(CityGroundDataBlock))->Allocate<CityGroundDataBlock>(m_cityGroundUniformBuffer);
+			assert(groundData.isValid());
+			*groundData.data() = CityGroundDataBlock {};
+		}
+		return m_cityGroundUniformBuffer;
 	}
 
 	OGL::UniformLinearBuffer *RendererOGL::GetDrawUniformBuffer(Uint32 size)

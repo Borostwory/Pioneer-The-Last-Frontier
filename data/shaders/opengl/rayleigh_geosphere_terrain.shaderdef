@@ -22,6 +22,9 @@ Texture sampler2D shadowMapNear
 Texture sampler2D shadowMapMid
 Texture sampler2D shadowMapFar
 
+Texture sampler2D cityRoads
+Texture sampler2D cityLots
+
 Texture sampler2D cityLightMap
 Texture sampler2D cityLightGrid
 
@@ -32,6 +35,7 @@ Buffer CloudData binding=3
 Buffer ShadowData binding=4
 Buffer CityLightData binding=5
 Buffer CityGlowData binding=6
+Buffer CityGroundData binding=7
 
 PushConstant int NumShadows binding=0
 PushConstant float PatchDetailFrequency binding=1

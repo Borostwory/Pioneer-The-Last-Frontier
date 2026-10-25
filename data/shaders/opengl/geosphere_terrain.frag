@@ -29,6 +29,7 @@ in float surfaceHeight;
 #include "terrain-materials.glsl"
 #include "terrain-far.glsl"
 #include "shadows.glsl"
+#include "city-ground.glsl"
 
 in float dist;
 
@@ -119,10 +120,18 @@ void main(void)
 		detailMul.rgb *= mix(1.0, terrainSurfacePatternFor(varyingEyepos, dist, pw, rock), patternWeight);
 	}
 
+	// the streets and paved ground of the nearest city (city-ground.glsl)
+	vec3 cityPaving;
+	float paved = cityGroundAt(varyingEyepos, cityPaving);
+	albedo.rgb = mix(albedo.rgb, cityPaving, paved);
+	detailMul.rgb = mix(detailMul.rgb, vec3(1.0), paved);
+
 	// the relief between the mesh and the pixel
+	vec3 meshNormal = tnorm;
 	tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile, baseScale);
-	// and the bumps of the material textures
+	// and the bumps of the material textures, but for the smooth paving
 	tnorm = terrainBumpNormal(tnorm, materialDx, materialDy, bump);
+	tnorm = normalize(mix(tnorm, meshNormal, paved));
 
 #ifdef TERRAIN_WITH_WATER
 	// water: sun glint per light here, the rest after the light loop

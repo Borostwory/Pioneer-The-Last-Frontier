@@ -381,6 +381,8 @@ void Camera::Draw(const Body *excludeBody)
 
 	// night lights of the nearest city, for the lit shaders (city-lights.glsl)
 	SetCityLights();
+	// and its streets, for the terrain (city-ground.glsl)
+	SetCityGround();
 
 	m_renderer->BeginGpuTimer("bodies");
 	for (std::list<BodyAttrs>::iterator i = m_sortedBodies.begin(); i != m_sortedBodies.end(); ++i) {
@@ -413,6 +415,7 @@ void Camera::Draw(const Body *excludeBody)
 	PlanetClouds::RenderCloudPasses(m_renderer);
 	m_renderer->EndGpuTimer();
 	m_renderer->SetCityLightData(nullptr, nullptr, nullptr);
+	m_renderer->SetCityGroundData(nullptr, nullptr, nullptr);
 
 	// city forcefields queued by their stations, over everything solid and
 	// the clouds, without hiding what comes after (CityOnPlanet.h)
@@ -569,6 +572,30 @@ void Camera::SetCityLights() const
 	data.viewToCity = matrix4x4f(cityToView.Inverse());
 	data.state[0] = float(strength);
 	m_renderer->SetCityLightData(&data, city->GetLightMap(), city->GetLightGrid());
+}
+
+void Camera::SetCityGround() const
+{
+	const BodyAttrs *nearest = nullptr;
+	for (const BodyAttrs &attrs : m_sortedBodies) {
+		if (!attrs.body->IsType(ObjectType::SPACESTATION) || attrs.camDist > CityOnPlanet::GROUND_RANGE)
+			continue;
+		const CityOnPlanet *city = static_cast<const SpaceStation *>(attrs.body)->GetAdjacentCity();
+		if (city && city->HasGround() && (!nearest || attrs.camDist < nearest->camDist))
+			nearest = &attrs;
+	}
+	if (!nearest)
+		return;
+
+	// city space: the station's frame around its position
+	const SpaceStation *station = static_cast<const SpaceStation *>(nearest->body);
+	const matrix4x4d cityToView = nearest->viewTransform * matrix4x4d(station->GetInterpOrient(), station->GetInterpPosition());
+
+	const CityOnPlanet *city = station->GetAdjacentCity();
+	Graphics::CityGroundDataBlock data;
+	city->GetGroundData(data);
+	data.viewToCity = matrix4x4f(cityToView.Inverse());
+	m_renderer->SetCityGroundData(&data, city->GetRoadTexture(), city->GetLotTexture());
 }
 
 // Calculates the ambiently and directly lit portions of the lighting model taking into account the atmosphere and sun positions at a given location

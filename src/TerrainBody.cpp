@@ -11,7 +11,10 @@
 #include "Space.h"
 #include "galaxy/SystemBody.h"
 #include "terrain/Terrain.h"
+#include "terrain/TerrainNoise.h"
 #include "graphics/Renderer.h"
+
+#include <algorithm>
 
 TerrainBody::TerrainBody(SystemBody *sbody) :
 	Body(),
@@ -173,6 +176,25 @@ void TerrainBody::ProtectTerrainSite(const vector3d &pos)
 {
 	if (m_baseSphere)
 		m_baseSphere->GetTerrain()->ProtectSite(pos);
+}
+
+void TerrainBody::GetTerrainHeights(const vector3d *dirs, double *heightsOut, size_t count, double minFeature) const
+{
+	const double radius = m_sbody->GetRadius();
+	if (!m_baseSphere) {
+		std::fill(heightsOut, heightsOut + count, radius);
+		return;
+	}
+	// as the terrain patches leave out the detail they are too coarse for
+	TerrainNoise::ScopedBandLimit bandLimit(minFeature > 0.0 ? radius / minFeature : 0.0);
+	m_baseSphere->GetTerrain()->GetHeights(dirs, heightsOut, count);
+	for (size_t i = 0; i < count; i++)
+		heightsOut[i] = radius * (1.0 + heightsOut[i]);
+}
+
+bool TerrainBody::HasSea() const
+{
+	return m_baseSphere && (m_baseSphere->GetTerrain()->GetSurfaceEffects() & Terrain::EFFECT_WATER);
 }
 
 //static

@@ -41,6 +41,9 @@ namespace Graphics {
 		static size_t s_cityLightDataName = "CityLightData"_hash;
 		static size_t s_cityLightMapName = "cityLightMap"_hash;
 		static size_t s_cityLightGridName = "cityLightGrid"_hash;
+		static size_t s_cityGroundDataName = "CityGroundData"_hash;
+		static size_t s_cityRoadsName = "cityRoads"_hash;
+		static size_t s_cityLotsName = "cityLots"_hash;
 
 		// XXX potential target for allocation optimization
 		// (e.g. use renderer-owned freelist block allocator and align and group all three buffers into one allocation?)
@@ -75,6 +78,7 @@ namespace Graphics {
 			m_perDrawBinding = s->GetBufferBindingInfo(s_drawDataName).binding;
 			m_shadowDataBinding = s->GetBufferBindingInfo(s_shadowDataName).binding;
 			m_cityLightBinding = s->GetBufferBindingInfo(s_cityLightDataName).binding;
+			m_cityGroundBinding = s->GetBufferBindingInfo(s_cityGroundDataName).binding;
 		}
 
 		Program *Material::EvaluateVariant()
@@ -127,6 +131,13 @@ namespace Graphics {
 				SetBuffer(s_cityLightDataName, m_renderer->GetCityLightUniformBuffer());
 				SetTexture(s_cityLightMapName, m_renderer->GetCityLightMap());
 				SetTexture(s_cityLightGridName, m_renderer->GetCityLightGrid());
+			}
+
+			// streets and paved ground of the nearest city, see CityOnPlanet.h
+			if (m_cityGroundBinding != Shader::InvalidBinding) {
+				SetBuffer(s_cityGroundDataName, m_renderer->GetCityGroundUniformBuffer());
+				SetTexture(s_cityRoadsName, m_renderer->GetCityRoads());
+				SetTexture(s_cityLotsName, m_renderer->GetCityLots());
 			}
 
 			// this should always be present, but just in case...

@@ -50,6 +50,7 @@ in vec3 waterSkyLight;
 #include "shadows.glsl"
 #include "city-lights.glsl"
 #include "city-glow.glsl"
+#include "city-ground.glsl"
 
 void main(void)
 {
@@ -116,11 +117,18 @@ void main(void)
 		detailMul.rgb *= mix(1.0, terrainSurfacePatternFor(varyingEyepos, dist, pw, rock), patternWeight);
 	}
 
+	// the streets and paved ground of the nearest city (city-ground.glsl)
+	vec3 cityPaving;
+	float paved = cityGroundAt(varyingEyepos, cityPaving);
+	albedo = mix(albedo, cityPaving, paved);
+	detailMul.rgb = mix(detailMul.rgb, vec3(1.0), paved);
+
 #if (NUM_LIGHTS > 0)
 	// lit per pixel, with the relief between the mesh and the pixel
 	vec3 N = terrainReliefNormal(baseNormal, surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile, baseScale);
-	// and the bumps of the material textures
+	// and the bumps of the material textures, but for the smooth paving
 	N = terrainBumpNormal(N, materialDx, materialDy, bump);
+	N = normalize(mix(N, baseNormal, paved));
 	// shadows of ships, stations and buildings from the main star
 	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
 	vec3 light = vec3(0.0);

@@ -4,6 +4,7 @@
 #include "CityOnPlanet.h"
 
 #include "Camera.h"
+#include "CityLayout.h"
 #include "FileSystem.h"
 #include "Frame.h"
 #include "Game.h"
@@ -18,6 +19,7 @@
 #include "SpaceStation.h"
 
 #include "collider/Geom.h"
+#include "galaxy/StarSystem.h"
 #include "collider/GeomTree.h"
 #include "core/Log.h"
 #include "core/StringHash.h"
@@ -57,6 +59,9 @@ static constexpr float NO_CELL_HEIGHT = -1e30f;
 static constexpr float LAMP_HEIGHT = 8.0f;
 static constexpr float LAMP_RADIUS = 40.0f;
 static constexpr float LAMP_BRIGHTNESS = 80.0f;
+// along the streets, and both sides of the main roads (m)
+static constexpr double LAMP_SPACING = 38.0;
+static constexpr double MAIN_LAMP_SPACING = 32.0;
 // lights at the foot of the buildings' facades
 static constexpr float FACADE_HEIGHT = 4.0f;
 static constexpr float FACADE_OFFSET = 4.0f;
@@ -154,6 +159,13 @@ static constexpr double FORCEFIELD_IMPACT_MAX = 1200.0;
 static constexpr float FORCEFIELD_IMPACT_TIME = 2.0f;
 static constexpr float FORCEFIELD_IMPACT_REPEAT = 0.4f;
 
+// ground this little above the planet's radius (m) is sea, on worlds with one
+static constexpr double SEA_LEVEL_MARGIN = 0.5;
+// room a building keeps from every road and its pavement (m)
+static constexpr double BUILDING_CLEARANCE = 0.5;
+// and from the sides of its plot without a street (m)
+static constexpr double PLOT_MARGIN = 2.0;
+
 namespace {
 	// as ForcefieldData in forcefield.glsl
 	struct ForcefieldDataBlock {
@@ -245,17 +257,13 @@ void CityOnPlanet::PrecalcInstanceTransforms(const matrix4x4d &stationOrient)
 
 	m_instanceTransforms.clear();
 
-	// Precalculate building orientation matrices
-	matrix3x3f rot[4] = { matrix3x3f(stationOrient.GetOrient()) };
-	for (int i = 1; i < 4; i++) {
-		rot[i] = rot[0] * matrix3x3f::RotateY(M_PI * 0.5 * double(i));
-	}
+	const matrix3x3f orient(stationOrient.GetOrient());
 
 	// Cache building instance transforms
 	// TODO: this could easily be represented as a 4x3 matrix or dual quaternion for significantly less bandwidth
 	// That requires an "instance buffer" that isn't a 4x4 matrix per instance though... :(
 	for (const auto &building : m_enabledBuildings) {
-		m_instanceTransforms.emplace_back(rot[building.rotation], building.pos);
+		m_instanceTransforms.emplace_back(orient * matrix3x3f::RotateY(building.yaw), building.pos);
 	}
 }
 
@@ -281,7 +289,13 @@ void CityOnPlanet::LoadBuildingType(std::string_view key, const Json &buildingDe
 		out.model->CreateCollisionMesh();
 	}
 
-	GetModelSize(out.model->GetCollisionMesh()->GetAabb(), out.cellSize);
+	const Aabb aabb = out.model->GetCollisionMesh()->GetAabb();
+	GetModelSize(aabb, out.cellSize);
+	out.minX = float(aabb.min.x);
+	out.maxX = float(aabb.max.x);
+	out.minZ = float(aabb.min.z);
+	out.maxZ = float(aabb.max.z);
+	out.height = float(aabb.max.y);
 
 	out.cellSize[0] = buildingDef.value("size-x", out.cellSize[0]);
 	out.cellSize[1] = buildingDef.value("size-y", out.cellSize[1]);
@@ -525,8 +539,9 @@ CityOnPlanet::~CityOnPlanet()
 		f->RemoveStaticGeom(m_buildings[i].geom);
 		delete m_buildings[i].geom;
 	}
-	if (m_ffGeom)
-		Frame::GetFrame(m_frame)->RemoveStaticGeom(m_ffGeom.get());
+	for (const auto &field : m_forcefields)
+		if (field->geom)
+			Frame::GetFrame(m_frame)->RemoveStaticGeom(field->geom.get());
 }
 
 CityOnPlanet::CityOnPlanet(Planet *planet, SpaceStation *station, const Uint32 seed)
@@ -560,7 +575,9 @@ CityOnPlanet::CityOnPlanet(Planet *planet, SpaceStation *station, const Uint32 s
 	BuildLighting();
 
 	if (NeedsForcefield(m_body, m_cityType->forcefield))
-		BuildForcefield(station);
+		BuildForcefields(station);
+
+	BuildGround();
 }
 
 //static
@@ -594,235 +611,288 @@ void CityOnPlanet::Generate(SpaceStation *station)
 	Profiler::Clock _genTimer;
 	_genTimer.Start();
 
-	// Create the acceleration grid structure
-	// ==========================================
-
 	// Retrieve the station parameters
 	uint8_t stationSize[2] = {};
 	GetModelSize(station->GetAabb(), stationSize);
-
-	uint32_t stationSizeMax = std::max<uint32_t>(stationSize[0] / 2, stationSize[1] / 2);
+	const uint32_t stationSizeMax = std::max<uint32_t>(stationSize[0] / 2, stationSize[1] / 2);
 
 	// update the allowed radius to ensure the spaceport isn't larger than the entire city
 	m_cityRadius += stationSizeMax * CELLSIZE;
 
-	// For now, just assume the city is a circle around the spaceport in the center
-	const uint32_t cityExtents = (m_cityRadius / CELLSIZE);
-	m_citySize = cityExtents * 2;
-	m_gridPitch = std::ceil(m_citySize / 8.0);
-
-	Log::Verbose("Generating City for spacestation {}", station->GetSystemBody()->GetName());
-	Log::Verbose("\tpopulation: {0} size {1}x{1}c (radius {2})",
-		m_body->GetPopulation(), m_citySize, m_cityRadius);
-
-
-	// reserve space off the 'edge' of the grid for fast 64-bit lookup
-	// prevents reading or writing unallocated memory on grid edges
-	m_gridPitch = (m_gridPitch + 7) & ~uint32_t(7);
-
-	m_gridLen = m_gridPitch * m_citySize;
-
-	// 64-bit accesses start on 4-byte boundaries, so the last row can read up
-	// to 4 bytes past m_gridLen; pad the allocation to keep them in bounds
-	m_gridBitset.reset(new uint8_t[m_gridLen + 8]);
-	std::memset(m_gridBitset.get(), 0, m_gridLen + 8);
-
-	// Setup the station model position relative to the city grid
-	// ==========================================
-
-	// get the increment vectors to multiply X/Z grid coordinates by
-	vector3d incX = station->GetOrient().VectorX() * CELLSIZE;
-	vector3d incZ = station->GetOrient().VectorZ() * CELLSIZE;
-
-	// top-left corner of the grid is -X, -Z relative to station position at center
-	// offset origin by half-grid to ensure grid centers are aligned with the station model
 	const vector3d stationOrigin = station->GetPosition();
-	m_gridOrigin = stationOrigin - incX * (cityExtents + 0.5) - incZ * (cityExtents + 0.5);
+	const matrix3x3d orient = m_stationOrient;
+	const double bodyRadius = m_body->GetRadius();
+	const bool hasSea = m_planet->HasSea();
 
-	// Setup the station somewhere in the city (defaults to center for now)
-	const uint32_t stationPos[2] = {
-		cityExtents - stationSize[0] / 2,
-		cityExtents - stationSize[1] / 2
+	// city space (the station's plane, its axes, metres) to a direction from the planet's centre
+	auto dirOf = [&](double x, double z) {
+		return (stationOrigin + orient * vector3d(x, 0.0, z)).Normalized();
 	};
 
-	// Reserve space for the spacestation
-	SetGridOccupancy(stationPos[0], stationPos[1], stationSize);
-
-	// ground heights above the planet's radius of the cells taken by the
-	// station and the buildings, for the street lamps beside them
-	std::vector<float> cellHeights(size_t(m_citySize) * m_citySize, NO_CELL_HEIGHT);
-	const float stationHeight = float(stationOrigin.Length() - m_body->GetRadius());
-	for (uint32_t y = stationPos[1]; y < std::min(stationPos[1] + stationSize[1], m_citySize); y++)
-		for (uint32_t x = stationPos[0]; x < std::min(stationPos[0] + stationSize[0], m_citySize); x++)
-			cellHeights[size_t(y) * m_citySize + x] = stationHeight;
-
-	Log::Verbose("\tCityOnPlanet: Station {} placed at grid {}:{} with extents {}x{}",
-		station->GetModel()->GetName(), stationPos[0], stationPos[1], stationSize[0], stationSize[1]);
-
-
-	// Begin generating buildings for the city
+	// The plan: its shape, districts, main roads and streets
 	// ==========================================
 
-	// precalc orientation transforms (to rotate buildings to face north/south/east/west)
-	const matrix4x4d &m = station->GetOrient();
+	CityLayout::Facts facts;
+	facts.radius = m_cityRadius;
+	facts.population = m_body->GetPopulation();
+	facts.gravity = m_body->CalcSurfaceGravity() / 9.81;
+	facts.water = m_body->GetVolatileLiquid();
+	facts.agricultural = m_body->GetAgricultural();
+	if (const StarSystem *system = m_body->GetStarSystem()) {
+		facts.industrial = system->GetIndustrial().ToDouble();
+		facts.humanProx = system->GetHumanProx().ToDouble();
+	}
+	facts.needsDome = NeedsForcefield(m_body, m_cityType->forcefield);
+	facts.domeHeightRatio = m_cityType->forcefield.heightRatio;
+	facts.domeClearance = FORCEFIELD_CLEARANCE;
+	facts.seed = m_rand.Int32();
+	facts.portCells[0] = stationSize[0];
+	facts.portCells[1] = stationSize[1];
 
-	matrix4x4d orientcalc[4];
-	orientcalc[0] = m * matrix4x4d::RotateYMatrix(M_PI * 0.5 * 0);
-	orientcalc[1] = m * matrix4x4d::RotateYMatrix(M_PI * 0.5 * 1);
-	orientcalc[2] = m * matrix4x4d::RotateYMatrix(M_PI * 0.5 * 2);
-	orientcalc[3] = m * matrix4x4d::RotateYMatrix(M_PI * 0.5 * 3);
-
-	// Reserve space for all buildings we expect to generate
-	m_buildings.clear();
-	m_buildings.reserve(cityExtents * cityExtents); // estimate 25% occupancy
-
-	bool hasAtmo = m_body->HasAtmosphere();
-
-	uint32_t discardedCells = 0;
-	uint32_t skippedCells = 0;
-	uint32_t occupiedCells = 0;
-	uint32_t underwaterCells = 0;
-	uint32_t rarityRolls = 0;
-
-	double cityRadiusSqr = m_cityRadius * m_cityRadius;
-
-	for (uint32_t y = 0; y < m_citySize; y++) {
-		for (uint32_t x = 0; x < m_citySize; x++) {
-
-			// Do a basic loop over every cell in the city and determine what could be placed there
-
-			// TODO: future versions of cities should generate a random road network or place individual
-			// important buildings and place additional buildings around said features.
-			// The quality of the result relative to the generation cost would be much improved.
-
-			double radiusSqr = vector2d(
-				(cityExtents - double(x) + 0.5) * CELLSIZE,
-				(cityExtents - double(y) + 0.5) * CELLSIZE
-			).LengthSqr();
-
-			// skip cells outside the city radius
-			if (radiusSqr >= cityRadiusSqr) {
-				skippedCells++;
-				continue;
-			}
-
-			// skip already full cells
-			if (TestGridQuick(x, y)) {
-				occupiedCells++;
-				continue;
-			}
-
-			// allow the population of cells to drop off as distance from city center increases
-			// note: this should ideally sample e.g. perlin noise to generate "clusters" of city buildings
-			double radiusNorm = sqrt(radiusSqr) / m_cityRadius;
-			if (radiusNorm > abs(m_rand.Normal()) * m_cityDensity) {
-				discardedCells++;
-				continue;
-			}
-
-			// Attempt to select a building type for this grid cell
-			const BuildingType *buildingType = nullptr;
-			uint32_t typeIndex = 0;
-			for (uint32_t retry = 0; retry < 8; retry++) {
-
-				// pick a random building type
-				typeIndex = m_rand.Int32(m_cityType->buildingTypes.size());
-				buildingType = &m_cityType->buildingTypes[typeIndex];
-
-				// skip it if it won't fit here
-				// FIXME: this does not correctly handle the rotation case for non-square buildings.
-				// Need to transpose the cell size and test as well.
-				if (TestGridOccupancy(x, y, buildingType->cellSize)) {
-					buildingType = nullptr;
-					continue;
-				}
-
-				float rarity = hasAtmo ? buildingType->rarityAtmo : buildingType->rarityAirless;
-				float distribution = radiusNorm; // 0.0 .. 1.0 at edge of city
-
-				if (buildingType->buildingKind == SectorKind::Storage) {
-					// rarer in the center and more present at the edges of the city
-					rarity *= 0.5 + distribution * 0.5;
-				} else if (buildingType->buildingKind == SectorKind::Industry) {
-					// rarer in the center and more present at the edges of the city
-					rarity *= 0.3 + distribution * 0.7;
-				} else if (buildingType->buildingKind == SectorKind::Monument) {
-					// prevalent in the city center but extremely rare on the outskirts
-					rarity *= (1.0 - distribution) * 0.5;
-				} else if (buildingType->buildingKind == SectorKind::Habitat) {
-					// 1.0 at city center and 0.2 at outskirts
-					rarity *= 1.0 - distribution * 0.8;
-				} else if (buildingType->buildingKind == SectorKind::Frontier) {
-					// extremely rare at city center and 1.5 at outskirts
-					rarity *= (distribution * distribution) * 1.5;
-				}
-
-				// roll to see if the building spawns here or not
-				if (rarity < 1.0 && m_rand.Double() > rarity) {
-					rarityRolls++;
-					buildingType = nullptr;
-					continue;
-				}
-
-				// found a building that fits and passed its rarity roll
-				break;
-			}
-
-			// if we cannot find a building type, leave the cell empty and move on
-			if (buildingType == nullptr) {
-				discardedCells++;
-				continue;
-			}
-
-			SetGridOccupancy(x, y, buildingType->cellSize);
-
-			// rotate the building to face a random direction
-			const int32_t orient = m_rand.Int32(4);
-
-			// TODO: position model inside cells, add to building list
-			vector2d buildingPos = {
-				double(x) + buildingType->cellSize[0] / 2.0,
-				double(y) + buildingType->cellSize[1] / 2.0,
-			};
-
-			vector3d pos = m_gridOrigin + incX * buildingPos.x + incZ * buildingPos.y;
-			vector3d posNorm = pos.Normalized();
-			double height = m_planet->GetTerrainHeight(posNorm);
-
-			// don't place under planetary sea-level if the body has >10% water
-			// TODO: need a better way to sample both height and biome data to determine if the cell is actually water
-			// This will not properly handle elevated lakes or dry inland depressions below sea-level
-			if (m_body->GetVolatileLiquid() > 0.1 && height < m_body->GetRadius()) {
-				underwaterCells++;
-				continue;
-			}
-
-			// Compute the terrain relative height by scaling the normal of the building's ideal position
-			// This may introduce horizontal inaccuracy errors with sufficiently small planetary radii
-			pos = posNorm * height;
-
-			const float groundHeight = float(height - m_body->GetRadius());
-			for (uint32_t cy = y; cy < std::min(y + buildingType->cellSize[1], m_citySize); cy++)
-				for (uint32_t cx = x; cx < std::min(x + buildingType->cellSize[0], m_citySize); cx++)
-					cellHeights[size_t(cy) * m_citySize + cx] = groundHeight;
-
-			const CollMesh *cmesh = buildingType->model->GetCollisionMesh().Get();
-
-			// FIXME: geoms need a userdata to tell gameplay code what we actually hit.
-			// We don't want to create a separate Body for each instance of the buildings, so we
-			// scam the code by pretending we're part of the host planet.
-			Geom *geom = new Geom(cmesh->GetGeomTree(), orientcalc[orient], pos, GetPlanet());
-
-			// add it to the list of buildings to render
-			m_buildings.push_back({ vector3f(pos - stationOrigin), float(cmesh->GetRadius()), typeIndex, orient, geom });
-
+	auto ground = [&](const std::vector<double> &xz, std::vector<double> &heights, std::vector<uint8_t> &sea, double minFeature) {
+		const size_t count = xz.size() / 2;
+		std::vector<vector3d> dirs(count);
+		for (size_t k = 0; k < count; k++)
+			dirs[k] = dirOf(xz[2 * k], xz[2 * k + 1]);
+		heights.resize(count);
+		m_planet->GetTerrainHeights(dirs.data(), heights.data(), count, minFeature);
+		sea.resize(count);
+		for (size_t k = 0; k < count; k++) {
+			heights[k] -= bodyRadius;
+			sea[k] = hasSea && heights[k] < SEA_LEVEL_MARGIN;
 		}
+	};
+	m_layout.reset(new CityLayout(facts, ground));
+	CityLayout &layout = *m_layout;
+
+	Log::Verbose("Generating City for spacestation {}", station->GetSystemBody()->GetName());
+	Log::Verbose("\tpopulation: {} radius {}, shape: {}, {} domes, {} road segments",
+		m_body->GetPopulation(), m_cityRadius, CityLayout::ShapeName(layout.GetShape()), layout.GetDomes().size(), layout.GetSegments().size());
+
+	// The buildings: the city's models on plots of its cells, clear of every road
+	// ==========================================
+
+	using District = CityLayout::District;
+	const bool hasAtmo = m_body->HasAtmosphere();
+	const int n = layout.GetSize();
+	std::vector<uint8_t> taken(size_t(n) * n, 0);
+
+	// how likely a type is in a district: its rarity and its kind; tall ones in the heart
+	auto weightOf = [&](const BuildingType &type, District district, double heart) {
+		double w = hasAtmo ? type.rarityAtmo : type.rarityAirless;
+		const SectorKind kind = type.buildingKind;
+		switch (district) {
+		case District::DOWNTOWN:
+			w *= (kind == SectorKind::Monument || kind == SectorKind::Habitat) ? 1.0 : kind == SectorKind::None ? 0.4 : 0.05;
+			w *= 1.0 + 2.0 * heart * std::min(type.height / 120.0, 1.5);
+			break;
+		case District::RESIDENTIAL:
+			w *= kind == SectorKind::Habitat ? 1.0 : kind == SectorKind::None ? 0.5 : kind == SectorKind::Frontier ? 0.3 : kind == SectorKind::Monument ? 0.1 : 0.05;
+			w /= 1.0 + type.height / 90.0;
+			break;
+		case District::INDUSTRY:
+			w *= kind == SectorKind::Industry ? 1.0 : kind == SectorKind::Storage ? 0.6 : kind == SectorKind::None ? 0.3 : 0.0;
+			break;
+		case District::LOGISTICS:
+			w *= kind == SectorKind::Storage ? 1.0 : kind == SectorKind::Industry ? 0.6 : kind == SectorKind::None ? 0.3 : 0.0;
+			break;
+		case District::FRINGE:
+			w *= kind == SectorKind::Frontier ? 1.0 : kind == SectorKind::Storage ? 0.6 : kind == SectorKind::Industry ? 0.4 : 0.0;
+			if (type.height > 60.0f)
+				w = 0.0;
+			break;
+		default:
+			w = 0.0;
+			break;
+		}
+		return std::max(w, 0.0);
+	};
+	// how much of each district is built on
+	auto fillOf = [](District district) {
+		switch (district) {
+		case District::DOWNTOWN: return 0.95;
+		case District::RESIDENTIAL: return 0.85;
+		case District::INDUSTRY: return 0.75;
+		case District::LOGISTICS: return 0.85;
+		default: return 0.25;
+		}
+	};
+
+	struct Placed {
+		uint32_t type;
+		double x, z, yaw;
+	};
+	std::vector<Placed> placed;
+
+	// a type on the plot of w x d cells from (i, j): inside the plot less the
+	// streets round it, clear of every road, under its dome
+	auto tryPlot = [&](uint32_t typeIndex, int i, int j, int w, int d, District district, Placed &out) {
+		for (int b = 0; b < d; b++) {
+			for (int a = 0; a < w; a++) {
+				const int ci = i + a, cj = j + b;
+				if (!layout.InGrid(ci, cj) || taken[size_t(cj) * n + ci])
+					return false;
+				if (district == District::FRINGE ? !layout.IsFringe(ci, cj) : (!layout.IsBuildable(ci, cj) || layout.GetDistrict(ci, cj) != district))
+					return false;
+				if ((a > 0 && layout.StreetBetween(ci - 1, cj, ci, cj)) || (b > 0 && layout.StreetBetween(ci, cj - 1, ci, cj)))
+					return false;
+			}
+		}
+		const double half = 0.5 * CELLSIZE;
+		double x0 = layout.CellX(i) - half, x1 = layout.CellX(i + w - 1) + half;
+		double z0 = layout.CellZ(j) - half, z1 = layout.CellZ(j + d - 1) + half;
+		double inset[4] = { PLOT_MARGIN, PLOT_MARGIN, PLOT_MARGIN, PLOT_MARGIN };
+		double back[4];
+		for (int b = 0; b < d; b++) {
+			layout.Setbacks(i, j + b, back);
+			inset[0] = std::max(inset[0], back[0]);
+			layout.Setbacks(i + w - 1, j + b, back);
+			inset[1] = std::max(inset[1], back[1]);
+		}
+		for (int a = 0; a < w; a++) {
+			layout.Setbacks(i + a, j, back);
+			inset[2] = std::max(inset[2], back[2]);
+			layout.Setbacks(i + a, j + d - 1, back);
+			inset[3] = std::max(inset[3], back[3]);
+		}
+		x0 += inset[0];
+		x1 -= inset[1];
+		z0 += inset[2];
+		z1 -= inset[3];
+		if (x1 <= x0 || z1 <= z0)
+			return false;
+
+		const BuildingType &type = m_cityType->buildingTypes[typeIndex];
+		// facing the main road beside it, else along the streets, turned at random
+		double yaw0 = 0.0, roadDistance = 0.0;
+		layout.BesideMainRoad(i, j, yaw0, roadDistance);
+		const int first = m_rand.Int32(4);
+		for (int r = 0; r < 4; r++) {
+			const double yaw = yaw0 + 0.5 * M_PI * ((first + r) % 4);
+			const double c = std::cos(yaw), sn = std::sin(yaw);
+			// the footprint turned, as matrix3x3::RotateY turns it
+			double lo[2] = { 1e9, 1e9 }, hi[2] = { -1e9, -1e9 };
+			for (int k = 0; k < 4; k++) {
+				const double lx = (k & 1) ? type.maxX : type.minX, lz = (k & 2) ? type.maxZ : type.minZ;
+				const double rx = c * lx - sn * lz, rz = sn * lx + c * lz;
+				lo[0] = std::min(lo[0], rx);
+				hi[0] = std::max(hi[0], rx);
+				lo[1] = std::min(lo[1], rz);
+				hi[1] = std::max(hi[1], rz);
+			}
+			if (hi[0] - lo[0] > x1 - x0 || hi[1] - lo[1] > z1 - z0)
+				continue;
+			// in the middle of the plot
+			const double px = 0.5 * (x0 + x1) - 0.5 * (lo[0] + hi[0]);
+			const double pz = 0.5 * (z0 + z1) - 0.5 * (lo[1] + hi[1]);
+			double pts[2 * 25];
+			for (int k = 0; k < 25; k++) {
+				const double lx = type.minX + (type.maxX - type.minX) * (k % 5) / 4.0;
+				const double lz = type.minZ + (type.maxZ - type.minZ) * (k / 5) / 4.0;
+				pts[2 * k] = px + c * lx - sn * lz;
+				pts[2 * k + 1] = pz + sn * lx + c * lz;
+			}
+			if (layout.Clearance(pts, 25) < BUILDING_CLEARANCE || type.height > layout.HeightCap(px, pz))
+				continue;
+			out = { typeIndex, px, pz, yaw };
+			return true;
+		}
+		return false;
+	};
+
+	static const int plots[][2] = { { 1, 1 }, { 2, 1 }, { 1, 2 }, { 2, 2 }, { 3, 2 }, { 2, 3 }, { 3, 3 } };
+	std::vector<double> weights(m_cityType->buildingTypes.size());
+	for (int j = 0; j < n; j++) {
+		for (int i = 0; i < n; i++) {
+			if (taken[size_t(j) * n + i])
+				continue;
+			const bool fringe = layout.IsFringe(i, j);
+			if (!fringe && !layout.IsBuildable(i, j))
+				continue;
+			const District district = fringe ? District::FRINGE : layout.GetDistrict(i, j);
+			if (m_rand.Double() > fillOf(district))
+				continue;
+
+			const double heart = std::exp(-std::pow(layout.DistanceToCentre(layout.CellX(i), layout.CellZ(j)) / 1500.0, 2.0));
+			double total = 0.0;
+			for (size_t t = 0; t < weights.size(); t++)
+				total += weights[t] = weightOf(m_cityType->buildingTypes[t], district, heart);
+			if (total <= 0.0)
+				continue;
+
+			bool done = false;
+			for (int pick = 0; pick < 6 && !done; pick++) {
+				double roll = m_rand.Double() * total;
+				uint32_t t = 0;
+				while (t + 1 < weights.size() && roll >= weights[t]) {
+					roll -= weights[t];
+					t++;
+				}
+				Placed p;
+				for (const auto &plot : plots) {
+					if (!tryPlot(t, i, j, plot[0], plot[1], district, p))
+						continue;
+					const CityLayout::Lot lot = district == District::INDUSTRY ? CityLayout::LOT_YARD :
+						district == District::FRINGE								  ? CityLayout::LOT_NONE :
+																						CityLayout::LOT_PAVED;
+					for (int b = 0; b < plot[1]; b++) {
+						for (int a = 0; a < plot[0]; a++) {
+							taken[size_t(j + b) * n + i + a] = 1;
+							layout.SetLot(i + a, j + b, lot);
+						}
+					}
+					placed.push_back(p);
+					done = true;
+					break;
+				}
+			}
+			// inside the blocks, away from the streets: car parks
+			if (!done && !fringe && district != District::INDUSTRY) {
+				double back[4];
+				layout.Setbacks(i, j, back);
+				if (!back[0] && !back[1] && !back[2] && !back[3] && m_rand.Double() < 0.5)
+					layout.SetLot(i, j, CityLayout::LOT_PARKING);
+			}
+		}
+	}
+
+	// on the ground: the lowest of the footprint's corners and middle
+	std::vector<vector3d> dirs;
+	dirs.reserve(placed.size() * 5);
+	for (const Placed &p : placed) {
+		const BuildingType &type = m_cityType->buildingTypes[p.type];
+		const double c = std::cos(p.yaw), sn = std::sin(p.yaw);
+		dirs.push_back(dirOf(p.x, p.z));
+		for (int k = 0; k < 4; k++) {
+			const double lx = (k & 1) ? type.maxX : type.minX, lz = (k & 2) ? type.maxZ : type.minZ;
+			dirs.push_back(dirOf(p.x + c * lx - sn * lz, p.z + sn * lx + c * lz));
+		}
+	}
+	std::vector<double> heights(dirs.size());
+	if (!dirs.empty())
+		m_planet->GetTerrainHeights(dirs.data(), heights.data(), dirs.size());
+
+	const matrix4x4d stationOrient(station->GetOrient());
+	m_buildings.clear();
+	m_buildings.reserve(placed.size());
+	for (size_t k = 0; k < placed.size(); k++) {
+		const Placed &p = placed[k];
+		const double height = *std::min_element(heights.begin() + 5 * k, heights.begin() + 5 * k + 5);
+		const vector3d pos = dirs[5 * k] * height;
+		const CollMesh *cmesh = m_cityType->buildingTypes[p.type].model->GetCollisionMesh().Get();
+
+		// FIXME: geoms need a userdata to tell gameplay code what we actually hit.
+		// We don't want to create a separate Body for each instance of the buildings, so we
+		// scam the code by pretending we're part of the host planet.
+		Geom *geom = new Geom(cmesh->GetGeomTree(), stationOrient * matrix4x4d::RotateYMatrix(p.yaw), pos, GetPlanet());
+
+		// add it to the list of buildings to render
+		m_buildings.push_back({ vector3f(pos - stationOrigin), float(cmesh->GetRadius()), p.type, float(p.yaw), geom });
 	}
 
 	_genTimer.Stop();
 
-	Log::Verbose("\tCityOnPlanet: generated {} buildings in {}ms ( {} skipped, {} discarded, {} occupied, {} underwater, {} avg rolls / building )",
-		m_buildings.size(), _genTimer.milliseconds(), skippedCells, discardedCells, occupiedCells, underwaterCells, rarityRolls / double(m_buildings.size()));
+	Log::Verbose("\tCityOnPlanet: generated {} buildings in {}ms", m_buildings.size(), _genTimer.milliseconds());
 
 	_genTimer.SoftReset();
 
@@ -840,12 +910,7 @@ void CityOnPlanet::Generate(SpaceStation *station)
 
 	Log::Verbose("\tCityOnPlanet: generated AABB for city in {}ms", _genTimer.milliseconds());
 
-	GenerateFixedLights(station, cityExtents, incX, incZ, cellHeights);
-
-	// Release the memory once we're done generating and reset
-	m_gridBitset.reset();
-	m_gridPitch = 0;
-	m_gridLen = 0;
+	GenerateFixedLights(station);
 }
 
 // Calculate the radius for this city based on the SystemBody's parameters
@@ -869,7 +934,7 @@ void CityOnPlanet::CalcCityRadius(const CityFlavourType &cityType, const SystemB
 	}
 }
 
-void CityOnPlanet::GenerateFixedLights(const SpaceStation *station, uint32_t cityExtents, const vector3d &incX, const vector3d &incZ, const std::vector<float> &cellHeights)
+void CityOnPlanet::GenerateFixedLights(const SpaceStation *station)
 {
 	PROFILE_SCOPED()
 	m_fixedLights.clear();
@@ -883,43 +948,31 @@ void CityOnPlanet::GenerateFixedLights(const SpaceStation *station, uint32_t cit
 	const vector3f lampColour = lampColours[m_rand.Int32(3)] * LAMP_BRIGHTNESS;
 
 	const vector3d stationOrigin = station->GetPosition();
-	const double cityRadiusSqr = m_cityRadius * m_cityRadius;
+	const double bodyRadius = m_body->GetRadius();
+	// a point of the city's plan on its ground, in city space
+	auto onGround = [&](double x, double z) {
+		const vector3d dir = (stationOrigin + m_stationOrient * vector3d(x, 0.0, z)).Normalized();
+		return vector3f((dir * (bodyRadius + m_layout->GroundAt(x, z)) - stationOrigin) * m_stationOrient);
+	};
 
-	// street lamps in the empty cells beside buildings, where the streets are,
-	// on the ground of the buildings beside them
-	for (uint32_t y = 0; y < m_citySize; y++) {
-		for (uint32_t x = 0; x < m_citySize; x++) {
-			if (TestGridQuick(x, y))
-				continue;
-
-			// as the buildings are placed in Generate()
-			const double radiusSqr = vector2d(
-				(cityExtents - double(x) + 0.5) * CELLSIZE,
-				(cityExtents - double(y) + 0.5) * CELLSIZE
-			).LengthSqr();
-			if (radiusSqr >= cityRadiusSqr)
-				continue;
-
-			float heightSum = 0.0f;
-			int neighbours = 0;
-			auto beside = [&](uint32_t nx, uint32_t ny) {
-				const float h = cellHeights[size_t(ny) * m_citySize + nx];
-				if (h != NO_CELL_HEIGHT) {
-					heightSum += h;
-					neighbours++;
-				}
-			};
-			if (x > 0) beside(x - 1, y);
-			if (x + 1 < m_citySize) beside(x + 1, y);
-			if (y > 0) beside(x, y - 1);
-			if (y + 1 < m_citySize) beside(x, y + 1);
-			if (!neighbours)
-				continue;
-
-			const vector3d posNorm = (m_gridOrigin + incX * (x + 0.5) + incZ * (y + 0.5)).Normalized();
-			const double height = m_body->GetRadius() + heightSum / neighbours;
-			const vector3f ground((posNorm * height - stationOrigin) * m_stationOrient);
-			m_fixedLights.push_back({ ground + vector3f(0.0f, LAMP_HEIGHT, 0.0f), LAMP_RADIUS, lampColour, LAMP_HEIGHT });
+	// street lamps along the roads: both sides of the main roads, the
+	// streets' sides in turn, at the edge of the carriageway
+	for (const CityLayout::Segment &road : m_layout->GetSegments()) {
+		const double dx = road.x1 - road.x0, dz = road.z1 - road.z0;
+		const double len = std::hypot(dx, dz);
+		if (len < 1.0)
+			continue;
+		const bool main = road.type == CityLayout::ROAD_ARTERIAL;
+		const double spacing = main ? MAIN_LAMP_SPACING : LAMP_SPACING;
+		const double side = 0.5 * road.width + 0.5 * road.walk;
+		const double ux = dx / len, uz = dz / len;
+		for (double t = std::ceil(road.along / spacing) * spacing - road.along; t < len; t += spacing) {
+			const int index = int(std::lround((road.along + t) / spacing));
+			for (int k = 0; k < (main ? 2 : 1); k++) {
+				const double sgn = main ? (k ? -1.0 : 1.0) : ((index & 1) ? -1.0 : 1.0);
+				const double x = road.x0 + ux * t - uz * side * sgn, z = road.z0 + uz * t + ux * side * sgn;
+				m_fixedLights.push_back({ onGround(x, z) + vector3f(0.0f, LAMP_HEIGHT, 0.0f), LAMP_RADIUS, lampColour, LAMP_HEIGHT });
+			}
 		}
 	}
 
@@ -970,11 +1023,11 @@ void CityOnPlanet::BuildLighting()
 
 		// building positions are relative to the station in its frame's axes
 		const vector3f centre(vector3d(building.pos) * m_stationOrient);
-		const float hx = type.cellSize[0] * CELLSIZE * 0.5f;
-		const float hz = type.cellSize[1] * CELLSIZE * 0.5f;
-		const bool alongX = (building.rotation & 1) == 0;
-		const vector3f offset = alongX ? vector3f(0.0f, 0.0f, hz + FACADE_OFFSET) : vector3f(hx + FACADE_OFFSET, 0.0f, 0.0f);
-		const float length = alongX ? 2.0f * hx : 2.0f * hz;
+		const float hx = 0.5f * (type.maxX - type.minX);
+		const float hz = 0.5f * (type.maxZ - type.minZ);
+		// its front and back, as it is turned
+		const vector3f offset = matrix3x3f::RotateY(building.yaw) * vector3f(0.0f, 0.0f, hz + FACADE_OFFSET);
+		const float length = 2.0f * hx;
 		const float brightness = type.lightIntensity * Clamp(length / 50.0f, 0.6f, 2.0f);
 		const float radius = Clamp(25.0f + 0.3f * length, 25.0f, 60.0f);
 		const vector3f foot = centre + vector3f(0.0f, FACADE_HEIGHT, 0.0f);
@@ -1176,58 +1229,51 @@ void CityOnPlanet::GetLightData(Graphics::CityLightDataBlock &out) const
 	out.state[3] = 0.0f;
 }
 
-#ifdef __BIG_ENDIAN__
-#error "CityOnPlanet does not (yet) support big-endian architectures"
-#endif
-
-// Supports up to 32-cell wide buildings to ensure 8-byte aligned addressing in a single operation
-static inline uint64_t CalcBitmaskForGrid(uint32_t x, uint32_t xsize)
+void CityOnPlanet::GetGroundData(Graphics::CityGroundDataBlock &out) const
 {
-	uint32_t maskOffset = x & CityOnPlanet::CELLMASK;
-	// 64-bit shift: a 32-bit shift by xsize == CELLMAX would be undefined
-	uint64_t bitmask = ((uint64_t(1) << xsize) - 1) << maskOffset;
-	// note: need crossplatform bswap_64 here for big-endian compat
-	// we should be able to swap the bitmask rather than the in-memory bytes and have the same effect
-
-	return bitmask;
+	for (int i = 0; i < 4; i++) {
+		out.roadRect[i] = m_roadRect[i];
+		out.lotRect[i] = m_lotRect[i];
+	}
+	out.atlas[0] = m_roadAtlas[0];
+	out.atlas[1] = m_roadAtlas[1];
+	out.atlas[2] = 1.0f;
+	out.atlas[3] = 0.0f;
 }
 
-void CityOnPlanet::SetGridOccupancy(uint32_t x, uint32_t y, const uint8_t size[2])
+void CityOnPlanet::BuildGround()
 {
-	if (x + size[0] > m_citySize || y + size[1] > m_citySize)
-		return; // footprint would be off-grid, prevent writing outside the bitset
+	PROFILE_SCOPED()
+	if (!m_layout)
+		return;
 
-	// City grid is stored as lsb-first bitset with one bit per grid cell;
-	// bit 1 of byte 1 is grid 0, while bit 8 of byte 4 is grid 31
-	// Support maximum size of 32 cells for a single building to enable fast 64-bit aligned operations
+	// the roads (CityLayout::PackRoads)
+	std::vector<float> atlas;
+	float info[4], rect[4];
+	m_layout->PackRoads(atlas, info, rect);
+	const vector3f roadSize(float(CityLayout::TEXEL_WIDTH), info[3], 0.0f);
+	const Graphics::TextureDescriptor roadDesc(Graphics::TEXTURE_RGBA32F, roadSize, Graphics::NEAREST_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
+	m_roadTexture.Reset(Pi::renderer->CreateTexture(roadDesc));
+	m_roadTexture->Update(atlas.data(), roadSize, Graphics::TEXTURE_RGBA32F);
+	for (int i = 0; i < 4; i++)
+		m_roadRect[i] = rect[i];
+	m_roadAtlas[0] = info[1];
+	m_roadAtlas[1] = info[2];
 
-	uint8_t *dataPtr = m_gridBitset.get() + (x & ~CELLMASK) / 8;
-	uint64_t bitmask = CalcBitmaskForGrid(x, size[0]);
-
-	for (uint32_t idx = y; idx < y + size[1]; idx++) {
-		*reinterpret_cast<uint64_t *>(dataPtr + idx * m_gridPitch) |= bitmask;
-	}
-}
-
-bool CityOnPlanet::TestGridOccupancy(uint32_t x, uint32_t y, const uint8_t size[2])
-{
-	if (x + size[0] > m_citySize || y + size[1] > m_citySize)
-		return true; // always occupied if footprint would be off-grid
-
-
-	// City grid is stored as lsb-first bitset with one bit per grid cell;
-	// bit 1 of byte 1 is grid 0, while bit 8 of byte 4 is grid 31
-	// Support maximum size of 32 cells for a single building to enable fast 64-bit aligned operations
-	uint8_t *dataPtr = m_gridBitset.get() + (x & ~CELLMASK) / 8;
-	uint64_t bitmask = CalcBitmaskForGrid(x, size[0]);
-
-	uint64_t test = 0;
-
-	for (uint32_t idx = y; idx < y + size[1]; idx++) {
-		test |= *reinterpret_cast<uint64_t *>(dataPtr + idx * m_gridPitch) & bitmask;
-	}
-
-	return test != 0;
+	// the lots, a texel per cell (RGBA, so the rows stay aligned)
+	const int n = m_layout->GetSize();
+	const std::vector<uint8_t> &cells = m_layout->GetLots();
+	std::vector<uint8_t> lots(cells.size() * 4, 0);
+	for (size_t k = 0; k < cells.size(); k++)
+		lots[4 * k] = cells[k];
+	const vector3f lotSize(float(n), float(n), 0.0f);
+	const Graphics::TextureDescriptor lotDesc(Graphics::TEXTURE_RGBA_8888, lotSize, Graphics::NEAREST_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
+	m_lotTexture.Reset(Pi::renderer->CreateTexture(lotDesc));
+	m_lotTexture->Update(lots.data(), lotSize, Graphics::TEXTURE_RGBA_8888);
+	m_lotRect[0] = float(m_layout->GetCorner());
+	m_lotRect[1] = float(m_layout->GetCorner());
+	m_lotRect[2] = float(CityLayout::CELL);
+	m_lotRect[3] = float(n);
 }
 
 void CityOnPlanet::Render(Graphics::Renderer *r, const CameraContext *camera, const SpaceStation *station, const vector3d &viewCoords, const matrix4x4d &viewTransform)
@@ -1436,40 +1482,62 @@ static std::vector<vector3d> GeodesicSphere(int freq)
 	return tris;
 }
 
-void CityOnPlanet::BuildForcefield(SpaceStation *station)
+void CityOnPlanet::BuildForcefields(SpaceStation *station)
+{
+	m_ffUp = m_stationOrient.VectorY();
+	if (m_layout && !m_layout->GetDomes().empty()) {
+		for (const CityLayout::Dome &dome : m_layout->GetDomes())
+			BuildForcefield(station, dome.x, dome.z, dome.radius);
+	} else {
+		BuildForcefield(station, 0.0, 0.0, m_cityRadius * m_cityType->forcefield.radiusScale);
+	}
+}
+
+void CityOnPlanet::BuildForcefield(SpaceStation *station, double cx, double cz, double a)
 {
 	PROFILE_SCOPED()
 	const ForcefieldDef &def = m_cityType->forcefield;
+	std::unique_ptr<Forcefield> field(new Forcefield);
+	Forcefield &ff = *field;
 
 	const vector3d axisX = m_stationOrient.VectorX();
 	const vector3d up = m_stationOrient.VectorY();
 	const vector3d axisZ = m_stationOrient.VectorZ();
 	const vector3d stationPos = station->GetPosition();
+	// its middle on the ground, from the station, and the ground's height there over the station
+	const vector3d middle = axisX * cx + axisZ * cz;
+	const vector3d middleDir = (stationPos + middle).Normalized();
+	const double ground = (middleDir * m_planet->GetTerrainHeight(middleDir) - stationPos).Dot(up);
+	// the buildings it holds: those under it (the plan's domes), or all
+	const double reach = (m_layout && !m_layout->GetDomes().empty()) ? a + 100.0 : 1e30;
 
-	// the outer top corner of each building (the station's in the middle):
-	// distance out from the station and height over it, m
+	// the outer top corner of each building (the station's among them):
+	// distance out from its middle and height over the station, m
 	std::vector<std::pair<double, double>> tops;
 	tops.reserve(m_buildings.size() + 1);
-	auto addTop = [&tops, &up](const vector3d &pos, const Aabb &aabb) {
+	auto addTop = [&](const vector3d &pos, const Aabb &aabb) {
 		const double height = pos.Dot(up);
+		const double out = (pos - up * height - middle).Length();
+		if (out > reach)
+			return;
 		const double halfX = std::max(std::abs(aabb.min.x), std::abs(aabb.max.x));
 		const double halfZ = std::max(std::abs(aabb.min.z), std::abs(aabb.max.z));
-		tops.emplace_back((pos - up * height).Length() + std::sqrt(halfX * halfX + halfZ * halfZ), height + aabb.max.y);
+		tops.emplace_back(out + std::sqrt(halfX * halfX + halfZ * halfZ), height + aabb.max.y);
 	};
 	addTop(vector3d(0.0), station->GetAabb());
 	for (const BuildingInstance &building : m_buildings)
 		addTop(vector3d(building.pos), m_cityType->buildingTypes[building.instIndex].model->GetCollisionMesh()->GetAabb());
 
-	// a cap of a sphere, radius a at the station's ground and h high, made
-	// big enough to hold every building clear of it
-	double a = m_cityRadius * def.radiusScale;
+	// a cap of a sphere, radius a at its ground and h high, made big enough
+	// to hold every building clear of it
 	double h = 0.0, rho = 0.0;
 	for (int i = 0; i <= FORCEFIELD_FIT_STEPS; i++) {
 		h = a * def.heightRatio;
 		rho = (a * a + h * h) / (2.0 * h);
+		const double centreHeight = ground + h - rho;
 		const double inner = rho - FORCEFIELD_CLEARANCE;
 		const bool fits = std::all_of(tops.begin(), tops.end(), [&](const std::pair<double, double> &top) {
-			const double dy = top.second - (h - rho);
+			const double dy = top.second - centreHeight;
 			return top.first * top.first + dy * dy <= inner * inner;
 		});
 		if (fits || i == FORCEFIELD_FIT_STEPS)
@@ -1478,21 +1546,20 @@ void CityOnPlanet::BuildForcefield(SpaceStation *station)
 	}
 
 	// its skirt reaches below the ground all round, which hides it
-	double bottom = 0.0;
+	double bottom = ground;
 	for (int i = 0; i < FORCEFIELD_RIM_SAMPLES; i++) {
 		const double angle = 2.0 * M_PI * i / FORCEFIELD_RIM_SAMPLES;
 		const vector3d out = axisX * std::cos(angle) + axisZ * std::sin(angle);
 		for (const double share : { 0.8, 1.0 }) {
-			const vector3d dir = (stationPos + out * (a * share)).Normalized();
+			const vector3d dir = (stationPos + middle + out * (a * share)).Normalized();
 			bottom = std::min(bottom, (dir * m_planet->GetTerrainHeight(dir) - stationPos).Dot(up));
 		}
 	}
 	bottom -= FORCEFIELD_SKIRT;
 
-	m_ffUp = up;
-	m_ffCentre = up * (h - rho);
-	m_ffRadius = rho;
-	m_ffBottom = bottom;
+	ff.centre = middle + up * (ground + h - rho);
+	ff.radius = rho;
+	ff.bottom = bottom;
 
 	// the field: the triangles reaching above the skirt's foot
 	const std::vector<vector3d> sphere = GeodesicSphere(def.frequency);
@@ -1516,19 +1583,19 @@ void CityOnPlanet::BuildForcefield(SpaceStation *station)
 		double top = -1e30;
 		for (int k = 0; k < 3; k++) {
 			const vector3d &u = sphere[i + k];
-			p[k] = m_ffCentre + (axisX * u.x + up * u.y + axisZ * u.z) * rho;
+			p[k] = ff.centre + (axisX * u.x + up * u.y + axisZ * u.z) * rho;
 			top = std::max(top, p[k].Dot(up));
 		}
 		if (top < bottom)
 			continue;
 		// counter-clockwise seen from outside
-		if ((p[1] - p[0]).Cross(p[2] - p[0]).Dot(p[0] + p[1] + p[2] - m_ffCentre * 3.0) < 0.0)
+		if ((p[1] - p[0]).Cross(p[2] - p[0]).Dot(p[0] + p[1] + p[2] - ff.centre * 3.0) < 0.0)
 			std::swap(p[1], p[2]);
 		Uint32 j[3];
 		for (int k = 0; k < 3; k++) {
 			va.Add(vector3f(p[k]));
 			vertices.push_back(vector3f(p[k]));
-			m_ffExtent = std::max(m_ffExtent, p[k].Length());
+			ff.extent = std::max(ff.extent, p[k].Length());
 			j[k] = joint(p[k]);
 		}
 		for (int k = 0; k < 3; k++)
@@ -1539,7 +1606,7 @@ void CityOnPlanet::BuildForcefield(SpaceStation *station)
 
 	// struts: tubes made of rings round their axis, each vertex at the axis
 	// with its normal out, widened in forcefield_struts.vert
-	m_ffStrutRadius = Clamp(rho * FORCEFIELD_STRUT_RADIUS * def.strutWidth, FORCEFIELD_STRUT_RADIUS_MIN, FORCEFIELD_STRUT_RADIUS_MAX);
+	ff.strutRadius = Clamp(rho * FORCEFIELD_STRUT_RADIUS * def.strutWidth, FORCEFIELD_STRUT_RADIUS_MIN, FORCEFIELD_STRUT_RADIUS_MAX);
 	Graphics::VertexArray strutVa(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_NORMAL | Graphics::ATTRIB_UV0);
 	std::vector<Uint32> strutIndices;
 	// a ring's vertices have normals (side1 cos + side2 sin) * spread + lift;
@@ -1550,19 +1617,19 @@ void CityOnPlanet::BuildForcefield(SpaceStation *station)
 		double spread;
 	};
 	auto addBand = [&](const std::vector<Ring> &rings, float scale) {
-		const Uint32 n = FORCEFIELD_STRUT_SIDES;
+		const Uint32 sides = FORCEFIELD_STRUT_SIDES;
 		const Uint32 first = strutVa.GetNumVerts();
 		for (const Ring &ring : rings) {
-			for (Uint32 k = 0; k < n; k++) {
-				const double angle = 2.0 * M_PI * k / n;
+			for (Uint32 k = 0; k < sides; k++) {
+				const double angle = 2.0 * M_PI * k / sides;
 				const vector3d normal = (ring.side1 * std::cos(angle) + ring.side2 * std::sin(angle)) * ring.spread + ring.lift;
 				strutVa.Add(vector3f(ring.centre), vector3f(normal), vector2f(scale, 0.0f));
 			}
 		}
 		for (Uint32 s = 0; s + 1 < rings.size(); s++) {
-			for (Uint32 k = 0; k < n; k++) {
-				const Uint32 a = first + s * n + k, b = first + s * n + (k + 1) % n;
-				for (Uint32 index : { a, b, a + n, b, b + n, a + n })
+			for (Uint32 k = 0; k < sides; k++) {
+				const Uint32 i0 = first + s * sides + k, i1 = first + s * sides + (k + 1) % sides;
+				for (Uint32 index : { i0, i1, i0 + sides, i1, i1 + sides, i0 + sides })
 					strutIndices.push_back(index);
 			}
 		}
@@ -1570,7 +1637,7 @@ void CityOnPlanet::BuildForcefield(SpaceStation *station)
 	for (const auto &edge : edges) {
 		const vector3d &p0 = joints[edge.first], &p1 = joints[edge.second];
 		const vector3d along = (p1 - p0).Normalized();
-		const vector3d side1 = along.Cross((p0 + p1) * 0.5 - m_ffCentre).Normalized();
+		const vector3d side1 = along.Cross((p0 + p1) * 0.5 - ff.centre).Normalized();
 		const vector3d side2 = along.Cross(side1);
 		// cut so the ripples can bend it
 		const int segments = Clamp(int(std::ceil((p1 - p0).Length() / FORCEFIELD_STRUT_SEGMENT)), 1, FORCEFIELD_STRUT_MAX_SEGMENTS);
@@ -1581,7 +1648,7 @@ void CityOnPlanet::BuildForcefield(SpaceStation *station)
 	}
 	// joints: balls of rings from their outer pole to their inner one
 	for (const vector3d &p : joints) {
-		const vector3d pole = (p - m_ffCentre).Normalized();
+		const vector3d pole = (p - ff.centre).Normalized();
 		const vector3d side1 = pole.Cross(std::abs(pole.Dot(axisX)) < 0.9 ? axisX : axisZ).Normalized();
 		const vector3d side2 = side1.Cross(pole);
 		std::vector<Ring> rings;
@@ -1593,84 +1660,96 @@ void CityOnPlanet::BuildForcefield(SpaceStation *station)
 	}
 
 	Graphics::Renderer *r = Pi::renderer;
-	m_ffMesh.reset(r->CreateMeshObjectFromArray(&va));
+	ff.mesh.reset(r->CreateMeshObjectFromArray(&va));
 	Graphics::RenderStateDesc rsd;
 	rsd.blendMode = Graphics::BLEND_ALPHA_PREMULT;
 	rsd.depthWrite = false;
 	rsd.cullMode = Graphics::CULL_FRONT;
-	m_ffBackMaterial.reset(r->CreateMaterial("forcefield", Graphics::MaterialDescriptor(), rsd, m_ffMesh->GetFormat()));
+	ff.backMaterial.reset(r->CreateMaterial("forcefield", Graphics::MaterialDescriptor(), rsd, ff.mesh->GetFormat()));
 	rsd.cullMode = Graphics::CULL_BACK;
-	m_ffFrontMaterial.reset(r->CreateMaterial("forcefield", Graphics::MaterialDescriptor(), rsd, m_ffMesh->GetFormat()));
+	ff.frontMaterial.reset(r->CreateMaterial("forcefield", Graphics::MaterialDescriptor(), rsd, ff.mesh->GetFormat()));
 
 	Graphics::IndexBuffer *strutIndexBuffer = r->CreateIndexBuffer(strutIndices.size(), Graphics::BUFFER_USAGE_STATIC);
 	std::copy(strutIndices.begin(), strutIndices.end(), strutIndexBuffer->Map(Graphics::BUFFER_MAP_WRITE));
 	strutIndexBuffer->Unmap();
-	m_ffStrutMesh.reset(r->CreateMeshObjectFromArray(&strutVa, strutIndexBuffer));
+	ff.strutMesh.reset(r->CreateMeshObjectFromArray(&strutVa, strutIndexBuffer));
 	// lit by the stars, and drawn into the depth buffer so the near ones hide the far
 	Graphics::MaterialDescriptor strutDesc;
 	strutDesc.lighting = true;
 	rsd.depthWrite = true;
-	m_ffStrutMaterial.reset(r->CreateMaterial("forcefield_struts", strutDesc, rsd, m_ffStrutMesh->GetFormat()));
+	ff.strutMaterial.reset(r->CreateMaterial("forcefield_struts", strutDesc, rsd, ff.strutMesh->GetFormat()));
 
 	// a static geom of the station, so its contacts come to this city (Space.cpp)
 	const int numTris = int(vertices.size() / 3);
 	std::vector<Uint32> indices(vertices.size());
 	std::iota(indices.begin(), indices.end(), 0);
 	const std::vector<Uint32> flags(numTris, SceneGraph::CollisionGeometry::FORCEFIELD);
-	m_ffGeomTree.reset(new GeomTree(int(vertices.size()), numTris, vertices, indices, flags));
-	m_ffGeom.reset(new Geom(m_ffGeomTree.get(), matrix4x4d::Identity, stationPos, static_cast<Body *>(station)));
-	m_ffGeom->SetRayTransparent(true);
-	Frame::GetFrame(m_frame)->AddStaticGeom(m_ffGeom.get());
+	ff.geomTree.reset(new GeomTree(int(vertices.size()), numTris, vertices, indices, flags));
+	ff.geom.reset(new Geom(ff.geomTree.get(), matrix4x4d::Identity, stationPos, static_cast<Body *>(station)));
+	ff.geom->SetRayTransparent(true);
+	Frame::GetFrame(m_frame)->AddStaticGeom(ff.geom.get());
 
 	// the player may be inside already (a game loaded there)
 	const Player *player = Pi::player;
 	if (player && player->GetFrame() == station->GetFrame())
-		m_ffPlayerInside = (player->GetPosition() - stationPos - m_ffCentre).LengthSqr() < rho * rho;
+		ff.playerInside = (player->GetPosition() - stationPos - ff.centre).LengthSqr() < rho * rho;
 
+	m_ffExtent = std::max(m_ffExtent, ff.extent);
 	Log::Verbose("\tCityOnPlanet: forcefield {:.0f} m across, {:.0f} m high, {} triangles", 2.0 * a, h, numTris);
+	m_forcefields.push_back(std::move(field));
 }
 
-bool CityOnPlanet::ForcefieldPasses(const SpaceStation *station, const Ship *ship) const
+bool CityOnPlanet::ForcefieldPasses(const SpaceStation *station, const Forcefield &field, const Ship *ship) const
 {
 	// other ships are traffic
 	if (!ship->IsType(ObjectType::PLAYER))
 		return true;
 	// going out, or already in, so nobody is shut in
-	const vector3d rel = ship->GetPosition() - (station->GetPosition() + m_ffCentre);
-	if (m_ffPlayerInside || rel.LengthSqr() < m_ffRadius * m_ffRadius || rel.Dot(ship->GetVelocity()) >= 0.0)
+	const vector3d rel = ship->GetPosition() - (station->GetPosition() + field.centre);
+	if (field.playerInside || rel.LengthSqr() < field.radius * field.radius || rel.Dot(ship->GetVelocity()) >= 0.0)
 		return true;
-	return PlayerMayEnter(station, ship);
+	return PlayerMayEnter(station, field, ship);
 }
 
-bool CityOnPlanet::PlayerMayEnter(const SpaceStation *station, const Ship *player) const
+bool CityOnPlanet::PlayerMayEnter(const SpaceStation *station, const Forcefield &field, const Ship *player) const
 {
 	// with landing clearance, or back soon after leaving
 	return station->GetMyDockingPort(player) != -1 ||
-		Pi::game->GetTime() - m_ffPlayerLeftTime < FORCEFIELD_RETURN_TIME;
+		Pi::game->GetTime() - field.playerLeftTime < FORCEFIELD_RETURN_TIME;
 }
 
-void CityOnPlanet::AddForcefieldImpact(const vector3d &point, const Ship *ship)
+void CityOnPlanet::AddForcefieldImpact(Forcefield &field, const vector3d &point, const Ship *ship)
 {
 	// none where one just started
-	for (const ForcefieldImpact &impact : m_ffImpacts) {
+	for (const ForcefieldImpact &impact : field.impacts) {
 		if (impact.time < FORCEFIELD_IMPACT_REPEAT && (impact.point - point).LengthSqr() < impact.reach * impact.reach)
 			return;
 	}
-	if (m_ffImpacts.size() >= FORCEFIELD_MAX_IMPACTS)
-		m_ffImpacts.erase(m_ffImpacts.begin());
+	if (field.impacts.size() >= FORCEFIELD_MAX_IMPACTS)
+		field.impacts.erase(field.impacts.begin());
 	const double reach = Clamp(ship->GetClipRadius() * FORCEFIELD_IMPACT_SCALE, FORCEFIELD_IMPACT_MIN, FORCEFIELD_IMPACT_MAX);
-	m_ffImpacts.push_back({ point, float(reach), 0.0f });
+	field.impacts.push_back({ point, float(reach), 0.0f });
 	Sound::BodyMakeNoise(ship, "MembraneBounce", 1.0f);
 }
 
 bool CityOnPlanet::ForcefieldStops(SpaceStation *station, Ship *ship)
 {
-	if (!HasForcefield() || ForcefieldPasses(station, ship))
+	// the dome whose shell the ship is at
+	Forcefield *field = nullptr;
+	double best = 1e30;
+	for (const auto &f : m_forcefields) {
+		const double d = std::abs((ship->GetPosition() - (station->GetPosition() + f->centre)).Length() - f->radius);
+		if (d < best) {
+			best = d;
+			field = f.get();
+		}
+	}
+	if (!field || ForcefieldPasses(station, *field, ship))
 		return false;
 
 	// a wave from where it hit
-	const vector3d n = (ship->GetPosition() - (station->GetPosition() + m_ffCentre)).Normalized();
-	AddForcefieldImpact(m_ffCentre + n * m_ffRadius, ship);
+	const vector3d n = (ship->GetPosition() - (station->GetPosition() + field->centre)).Normalized();
+	AddForcefieldImpact(*field, field->centre + n * field->radius, ship);
 	ForcefieldHit(station, ship, -ship->GetVelocity().Dot(n));
 	return true;
 }
@@ -1685,24 +1764,24 @@ void CityOnPlanet::ForcefieldHit(SpaceStation *station, Ship *ship, double inwar
 	}
 }
 
-void CityOnPlanet::KeepPlayerOut(SpaceStation *station)
+void CityOnPlanet::KeepPlayerOut(SpaceStation *station, Forcefield &field)
 {
 	Ship *player = Pi::player;
 	if (!player || player->GetFrame() != station->GetFrame()) {
-		m_ffPlayerInside = false;
+		field.playerInside = false;
 		return;
 	}
 
-	const vector3d centre = station->GetPosition() + m_ffCentre;
+	const vector3d centre = station->GetPosition() + field.centre;
 	vector3d rel = player->GetPosition() - centre;
 	double dist = rel.Length();
 
 	// coming to it from outside, not allowed in: put back at its own radius
 	// outside and bounced off, however fast it came (collisions can miss a
 	// fast ship stepping through)
-	const double shell = m_ffRadius + player->GetClipRadius() * FORCEFIELD_SHIP_SHELL;
-	if (!m_ffPlayerInside && dist < shell && dist > 0.0 && player->GetFlightState() == Ship::FLYING &&
-		(m_ffCentre + rel * (m_ffRadius / dist)).Dot(m_ffUp) > m_ffBottom && !PlayerMayEnter(station, player)) {
+	const double shell = field.radius + player->GetClipRadius() * FORCEFIELD_SHIP_SHELL;
+	if (!field.playerInside && dist < shell && dist > 0.0 && player->GetFlightState() == Ship::FLYING &&
+		(field.centre + rel * (field.radius / dist)).Dot(m_ffUp) > field.bottom && !PlayerMayEnter(station, field, player)) {
 		const vector3d n = rel / dist;
 		player->SetPosition(centre + n * shell);
 		const vector3d vel = player->GetVelocity();
@@ -1711,17 +1790,17 @@ void CityOnPlanet::KeepPlayerOut(SpaceStation *station)
 			player->SetVelocity(vel - n * (inward * (1.0 + FORCEFIELD_BOUNCE)));
 		// not for resting on it
 		if (inward < -FORCEFIELD_IMPACT_SPEED)
-			AddForcefieldImpact(m_ffCentre + n * m_ffRadius, player);
+			AddForcefieldImpact(field, field.centre + n * field.radius, player);
 		ForcefieldHit(station, player, -inward);
 		rel = n * shell;
 		dist = shell;
 	}
 
 	// when the player last went out
-	const bool inside = dist < m_ffRadius;
-	if (m_ffPlayerInside && !inside)
-		m_ffPlayerLeftTime = Pi::game->GetTime();
-	m_ffPlayerInside = inside;
+	const bool inside = dist < field.radius;
+	if (field.playerInside && !inside)
+		field.playerLeftTime = Pi::game->GetTime();
+	field.playerInside = inside;
 }
 
 void CityOnPlanet::UpdateForcefield(float timeStep, SpaceStation *station)
@@ -1730,55 +1809,66 @@ void CityOnPlanet::UpdateForcefield(float timeStep, SpaceStation *station)
 		return;
 	PROFILE_SCOPED()
 
-	for (ForcefieldImpact &impact : m_ffImpacts)
-		impact.time += timeStep;
-	m_ffImpacts.erase(std::remove_if(m_ffImpacts.begin(), m_ffImpacts.end(),
-						  [](const ForcefieldImpact &impact) { return impact.time >= FORCEFIELD_IMPACT_TIME; }),
-		m_ffImpacts.end());
+	for (const auto &f : m_forcefields) {
+		Forcefield &field = *f;
+		for (ForcefieldImpact &impact : field.impacts)
+			impact.time += timeStep;
+		field.impacts.erase(std::remove_if(field.impacts.begin(), field.impacts.end(),
+								[](const ForcefieldImpact &impact) { return impact.time >= FORCEFIELD_IMPACT_TIME; }),
+			field.impacts.end());
 
-	KeepPlayerOut(station);
+		KeepPlayerOut(station, field);
 
-	// open round the ships it lets through as they come to it
-	for (ForcefieldOpening &opening : m_ffOpenings)
-		opening.nearby = false;
-	const vector3d centre = station->GetPosition() + m_ffCentre;
+		for (ForcefieldOpening &opening : field.openings)
+			opening.nearby = false;
+	}
+
+	// open round the ships they let through as they come to them
 	for (Body *body : Pi::game->GetSpace()->GetBodiesMaybeNear(station, m_ffExtent + FORCEFIELD_OPENING_RANGE)) {
 		if (!body->IsType(ObjectType::SHIP) || body->GetFrame() != station->GetFrame())
 			continue;
 		const Ship *ship = static_cast<const Ship *>(body);
-		if (ship->GetFlightState() != Ship::FLYING || !ForcefieldPasses(station, ship))
+		if (ship->GetFlightState() != Ship::FLYING)
 			continue;
 
-		const vector3d rel = ship->GetPosition() - centre;
-		const double dist = rel.Length();
-		const double radius = Clamp(ship->GetClipRadius() * FORCEFIELD_OPENING_SCALE, FORCEFIELD_OPENING_MIN, FORCEFIELD_OPENING_MAX);
-		if (std::abs(dist - m_ffRadius) > radius + ship->GetVelocity().Length() * FORCEFIELD_OPENING_LEAD)
-			continue;
-		// where it meets the field, if the field is there and not underground
-		const vector3d point = m_ffCentre + rel * (m_ffRadius / dist);
-		if (point.Dot(m_ffUp) < m_ffBottom)
-			continue;
+		for (const auto &f : m_forcefields) {
+			Forcefield &field = *f;
+			if (!ForcefieldPasses(station, field, ship))
+				continue;
+			const vector3d rel = ship->GetPosition() - (station->GetPosition() + field.centre);
+			const double dist = rel.Length();
+			const double radius = Clamp(ship->GetClipRadius() * FORCEFIELD_OPENING_SCALE, FORCEFIELD_OPENING_MIN, FORCEFIELD_OPENING_MAX);
+			if (std::abs(dist - field.radius) > radius + ship->GetVelocity().Length() * FORCEFIELD_OPENING_LEAD)
+				continue;
+			// where it meets the field, if the field is there and not underground
+			const vector3d point = field.centre + rel * (field.radius / dist);
+			if (point.Dot(m_ffUp) < field.bottom)
+				continue;
 
-		auto it = std::find_if(m_ffOpenings.begin(), m_ffOpenings.end(),
-			[body](const ForcefieldOpening &opening) { return opening.ship == body; });
-		if (it != m_ffOpenings.end()) {
-			it->centre = point;
-			it->radius = float(radius);
-			it->nearby = true;
-		} else if (m_ffOpenings.size() < FORCEFIELD_MAX_OPENINGS) {
-			m_ffOpenings.push_back({ body, point, float(radius), 0.0f, true });
-			Sound::BodyMakeNoise(ship, "MembranePass", 1.0f);
+			auto it = std::find_if(field.openings.begin(), field.openings.end(),
+				[body](const ForcefieldOpening &opening) { return opening.ship == body; });
+			if (it != field.openings.end()) {
+				it->centre = point;
+				it->radius = float(radius);
+				it->nearby = true;
+			} else if (field.openings.size() < FORCEFIELD_MAX_OPENINGS) {
+				field.openings.push_back({ body, point, float(radius), 0.0f, true });
+				Sound::BodyMakeNoise(ship, "MembranePass", 1.0f);
+			}
 		}
 	}
 
-	for (ForcefieldOpening &opening : m_ffOpenings) {
-		opening.open = opening.nearby ?
-			std::min(1.0f, opening.open + timeStep / FORCEFIELD_OPEN_TIME) :
-			std::max(0.0f, opening.open - timeStep / FORCEFIELD_CLOSE_TIME);
+	for (const auto &f : m_forcefields) {
+		Forcefield &field = *f;
+		for (ForcefieldOpening &opening : field.openings) {
+			opening.open = opening.nearby ?
+				std::min(1.0f, opening.open + timeStep / FORCEFIELD_OPEN_TIME) :
+				std::max(0.0f, opening.open - timeStep / FORCEFIELD_CLOSE_TIME);
+		}
+		field.openings.erase(std::remove_if(field.openings.begin(), field.openings.end(),
+								 [](const ForcefieldOpening &opening) { return !opening.nearby && opening.open <= 0.0f; }),
+			field.openings.end());
 	}
-	m_ffOpenings.erase(std::remove_if(m_ffOpenings.begin(), m_ffOpenings.end(),
-						   [](const ForcefieldOpening &opening) { return !opening.nearby && opening.open <= 0.0f; }),
-		m_ffOpenings.end());
 }
 
 void CityOnPlanet::QueueForcefield(const CameraContext *camera, const SpaceStation *station, const matrix4x4d &viewTransform) const
@@ -1787,9 +1877,13 @@ void CityOnPlanet::QueueForcefield(const CameraContext *camera, const SpaceStati
 		return;
 	const matrix4x4d modelView = viewTransform * matrix4x4d::Translation(station->GetInterpPosition());
 	const vector3d origin = modelView * vector3d(0.0);
-	if (!camera->GetFrustum().TestSphere(origin, m_ffExtent))
-		return;
-	s_forcefieldQueue.push_back({ this, modelView, origin.Length() });
+	for (const auto &field : m_forcefields) {
+		if (!camera->GetFrustum().TestSphere(origin, field->extent))
+			continue;
+		// farthest first by the middle of its cap
+		const double distance = (modelView * (field->centre + m_ffUp * field->radius)).Length();
+		s_forcefieldQueue.push_back({ this, field.get(), modelView, distance });
+	}
 }
 
 //static
@@ -1807,15 +1901,16 @@ void CityOnPlanet::RenderForcefields(Graphics::Renderer *r)
 
 	for (const QueuedForcefield &queued : s_forcefieldQueue) {
 		const CityOnPlanet *city = queued.city;
+		const Forcefield *field = queued.field;
 		const double t = Clamp((FORCEFIELD_FADE_FAR - queued.distance) / (FORCEFIELD_FADE_FAR - FORCEFIELD_FADE_NEAR), 0.0, 1.0);
 		if (t <= 0.0)
 			continue;
 
 		ForcefieldDataBlock data = {};
-		data.sphereCentre = vector3f(city->m_ffCentre);
-		data.sphereRadius = float(city->m_ffRadius);
+		data.sphereCentre = vector3f(field->centre);
+		data.sphereRadius = float(field->radius);
 		size_t numOpenings = 0;
-		for (const ForcefieldOpening &opening : city->m_ffOpenings) {
+		for (const ForcefieldOpening &opening : field->openings) {
 			if (opening.open <= 0.0f)
 				continue;
 			const float open = opening.open * opening.open * (3.0f - 2.0f * opening.open);
@@ -1825,8 +1920,8 @@ void CityOnPlanet::RenderForcefields(Graphics::Renderer *r)
 				break;
 		}
 		for (size_t i = 0; i < FORCEFIELD_MAX_IMPACTS; i++) {
-			if (i < city->m_ffImpacts.size()) {
-				const ForcefieldImpact &impact = city->m_ffImpacts[i];
+			if (i < field->impacts.size()) {
+				const ForcefieldImpact &impact = field->impacts[i];
 				data.impacts[i].point = vector3f(impact.point);
 				data.impacts[i].age = impact.time / FORCEFIELD_IMPACT_TIME;
 				data.impactReach[i] = impact.reach;
@@ -1834,7 +1929,7 @@ void CityOnPlanet::RenderForcefields(Graphics::Renderer *r)
 				data.impacts[i].age = -1.0f;
 			}
 		}
-		data.strutRadius = float(city->m_ffStrutRadius);
+		data.strutRadius = float(field->strutRadius);
 		// half the least width, in radians a pixel spans
 		data.strutRadiusPerMetre = 0.5f * FORCEFIELD_STRUT_MIN_PX * float(Graphics::GetFovFactor()) / float(r->GetWindowHeight());
 		data.colour = city->m_cityType->forcefield.colour;
@@ -1843,14 +1938,14 @@ void CityOnPlanet::RenderForcefields(Graphics::Renderer *r)
 		data.backFaces = FORCEFIELD_BACK_FACES;
 		data.fade = float(t * t * (3.0 - 2.0 * t));
 
-		city->m_ffBackMaterial->SetBufferDynamic(s_forcefieldDataName, &data);
-		city->m_ffFrontMaterial->SetBufferDynamic(s_forcefieldDataName, &data);
-		city->m_ffStrutMaterial->SetBufferDynamic(s_forcefieldDataName, &data);
+		field->backMaterial->SetBufferDynamic(s_forcefieldDataName, &data);
+		field->frontMaterial->SetBufferDynamic(s_forcefieldDataName, &data);
+		field->strutMaterial->SetBufferDynamic(s_forcefieldDataName, &data);
 		Graphics::Renderer::MatrixTicket mt(r, matrix4x4f(queued.modelView));
 		// the far side of the field, the struts, the near side
-		r->DrawMesh(city->m_ffMesh.get(), city->m_ffBackMaterial.get());
-		r->DrawMesh(city->m_ffStrutMesh.get(), city->m_ffStrutMaterial.get());
-		r->DrawMesh(city->m_ffMesh.get(), city->m_ffFrontMaterial.get());
+		r->DrawMesh(field->mesh.get(), field->backMaterial.get());
+		r->DrawMesh(field->strutMesh.get(), field->strutMaterial.get());
+		r->DrawMesh(field->mesh.get(), field->frontMaterial.get());
 	}
 	s_forcefieldQueue.clear();
 }

@@ -35,6 +35,11 @@ public:
 	double GetBaseTerrainHeight(const vector3d &pos) const;
 	// keeps the ground around pos uneroded (Terrain::ProtectSite)
 	void ProtectTerrainSite(const vector3d &pos);
+	// GetTerrainHeight for many directions at once (unit vectors), leaving
+	// out features narrower than minFeature metres (0: none), m from the centre
+	void GetTerrainHeights(const vector3d *dirs, double *heightsOut, size_t count, double minFeature = 0.0) const;
+	// whether its low ground is sea (the terrain is level at the radius under it)
+	bool HasSea() const;
 	const SystemBody *GetSystemBody() const override { return m_sbody; }
 
 	// returns value in metres

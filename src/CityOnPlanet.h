@@ -11,8 +11,11 @@
 #include "matrix4x4.h"
 #include "vector3.h"
 
+#include <memory>
+
 class Body;
 class CameraContext;
+class CityLayout;
 class Geom;
 class GeomTree;
 class Planet;
@@ -30,6 +33,7 @@ namespace Graphics {
 	class MeshObject;
 	class Texture;
 	struct CityLightDataBlock;
+	struct CityGroundDataBlock;
 } // namespace Graphics
 
 namespace FileSystem {
@@ -70,6 +74,16 @@ public:
 	Graphics::Texture *GetLightMap() const { return m_lightMap.Get(); }
 	Graphics::Texture *GetLightGrid() const { return m_lightGrid.Get(); }
 
+	// Streets and paved ground (city-ground.glsl), drawn on the terrain out to
+	// GROUND_RANGE from the station: the city's roads (CityLayout.h) and the
+	// lots of its cells packed into two textures
+	bool HasGround() const { return m_roadTexture.Valid(); }
+	// the city's part of the scene's ground data: all but the view transform
+	void GetGroundData(Graphics::CityGroundDataBlock &out) const;
+	Graphics::Texture *GetRoadTexture() const { return m_roadTexture.Get(); }
+	Graphics::Texture *GetLotTexture() const { return m_lotTexture.Get(); }
+	static constexpr double GROUND_RANGE = 40000.0;
+
 	// The radius (m) of the city a ground station will have, without generating
 	// it, for the planet's night lights seen from afar (city-glow.glsl).
 	// False if it will have none.
@@ -78,16 +92,17 @@ public:
 	// the rest is its glow from afar
 	static double LightsFade(double distance);
 
-	// Forcefield: one geodesic dome over the whole city where the air can't
-	// be breathed (see the flavour's ForcefieldDef), built with the city, in
-	// city space. It collides as a static geom of the station flagged
-	// CollisionGeometry::FORCEFIELD: only the player's ship coming in without
-	// landing clearance is stopped (unharmed), everything else passes, and
-	// rays (weapons, the camera) ignore it. It opens round ships crossing it
-	// and sends a wave out from where it stops one. Drawn after everything
-	// solid and the clouds (Camera::Draw), farthest first.
-	bool HasForcefield() const { return bool(m_ffMesh); }
-	// radius round the station holding the forcefield, m; 0 without one
+	// Forcefield: geodesic domes where the air can't be breathed (see the
+	// flavour's ForcefieldDef), where the city's plan puts them (one over the
+	// city, several small ones, one over a crater: CityLayout.h), built with
+	// the city, in city space. Each collides as a static geom of the station
+	// flagged CollisionGeometry::FORCEFIELD: only the player's ship coming in
+	// without landing clearance is stopped (unharmed), everything else passes,
+	// and rays (weapons, the camera) ignore it. A dome opens round ships
+	// crossing it and sends a wave out from where it stops one. Drawn after
+	// everything solid and the clouds (Camera::Draw), farthest first.
+	bool HasForcefield() const { return !m_forcefields.empty(); }
+	// radius round the station holding the forcefields, m; 0 without one
 	double GetForcefieldExtent() const { return m_ffExtent; }
 	// for a contact of the ship with it (Space.cpp): true if it stops the ship
 	bool ForcefieldStops(SpaceStation *station, Ship *ship);
@@ -108,7 +123,6 @@ public:
 	static constexpr uint32_t CELLSIZE = 50;
 	// maximum number of cells a single building may take up
 	static constexpr uint32_t CELLMAX = 32;
-	static constexpr uint32_t CELLMASK = CELLMAX - 1;
 
 private:
 
@@ -130,6 +144,10 @@ private:
 		float rarityAtmo = 0;
 
 		SectorKind buildingKind = SectorKind::None;
+
+		// footprint (model space x, z) and height, from the collision mesh
+		float minX = 0, maxX = 0, minZ = 0, maxZ = 0;
+		float height = 0;
 
 		// lights at the foot of each facade at night
 		vector3f lightColour;
@@ -178,41 +196,36 @@ private:
 
 private:
 
+	// lays out the city (CityLayout) and puts the buildings on it
 	void Generate(SpaceStation *station);
 	static void CalcCityRadius(const CityFlavourType &cityType, const SystemBody *body, Random &rand, double &radius, double &density);
 
-	// street lamps and spaceport floodlights, while the occupancy grid exists;
-	// cellHeights: the ground above the planet's radius of the taken cells
-	void GenerateFixedLights(const SpaceStation *station, uint32_t cityExtents, const vector3d &incX, const vector3d &incZ, const std::vector<float> &cellHeights);
+	// street lamps along the roads and spaceport floodlights
+	void GenerateFixedLights(const SpaceStation *station);
+	// the road and lot textures for city-ground.glsl
+	void BuildGround();
 	// all the lights of the enabled buildings, baked into the light map and grid
 	void BuildLighting();
 	void BakeLightMap(const std::vector<Light> &lights);
 	void BuildLightGrid(const std::vector<Light> &lights);
 
 	static bool NeedsForcefield(const SystemBody *body, const ForcefieldDef &def);
-	void BuildForcefield(SpaceStation *station);
+	struct Forcefield;
+	// the domes of the city's plan (one over everything if it has none)
+	void BuildForcefields(SpaceStation *station);
+	// one round (cx, cz) in city space, a wide at the ground at least,
+	// grown to hold the buildings under it
+	void BuildForcefield(SpaceStation *station, double cx, double cz, double a);
 	// whether it lets the ship through as things are now
-	bool ForcefieldPasses(const SpaceStation *station, const Ship *ship) const;
+	bool ForcefieldPasses(const SpaceStation *station, const Forcefield &field, const Ship *ship) const;
 	// the player from outside: with landing clearance or soon after leaving
-	bool PlayerMayEnter(const SpaceStation *station, const Ship *player) const;
+	bool PlayerMayEnter(const SpaceStation *station, const Forcefield &field, const Ship *player) const;
 	// a wave where it stopped the ship, and its sound
-	void AddForcefieldImpact(const vector3d &point, const Ship *ship);
+	void AddForcefieldImpact(Forcefield &field, const vector3d &point, const Ship *ship);
 	// bounces the player off it when not allowed in; when they last went out
-	void KeepPlayerOut(SpaceStation *station);
+	void KeepPlayerOut(SpaceStation *station, Forcefield &field);
 	// a ship stopped coming in this fast (m/s): destroyed if too fast
 	void ForcefieldHit(SpaceStation *station, Ship *ship, double inwardSpeed);
-
-	void SetGridOccupancy(uint32_t x, uint32_t y, const uint8_t size[2]);
-	bool TestGridOccupancy(uint32_t x, uint32_t y, const uint8_t size[2]);
-
-	// Quickly check if the given single grid cell is set.
-	// It is expected as a precondition that the position is valid and within
-	// the extents of the grid.
-	inline bool TestGridQuick(uint32_t x, uint32_t y) const
-	{
-		// bitset is stored in lsb order with 8 cells per byte
-		return m_gridBitset[y * m_gridPitch + x / 8] & (1 << (x & 7));
-	}
 
 	void AddStaticGeomsToCollisionSpace();
 	void RemoveStaticGeomsFromCollisionSpace();
@@ -225,7 +238,7 @@ private:
 		vector3f pos;
 		float clipRadius;
 		Uint32 instIndex;
-		int rotation; // 0-3
+		float yaw; // turned about the station's up axis, as matrix3x3::RotateY
 		Geom *geom;
 	};
 
@@ -247,11 +260,14 @@ private:
 
 	std::vector<matrix4x4f> m_instanceTransforms;
 
-	// bitmask occupancy grid for quick population of the city
-	std::unique_ptr<uint8_t[]> m_gridBitset;
-	// width of a single grid row in bytes
-	uint32_t m_gridPitch;
-	uint32_t m_gridLen;
+	// the plan: shape, districts, roads (CityLayout.h)
+	std::unique_ptr<CityLayout> m_layout;
+	// and for the terrain shaders (city-ground.glsl)
+	RefCountedPtr<Graphics::Texture> m_roadTexture;
+	RefCountedPtr<Graphics::Texture> m_lotTexture;
+	float m_roadRect[4] = {};  // as CityGroundDataBlock::roadRect
+	float m_lotRect[4] = {};   // as CityGroundDataBlock::lotRect
+	float m_roadAtlas[2] = {}; // first index texel, first segment texel
 
 	int m_detailLevel;
 	float m_clipRadius;
@@ -271,7 +287,7 @@ private:
 	RefCountedPtr<Graphics::Texture> m_retiredLightMap;
 	RefCountedPtr<Graphics::Texture> m_retiredLightGrid;
 
-	// forcefield, in city space: a cap of the sphere round m_ffCentre
+	// forcefields, in city space: caps of spheres
 	struct ForcefieldOpening {
 		const Body *ship; // only compared, never dereferenced
 		vector3d centre;  // where its path meets the field
@@ -284,26 +300,31 @@ private:
 		float reach; // m
 		float time;	 // s since
 	};
-	std::unique_ptr<Graphics::MeshObject> m_ffMesh;
-	std::unique_ptr<Graphics::Material> m_ffBackMaterial; // the far side, drawn first
-	std::unique_ptr<Graphics::Material> m_ffFrontMaterial;
-	std::unique_ptr<Graphics::MeshObject> m_ffStrutMesh; // struts and joints, between the two
-	std::unique_ptr<Graphics::Material> m_ffStrutMaterial;
-	double m_ffStrutRadius = 0.0;
-	std::unique_ptr<GeomTree> m_ffGeomTree;
-	std::unique_ptr<Geom> m_ffGeom;
-	vector3d m_ffCentre;
+	struct Forcefield {
+		std::unique_ptr<Graphics::MeshObject> mesh;
+		std::unique_ptr<Graphics::Material> backMaterial; // the far side, drawn first
+		std::unique_ptr<Graphics::Material> frontMaterial;
+		std::unique_ptr<Graphics::MeshObject> strutMesh; // struts and joints, between the two
+		std::unique_ptr<Graphics::Material> strutMaterial;
+		double strutRadius = 0.0;
+		std::unique_ptr<GeomTree> geomTree;
+		std::unique_ptr<Geom> geom;
+		vector3d centre; // of its sphere, from the station
+		double radius = 0.0;
+		double bottom = 0.0; // height of its lowest point over the station
+		double extent = 0.0; // radius round the station holding it
+		bool playerInside = false;
+		double playerLeftTime = -1e30; // game time
+		std::vector<ForcefieldOpening> openings;
+		std::vector<ForcefieldImpact> impacts;
+	};
+	std::vector<std::unique_ptr<Forcefield>> m_forcefields;
 	vector3d m_ffUp;
-	double m_ffRadius = 0.0;
-	double m_ffBottom = 0.0; // height of its lowest point over the station
 	double m_ffExtent = 0.0;
-	bool m_ffPlayerInside = false;
-	double m_ffPlayerLeftTime = -1e30; // game time
-	std::vector<ForcefieldOpening> m_ffOpenings;
-	std::vector<ForcefieldImpact> m_ffImpacts;
 
 	struct QueuedForcefield {
 		const CityOnPlanet *city;
+		const Forcefield *field;
 		matrix4x4d modelView;
 		double distance;
 	};

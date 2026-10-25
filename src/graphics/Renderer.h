@@ -62,6 +62,16 @@ namespace Graphics {
 	};
 	static_assert(sizeof(CityLightDataBlock) == 112, "CityLightDataBlock must match the std140 layout of CityLightData");
 
+	// Layout of the CityGroundData uniform buffer (std140, see city-ground.glsl):
+	// the streets and paved ground of the city nearest the camera
+	struct CityGroundDataBlock {
+		matrix4x4f viewToCity; // view space -> city space (the station's frame, metres, y up)
+		float roadRect[4];	   // x, z of the road lookup grid's corner in city space, its cell size (m), cells per side
+		float lotRect[4];	   // x, z of the lot grid's corner in city space, its cell size (m), cells per side
+		float atlas[4];		   // first index texel, first segment texel, strength (0: none), unused
+	};
+	static_assert(sizeof(CityGroundDataBlock) == 112, "CityGroundDataBlock must match the std140 layout of CityGroundData");
+
 	// Layout of the CityGlowData uniform buffer (std140, see city-glow.glsl):
 	// a planet's starport cities seen from afar
 	struct CityGlowDataBlock {
@@ -173,6 +183,12 @@ namespace Graphics {
 		// Pass nullptr to switch them off; the renderer also does at the end of the frame.
 		// The textures must stay alive until the end of the frame.
 		virtual void SetCityLightData(const CityLightDataBlock *data, Texture *lightMap, Texture *lightGrid) {}
+
+		// Streets and paved ground of the city nearest the camera (see CityOnPlanet.h),
+		// used by every material whose shader declares the CityGroundData buffer
+		// (city-ground.glsl). Pass nullptr to switch them off; the renderer also
+		// does at the end of the frame. The textures must stay alive until then.
+		virtual void SetCityGroundData(const CityGroundDataBlock *data, Texture *roads, Texture *lots) {}
 
 		//drawing functions
 		// TODO: placeholder API; here until CommandLists are exposed

@@ -88,6 +88,7 @@ namespace Graphics {
 		bool SetAmbientColor(const Color &c) final;
 		void SetShadowData(const ShadowDataBlock *data, Texture *const *maps) final;
 		void SetCityLightData(const CityLightDataBlock *data, Texture *lightMap, Texture *lightGrid) final;
+		void SetCityGroundData(const CityGroundDataBlock *data, Texture *roads, Texture *lots) final;
 
 		bool FlushCommandBuffers() final;
 
@@ -122,6 +123,10 @@ namespace Graphics {
 		const BufferBinding<UniformBuffer> &GetCityLightUniformBuffer();
 		Texture *GetCityLightMap() const { return m_cityLightMap; }
 		Texture *GetCityLightGrid() const { return m_cityLightGrid; }
+		// the city's streets for this frame; allocates a "no city" block if none was set
+		const BufferBinding<UniformBuffer> &GetCityGroundUniformBuffer();
+		Texture *GetCityRoads() const { return m_cityRoads; }
+		Texture *GetCityLots() const { return m_cityLots; }
 		OGL::UniformLinearBuffer *GetDrawUniformBuffer(Uint32 size);
 		OGL::RenderStateCache *GetStateCache() { return m_renderStateCache.get(); }
 
@@ -154,6 +159,9 @@ namespace Graphics {
 		BufferBinding<UniformBuffer> m_cityLightUniformBuffer;
 		Texture *m_cityLightMap = nullptr;
 		Texture *m_cityLightGrid = nullptr;
+		BufferBinding<UniformBuffer> m_cityGroundUniformBuffer;
+		Texture *m_cityRoads = nullptr;
+		Texture *m_cityLots = nullptr;
 		bool m_useNVDepthRanged;
 		OGL::RenderTarget *m_activeRenderTarget = nullptr;
 		std::unique_ptr<OGL::CommandList> m_drawCommandList;
