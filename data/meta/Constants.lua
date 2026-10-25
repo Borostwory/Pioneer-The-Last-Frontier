@@ -193,6 +193,8 @@ local ProjectableTypes = {
 	L5 = 4,
 	APOAPSIS = 5,
 	PERIAPSIS = 6,
+	ASCENDING_NODE = 7,
+	DESCENDING_NODE = 8,
 }
 
 ---@type ProjectableTypes[]
@@ -206,6 +208,7 @@ local ProjectableBases = {
 	SHIP = 3,
 	PLAYER = 4,
 	PLANNER = 5,
+	PLANNER_BURN = 6,
 }
 
 ---@type ProjectableBases[]
@@ -242,6 +245,7 @@ local SystemViewColorIndex = {
 	PLANNER_ORBIT = 6,
 	SELECTED_SHIP_ORBIT = 7,
 	SHIP_ORBIT = 8,
+	PLANNER_BURN = 9,
 }
 
 ---@type SystemViewColorIndex[]
@@ -445,6 +449,7 @@ local ShipControllerFlightControlState = {
 	CONTROL_FIXHEADING_RADIALLY_OUTWARD = 8,
 	CONTROL_FIXHEADING_KILLROT = 9,
 	CONTROL_AUTOPILOT = 10,
+	CONTROL_PLAN_HEADING = 11,
 }
 
 ---@type ShipControllerFlightControlState[]

@@ -12,6 +12,7 @@
 #include "Player.h"
 #include "SectorView.h"
 #include "Space.h"
+#include "TransferPlannerConics.h"
 #include "gameconsts.h"
 #include "graphics/VertexBuffer.h"
 #include "matrix4x4.h"
@@ -27,16 +28,27 @@
 #include "graphics/Material.h"
 #include "graphics/Renderer.h"
 #include "graphics/RenderState.h"
+#include "graphics/RenderTarget.h"
+#include "graphics/Texture.h"
 #include "graphics/TextureBuilder.h"
 #include "graphics/Types.h"
 
 #include "imgui/imgui.h"
 #include "profiler/Profiler.h"
 #include <SDL_keycode.h>
+#include <cmath>
+#include <limits>
 
 using namespace Graphics;
 
 static constexpr Uint16 N_VERTICES_MAX = 100;
+// planned trajectory legs: sampled at steps of this share of the local time
+// scale (distance over speed), with at least / at most this many points
+static constexpr double PLANNER_LEG_STEP_SHARE = 0.02;
+static constexpr int N_PLANNER_LEG_MIN_POINTS = 64;
+static constexpr int N_PLANNER_LEG_MAX_POINTS = 4096;
+// maximum fraction the per-burn segment colours are lerped toward white
+static constexpr float PLANNER_SEG_WHITEN = 0.6f;
 static const float MIN_ZOOM = 1e-30f; // Just to avoid having 0
 static const float MAX_ZOOM = 1e30f;
 static const float MIN_ATLAS_ZOOM = 0.5f; // Just to avoid having 0
@@ -75,6 +87,13 @@ SystemView::SystemView(Game *game) :
 {
 	m_map.reset(new SystemMapViewport(Pi::GetApp()));
 	m_map->GetStarportHeightAboveTerrain = sigc::mem_fun(this, &SystemView::CalculateStarportHeight);
+
+	m_hudMap.reset(new SystemMapViewport(Pi::GetApp()));
+	m_hudMap->GetStarportHeightAboveTerrain = sigc::mem_fun(this, &SystemView::CalculateStarportHeight);
+	m_hudMap->SetVisibility("LAG_ICONTEXT");
+	m_hudMap->SetVisibility("SHIPS_OFF");
+	m_hudMap->SetVisibility("CLOUDS_OFF");
+	m_hudMap->SetVisibility("GRID_OFF");
 
 	RefreshShips();
 	m_planner = Pi::planner;
@@ -123,9 +142,13 @@ void SystemView::CalculateFramePositionAtTime(FrameId frameId, double t, vector3
 double SystemView::CalculateStarportHeight(const SystemBody *body)
 {
 	// if we look at the current system, the relief is known, we take the height from the physical body
-	if (m_viewingCurrentSystem && m_game->IsNormalSpace()) {
+	if (m_game->IsNormalSpace()) {
 		assert(body != NULL);
-		return m_game->GetSpace()->FindBodyForPath(&(body->GetPath()))->GetPosition().Length();
+		if (m_viewingCurrentSystem || m_game->GetSpace()->GetStarSystem()->GetPath().IsSameSystem(body->GetPath())) {
+			Body *physBody = m_game->GetSpace()->FindBodyForPath(&(body->GetPath()));
+			if (physBody)
+				return physBody->GetPosition().Length();
+		}
 	}
 
 	// if the remote system - take the radius of the planet
@@ -249,8 +272,6 @@ void SystemView::Update()
 	}
 
 	if (m_game->IsNormalSpace() && m_viewingCurrentSystem) {
-		using Col = SystemMapViewport::ColorIndex;
-
 		double time = m_map->GetTime();
 
 		// draw ships
@@ -263,36 +284,128 @@ void SystemView::Update()
 			AddCloudTracks(time);
 		}
 
-		// draw player and planner
-		vector3d ppos(0.0);
-		Orbit playerOrbit = Pi::player->ComputeOrbit();
-		Body *PlayerBody = static_cast<Body *>(Pi::player);
+		PopulatePlayerAndPlannerTracks(m_map.get(), time);
+	}
+}
 
-		CalculateShipPositionAtTime(static_cast<Ship *>(Pi::player), playerOrbit, time, ppos);
-		m_map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLAYER, PlayerBody, ppos });
+void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double time)
+{
+	using Col = SystemMapViewport::ColorIndex;
 
-		FrameId playerNonRotFrameId = Frame::GetFrame(PlayerBody->GetFrame())->GetNonRotFrame();
-		Frame *playerNonRotFrame = Frame::GetFrame(playerNonRotFrameId);
-		SystemBody *playerAround = playerNonRotFrame->GetSystemBody();
+	// draw player and planner
+	vector3d ppos(0.0);
+	Orbit playerOrbit = Pi::player->ComputeOrbit();
+	Body *PlayerBody = static_cast<Body *>(Pi::player);
 
-		vector3d offset(0.0);
-		CalculateFramePositionAtTime(playerNonRotFrameId, time, offset);
+	CalculateShipPositionAtTime(static_cast<Ship *>(Pi::player), playerOrbit, time, ppos);
+	map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLAYER, PlayerBody, ppos });
 
-		if (Pi::player->GetFlightState() == Ship::FlightState::FLYING) {
-			const double planetRadius = playerAround->GetRadius();
-			m_map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLAYER, PlayerBody, offset }, &playerOrbit, m_map->svColor[Col::PLAYER_ORBIT], planetRadius);
+	// the planner's frame, so the plan is drawn where it is computed - never
+	// an orbital station's gravity-free frame
+	Frame *playerNonRotFrame = TransferPlanner::GravityFrame(PlayerBody->GetFrame());
+	FrameId playerNonRotFrameId = playerNonRotFrame->GetId();
+	SystemBody *playerAround = playerNonRotFrame->GetSystemBody();
 
-			const double plannerStartTime = m_planner->GetStartTime();
-			if (!m_planner->GetPosition().ExactlyEqual(vector3d::Zero)) {
-				Orbit plannedOrbit = Orbit::FromBodyState(m_planner->GetPosition(),
-					m_planner->GetVel(),
-					playerAround->GetMass());
+	vector3d offset(0.0);
+	CalculateFramePositionAtTime(playerNonRotFrameId, time, offset);
 
-				m_map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLANNER, PlayerBody, offset }, &plannedOrbit, m_map->svColor[Col::PLANNER_ORBIT], planetRadius);
-				if (std::fabs(time - m_game->GetTime()) > 1. && (time - plannerStartTime) > 0.)
-					m_map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + plannedOrbit.OrbitalPosAtTime(time - plannerStartTime) });
-				else
-					m_map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, offset + m_planner->GetPosition() });
+	if (Pi::player->GetFlightState() == Ship::FlightState::FLYING) {
+		const double planetRadius = playerAround->GetRadius();
+		map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLAYER, PlayerBody, offset }, &playerOrbit, map->svColor[Col::PLAYER_ORBIT], planetRadius);
+
+		const double mass = playerAround->GetMass();
+		if (m_planner->HasPlan() && m_planner->GetBurnCount() > 0) {
+			const size_t burnCount = m_planner->GetBurnCount();
+
+			// The planned trajectory, frame stretch by frame stretch, each drawn
+			// around the body of its frame where that is at map time: a leg that
+			// leaves the Moon's sphere carries on around Earth. Sampled at steps
+			// of a share of the local time scale (distance over speed), so a
+			// fast periapsis pass is drawn as finely as a slow apoapsis; lerped
+			// further toward white in the planner orbit colour along the way.
+			std::vector<TransferPlanner::TrajectorySegment> trajectory;
+			m_planner->GetPlannedTrajectory(std::numeric_limits<double>::infinity(), trajectory);
+			const size_t segCount = trajectory.size();
+			for (size_t s = 0; s < segCount; ++s) {
+				const TransferPlanner::TrajectorySegment &seg = trajectory[s];
+				const double span = seg.end - seg.start;
+				if (!(span > 0.0))
+					continue;
+				vector3d segOffset(0.0);
+				CalculateFramePositionAtTime(seg.frame, time, segOffset);
+				std::vector<vector3d> leg;
+				double t = seg.start;
+				for (int i = 0; i < N_PLANNER_LEG_MAX_POINTS; ++i) {
+					vector3d p, v;
+					if (!seg.conic.At(t, p, v))
+						break;
+					leg.push_back(segOffset + p);
+					if (t >= seg.end)
+						break;
+					const double local = p.Length() / std::max(v.Length(), 1e-3);
+					t = std::min(seg.end, t + Clamp(PLANNER_LEG_STEP_SHARE * local, span / N_PLANNER_LEG_MAX_POINTS, span / N_PLANNER_LEG_MIN_POINTS));
+				}
+				const float whiten = (segCount > 1) ? (PLANNER_SEG_WHITEN * float(s) / float(segCount - 1)) : 0.f;
+				Color legColor = map->svColor[Col::PLANNER_ORBIT];
+				map->AddPlannerLeg(std::move(leg), legColor.Tint(whiten));
+			}
+
+			// The burns: a marker at each burn point, and the whole orbit it
+			// leaves - with its apsis and node markers - when that orbit closes
+			// inside its body's sphere. An orbit that leaves the sphere is drawn
+			// only as its stretch of the trajectory above, never as a conic
+			// running on past the sphere's edge.
+			std::vector<Orbit> segOrbits;
+			std::vector<vector3d> segOffsets;
+			segOrbits.reserve(burnCount);
+			segOffsets.reserve(burnCount);
+			for (size_t i = 0; i < burnCount; ++i) {
+				const int idx = int(i);
+				FrameId burnFrameId = m_planner->GetBurnFrame(idx);
+				const Frame *burnFrame = burnFrameId.valid() ? Frame::GetFrame(burnFrameId) : nullptr;
+				if (!burnFrame || !burnFrame->GetSystemBody()) {
+					burnFrameId = playerNonRotFrameId;
+					burnFrame = playerNonRotFrame;
+				}
+				vector3d burnOffset = offset;
+				if (burnFrameId != playerNonRotFrameId)
+					CalculateFramePositionAtTime(burnFrameId, time, burnOffset);
+				segOffsets.push_back(burnOffset);
+				const double burnMass = burnFrame->GetSystemBody()->GetMass();
+				const double burnRadius = burnFrame->GetSystemBody()->GetRadius();
+
+				double periapsis, apoapsis;
+				PlannerConics::Apsides(m_planner->GetPos(idx), m_planner->GetVel(idx), G * burnMass, periapsis, apoapsis);
+				const bool closes = std::isfinite(apoapsis) &&
+					(!burnFrame->GetParent().valid() || apoapsis < burnFrame->GetRadius());
+				if (closes) {
+					segOrbits.push_back(Orbit::FromBodyState(m_planner->GetPos(idx), m_planner->GetVel(idx), burnMass));
+					const float whiten = (burnCount > 1) ? (PLANNER_SEG_WHITEN * float(i) / float(burnCount - 1)) : 0.f;
+					Color segColor = map->svColor[Col::PLANNER_ORBIT];
+					map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLANNER, PlayerBody, burnOffset }, &segOrbits.back(), segColor.Tint(whiten), burnRadius);
+				}
+
+				// marker at the exact burn point; the burn index rides along in
+				// orbitIdx (unused for object tracks) so the UI can label it.
+				// Submitted as an object track so it is projected in the draw
+				// pass with the live camera transform.
+				Projectable burn(Projectable::OBJECT, Projectable::PLANNER_BURN, PlayerBody, burnOffset + m_planner->GetPos(idx));
+				burn.orbitIdx = idx;
+				map->AddObjectTrack(burn);
+			}
+
+			// ghost marker: where the plan puts the ship at map time - through
+			// every burn and every sphere crossed on the way - while the map
+			// time is scrubbed; in real time, burn 0's position
+			const bool scrubbed = std::fabs(time - m_game->GetTime()) > 1.;
+			FrameId plannedFrame;
+			vector3d plannedPos;
+			if (scrubbed && m_planner->GetPlannedPosition(time, plannedFrame, plannedPos)) {
+				vector3d plannedOffset(0.0);
+				CalculateFramePositionAtTime(plannedFrame, time, plannedOffset);
+				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, plannedOffset + plannedPos });
+			} else {
+				map->AddObjectTrack({ Projectable::OBJECT, Projectable::PLANNER, PlayerBody, segOffsets[0] + m_planner->GetPos(0) });
 			}
 		}
 	}
@@ -327,6 +440,215 @@ void SystemView::SetSystemSelectionMode(SystemSelectionMode systemMode)
 {
 	if (m_systemSelectionMode != systemMode) {
 		m_systemSelectionMode = systemMode;
+	}
+}
+
+void SystemView::ViewPlannedShip()
+{
+	// the planner's ghost marker is an object track like any other: the map
+	// keeps the camera on it as it moves with the map time
+	if (!Pi::player || !m_game->IsNormalSpace() || !m_viewingCurrentSystem)
+		return;
+	m_map->SetViewedObject(Projectable(Projectable::OBJECT, Projectable::PLANNER, static_cast<Body *>(Pi::player)));
+}
+
+bool SystemView::IsViewingPlannedShip()
+{
+	const Projectable *viewed = m_map->GetViewedObject();
+	return viewed->type == Projectable::OBJECT && viewed->base == Projectable::PLANNER;
+}
+
+void SystemView::ViewPlayer()
+{
+	if (!Pi::player || !m_game->IsNormalSpace() || !m_viewingCurrentSystem)
+		return;
+
+	Body *playerBody = static_cast<Body *>(Pi::player);
+	const Frame *playerFrame = Frame::GetFrame(playerBody->GetFrame());
+	if (!playerFrame)
+		return;
+	const FrameId nonRotFrameId = playerFrame->GetNonRotFrame();
+	const Frame *nonRotFrame = Frame::GetFrame(nonRotFrameId);
+	const SystemBody *frameBody = nonRotFrame ? nonRotFrame->GetSystemBody() : nullptr;
+
+	// the map follows the player's track from here on, like any viewed object
+	m_map->SetViewedObject(Projectable(Projectable::OBJECT, Projectable::PLAYER, playerBody));
+
+	// frame the ship as the flight HUD's orbit view does: three times its
+	// distance from the body it orbits, and at least a few body radii
+	const double dist = playerBody->GetPositionRelTo(nonRotFrameId).Length();
+	const double span = std::max(dist * 3.0, frameBody ? frameBody->GetRadius() * 6.0 : 0.0);
+	if (span > 0.0)
+		m_map->SetZoomTarget(float(DEFAULT_VIEW_DISTANCE / span));
+}
+
+void SystemView::SetHudMapFocus(HudMapFocus focus)
+{
+	m_hudMapFocus = focus;
+}
+
+void SystemView::SetHudMapSize(vector2d size)
+{
+	vector2f newSize(std::max(1.f, float(std::floor(size.x))), std::max(1.f, float(std::floor(size.y))));
+	if (newSize == m_hudMapSize)
+		return;
+
+	m_hudMapSize = newSize;
+	m_hudMapNeedsResize = true;
+}
+
+void SystemView::CreateHudRenderTarget()
+{
+	if (m_hudRenderTarget)
+		m_hudRenderTarget.reset();
+	if (m_hudResolveTarget)
+		m_hudResolveTarget.reset();
+
+	if (m_hudMapSize.x < 1.f || m_hudMapSize.y < 1.f)
+		return;
+
+	Graphics::RenderTargetDesc rtDesc{
+		uint16_t(m_hudMapSize.x), uint16_t(m_hudMapSize.y),
+		Graphics::TextureFormat::TEXTURE_RGBA_8888,
+		Graphics::TextureFormat::TEXTURE_DEPTH, true,
+		uint16_t(Pi::GetApp()->GetGraphicsSettings().requestedSamples)
+	};
+
+	m_hudRenderTarget.reset(Pi::renderer->CreateRenderTarget(rtDesc));
+	if (!m_hudRenderTarget)
+		Error("Error creating render target for HUD system map.");
+
+	Graphics::RenderTargetDesc resolveDesc{
+		uint16_t(m_hudMapSize.x), uint16_t(m_hudMapSize.y),
+		Graphics::TextureFormat::TEXTURE_RGBA_8888,
+		Graphics::TextureFormat::TEXTURE_NONE, true
+	};
+
+	m_hudResolveTarget.reset(Pi::renderer->CreateRenderTarget(resolveDesc));
+	if (!m_hudResolveTarget)
+		Error("Error creating MSAA resolve render target for HUD system map.");
+
+	m_hudMapNeedsResize = false;
+}
+
+void SystemView::UpdateHudMap(float deltaTime)
+{
+	if (!m_game->IsNormalSpace() || !Pi::player)
+		return;
+
+	m_hudMap->SetRealTime();
+	m_hudMap->SetReferenceTime(m_game->GetTime());
+
+	RefCountedPtr<StarSystem> currentSys = m_game->GetSpace()->GetStarSystem();
+	RefCountedPtr<StarSystem> mapSys = m_hudMap->GetCurrentSystem();
+	if (!mapSys || !mapSys->GetPath().IsSameSystem(currentSys->GetPath()) || mapSys->GetUnexplored() != currentSys->GetUnexplored()) {
+		m_hudMap->SetCurrentSystem(currentSys);
+		m_hudMapInitialZoomSet = false;
+	}
+
+	Body *playerBody = static_cast<Body *>(Pi::player);
+	FrameId nonRotFrameId = Frame::GetFrame(playerBody->GetFrame())->GetNonRotFrame();
+	Frame *nonRotFrame = Frame::GetFrame(nonRotFrameId);
+	SystemBody *frameBody = nonRotFrame ? nonRotFrame->GetSystemBody() : nullptr;
+
+	Projectable desiredFocus;
+	if (m_hudMapFocus == HudMapFocus::PLAYER || !frameBody) {
+		desiredFocus = Projectable(Projectable::OBJECT, Projectable::PLAYER, playerBody);
+	} else {
+		desiredFocus = Projectable(Projectable::OBJECT, Projectable::SYSTEMBODY, frameBody);
+	}
+
+	bool focusChanged = false;
+	if (!(*m_hudMap->GetViewedObject() == desiredFocus)) {
+		m_hudMap->SetViewedObject(desiredFocus);
+		focusChanged = true;
+	}
+
+	if (!m_hudMapInitialZoomSet && frameBody) {
+		double dist = playerBody->GetPositionRelTo(nonRotFrameId).Length();
+		double refSpan = std::max(dist * 3.0, frameBody->GetRadius() * 6.0);
+		if (refSpan > 0.0) {
+			m_hudMap->SetZoomDirect(float(DEFAULT_VIEW_DISTANCE / refSpan));
+		}
+		m_hudMapInitialZoomSet = true;
+	}
+
+	m_hudMap->Update(deltaTime);
+
+	double time = m_hudMap->GetTime();
+	PopulatePlayerAndPlannerTracks(m_hudMap.get(), time);
+
+	if (focusChanged) {
+		m_hudMap->SnapTransitionToViewedObject();
+	}
+}
+
+void SystemView::RenderHudMap()
+{
+	PROFILE_SCOPED()
+	if (!m_game->IsNormalSpace())
+		return;
+
+	if (m_hudMapNeedsResize)
+		CreateHudRenderTarget();
+	if (!m_hudRenderTarget || !m_hudResolveTarget)
+		return;
+
+	for (int i = 0; i < 9; ++i) {
+		if (m_hudMap->svColor[i].a == 0 && m_map->svColor[i].a != 0)
+			m_hudMap->svColor[i] = m_map->svColor[i];
+	}
+
+	UpdateHudMap(Pi::GetFrameTime());
+
+	Graphics::Renderer *r = Pi::renderer;
+	Graphics::Renderer::StateTicket ticket(r);
+
+	const auto &desc = m_hudRenderTarget->GetDesc();
+	Graphics::ViewportExtents extents = { 0, 0, desc.width, desc.height };
+
+	r->SetRenderTarget(m_hudRenderTarget.get());
+	r->SetViewport(extents);
+	r->ClearScreen(Color(0, 0, 0, 255));
+
+	auto *background = m_game->GetSpace()->GetBackground();
+	Uint32 cachedFlags = background->GetDrawFlags();
+	m_hudMap->SetBackground(background);
+	m_hudMap->SetDisplayMode(Mode::Orrery);
+	m_hudMap->Draw3D();
+	background->SetDrawFlags(cachedFlags);
+
+	r->ResolveRenderTarget(m_hudRenderTarget.get(), m_hudResolveTarget.get(), extents);
+}
+
+void SystemView::DrawHudMapPiGui()
+{
+	RenderHudMap();
+
+	ImVec2 size(m_hudMapSize.x, m_hudMapSize.y);
+	if (m_hudResolveTarget) {
+		ImGui::Image(reinterpret_cast<ImTextureID>(m_hudResolveTarget->GetColorTexture()), size, ImVec2(0, 1), ImVec2(1, 0));
+	} else {
+		ImGui::Dummy(size);
+	}
+
+	const ImGuiIO &io = ImGui::GetIO();
+	const bool hovered = ImGui::IsItemHovered();
+
+	if (hovered && (ImGui::IsMouseClicked(ImGuiMouseButton_Right) || ImGui::IsMouseClicked(ImGuiMouseButton_Middle))) {
+		m_hudMapRotating = true;
+	}
+	if (m_hudMapRotating) {
+		if (ImGui::IsMouseDown(ImGuiMouseButton_Right) || ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
+			m_hudMap->RotateCameraByMouse(io.MouseDelta.x, io.MouseDelta.y);
+			ImGui::SetNextFrameWantCaptureMouse(true);
+		} else {
+			m_hudMapRotating = false;
+		}
+	}
+
+	if (hovered && io.MouseWheel != 0.0f) {
+		m_hudMap->ZoomCameraByWheel(io.MouseWheel);
 	}
 }
 
@@ -379,6 +701,16 @@ SystemMapViewport::SystemMapViewport(GuiApplication *app) :
 
 	m_orbitVts.reset(new vector3f[N_VERTICES_MAX + 1]);
 	m_orbitColors.reset(new Color[N_VERTICES_MAX + 1]);
+
+	svColor[GRID] = Color(40, 40, 80, 255);
+	svColor[GRID_LEG] = Color(128, 128, 128, 255);
+	svColor[SYSTEMBODY] = Color(100, 140, 220, 255);
+	svColor[SYSTEMBODY_ORBIT] = Color(50, 140, 90, 255);
+	svColor[PLAYER_ORBIT] = Color(220, 180, 40, 255);
+	svColor[PLANNER_ORBIT] = Color(40, 200, 220, 255);
+	svColor[SELECTED_SHIP_ORBIT] = Color(220, 80, 40, 255);
+	svColor[SHIP_ORBIT] = Color(140, 140, 140, 255);
+	svColor[PLANNER_BURN] = Color(255, 160, 40, 255);
 }
 
 SystemMapViewport::~SystemMapViewport()
@@ -394,6 +726,13 @@ void SystemMapViewport::AccelerateTime(float step)
 void SystemMapViewport::SetRealTime()
 {
 	m_realtime = true;
+}
+
+void SystemMapViewport::SetTime(double t)
+{
+	m_realtime = false;
+	m_timeStep = 0.0;
+	m_time = t;
 }
 
 void SystemMapViewport::ResetViewpoint()
@@ -457,6 +796,33 @@ void SystemMapViewport::SetCurrentSystem(RefCountedPtr<StarSystem> system)
 	ResetViewpoint();
 }
 
+// Where an orbit crosses the plane with the given normal, going towards the
+// normal (ascending) or away from it, relative to the orbited body. False for
+// an orbit lying in the plane, and for a node beyond a hyperbola's asymptotes.
+static bool OrbitNodePosition(const Orbit &orbit, const vector3d &planeNormal, bool ascending, vector3d &pos)
+{
+	const double a = orbit.GetSemiMajorAxis();
+	const double e = orbit.GetEccentricity();
+	if (is_zero_general(a))
+		return false;
+
+	// the orbit's angular momentum is minus the plane's z axis
+	// (Orbit::FromBodyState), and the line of nodes, normal x h, points at
+	// the ascending node
+	const vector3d h = -(orbit.GetPlane() * vector3d(0.0, 0.0, 1.0));
+	vector3d dir = planeNormal.Cross(h);
+	if (dir.Length() < 1e-6)
+		return false;
+	dir = ascending ? dir.Normalized() : -dir.Normalized();
+
+	// conic radius at the true anomaly of that direction: r = p / (1 + e cos v)
+	const double denom = 1.0 + e * dir.Dot(orbit.Perigeum().Normalized());
+	if (denom <= 1e-9)
+		return false;
+	pos = dir * (a * std::fabs(1.0 - e * e) / denom);
+	return true;
+}
+
 void SystemMapViewport::RenderOrbit(const Projectable &p, const ProjectedOrbit *orbitData, const vector3d &offset)
 {
 	PROFILE_SCOPED()
@@ -511,8 +877,37 @@ void SystemMapViewport::RenderOrbit(const Projectable &p, const ProjectedOrbit *
 		m_orbits.Draw(m_renderer, m_lineMat.get());
 	}
 
-	AddProjected(p, Projectable::PERIAPSIS, offset + orbitData->orbit.Perigeum());
-	AddProjected(p, Projectable::APOAPSIS, offset + orbitData->orbit.Apogeum());
+	// apsis markers carry their altitude for the labels; an escape trajectory
+	// has no apoapsis (Orbit::Apogeum answers the body's centre)
+	const Orbit &orbit = orbitData->orbit;
+	Projectable marker = p;
+	const vector3d periapsis = orbit.Perigeum();
+	marker.altitude = periapsis.Length() - orbitData->planetRadius;
+	AddProjected(marker, Projectable::PERIAPSIS, offset + periapsis);
+	if (ecc < 1.0) {
+		const vector3d apoapsis = orbit.Apogeum();
+		marker.altitude = apoapsis.Length() - orbitData->planetRadius;
+		AddProjected(marker, Projectable::APOAPSIS, offset + apoapsis);
+	}
+
+	// the player's and the planner's orbits also mark their nodes, against
+	// the plane the planner's AN/DN snapping uses
+	if (p.base == Projectable::PLAYER || p.base == Projectable::PLANNER) {
+		vector3d normal;
+		std::string name;
+		bool isTarget;
+		if (TransferPlanner::GetNodeReference(normal, name, isTarget)) {
+			vector3d node;
+			if (OrbitNodePosition(orbit, normal, true, node)) {
+				marker.altitude = node.Length() - orbitData->planetRadius;
+				AddProjected(marker, Projectable::ASCENDING_NODE, offset + node);
+			}
+			if (OrbitNodePosition(orbit, normal, false, node)) {
+				marker.altitude = node.Length() - orbitData->planetRadius;
+				AddProjected(marker, Projectable::DESCENDING_NODE, offset + node);
+			}
+		}
+	}
 
 	if (p.base != Projectable::SYSTEMBODY || !p.getRef())
 		return;
@@ -728,6 +1123,19 @@ void SystemMapViewport::DrawOrreryView()
 				RenderBody(track.ref.sbody, viewpos, m_cameraSpace);
 			}
 		}
+	}
+
+	// the planned trajectory, one line strip per leg in view space; the view
+	// offset is taken off in double precision before the vertices go to float
+	for (const PlannerLeg &plannerLeg : m_plannerLegs) {
+		if (plannerLeg.verts.size() < 2)
+			continue;
+		std::vector<vector3f> legVerts(plannerLeg.verts.size());
+		for (size_t i = 0; i < plannerLeg.verts.size(); ++i)
+			legVerts[i] = vector3f(plannerLeg.verts[i] - m_trans);
+		m_orbits.SetData(Uint32(legVerts.size()), legVerts.data(), plannerLeg.color);
+		m_renderer->SetTransform(m_cameraSpace);
+		m_orbits.Draw(m_renderer, m_lineMat.get());
 	}
 
 	m_renderer->SetTransform(m_cameraSpace);
@@ -955,6 +1363,7 @@ void SystemMapViewport::Update(float ft)
 	m_objectTracks.clear();
 	m_orbitTracks.clear();
 	m_projected.clear();
+	m_plannerLegs.clear();
 
 	// TODO: add "true" lower/upper bounds to m_zoomTo / m_zoom
 	m_zoomTo = Clamp(m_zoomTo, MIN_ZOOM, MAX_ZOOM);
@@ -1229,6 +1638,38 @@ double SystemMapViewport::ProjectedSize(double size, vector3d pos)
 float SystemMapViewport::GetZoom() const
 {
 	return m_displayMode == SystemView::Mode::Orrery ? 1.0 / m_zoom : m_atlasZoom;
+}
+
+void SystemMapViewport::RotateCameraByMouse(float dx, float dy)
+{
+	m_rot_x_to = Clamp(m_rot_x_to + dy * 0.35f, -80.0f, 80.0f);
+	m_rot_y_to += dx * 0.35f;
+}
+
+void SystemMapViewport::ZoomCameraByWheel(float wheel, float speedMod)
+{
+	if (wheel < 0.0f)
+		m_zoomTo *= 1.0f / ((ZOOM_OUT_SPEED - 1.0f) * WHEEL_SENSITIVITY * speedMod + 1.0f);
+	else if (wheel > 0.0f)
+		m_zoomTo *= ((ZOOM_IN_SPEED - 1.0f) * WHEEL_SENSITIVITY * speedMod + 1.0f);
+	m_zoomTo = Clamp(m_zoomTo, MIN_ZOOM, MAX_ZOOM);
+}
+
+void SystemMapViewport::SetZoomDirect(float zoom)
+{
+	m_zoom = m_zoomTo = Clamp(zoom, MIN_ZOOM, MAX_ZOOM);
+}
+
+void SystemMapViewport::SetZoomTarget(float zoom)
+{
+	m_zoomTo = Clamp(zoom, MIN_ZOOM, MAX_ZOOM);
+}
+
+void SystemMapViewport::SnapTransitionToViewedObject()
+{
+	m_trans = m_viewedObject.worldpos;
+	m_transTo = m_viewedObject.worldpos;
+	m_animateTransition = 0;
 }
 
 float SystemMapViewport::AtlasViewPixelPerUnit()

@@ -18,6 +18,7 @@ local ls = Lang.GetResource("ships")
 local luc = Lang.GetResource("ui-core")
 local layout = require 'pigui.libs.window-layout'
 local Sidebar = require 'pigui.libs.sidebar'
+local ApproachTarget = require 'pigui.libs.approach-target'
 
 local systemEconView = require 'pigui.modules.system-econ-view'.New()
 
@@ -61,6 +62,8 @@ local svColor = {
 	NAV_TARGET = colors.navTarget,
 	OBJECT = colors.systemMapObject,
 	PLANNER = colors.systemMapPlanner,
+	PLANNER_BURN = colors.systemMapPlannerBurn,
+	PLANNER_BURN_DONE = colors.fontDisabled,
 	PLANNER_ORBIT = colors.systemMapPlannerOrbit,
 	PLAYER = colors.systemMapPlayer,
 	PLAYER_ORBIT = colors.systemMapPlayerOrbit,
@@ -292,35 +295,60 @@ local function textIcon(icon, tooltip)
 	ui.sameLine()
 end
 
-local function showDvLine(leftIcon, resetIcon, rightIcon, key, Formatter, leftTooltip, resetTooltip, rightTooltip)
+-- Draw one transfer planner stepper: decrease / reset / increase and its value.
+-- idx is the burn the control edits. idx == nil keeps the index-less legacy calls,
+-- which the global factor control relies on (factor ignores the index entirely).
+local function showDvLine(idx, key, leftIcon, resetIcon, rightIcon, Formatter, leftTooltip, resetTooltip, rightTooltip, buttonSize)
+	local add = function(delta)
+		if idx ~= nil then
+			systemView:TransferPlannerAdd(idx, key, delta)
+		else
+			systemView:TransferPlannerAdd(key, delta)
+		end
+	end
+	local reset = function()
+		if idx ~= nil then
+			systemView:TransferPlannerReset(idx, key)
+		else
+			systemView:TransferPlannerReset(key)
+		end
+	end
+	local read = function()
+		if idx ~= nil then
+			return systemView:TransferPlannerGet(idx, key)
+		end
+		return systemView:TransferPlannerGet(key)
+	end
 	local wheel = function()
 		if ui.isItemHovered() then
 			local w = ui.getMouseWheel()
 			if w ~= 0 then
-				systemView:TransferPlannerAdd(key, w * 10)
+				add(w * 10)
 			end
 		end
 	end
-	local id =  "##" .. key
+	-- per-burn rows need ids of their own; the legacy factor row keeps its existing id
+	local id =  "##" .. key .. (idx ~= nil and ("_" .. idx) or "")
+	local size = buttonSize and Vector2(buttonSize, buttonSize)
 
-	local press = ui.mainMenuButton(leftIcon, leftTooltip..id)
+	local press = ui.mainMenuButton(leftIcon, leftTooltip..id, nil, size)
 	if press or (key ~= "factor" and ui.isItemActive()) then
-		systemView:TransferPlannerAdd(key, -10)
+		add(-10)
 	end
 	wheel()
 	ui.sameLine()
-	if ui.mainMenuButton(resetIcon, resetTooltip..id) then
-		systemView:TransferPlannerReset(key)
+	if ui.mainMenuButton(resetIcon, resetTooltip..id, nil, size) then
+		reset()
 	end
 	wheel()
 	ui.sameLine()
-	press = ui.mainMenuButton(rightIcon, rightTooltip..id)
+	press = ui.mainMenuButton(rightIcon, rightTooltip..id, nil, size)
 	if press or (key ~= "factor" and ui.isItemActive()) then
-		systemView:TransferPlannerAdd(key, 10)
+		add(10)
 	end
 	wheel()
 	ui.sameLine()
-	local speed, speed_unit = Formatter(systemView:TransferPlannerGet(key))
+	local speed, speed_unit = Formatter(read())
 	ui.text(speed .. " " .. speed_unit)
 	return 0
 end
@@ -519,9 +547,11 @@ local _getBodyIcon = require 'pigui.modules.flight-ui.body-icons'
 local function getBodyIcon(obj, forWorld, isOrrery)
 	if obj.type == Projectable.APOAPSIS then return icons.apoapsis
 	elseif obj.type == Projectable.PERIAPSIS then return icons.periapsis
+	elseif obj.type == Projectable.ASCENDING_NODE then return icons.normal_thin
+	elseif obj.type == Projectable.DESCENDING_NODE then return icons.antinormal_thin
 	elseif obj.type == Projectable.L4 then return icons.lagrange_marker
 	elseif obj.type == Projectable.L5 then return icons.lagrange_marker
-	elseif obj.base == Projectable.PLAYER or obj.base == Projectable.PLANNER then
+	elseif obj.base == Projectable.PLAYER or obj.base == Projectable.PLANNER or obj.base == Projectable.PLANNER_BURN then
 		local shipClass = obj.ref:GetShipClass()
 		if icons[shipClass] then
 			return icons[shipClass]
@@ -681,6 +711,378 @@ local infoView = {
 	end
 }
 
+-- strings the game ships no lang key for: the burn list's status labels and its
+-- Complete control. The wording mirrors the flight HUD's burn list
+-- (flight-ui/burn-hud.lua) so the map sidebar and the HUD read identically, and
+-- no data/lang entries are added here.
+local L = {
+	STATUS_PENDING = "Planned burn",
+	STATUS_ACTIVE = "Active burn",
+	STATUS_COMPLETED = "Completed burn",
+	REMAINING_DV = "Remaining delta-v of this burn",
+	ZOOM_TO_SHIP = "Zoom to your ship",
+	FOLLOW_PLAN = "Follow where the plan puts your ship - scrub the map time to fly along it",
+	COMPLETE = "Mark this burn complete",
+	-- snap row: the burn's node time jumps to an event of the orbit leading
+	-- into it (the current orbit for the first burn)
+	SNAP_TIP = "Move this burn to the next %s of the orbit before it, in %s.\nClick again for the next orbit.",
+	SNAP_NODE_TIP = "Move this burn to the next %s, relative to %s, in %s.\nClick again for the next orbit.",
+	SNAP_NONE = "No %s ahead on the orbit before this burn",
+	SNAP_NODE_NONE = "No %s ahead relative to %s on the orbit before this burn",
+	SNAP_COMPLETED = "This burn is complete",
+	CIRCULARIZE = "Circularize",
+	CIRCULARIZE_TIP = "Make the orbit a circle at %s: %s of Δv.\nMoves this burn there and replaces its prograde, normal and radial values.",
+	CIRCULARIZE_AT_APSIS = "the %s, in %s",
+	CIRCULARIZE_AT_POINT = "this burn's point (no periapsis or apoapsis ahead)",
+	-- closest-approach planning
+	APPROACH_TITLE = "Closest approach",
+	APPROACH_TARGET = "Target: %s",
+	APPROACH_FROM_SELECTION = "The object selected on the map",
+	APPROACH_FROM_NAV = "Your navigation target - select an object on the map to choose another",
+	APPROACH_NO_TARGET = "Select an object on the map, or set a navigation target",
+	APPROACH_INTERCEPT = "Intercept",
+	APPROACH_INTERCEPT_TIP = "1 burn: a transfer that meets the target",
+	APPROACH_RENDEZVOUS = "Rendezvous",
+	APPROACH_RENDEZVOUS_TIP = "2 burns: meet the target, then match its velocity on arrival",
+	APPROACH_PLAN = "Plan approach",
+	APPROACH_PLAN_TIP = "Replace the plan with %s from your current orbit, timed for the least Δv. A target around another body is reached in stages, parking in an orbit around each body on the way.\nIf no transfer is found, the plan stays as it was.",
+	APPROACH_ONE_BURN = "1 burn",
+	APPROACH_TWO_BURNS = "2 burns",
+	APPROACH_STAND_OFF = "Stand-off",
+	APPROACH_STAND_OFF_FORMAT = "%.1f km behind",
+	APPROACH_STAND_OFF_TIP = "Meet a ship or station this far behind it, on its own orbit, instead of at its centre. After a rendezvous the ship keeps this gap, since both fly the same orbit.",
+	APPROACH_FLYBY = "Flyby altitude",
+	APPROACH_FLYBY_FORMAT = "%.0f km",
+	APPROACH_FLYBY_TIP = "Pass a planet or moon this high above its surface. Its own gravity bends the pass once you are inside its sphere of influence; the plan aims so that the bent pass has its lowest point at this altitude.",
+	APPROACH_INTERCEPT_BODY_TIP = "1 burn: fly past the planet or moon at the flyby altitude",
+	APPROACH_RENDEZVOUS_BODY_TIP = "2 burns: fly past the planet or moon at the altitude below, then a retro burn at the closest point, inside its sphere of influence, that leaves you in a circular orbit around it there",
+	APPROACH_ORBIT = "Orbit altitude",
+	APPROACH_ORBIT_TIP = "The altitude of the circular orbit the capture burn leaves you in. The pass is aimed so that, bent by the body's gravity, its lowest point is at this altitude, where the capture burn is made.",
+	APPROACH_RESULT = "%s in %s",
+	APPROACH_ALTITUDE = "%s above the surface",
+	APPROACH_IMPACT = "Impact with the target in %s",
+	APPROACH_SPEED = "Relative speed %s",
+	APPROACH_RESULT_TIP = "Closest approach of the planned trajectory to the target, up to a revolution after the last burn",
+	CIRCULARIZE_NONE = "This burn's orbit cannot be circularized here",
+	-- the plan's delta-v against the ship's
+	DV_PLAN = "Plan",
+	DV_PLAN_TIP = "Δv the burns still to fly need",
+	DV_AVAILABLE = "Available",
+	DV_AVAILABLE_TIP = "Δv the ship's fuel gives at its current mass",
+	DV_AFTER = "After plan",
+	DV_AFTER_TIP = "Δv left once every planned burn is flown",
+	DV_SHORT = "Short by %s",
+	DV_SHORT_TIP = "The plan needs more Δv than the fuel gives",
+	REF_TARGET = "%s's orbit",
+	REF_EQUATOR = "%s's equator",
+}
+
+-- the snap events, in button order: short label, the name the tooltip uses,
+-- and whether it is a node (measured against a reference plane)
+local snapEvents = {
+	{ key = "periapsis", label = "Pe", name = "periapsis" },
+	{ key = "apoapsis", label = "Ap", name = "apoapsis" },
+	{ key = "ascending", label = "AN", name = "ascending node", node = true },
+	{ key = "descending", label = "DN", name = "descending node", node = true },
+}
+
+-- cells render "-" when a value is unavailable
+local UNAVAILABLE = "-"
+
+-- TransferPlanner burn status values, as returned by
+-- SystemView:TransferPlannerGetBurnStatus (see src/TransferPlanner.h)
+local BURN_STATUS_PENDING = 0
+local BURN_STATUS_ACTIVE = 1
+local BURN_STATUS_COMPLETED = 2
+
+-- the row's status label, icon and colour. The planner only stores COMPLETED;
+-- ACTIVE is the planner's active burn (TransferPlannerGetActiveIndex), so the
+-- sidebar derives it from the index and never caches it
+local burn_status = {
+	[BURN_STATUS_PENDING] = {text = L.STATUS_PENDING, icon = icons.square_dashed, color = svColor.FONT},
+	[BURN_STATUS_ACTIVE] = {text = L.STATUS_ACTIVE, icon = icons.maneuver, color = svColor.PLANNER_BURN},
+	[BURN_STATUS_COMPLETED] = {text = L.STATUS_COMPLETED, icon = icons.map_checkmark, color = svColor.PLANNER_BURN_DONE},
+}
+
+local function statusOf(status, isActive)
+	if status == BURN_STATUS_COMPLETED then
+		return burn_status[BURN_STATUS_COMPLETED]
+	end
+	return isActive and burn_status[BURN_STATUS_ACTIVE] or burn_status[BURN_STATUS_PENDING]
+end
+
+local function formatRemainingDv(dv)
+	if not dv or dv ~= dv then
+		return UNAVAILABLE
+	end
+	local speed, unit = ui.Format.SpeedUnit(dv)
+	return speed .. " " .. unit
+end
+
+--
+-- Function: drawSnapRow
+--
+-- Four buttons that snap burn idx's node time to the next periapsis,
+-- apoapsis, ascending or descending node of the orbit leading into it. Each
+-- is greyed when its event does not exist there; the tooltip names when the
+-- event is and, for the nodes, the plane they are measured against.
+--
+local function drawSnapRow(idx, width, completed)
+	local spacing = ui.getItemSpacing().x
+	local size = Vector2(math.floor((width - spacing * (#snapEvents - 1)) / #snapEvents), 0)
+
+	local refName, refIsTarget = systemView:TransferPlannerGetNodeReference()
+	local reference = refName and string.format(refIsTarget and L.REF_TARGET or L.REF_EQUATOR, refName) or UNAVAILABLE
+
+	for i, event in ipairs(snapEvents) do
+		if i > 1 then ui.sameLine(0, spacing) end
+
+		local time = not completed and systemView:TransferPlannerGetSnapTime(idx, event.key) or nil
+		local tooltip
+		if completed then
+			tooltip = L.SNAP_COMPLETED
+		elseif time then
+			local delay = ui.Format.Duration(math.max(0, math.floor(time - Game.time)))
+			tooltip = event.node and string.format(L.SNAP_NODE_TIP, event.name, reference, delay)
+				or string.format(L.SNAP_TIP, event.name, delay)
+		else
+			tooltip = event.node and string.format(L.SNAP_NODE_NONE, event.name, reference)
+				or string.format(L.SNAP_NONE, event.name)
+		end
+
+		local variant = not time and colorset.disabled or nil
+		if ui.button(event.label .. "##plannerSnap" .. event.key .. idx, size, variant, tooltip) and time then
+			systemView:TransferPlannerSnap(idx, event.key)
+		end
+	end
+end
+
+--
+-- Function: drawCircularizeButton
+--
+-- One full-width button that moves burn idx to the next periapsis or apoapsis
+-- (keeping one it already sits on) and sets its Δv so the orbit after it is
+-- circular there; the tooltip says where, when and how much Δv that takes.
+--
+local function drawCircularizeButton(idx, width, completed)
+	local dv, time, apsis
+	if not completed then
+		dv, time, apsis = systemView:TransferPlannerGetCircularizeDeltaV(idx)
+	end
+
+	local tooltip
+	if completed then
+		tooltip = L.SNAP_COMPLETED
+	elseif not dv then
+		tooltip = L.CIRCULARIZE_NONE
+	else
+		local where = L.CIRCULARIZE_AT_POINT
+		if apsis then
+			local delay = ui.Format.Duration(math.max(0, math.floor(time - Game.time)))
+			where = string.format(L.CIRCULARIZE_AT_APSIS, apsis, delay)
+		end
+		tooltip = string.format(L.CIRCULARIZE_TIP, where, ui.Format.Speed(dv))
+	end
+	local variant = not dv and colorset.disabled or nil
+	if ui.button(L.CIRCULARIZE .. "##plannerCircularize" .. idx, Vector2(width, 0), variant, tooltip) and dv then
+		systemView:TransferPlannerCircularize(idx)
+	end
+end
+
+--
+-- Function: drawDeltaVSummary
+--
+-- The Δv the burns still to fly need, the Δv the ship has, and what is left
+-- after the plan - or how much it is short, in the alert colour.
+--
+local function drawDeltaVSummary(count)
+	local planned = 0
+	for idx = 0, count - 1 do
+		if systemView:TransferPlannerGetBurnStatus(idx) ~= BURN_STATUS_COMPLETED then
+			planned = planned + systemView:TransferPlannerGetBurnRemainingDeltaV(idx)
+		end
+	end
+	local available = Game.player:GetRemainingDeltaV()
+	local after = available - planned
+
+	-- one label / value pair per line, values aligned in a column
+	local labelWidth = math.max(ui.calcTextSize(L.DV_PLAN).x, ui.calcTextSize(L.DV_AVAILABLE).x,
+		ui.calcTextSize(L.DV_AFTER).x) + ui.getItemSpacing().x * 2 + ui.getTextLineHeight()
+	local function line(label, tooltip, value, color)
+		local x = ui.getCursorPos().x
+		textIcon(icons.deltav, tooltip)
+		ui.textColored(colors.fontDim, label)
+		ui.sameLine(x + labelWidth)
+		ui.textColored(color or colors.font, value)
+		ui.setItemTooltip(tooltip)
+	end
+
+	line(L.DV_PLAN, L.DV_PLAN_TIP, ui.Format.Speed(planned))
+	line(L.DV_AVAILABLE, L.DV_AVAILABLE_TIP, ui.Format.Speed(available))
+	if after >= 0 then
+		line(L.DV_AFTER, L.DV_AFTER_TIP, ui.Format.Speed(after))
+	else
+		line(L.DV_AFTER, L.DV_SHORT_TIP, string.format(L.DV_SHORT, ui.Format.Speed(-after)), colors.alertRed)
+	end
+end
+
+-- closest-approach planning: how many burns to plan (1 intercept, 2
+-- rendezvous), and the last planning failure with the target it was for
+local approachBurns = 1
+local approachError, approachErrorTarget = nil, nil
+
+-- How far from the target the approach ends, in metres, persisted in the game
+-- settings: for a ship or station the stand-off behind it on its own orbit,
+-- for a planet or moon the flyby altitude above its surface. GetConfigInt
+-- answers 0 for a missing key, so the values are stored biased by 1
+local DEFAULT_STAND_OFF_M = 1000
+local STAND_OFF_MAX_M = 100000
+local DEFAULT_FLYBY_ALTITUDE_M = 100000
+local FLYBY_ALTITUDE_MAX_M = 10000000
+local approachStandOff = DEFAULT_STAND_OFF_M
+local approachFlybyAltitude = DEFAULT_FLYBY_ALTITUDE_M
+
+local function loadApproachSettings()
+	local stored = Game.GetConfigInt("OrbitPlanner", "approachStandOffM")
+	approachStandOff = (stored > 0) and math.min(stored - 1, STAND_OFF_MAX_M) or DEFAULT_STAND_OFF_M
+	stored = Game.GetConfigInt("OrbitPlanner", "approachFlybyAltitudeM")
+	approachFlybyAltitude = (stored > 0) and math.min(stored - 1, FLYBY_ALTITUDE_MAX_M) or DEFAULT_FLYBY_ALTITUDE_M
+end
+
+local function saveApproachSettings()
+	Game.SetConfigInt("OrbitPlanner", "approachStandOffM", approachStandOff + 1)
+	Game.SetConfigInt("OrbitPlanner", "approachFlybyAltitudeM", approachFlybyAltitude + 1)
+	Engine.SaveSettings()
+end
+
+loadApproachSettings()
+
+-- the approach target: the object selected on the map when it has a physical
+-- body in this system, otherwise the navigation target; with where it came from
+local function approachTarget()
+	local selected = systemView:GetSelectedObject()
+	if selected and selected.type == Projectable.OBJECT and selected.ref then
+		local body
+		if selected.base == Projectable.SYSTEMBODY then
+			body = selected.ref.physicsBody
+		elseif selected.base == Projectable.SHIP or selected.base == Projectable.BODY then
+			body = selected.ref
+		end
+		if body then return body, L.APPROACH_FROM_SELECTION end
+	end
+	local navTarget = Game.player:GetNavTarget()
+	if navTarget then return navTarget, L.APPROACH_FROM_NAV end
+	return nil
+end
+
+--
+-- Function: drawApproachSection
+--
+-- The target, the intercept / rendezvous choice, the Plan button, and the
+-- closest approach of the plan as it stands - which also follows burns
+-- edited by hand.
+--
+local function drawApproachSection()
+	ui.separator()
+	ui.textColored(colors.fontDim, L.APPROACH_TITLE)
+
+	local target, source = approachTarget()
+	if not target then
+		ui.textColored(colors.fontDim, L.APPROACH_NO_TARGET)
+		return
+	end
+	local targetName = target:GetLabel()
+	ui.text(string.format(L.APPROACH_TARGET, targetName))
+	ui.setItemTooltip(source)
+
+	-- a planet, moon or star is flown past or orbited at an altitude, a ship
+	-- or station met at a stand-off behind it
+	local isBody = target:isa("Planet") or target:isa("Star")
+	-- the plan's closest approach; on failure the second value is the reason
+	local distance, time, speed, radius = systemView:TransferPlannerGetClosestApproach(target)
+
+	local width = ui.getContentRegion().x
+	local spacing = ui.getItemSpacing().x
+	local half = Vector2(math.floor((width - spacing) / 2), 0)
+	if ui.button(L.APPROACH_INTERCEPT .. "##plannerApproach1", half,
+		approachBurns == 1 and colorset.selected or nil, isBody and L.APPROACH_INTERCEPT_BODY_TIP or L.APPROACH_INTERCEPT_TIP) then
+		approachBurns = 1
+	end
+	ui.sameLine(0, spacing)
+	if ui.button(L.APPROACH_RENDEZVOUS .. "##plannerApproach2", half,
+		approachBurns == 2 and colorset.selected or nil, isBody and L.APPROACH_RENDEZVOUS_BODY_TIP or L.APPROACH_RENDEZVOUS_TIP) then
+		approachBurns = 2
+	end
+
+	-- the stand-off behind a ship or station, or the flyby altitude over a
+	-- planet or moon, in kilometres
+	local label, tip, format = L.APPROACH_STAND_OFF, L.APPROACH_STAND_OFF_TIP, L.APPROACH_STAND_OFF_FORMAT
+	local value, maxValue, step = approachStandOff, STAND_OFF_MAX_M, 0.1
+	if isBody then
+		label, tip, format = L.APPROACH_FLYBY, L.APPROACH_FLYBY_TIP, L.APPROACH_FLYBY_FORMAT
+		if approachBurns == 2 then label, tip = L.APPROACH_ORBIT, L.APPROACH_ORBIT_TIP end
+		value, maxValue, step = approachFlybyAltitude, FLYBY_ALTITUDE_MAX_M, 1
+	end
+	ui.alignTextToFramePadding()
+	ui.text(label)
+	ui.setItemTooltip(tip)
+	ui.sameLine()
+	ui.pushItemWidth(ui.getContentRegion().x)
+	local km, changed = ui.incrementDrag("##plannerApproachStandOff", value / 1000, step,
+		0, maxValue / 1000, format, false)
+	ui.popItemWidth()
+	ui.setItemTooltip(tip)
+	if changed then
+		value = math.min(math.max(math.floor(km * 1000 + 0.5), 0), maxValue)
+		if isBody then approachFlybyAltitude = value else approachStandOff = value end
+		saveApproachSettings()
+	end
+
+	local planTip = string.format(L.APPROACH_PLAN_TIP, approachBurns == 1 and L.APPROACH_ONE_BURN or L.APPROACH_TWO_BURNS)
+	if ui.button(L.APPROACH_PLAN .. "##plannerApproachPlan", Vector2(width, 0), nil, planTip) then
+		local ok, err = systemView:TransferPlannerPlanApproach(target, approachBurns, value)
+		approachError = not ok and err or nil
+		approachErrorTarget = targetName
+		-- the flight HUD can stop the clock before the closest approach to it
+		if ok then ApproachTarget.Set(target) end
+		-- the readout below shows the new plan
+		distance, time, speed, radius = systemView:TransferPlannerGetClosestApproach(target)
+	end
+
+	if distance then
+		local when = time > Game.time + 1 and ui.Format.Duration(math.floor(time - Game.time)) or lc.NOW
+		if radius > 0 and distance < radius then
+			ui.textColored(colors.alertRed, string.format(L.APPROACH_IMPACT, when))
+		else
+			local shown = radius > 0 and string.format(L.APPROACH_ALTITUDE, ui.Format.Distance(distance - radius))
+				or ui.Format.Distance(distance)
+			ui.text(string.format(L.APPROACH_RESULT, shown, when))
+		end
+		ui.setItemTooltip(L.APPROACH_RESULT_TIP)
+		ui.textColored(colors.fontDim, string.format(L.APPROACH_SPEED, ui.Format.Speed(speed)))
+	else
+		ui.withStyleColors({ Text = colors.fontDim }, function() ui.textWrapped(time) end)
+	end
+
+	if approachError and approachErrorTarget == targetName then
+		ui.withStyleColors({ Text = colors.alertYellow }, function() ui.textWrapped(approachError) end)
+	end
+end
+
+-- the burn the plan's controls are currently aimed at
+local selectedBurn = 0
+
+-- keep the selection inside the plan whenever the number of burns changes
+local function clampSelectedBurn(count)
+	local maxIdx = math.max(0, count - 1)
+	if selectedBurn > maxIdx then
+		selectedBurn = maxIdx
+	end
+	if selectedBurn < 0 then
+		selectedBurn = 0
+	end
+end
+
 ---@type UI.Sidebar.Module
 local plannerView = {
 	icon = icons.semi_major_axis,
@@ -689,21 +1091,173 @@ local plannerView = {
 	disabled = false,
 
 	drawBody = function(self)
-		showDvLine(icons.decrease, icons.delta, icons.increase, "factor", function(i) return i, "x" end, luc.DECREASE, lc.PLANNER_RESET_FACTOR, luc.INCREASE)
-		showDvLine(icons.decrease, icons.clock, icons.increase, "starttime",
-			function(_)
-				local now = Game.time
-				local start = systemView:GetOrbitPlannerStartTime()
-				if start then
-					return ui.Format.Duration(math.floor(start - now)), ""
-				else
-					return lc.NOW, ""
+		-- the factor is global, so it stays a single index-less row above the table
+		showDvLine(nil, "factor", icons.decrease, icons.delta, icons.increase, function(i) return i, "x" end, luc.DECREASE, lc.PLANNER_RESET_FACTOR, luc.INCREASE)
+
+		local count = systemView:TransferPlannerGetBurnCount()
+		clampSelectedBurn(count)
+
+		if count > 0 then
+			-- the controls of a single burn: its start time and its three Δv axes
+			local burnRows = {
+				{key = "starttime", icons = {icons.decrease, icons.clock, icons.increase},
+					resetTooltip = lc.PLANNER_RESET_START,
+					formatter = function(start)
+						if start and start > Game.time then
+							return ui.Format.Duration(math.floor(start - Game.time)), ""
+						else
+							return lc.NOW, ""
+						end
+					end},
+				{key = "prograde", icons = {icons.decrease, icons.orbit_prograde, icons.increase},
+					resetTooltip = lc.PLANNER_RESET_PROGRADE, formatter = ui.Format.SpeedUnit},
+				{key = "normal", icons = {icons.decrease, icons.orbit_normal, icons.increase},
+					resetTooltip = lc.PLANNER_RESET_NORMAL, formatter = ui.Format.SpeedUnit},
+				{key = "radial", icons = {icons.decrease, icons.orbit_radial, icons.increase},
+					resetTooltip = lc.PLANNER_RESET_RADIAL, formatter = ui.Format.SpeedUnit},
+			}
+
+			-- the table places the controls of a burn on the left and its summary on the
+			-- right, so every string is built and measured before the first row is drawn
+			local plan = {}
+			-- Stable geometry comes from the sidebar's content region and fixed
+			-- display envelopes, never from the values changing every frame.
+			local durationSample = ui.Format.Duration(
+				6 * 24 * 60 * 60 + 23 * 60 * 60 + 59 * 60)
+			local valueWidth = math.max(
+				ui.calcTextSize(ui.Format.Speed(-999999)).x,
+				ui.calcTextSize(durationSample).x,
+				ui.calcTextSize(lc.NOW).x)
+
+			-- the row descriptors are drawn in this window's ambient font, so the
+			-- measurement below runs in the same context (no font is pushed)
+			local spacing = ui.getItemSpacing().x
+			-- the active burn comes from the planner every frame, so the sidebar, the
+			-- flight HUD and the reticle can never disagree about it
+			local activeIndex = systemView:TransferPlannerGetActiveIndex()
+
+			for idx = 0, count - 1 do
+				local prograde = systemView:TransferPlannerGet(idx, "prograde")
+				local normal = systemView:TransferPlannerGet(idx, "normal")
+				local radial = systemView:TransferPlannerGet(idx, "radial")
+				for _, burnRow in ipairs(burnRows) do
+					local speed, unit = burnRow.formatter(systemView:TransferPlannerGet(idx, burnRow.key))
+					valueWidth = math.max(valueWidth, ui.calcTextSize(speed .. " " .. unit).x)
 				end
-			end,
-			luc.DECREASE, lc.PLANNER_RESET_START, luc.INCREASE)
-		showDvLine(icons.decrease, icons.orbit_prograde, icons.increase, "prograde", ui.Format.SpeedUnit, luc.DECREASE, lc.PLANNER_RESET_PROGRADE, luc.INCREASE)
-		showDvLine(icons.decrease, icons.orbit_normal, icons.increase, "normal", ui.Format.SpeedUnit, luc.DECREASE, lc.PLANNER_RESET_NORMAL, luc.INCREASE)
-		showDvLine(icons.decrease, icons.orbit_radial, icons.increase, "radial", ui.Format.SpeedUnit, luc.DECREASE, lc.PLANNER_RESET_RADIAL, luc.INCREASE)
+				-- total Δv magnitude of the burn, the offset of its start time, its
+				-- remaining Δv and its status label
+				local magnitude = ui.Format.Speed(math.sqrt(prograde * prograde + normal * normal + radial * radial))
+				local start = systemView:TransferPlannerGet(idx, "starttime")
+				local offset = (start and start > Game.time) and ui.Format.Duration(math.floor(start - Game.time)) or lc.NOW
+				local status = systemView:TransferPlannerGetBurnStatus(idx)
+				local statusInfo = statusOf(status, idx == activeIndex)
+				local remaining = formatRemainingDv(systemView:TransferPlannerGetBurnRemainingDeltaV(idx))
+				-- only a completed row has no Complete control, so the widest status
+				-- line is one that carries both buttons
+				local completable = status ~= BURN_STATUS_COMPLETED
+				plan[idx + 1] = {
+					magnitude = magnitude, offset = offset, remaining = remaining,
+					status = statusInfo, completable = completable,
+				}
+
+			end
+
+			local contentWidth = ui.getContentRegion().x
+			local controlsBudget = math.floor(contentWidth * 0.46)
+			-- Three stable square controls plus a fixed value slot.
+			local buttonSize = math.floor((controlsBudget - valueWidth - spacing * 3) / 3)
+			buttonSize = math.min(math.max(buttonSize, ui.rescaleUI(14)), styles.MainButtonSize.x)
+			local controlsWidth = buttonSize * 3 + spacing * 3 + valueWidth
+			local summaryWidth = math.max(contentWidth - controlsWidth, 1)
+
+			ui.columns(2, "##plannerBurns", false)
+			ui.setColumnWidth(0, controlsWidth)
+			ui.setColumnWidth(1, summaryWidth)
+
+			for idx = 0, count - 1 do
+				-- deleting a burn shifts every later index, so stop at the live count
+				if idx >= systemView:TransferPlannerGetBurnCount() then break end
+				local row = plan[idx + 1]
+
+				-- clicking the header selects this burn, the highlight marks the
+				-- selection; the map time jumps to the burn and holds there (the
+				-- game clock is untouched)
+				if ui.selectable("Burn " .. (idx + 1) .. "##plannerBurnHeader" .. idx, idx == selectedBurn, {"SpanAllColumns"}) then
+					selectedBurn = idx
+					local burnTime = systemView:TransferPlannerGet(idx, "starttime")
+					if burnTime then
+						systemView:SetMapTime(burnTime)
+						-- off "now", so the map is not pulled back to the present
+						time_selected_button_icon = nil
+					end
+				end
+
+				for _, burnRow in ipairs(burnRows) do
+					showDvLine(idx, burnRow.key, burnRow.icons[1], burnRow.icons[2], burnRow.icons[3],
+						burnRow.formatter, luc.DECREASE, burnRow.resetTooltip, luc.INCREASE, buttonSize)
+				end
+				drawSnapRow(idx, ui.getContentRegion().x, not row.completable)
+				drawCircularizeButton(idx, ui.getContentRegion().x, not row.completable)
+
+				ui.nextColumn()
+
+				-- One summary item per line keeps every icon and value at a stable x
+				-- while leaving the full summary-column width available to its text.
+				textIcon(icons.deltav, luc.DELTA_V)
+				ui.text(row.magnitude)
+				textIcon(icons.clock, lc.TIME_POINT)
+				ui.text(row.offset)
+
+				-- The planner stores COMPLETED; ACTIVE is
+				-- the planner's active burn, taken from TransferPlannerGetActiveIndex
+				-- above, so this row and the flight HUD cannot diverge
+				textIcon(row.status.icon, row.status.text)
+				ui.withStyleColors({Text = row.status.color}, function()
+					ui.text(row.status.text)
+				end)
+				textIcon(icons.delta, L.REMAINING_DV)
+				ui.text(row.remaining)
+
+				-- line 3: the row's actions. Complete is offered for the active and
+				-- the pending burns only - a completed row shows its status alone.
+				-- ui.inlineIconButton is the form this column drew before, and the one
+				-- the flight HUD's action controls use: it hands ui.iconButton
+				-- Vector2(0, ui.getLineHeight()) with the inline padding, so the button
+				-- box is derived from the measured glyph (Draw::GlyphButton sizes the
+				-- item from glyph size + FramePadding when no size is given) and the
+				-- glyph is rasterised from the same line context the box is sized from
+				-- (libs/buttons.lua). Passing an explicit size instead fixes the box
+				-- from the caller's text line height while the glyph is drawn at that
+				-- height less the inline padding, which is not a size this window
+				-- rasterises its icon font at.
+				if row.completable then
+					if ui.inlineIconButton("##plannerBurnComplete" .. idx, icons.map_checkmark, L.COMPLETE) then
+						systemView:TransferPlannerCompleteBurn(idx)
+					end
+					ui.sameLine()
+				end
+				if ui.inlineIconButton("##plannerBurnDelete" .. idx, icons.cross, luc.DELETE) then
+					systemView:TransferPlannerRemoveBurn(idx)
+					clampSelectedBurn(systemView:TransferPlannerGetBurnCount())
+				end
+
+				ui.nextColumn()
+			end
+
+			-- reset columns
+			ui.columns(1)
+		end
+
+		-- footer: insert a burn after the selected one, then select the new burn
+		if ui.button("+ Add Burn##plannerAddBurn") then
+			selectedBurn = systemView:TransferPlannerInsertBurn(selectedBurn)
+			clampSelectedBurn(systemView:TransferPlannerGetBurnCount())
+		end
+
+		ui.separator()
+		drawDeltaVSummary(systemView:TransferPlannerGetBurnCount())
+
+		drawApproachSection()
 	end
 }
 
@@ -751,6 +1305,18 @@ function Windows.edgeButtons.Show()
 		systemView:SetRotateMode(ui.isItemActive())
 		ui.mainMenuButton(icons.search_lens, luc.ZOOM)
 		systemView:SetZoomMode(ui.isItemActive())
+		-- the ship is on the map whenever it shows the system the player is
+		-- in, also when that system is reached through "selected system"
+		if isOrrery and systemView:IsViewingCurrentSystem() and ui.mainMenuButton(icons.bullseye, L.ZOOM_TO_SHIP) then
+			systemView:ViewPlayer()
+		end
+		-- follow where the plan puts the ship as the map time is scrubbed;
+		-- highlighted while it does
+		if isOrrery and systemView:IsViewingCurrentSystem() and systemView:TransferPlannerGetBurnCount() > 0 then
+			if ui.mainMenuButton(icons.follow_pos, L.FOLLOW_PLAN .. "##followPlannedShip", systemView:IsViewingPlannedShip()) then
+				systemView:ViewPlannedShip()
+			end
+		end
 
 		-- view settings buttons
 		if isOrrery then
@@ -786,10 +1352,23 @@ function Windows.timeButtons.Show()
 	end
 end
 
+-- orbit markers labelled on the player's and the planner's orbits, which
+-- carry the marker's altitude (other orbits' apsides stay icon-only)
+local markerLabels = {
+	[Projectable.PERIAPSIS] = "Pe",
+	[Projectable.APOAPSIS] = "Ap",
+	[Projectable.ASCENDING_NODE] = "AN",
+	[Projectable.DESCENDING_NODE] = "DN",
+}
+
 local function getLabel(obj)
+	if markerLabels[obj.type] and obj.altitude then
+		return markerLabels[obj.type] .. " " .. ui.Format.Distance(obj.altitude)
+	end
 	if obj.type == Projectable.OBJECT then
 		if obj.base == Projectable.SYSTEMBODY then return obj.ref.name
 		elseif obj.base == Projectable.PLANNER then return ""
+		elseif obj.base == Projectable.PLANNER_BURN then return "Burn " .. tostring(obj.burnIndex or 1)
 		else return obj.ref:GetLabel() end
 	--elseif obj.type == Projectable.L4 and show_lagrange == "LAG_ICONTEXT" then return "L4"
 	elseif obj.type == Projectable.L4 and l4l5DisplayMode:getMode() == "LAG_ICONTEXT" then return "L4"
@@ -805,9 +1384,10 @@ local function getColor(obj)
 		elseif obj.base == Projectable.SHIP then return svColor.SHIP
 		elseif obj.base == Projectable.PLAYER then return svColor.PLAYER
 		elseif obj.base == Projectable.PLANNER then return svColor.PLANNER
+		elseif obj.base == Projectable.PLANNER_BURN then return svColor.PLANNER_BURN
 		else return svColor.OBJECT
 		end
-	elseif obj.type == Projectable.APOAPSIS or obj.type == Projectable.PERIAPSIS then
+	elseif markerLabels[obj.type] then
 		if obj.base == Projectable.SYSTEMBODY then return svColor.SYSTEMBODY_ORBIT
 		elseif obj.base == Projectable.SHIP then
 			if obj.ref == selectedObject then return svColor.SELECTED_SHIP_ORBIT

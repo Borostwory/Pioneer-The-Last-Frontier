@@ -4,15 +4,21 @@
 #include "DynamicBody.h"
 
 #include "Frame.h"
+#include "Orbit.h"
 #include "GameSaveError.h"
 #include "JsonUtils.h"
 #include "Planet.h"
 #include "Space.h"
 #include "collider/CollisionContact.h"
+#include "gameconsts.h"
 #include "ship/Propulsion.h"
+
+#include <algorithm>
+#include <cmath>
 
 static const float KINETIC_ENERGY_MULT = 0.00001f;
 const double DynamicBody::DEFAULT_DRAG_COEFF = 0.1; // 'smooth sphere'
+
 
 DynamicBody::DynamicBody() :
 	ModelBody()
@@ -230,18 +236,41 @@ void DynamicBody::TimeStepUpdate(const float timeStep)
 {
 	m_oldPos = GetPosition();
 	if (m_isMoving) {
+		// In a non-rotating frame around a gravitating body the only external
+		// force is that body's gravity (CalcExternalForce), and the motion it
+		// causes is a two-body conic, which Orbit::PropagateState follows exactly. The
+		// plain step below drifts off the conic by an amount that grows with
+		// the step - kilometres per orbit under time acceleration - while the
+		// transfer planner predicts exact conics. So there the step is split:
+		// every other force (thrust) kicks the velocity, then the body drifts
+		// along the conic. Rotating frames (fictitious forces, atmosphere)
+		// and station frames (no gravity) keep the plain step.
+		const double gravityMu = GetFrameGravityMu();
+		if (gravityMu > 0.0) {
+			const vector3d nonGravity = m_force + (m_externalForce - m_gravityForce);
+			vector3d pos = GetPosition();
+			vector3d vel = m_vel + double(timeStep) * nonGravity * (1.0 / m_mass);
+			if (Orbit::PropagateState(pos, vel, gravityMu, double(timeStep))) {
+				m_force += m_externalForce;
+				m_vel = vel;
+				UpdateAngularMotion(timeStep);
+				SetPosition(pos);
+
+				m_lastForce = m_force;
+				m_lastTorque = m_torque;
+				m_force = vector3d(0.0);
+				m_torque = vector3d(0.0);
+				CalcExternalForce(); // regenerate for new pos/vel
+				ModelBody::TimeStepUpdate(timeStep);
+				return;
+			}
+			// the solver gave up: take the plain step this time
+		}
+
 		m_force += m_externalForce;
 
 		m_vel += double(timeStep) * m_force * (1.0 / m_mass);
-		m_angVel += double(timeStep) * m_torque * (1.0 / m_angInertia);
-
-		double len = m_angVel.Length();
-		if (len > 1e-16) {
-			vector3d axis = m_angVel * (1.0 / len);
-			matrix3x3d r = matrix3x3d::Rotate(len * timeStep, axis);
-			SetOrient(r * GetOrient());
-		}
-		m_oldAngDisplacement = m_angVel * timeStep;
+		UpdateAngularMotion(timeStep);
 
 		SetPosition(GetPosition() + m_vel * double(timeStep));
 
@@ -260,6 +289,31 @@ void DynamicBody::TimeStepUpdate(const float timeStep)
 	}
 
 	ModelBody::TimeStepUpdate(timeStep);
+}
+
+double DynamicBody::GetFrameGravityMu() const
+{
+	// the same body CalcExternalForce takes gravity from, in a non-rotating frame
+	const Frame *f = Frame::GetFrame(GetFrame());
+	if (!f || f->IsRotFrame())
+		return 0.0;
+	const Body *body = f->GetBody();
+	if (!body || body->IsType(ObjectType::SPACESTATION) || body->GetMass() <= 0.0)
+		return 0.0;
+	return G * body->GetMass();
+}
+
+void DynamicBody::UpdateAngularMotion(const float timeStep)
+{
+	m_angVel += double(timeStep) * m_torque * (1.0 / m_angInertia);
+
+	double len = m_angVel.Length();
+	if (len > 1e-16) {
+		vector3d axis = m_angVel * (1.0 / len);
+		matrix3x3d r = matrix3x3d::Rotate(len * timeStep, axis);
+		SetOrient(r * GetOrient());
+	}
+	m_oldAngDisplacement = m_angVel * timeStep;
 }
 
 void DynamicBody::UpdateInterpTransform(double alpha)

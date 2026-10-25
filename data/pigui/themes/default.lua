@@ -311,6 +311,7 @@ theme.colors = {
 	systemMapObject			= styleColors.gray_300,
 	systemMapPlanner		= styleColors.primary_500,
 	systemMapPlannerOrbit	= styleColors.primary_500,
+	systemMapPlannerBurn	= styleColors.primary_200,
 	systemMapPlayer			= styleColors.accent_400,
 	systemMapPlayerOrbit	= styleColors.accent_400,
 	systemMapShip			= styleColors.gray_300,
@@ -334,6 +335,14 @@ theme.colors = {
 
 	compareBetter = styleColors.accent_300,
 	compareWorse  = styleColors.warning_300,
+
+	-- flight HUD multi-burn widget (modules/flight-ui/burn-hud.lua)
+	burnHudActiveRowBg      = styleColors.primary_800:opacity(0.85),
+	burnHudProgress         = styleColors.accent_300,
+	burnHudProgressTrack    = styleColors.panel_700,
+	burnHudCompletedText    = styleColors.gray_600,
+	burnHudToggleOnText     = styleColors.success_300,
+	burnHudToggleOffText    = styleColors.gray_500,
 }
 
 -- ImGui global theming styles

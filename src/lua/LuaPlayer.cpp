@@ -12,6 +12,7 @@
 #include "Player.h"
 #include "SectorView.h"
 #include "TerrainBody.h"
+#include "TransferPlanner.h"
 #include "WorldView.h"
 #include "galaxy/Galaxy.h"
 #include "ship/PlayerShipController.h"
@@ -324,29 +325,183 @@ static int l_get_distance_to_zero_v(lua_State *l)
 /*
  * Method: GetManeuverTime
  *
- * Get the time remaining until start of maneuver in seconds
+ * Get the absolute game time at which the maneuver starts, in seconds
  *
  * > player:GetManeuverTime()
+ * > player:GetManeuverTime(idx)
+ *
+ * Parameters:
+ *
+ *   idx - the (0-based) index of the planned burn; defaults to the active burn
  */
 static int l_get_maneuver_time(lua_State *l)
 {
 	Player *player = LuaObject<Player>::CheckFromLua(1);
-	LuaPush(l, player->GetManeuverTime());
+	if (lua_isnumber(l, 2))
+		LuaPush(l, player->GetManeuverTime(LuaPull<int>(l, 2)));
+	else
+		LuaPush(l, player->GetManeuverTime());
 	return 1;
 }
 
 /*
  * Method: GetManeuverVelocity
  *
- * Get the current maneuver velocity in m/s
+ * Get the maneuver velocity in m/s
  *
  * > player:GetManeuverVelocity()
+ * > player:GetManeuverVelocity(idx)
+ *
+ * Parameters:
+ *
+ *   idx - the (0-based) index of the planned burn; defaults to the active burn
  */
 static int l_get_maneuver_velocity(lua_State *l)
 {
 	Player *player = LuaObject<Player>::CheckFromLua(1);
-	vector3d pos = player->GetManeuverVelocity();
-	LuaPush(l, pos);
+	vector3d vel = lua_isnumber(l, 2)
+		? player->GetManeuverVelocity(LuaPull<int>(l, 2))
+		: player->GetManeuverVelocity();
+	LuaPush(l, vel);
+	return 1;
+}
+
+/*
+ * Method: GetLockedManeuverDirection
+ *
+ * Get the effective Auto Orientation direction lock: the normalized direction
+ * of the active planned burn in the non-rotating planner frame, as acquired
+ * when plan heading locked onto it. Returns a zero vector when no valid lock
+ * is active (plan heading off, burn completed or reset, no active burn).
+ *
+ * > dir = player:GetLockedManeuverDirection()
+ *
+ * Returns:
+ *
+ *   dir - a unit vector, or a zero vector when there is no valid lock
+ */
+static int l_player_get_locked_maneuver_direction(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	LuaPush(l, player->GetLockedManeuverDirection());
+	return 1;
+}
+
+/*
+ * Method: GetActiveBurnIndex
+ *
+ * Get the index of the planned burn the transfer planner is currently working
+ * towards, or -1 when there is no plan, or every planned burn is complete
+ *
+ * > player:GetActiveBurnIndex()
+ */
+static int l_player_get_active_burn_index(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	LuaPush(l, player->GetActiveBurnIndex());
+	return 1;
+}
+
+/*
+ * Method: GetBurnCount
+ *
+ * Get the number of planned burns in the transfer planner
+ *
+ * > player:GetBurnCount()
+ */
+static int l_player_get_burn_count(lua_State *l)
+{
+	LuaObject<Player>::CheckFromLua(1);
+	LuaPush(l, static_cast<uint64_t>(Pi::planner->GetBurnCount()));
+	return 1;
+}
+
+/*
+ * Function: SetPlanBurnEnabled
+ *
+ * Enable or disable the planned-burn engine control: when enabled the main
+ * engine fires for the active planned burn, but only while the ship is
+ * aligned with the burn direction. Independent of the flight control state:
+ * it composes with any orientation control (SetFlightControlState), and never
+ * changes one. Disabling it stops the commanded thrust immediately.
+ *
+ * Example:
+ *
+ * > player:SetPlanBurnEnabled(enable)
+ *
+ * Parameters:
+ *
+ *   enable - boolean
+ *
+ */
+static int l_player_set_plan_burn_enabled(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	bool enable = LuaPull<bool>(l, 2);
+	player->SetPlanBurnEnabled(enable);
+	return 0;
+}
+
+/*
+ * Function: GetPlanBurnEnabled
+ *
+ * Get the planned-burn engine control state
+ *
+ * Example:
+ *
+ * > enabled = player:GetPlanBurnEnabled()
+ *
+ * Returns:
+ *
+ *   enabled - bool
+ *
+ */
+static int l_player_get_plan_burn_enabled(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	LuaPush(l, player->GetPlanBurnEnabled());
+	return 1;
+}
+
+/*
+ * Function: SetPlanBurnAccuracy
+ *
+ * How close Auto Burn brings the orbit to the plan before a burn counts as
+ * done: the largest error in the planned periapsis and apoapsis, as a
+ * fraction of them. Clamped to 0.001 .. 0.2.
+ *
+ * Example:
+ *
+ * > player:SetPlanBurnAccuracy(0.01) -- within 1 %
+ *
+ * Parameters:
+ *
+ *   fraction - number
+ *
+ */
+static int l_player_set_plan_burn_accuracy(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	player->SetPlanBurnAccuracy(LuaPull<double>(l, 2));
+	return 0;
+}
+
+/*
+ * Function: GetPlanBurnAccuracy
+ *
+ * Example:
+ *
+ * > fraction = player:GetPlanBurnAccuracy()
+ *
+ * Returns:
+ *
+ *   fraction - number, see SetPlanBurnAccuracy
+ *
+ */
+static int l_player_get_plan_burn_accuracy(lua_State *l)
+{
+	Player *player = LuaObject<Player>::CheckFromLua(1);
+	LuaPush<double>(l, player->GetPlanBurnAccuracy());
 	return 1;
 }
 
@@ -708,7 +863,14 @@ void LuaObject<Player>::RegisterClass()
 		{ "GetCurrentDeltaV", l_get_current_delta_v },
 		{ "GetRemainingDeltaV", l_get_remaining_delta_v },
 		{ "GetManeuverVelocity", l_get_maneuver_velocity },
+		{ "GetLockedManeuverDirection", l_player_get_locked_maneuver_direction },
 		{ "GetManeuverTime", l_get_maneuver_time },
+		{ "GetBurnCount", l_player_get_burn_count },
+		{ "GetActiveBurnIndex", l_player_get_active_burn_index },
+		{ "SetPlanBurnEnabled", l_player_set_plan_burn_enabled },
+		{ "GetPlanBurnEnabled", l_player_get_plan_burn_enabled },
+		{ "SetPlanBurnAccuracy", l_player_set_plan_burn_accuracy },
+		{ "GetPlanBurnAccuracy", l_player_get_plan_burn_accuracy },
 		{ "GetAcceleration", l_get_acceleration },
 		{ "IsMouseActive", l_get_is_mouse_active },
 		{ "GetMouseDirection", l_get_mouse_direction },

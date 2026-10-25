@@ -153,6 +153,8 @@ const struct EnumItem ENUM_ProjectableTypes[] = {
 	{ "L5", int(Projectable::L5) },
 	{ "APOAPSIS", int(Projectable::APOAPSIS) },
 	{ "PERIAPSIS", int(Projectable::PERIAPSIS) },
+	{ "ASCENDING_NODE", int(Projectable::ASCENDING_NODE) },
+	{ "DESCENDING_NODE", int(Projectable::DESCENDING_NODE) },
 	{ 0, 0 },
 };
 
@@ -162,6 +164,7 @@ const struct EnumItem ENUM_ProjectableBases[] = {
 	{ "SHIP", int(Projectable::SHIP) },
 	{ "PLAYER", int(Projectable::PLAYER) },
 	{ "PLANNER", int(Projectable::PLANNER) },
+	{ "PLANNER_BURN", int(Projectable::PLANNER_BURN) },
 	{ 0, 0 },
 };
 
@@ -186,6 +189,7 @@ const struct EnumItem ENUM_SystemViewColorIndex[] = {
 	{ "PLANNER_ORBIT", int(SystemMapViewport::PLANNER_ORBIT) },
 	{ "SELECTED_SHIP_ORBIT", int(SystemMapViewport::SELECTED_SHIP_ORBIT) },
 	{ "SHIP_ORBIT", int(SystemMapViewport::SHIP_ORBIT) },
+	{ "PLANNER_BURN", int(SystemMapViewport::PLANNER_BURN) },
 	{ 0, 0 },
 };
 
@@ -341,6 +345,7 @@ const struct EnumItem ENUM_ShipControllerFlightControlState[] = {
 	{ "CONTROL_FIXHEADING_RADIALLY_OUTWARD", int(FlightControlState::CONTROL_FIXHEADING_RADIALLY_OUTWARD) },
 	{ "CONTROL_FIXHEADING_KILLROT", int(FlightControlState::CONTROL_FIXHEADING_KILLROT) },
 	{ "CONTROL_AUTOPILOT", int(FlightControlState::CONTROL_AUTOPILOT) },
+	{ "CONTROL_PLAN_HEADING", int(FlightControlState::CONTROL_PLAN_HEADING) },
 	{ 0, 0 },
 };
 

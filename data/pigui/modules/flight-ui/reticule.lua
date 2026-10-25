@@ -504,24 +504,62 @@ local function displayDetailData(target, data, radius, tooltip)
 end
 
 -- display current maneuver data below the reticule circle
+-- the maneuver readout always targets the active burn (the earliest burn that
+-- has not been completed): GetManeuverVelocity/GetManeuverTime with no index
+-- return that burn's Δv and start time, so the burn-duration estimate below is
+-- that single burn's, never a sum.
 local function displayManeuverData(radius)
+	local burnCount = player:GetBurnCount()
+	-- -1 = no plan, or every planned burn is complete: no burn to aim at
+	local activeBurn = player:GetActiveBurnIndex()
 	local maneuverVelocity = player:GetManeuverVelocity()
 	local maneuverSpeed = maneuverVelocity:length()
-	if maneuverSpeed > 0 and not (player:IsDocked() or player:IsLanded()) then
-		local onscreen,position,direction = Engine.ProjectRelDirection(maneuverVelocity)
+	local showManeuver = maneuverSpeed > 0 and not (player:IsDocked() or player:IsLanded())
+	if showManeuver then
+		-- while Auto Orientation holds a direction lock, project along the
+		-- locked direction (scaled by the live residual) so the indicator stays
+		-- where the ship is pointed; otherwise follow the live residual. The
+		-- live magnitude still drives visibility, text and burn duration.
+		local projectedVelocity = maneuverVelocity
+		local lockedDirection = player:GetLockedManeuverDirection()
+		if lockedDirection:lengthSqr() > 0 then
+			projectedVelocity = lockedDirection * maneuverSpeed
+		end
+		local onscreen,position,direction = Engine.ProjectRelDirection(projectedVelocity)
 		gameView.displayIndicator(onscreen, position, direction, icons.bullseye, colors.maneuver, true, lui.HUD_INDICATOR_MANEUVER_PROGRADE)
 		local uiPos = ui.pointOnClock(center, radius, 6)
 		local speed, speed_unit = ui.Format.SpeedUnit(maneuverSpeed)
-		local duration = ui.Format.Duration(player:GetManeuverTime() - Game.time)
+		-- the burn is split 50:50 around the planned node time: it starts half
+		-- its duration before the node. Use the planned (not remaining) Δv for
+		-- that, so the start does not drift as the burn progresses.
 		local acceleration = player:GetAcceleration("forward")
 		local burn_duration = maneuverSpeed / acceleration
+		local plannedDv = Game.systemView and Game.systemView:TransferPlannerGetBurnDeltaV(activeBurn) or maneuverSpeed
+		local halfBurn = (acceleration > 0) and (plannedDv / acceleration / 2) or 0
+		local untilNode = player:GetManeuverTime() - Game.time
+		local untilStart = untilNode - halfBurn
+		local startText = untilStart > 0 and ui.Format.Duration(untilStart) or lc.NOW
+		local duration = ui.Format.Duration(math.max(untilNode, 0))
 		local burn_time = ui.Format.Duration(burn_duration)
 		ui.addFancyText(uiPos, ui.anchor.center, ui.anchor.top, {
-			{ text=duration,           color=colors.maneuver,     font=pionillium.medium, tooltip=lui.HUD_DURATION_UNTIL_MANEUVER_BURN },
+			{ text=startText,          color=colors.maneuver,     font=pionillium.medium, tooltip=lui.HUD_DURATION_UNTIL_MANEUVER_BURN },
+			{ text=" / " .. duration,  color=colors.maneuverDark, font=pionillium.small,  tooltip=lui.HUD_DURATION_UNTIL_MANEUVER_BURN },
 			{ text="  " .. speed,      color=colors.maneuver,     font=pionillium.medium, tooltip=lui.HUD_DELTA_V_OF_MANEUVER_BURN },
 			{ text=speed_unit,         color=colors.maneuverDark, font=pionillium.small,  tooltip=lui.HUD_DELTA_V_OF_MANEUVER_BURN },
 			{ text="  ~" .. burn_time, color=colors.maneuver,     font=pionillium.medium, tooltip=lui.HUD_DURATION_OF_MANEUVER_BURN }
 		}, colors.lightBlackBackground)
+	end
+	-- burn status line: k/n where k is the active burn (GetActiveBurnIndex) - the
+	-- same burn the maneuver readout above targets. Nothing is drawn when the
+	-- index is -1: an empty plan and an all-completed plan both read as "no
+	-- plan", which also keeps a "Burn 0/n" label from ever appearing.
+	if activeBurn >= 0 then
+		local uiPos = ui.pointOnClock(center, radius, 6)
+		if showManeuver then
+			-- stack below the maneuver readout when it is on screen
+			uiPos.y = uiPos.y + ui.getTextLineHeight() + 2
+		end
+		ui.addStyledText(uiPos, ui.anchor.center, ui.anchor.top, string.format("Burn %d/%d", activeBurn + 1, burnCount), colors.maneuver, pionillium.small, nil, colors.lightBlackBackground)
 	end
 end
 
@@ -530,6 +568,16 @@ local aicommand_info = {
 	CMD_FLYTO = { icon = icons.autopilot_fly_to, tooltip = lui.HUD_BUTTON_AUTOPILOT_FLYING_TO_TARGET },
 	CMD_FORMATION = { icon = icons.autopilot_fly_to, tooltip = lui.HUD_BUTTON_AUTOPILOT_FLYING_TO_TARGET },
 	CMD_FLYAROUND = { icon = icons.autopilot_medium_orbit, tooltip = lui.HUD_BUTTON_AUTOPILOT_ENTERING_ORBIT },
+}
+
+-- strings the game ships no lang key for: the plan-heading control state
+-- (Phase 3) is labelled in the same local table pattern as
+-- flight-ui/burn-hud.lua, so no data/lang entries are added here. The engine
+-- side of the planner is not a flight control state at all - Auto Burn is an
+-- independent enable-flag (player:GetPlanBurnEnabled), so it has no entry here.
+local L = {
+	PLAN_HEADING = "Plan Heading: hold the ship at the active burn's direction",
+	UNKNOWN_STATE = "Unknown flight control state",
 }
 
 local flightstate_info = {
@@ -543,8 +591,19 @@ local flightstate_info = {
 	CONTROL_FIXHEADING_RADIALLY_INWARD = { icon = icons.radial_in_thin, tooltip = lui.HUD_BUTTON_FIX_RADIAL_IN },
 	CONTROL_FIXHEADING_RADIALLY_OUTWARD = { icon = icons.radial_out_thin, tooltip = lui.HUD_BUTTON_FIX_RADIAL_OUT },
 	-- "CONTROL_FIXHEADING_KILLROT" uses the same icon as rotation damping on
-	CONTROL_FIXHEADING_KILLROT = { icon = icons.rotation_damping_on , tooltip = lui.HUD_BUTTON_KILL_ROTATION }
+	CONTROL_FIXHEADING_KILLROT = { icon = icons.rotation_damping_on , tooltip = lui.HUD_BUTTON_KILL_ROTATION },
+	-- the transfer-planner orientation state (flight-ui/burn-hud.lua's Auto
+	-- Orientation toggle); the icon matches the panel's button icon
+	CONTROL_PLAN_HEADING = { icon = icons.prograde_thin, tooltip = L.PLAN_HEADING }
 }
+
+-- Defensive lookup: a control-state string outside the table must never abort
+-- the HUD draw — an unknown state falls back to the neutral entry. A raise
+-- inside the draw disables the whole reticule module (gameView:draw's pcall),
+-- which is how selecting Auto Orientation made the flight UI disappear.
+local function flightStateInfo(state)
+	return flightstate_info[state] or { icon = icons.empty, tooltip = L.UNKNOWN_STATE }
+end
 
 local radial_menu_actions_orbital = {
 	{icon = ui.theme.icons.normal_thin,
@@ -640,8 +699,9 @@ local function flightAssistButton(pos)
 		main_icon = cruisedir == "CRUISE_FWD" and icons.cruise_fwd or icons.cruise_up
 		tooltip = cruisedir == "CRUISE_FWD" and lui.HUD_BUTTON_CRUISE_FORWARD or lui.HUD_BUTTON_CRUISE_UP
 	else
-		main_icon = flightstate_info[flightcontrolstate].icon
-		tooltip = flightstate_info[flightcontrolstate].tooltip
+		local state_info = flightStateInfo(flightcontrolstate)
+		main_icon = state_info.icon
+		tooltip = state_info.tooltip
 	end
 
 	-- background

@@ -54,8 +54,27 @@ public:
 	void OnCockpitActivated();
 
 	virtual void StaticUpdate(const float timeStep) override;
+	virtual void TimeStepUpdate(const float timeStep) override;
 	virtual vector3d GetManeuverVelocity() const;
 	virtual int GetManeuverTime() const;
+	// per-burn variants; the no-argument forms above resolve the active burn
+	int GetManeuverTime(int idx) const;
+	vector3d GetManeuverVelocity(int idx) const;
+	// index of the burn the planner is currently working towards, -1 when the
+	// plan is empty or every planned burn has been completed
+	int GetActiveBurnIndex() const;
+
+	// plan-burn engine control enable: a thin forwarder to the player's ship
+	// controller, orthogonal to the flight control state
+	void SetPlanBurnEnabled(bool enabled);
+	bool GetPlanBurnEnabled() const;
+	// how close Auto Burn brings the orbit to the plan, as a fraction of the
+	// planned periapsis / apoapsis: a forwarder to the ship controller
+	void SetPlanBurnAccuracy(double fraction);
+	double GetPlanBurnAccuracy() const;
+	// effective Auto Orientation direction lock: normalized, in the non-rotating
+	// planner frame; zero when no valid lock is active. Read-only forwarder
+	vector3d GetLockedManeuverDirection() const;
 
 protected:
 	virtual void SaveToJson(Json &jsonObj, Space *space) override;

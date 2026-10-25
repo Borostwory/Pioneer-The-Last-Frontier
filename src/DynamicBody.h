@@ -92,6 +92,12 @@ protected:
 	AIError m_aiMessage;
 
 private:
+	// G * mass of the body whose gravity alone acts in the current frame (a
+	// non-rotating frame around a gravitating body), 0 anywhere else
+	double GetFrameGravityMu() const;
+	// one step of the angular velocity and orientation
+	void UpdateAngularMotion(const float timeStep);
+
 	vector3d m_oldPos;
 	vector3d m_oldAngDisplacement;
 

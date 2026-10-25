@@ -6,6 +6,9 @@
 #include "MathUtil.h"
 #include "gameconsts.h"
 
+#include <algorithm>
+#include <cmath>
+
 #ifdef _MSC_VER
 #include "win32/WinMath.h"
 #endif
@@ -298,6 +301,115 @@ void Orbit::SetShapeAroundPrimary(double semiMajorAxis, double centralMass, doub
 	m_semiMajorAxis = semiMajorAxis;
 	m_eccentricity = eccentricity;
 	m_velocityAreaPerSecond = calc_velocity_area_per_sec(semiMajorAxis, centralMass, eccentricity);
+}
+
+namespace {
+// Stumpff functions C(z) and S(z) of the universal-variable formulation
+double StumpffC(double z)
+{
+	if (z > 1e-6)
+		return (1.0 - std::cos(std::sqrt(z))) / z;
+	if (z < -1e-6)
+		return (std::cosh(std::sqrt(-z)) - 1.0) / -z;
+	return 0.5 - z / 24.0 + z * z / 720.0;
+}
+
+double StumpffS(double z)
+{
+	if (z > 1e-6) {
+		const double s = std::sqrt(z);
+		return (s - std::sin(s)) / (s * s * s);
+	}
+	if (z < -1e-6) {
+		const double s = std::sqrt(-z);
+		return (std::sinh(s) - s) / (s * s * s);
+	}
+	return 1.0 / 6.0 - z / 120.0 + z * z / 5040.0;
+}
+
+// one universal-variable step (Curtis, Orbital Mechanics for Engineering
+// Students, algorithms 3.3 and 3.4); false when Newton does not converge
+bool PropagateOnce(vector3d &pos, vector3d &vel, double mu, double dt)
+{
+	const double r0 = pos.Length();
+	const double sqrtMu = std::sqrt(mu);
+	const double vr0 = pos.Dot(vel) / r0;
+	const double alpha = 2.0 / r0 - vel.LengthSqr() / mu; // 1 / semi-major axis
+
+	double chi = sqrtMu * std::fabs(alpha) * dt;
+	if (!(std::fabs(chi) > 0.0))
+		chi = sqrtMu * dt / r0;
+	if (alpha < -1e-15) {
+		// an escape orbit: Vallado's starting value - the one above is far
+		// too large over long times, and Newton then crawls
+		const double a = 1.0 / alpha;
+		const double sign = dt >= 0.0 ? 1.0 : -1.0;
+		const double arg = (-2.0 * mu * alpha * dt) / (pos.Dot(vel) + sign * std::sqrt(-mu * a) * (1.0 - r0 * alpha));
+		if (arg > 0.0)
+			chi = sign * std::sqrt(-a) * std::log(arg);
+	}
+
+	bool converged = false;
+	for (int i = 0; i < 60; ++i) {
+		const double z = alpha * chi * chi;
+		if (z < -4e5) // a runaway step: cosh would overflow
+			return false;
+		const double C = StumpffC(z), S = StumpffS(z);
+		const double F = r0 * vr0 / sqrtMu * chi * chi * C + (1.0 - alpha * r0) * chi * chi * chi * S + r0 * chi - sqrtMu * dt;
+		const double dF = r0 * vr0 / sqrtMu * chi * (1.0 - alpha * chi * chi * S) + (1.0 - alpha * r0) * chi * chi * C + r0;
+		if (!std::isfinite(F) || !std::isfinite(dF) || dF == 0.0)
+			return false;
+		const double step = F / dF;
+		chi -= step;
+		if (std::fabs(step) <= 1e-12 * std::max(1.0, std::fabs(chi))) {
+			converged = true;
+			break;
+		}
+	}
+	if (!converged)
+		return false;
+
+	const double z = alpha * chi * chi;
+	const double C = StumpffC(z), S = StumpffS(z);
+	const double f = 1.0 - chi * chi / r0 * C;
+	const double g = dt - chi * chi * chi / sqrtMu * S;
+	const vector3d newPos = f * pos + g * vel;
+	const double r = newPos.Length();
+	if (!(r > 0.0) || !std::isfinite(r))
+		return false;
+	const double fDot = sqrtMu / (r * r0) * (alpha * chi * chi * chi * S - chi);
+	const double gDot = 1.0 - chi * chi / r * C;
+	const vector3d newVel = fDot * pos + gDot * vel;
+	if (!std::isfinite(newVel.x) || !std::isfinite(newVel.y) || !std::isfinite(newVel.z))
+		return false;
+
+	pos = newPos;
+	vel = newVel;
+	return true;
+}
+
+bool PropagateSplit(vector3d &pos, vector3d &vel, double mu, double dt, int depth)
+{
+	if (PropagateOnce(pos, vel, mu, dt))
+		return true;
+	if (depth >= 30)
+		return false;
+	vector3d p = pos, v = vel;
+	if (!PropagateSplit(p, v, mu, 0.5 * dt, depth + 1) || !PropagateSplit(p, v, mu, 0.5 * dt, depth + 1))
+		return false;
+	pos = p;
+	vel = v;
+	return true;
+}
+} // namespace
+
+bool Orbit::PropagateState(vector3d &pos, vector3d &vel, double mu, double dt)
+{
+	if (dt == 0.0)
+		return true;
+	if (!(mu > 0.0) || !(pos.Length() > 0.0))
+		return false;
+	return PropagateSplit(pos, vel, mu, dt, 0);
 }
 
 Orbit Orbit::ForStaticBody(const vector3d &position)

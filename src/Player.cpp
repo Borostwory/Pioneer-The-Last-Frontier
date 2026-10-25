@@ -15,6 +15,7 @@
 #include "SpaceStation.h"
 #include "StringF.h"
 #include "SystemView.h" // for the transfer planner
+#include "TransferPlanner.h"
 #include "WorldView.h"
 #include "lua/LuaEvent.h"
 #include "lua/LuaObject.h"
@@ -331,33 +332,124 @@ void Player::StaticUpdate(const float timeStep)
 		m_cockpit->Update(this, timeStep);
 }
 
+void Player::TimeStepUpdate(const float timeStep)
+{
+	Ship::TimeStepUpdate(timeStep);
+
+	// executed delta-v accounting: project the thrust the ship actually applied
+	// this tick (resolved by Ship::TimeStepUpdate above) onto the planned
+	// direction of the active burn, and let the planner accumulate it
+	if (!Pi::planner->HasPlan())
+		return;
+	// Auto Burn flies the burn closed-loop and sets the remainder itself
+	if (GetPlanBurnEnabled())
+		return;
+
+	const int activeIdx = Pi::planner->GetActiveIndex();
+	if (activeIdx < 0) // every planned burn is complete: nothing to accumulate into
+		return;
+
+	const double mass = GetMass();
+	if (mass <= 0.0)
+		return;
+
+	// the plan's offset velocity lives in the burn's non-rotating system frame,
+	// while GetActualLinThrust() is in ship axes
+	const vector3d planDv = Pi::planner->GetOffsetVel(activeIdx);
+	if (planDv.LengthSqr() < 1e-18) // an inert plan has no direction to count progress along
+		return;
+
+	const Frame *plannerFrame = TransferPlanner::GravityFrame(GetFrame());
+	if (!plannerFrame)
+		return;
+	matrix3x3d rot = plannerFrame->GetOrientRelTo(GetFrame());
+	const vector3d planDir = (rot * planDv).NormalizedSafe() * GetOrient();
+
+	const vector3d accel = GetPropulsion()->GetActualLinThrust() * (1.0 / mass);
+	Pi::planner->AddBurnProgress(activeIdx, accel.Dot(planDir) * Pi::game->GetTimeStep());
+}
+
 int Player::GetManeuverTime() const
 {
-	if (Pi::planner->GetOffsetVel().ExactlyEqual(vector3d::Zero)) {
+	// burns are stored strictly ordered by startTime, so the active burn is the
+	// earliest one that has not been completed; -1 (no plan, or every planned
+	// burn complete) keeps reading as "no plan"
+	return GetManeuverTime(GetActiveBurnIndex());
+}
+
+int Player::GetManeuverTime(int idx) const
+{
+	if (idx < 0) { // no burn to target, which reads as "no plan" here
 		return 0;
 	}
-	return Pi::planner->GetStartTime();
+	return Pi::planner->GetStartTime(idx);
 }
 
 vector3d Player::GetManeuverVelocity() const
+{
+	return GetManeuverVelocity(GetActiveBurnIndex());
+}
+
+vector3d Player::GetManeuverVelocity(int idx) const
 {
 	Frame *frame = Frame::GetFrame(GetFrame());
 	if (frame->IsRotFrame())
 		frame = Frame::GetFrame(frame->GetNonRotFrame());
 	const SystemBody *systemBody = frame->GetSystemBody();
 
-	if (Pi::planner->GetOffsetVel().ExactlyEqual(vector3d::Zero)) {
+	if (idx < 0) {
 		return vector3d::Zero;
 	} else if (systemBody) {
 		Orbit playerOrbit = ComputeOrbit();
 		if (!is_zero_exact(playerOrbit.GetSemiMajorAxis())) {
 			double mass = systemBody->GetMass();
 			// XXX The best solution would be to store the mass(es) on Orbit
-			const vector3d velocity = (Pi::planner->GetVel() - playerOrbit.OrbitalVelocityAtTime(mass, playerOrbit.OrbitalTimeAtPos(Pi::planner->GetPosition(), mass)));
+			const vector3d velocity = (Pi::planner->GetVel(idx) - playerOrbit.OrbitalVelocityAtTime(mass, playerOrbit.OrbitalTimeAtPos(Pi::planner->GetPos(idx), mass)));
 			return velocity;
 		}
 	}
 	return vector3d::Zero;
+}
+
+int Player::GetActiveBurnIndex() const
+{
+	return Pi::planner->HasPlan() ? Pi::planner->GetActiveIndex() : -1;
+}
+
+// thin forwarders to the player's ship controller - no logic here; the plan-
+// burn engine enable is orthogonal to the flight control state
+void Player::SetPlanBurnEnabled(bool enabled)
+{
+	auto con = GetPlayerController();
+	if (con) {
+		con->SetPlanBurnEnabled(enabled);
+	}
+}
+
+bool Player::GetPlanBurnEnabled() const
+{
+	auto con = GetPlayerController();
+	return con ? con->GetPlanBurnEnabled() : false;
+}
+
+void Player::SetPlanBurnAccuracy(double fraction)
+{
+	auto con = GetPlayerController();
+	if (con) {
+		con->SetPlanBurnAccuracy(fraction);
+	}
+}
+
+double Player::GetPlanBurnAccuracy() const
+{
+	auto con = GetPlayerController();
+	return con ? con->GetPlanBurnAccuracy() : 0.0;
+}
+
+vector3d Player::GetLockedManeuverDirection() const
+{
+	auto con = GetPlayerController();
+	return con ? con->GetLockedManeuverDirection() : vector3d(0.0, 0.0, 0.0);
 }
 
 void Player::DoFixspeedTakeoff(SpaceStation *from)

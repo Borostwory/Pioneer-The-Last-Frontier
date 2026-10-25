@@ -21,6 +21,8 @@
 
 #include <sigc++/signal.h>
 
+#include <utility>
+
 class GuiApplication;
 class StarSystem;
 class SystemBody;
@@ -32,6 +34,10 @@ class Body;
 
 namespace Background {
 	class Container;
+}
+
+namespace Graphics {
+	class RenderTarget;
 }
 
 enum ShipDrawing {
@@ -91,15 +97,18 @@ struct Projectable {
 		L5 = 3,
 		APOAPSIS = 4,
 		PERIAPSIS = 5,
-		ORBIT = 6, // <enum skip>
-		_MAX = 7 // <enum skip>
+		ASCENDING_NODE = 6,	 // where an orbit crosses the planner's reference plane northwards
+		DESCENDING_NODE = 7, // ... and southwards
+		ORBIT = 8, // <enum skip>
+		_MAX = 9 // <enum skip>
 	} type;
 	enum bases {		// <enum name=ProjectableBases scope='Projectable' public>
 		SYSTEMBODY = 0, // ref class SystemBody, may not have a physical body
 		BODY = 1,		// generic body
 		SHIP = 2,
 		PLAYER = 3, // player's ship
-		PLANNER = 4 // player's ship planned by transfer planner, refers to player's object
+		PLANNER = 4, // player's ship planned by transfer planner, refers to player's object
+		PLANNER_BURN = 5 // planned burn point, refers to the player's object
 	} base;
 	union {
 		const Body *body;
@@ -109,6 +118,9 @@ struct Projectable {
 	float screensize = 0.f; // approximate size in screen pixels
 	vector3d worldpos;
 	int orbitIdx = -1;
+	// apsis and node markers of the player's and the planner's orbits: the
+	// marker's height above the surface of the orbited body
+	double altitude = 0.0;
 
 	Projectable(const types t, const bases b, const Body *obj, const vector3d &pos = vector3d()) :
 		type(t), base(b), worldpos(pos)
@@ -181,6 +193,11 @@ public:
 		SELECTED_SYSTEM = 1,
 	};
 
+	enum class HudMapFocus {
+		PLAYER = 0,
+		FRAME_BODY = 1,
+	};
+
 	SystemView(Game *game);
 	~SystemView() override;
 	void Update() override;
@@ -197,6 +214,22 @@ public:
 	double GetOrbitPlannerStartTime() const { return m_planner->GetStartTime(); }
 
 	SystemMapViewport *GetMap() { return m_map.get(); }
+	SystemMapViewport *GetHudMap() { return m_hudMap.get(); }
+
+	void SetHudMapSize(vector2d size);
+	void RenderHudMap();
+	void DrawHudMapPiGui();
+	HudMapFocus GetHudMapFocus() const { return m_hudMapFocus; }
+	void SetHudMapFocus(HudMapFocus focus);
+	// centre the main map on the player's ship, zoomed to frame its orbit
+	void ViewPlayer();
+	// keep the main map centred on where the plan puts the ship at map time
+	// (the planner's ghost marker), and whether it is
+	void ViewPlannedShip();
+	bool IsViewingPlannedShip();
+	// the map shows the system the player is in, whichever selection mode
+	// got it there, so the player's ship is on it
+	bool IsViewingCurrentSystem() const { return m_viewingCurrentSystem; }
 
 private:
 	void RefreshShips(void);
@@ -204,6 +237,10 @@ private:
 
 	void RefreshClouds(void);
 	void AddCloudTracks(double atTime);
+
+	void PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double atTime);
+	void UpdateHudMap(float deltaTime);
+	void CreateHudRenderTarget();
 
 	void CalculateShipPositionAtTime(const Ship *s, const Orbit &o, double t, vector3d &pos);
 	void CalculateFramePositionAtTime(FrameId frameId, double t, vector3d &pos);
@@ -214,6 +251,15 @@ private:
 	Game *m_game;
 
 	std::unique_ptr<SystemMapViewport> m_map;
+	std::unique_ptr<SystemMapViewport> m_hudMap;
+	std::unique_ptr<Graphics::RenderTarget> m_hudRenderTarget;
+	std::unique_ptr<Graphics::RenderTarget> m_hudResolveTarget;
+	vector2f m_hudMapSize = vector2f(0.f, 0.f);
+	bool m_hudMapNeedsResize = false;
+	HudMapFocus m_hudMapFocus = HudMapFocus::FRAME_BODY;
+	bool m_hudMapRotating = false;
+	bool m_hudMapInitialZoomSet = false;
+
 	TransferPlanner *m_planner;
 	std::list<std::pair<Ship *, Orbit>> m_contacts;
 	std::list<HyperspaceCloud *> m_clouds;
@@ -286,12 +332,22 @@ public:
 	// Orbit tracks are cleared every frame.
 	void AddOrbitTrack(Projectable p, const Orbit *orbit, Color color, double planetRadius);
 
+	// Submit a leg of the planned trajectory as a dynamic vertex list (world
+	// space), drawn as a line strip in the next orrery pass. The legs are
+	// cleared every frame.
+	void AddPlannerLeg(std::vector<vector3d> &&verts, Color color)
+	{
+		m_plannerLegs.push_back({ std::move(verts), color });
+	}
+
 	RefCountedPtr<StarSystem> GetCurrentSystem();
 	void SetCurrentSystem(RefCountedPtr<StarSystem> system);
 
 	void AccelerateTime(float step);
 	bool IsRealTime() const { return m_realtime; }
 	void SetRealTime();
+	// jump the map to time t and hold it there
+	void SetTime(double t);
 	void SetReferenceTime(double time) { m_refTime = time; }
 	double GetTime() { return m_time; }
 	const std::vector<Projectable> &GetProjected() const { return m_projected; }
@@ -307,6 +363,12 @@ public:
 	float AtlasViewPixelPerUnit();
 
 	float GetZoom() const;
+	void RotateCameraByMouse(float dx, float dy);
+	void ZoomCameraByWheel(float wheel, float speedMod = 1.0f);
+	void SetZoomDirect(float zoom);
+	// zoom to the given level with the usual zoom animation
+	void SetZoomTarget(float zoom);
+	void SnapTransitionToViewedObject();
 
 	// all used colors. defined in system-view-ui.lua
 	enum ColorIndex { // <enum name=SystemViewColorIndex scope='SystemMapViewport' public>
@@ -317,10 +379,11 @@ public:
 		PLAYER_ORBIT = 4,
 		PLANNER_ORBIT = 5,
 		SELECTED_SHIP_ORBIT = 6,
-		SHIP_ORBIT = 7
+		SHIP_ORBIT = 7,
+		PLANNER_BURN = 8
 	};
 
-	Color svColor[8];
+	Color svColor[9];
 	void SetColor(ColorIndex color_index, Color *color_value) { svColor[color_index] = *color_value; }
 
 	sigc::slot<double(const SystemBody *)> GetStarportHeightAboveTerrain;
@@ -363,6 +426,12 @@ private:
 
 	std::vector<Projectable> m_objectTracks;
 	std::vector<ProjectedOrbit> m_orbitTracks;
+
+	struct PlannerLeg {
+		std::vector<vector3d> verts;
+		Color color;
+	};
+	std::vector<PlannerLeg> m_plannerLegs;
 
 	std::vector<Projectable> m_projected;
 
