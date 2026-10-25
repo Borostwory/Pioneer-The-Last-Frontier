@@ -23,9 +23,10 @@
 struct TerrainFarTexture::BakeState {
 	RefCountedPtr<Terrain> terrain;
 	int size = 0;
-	// per cube face, rows of RGBA texels, written by the jobs (each its own rows)
+	// per cube face, rows of texels (RGBA8, RGB10_A2), written by the jobs
+	// (each its own rows)
 	std::unique_ptr<uint8_t[]> colour[6];
-	std::unique_ptr<uint8_t[]> normal[6];
+	std::unique_ptr<uint32_t[]> normal[6];
 	std::atomic<int> stripsDone { 0 };
 };
 
@@ -75,14 +76,6 @@ namespace {
 		return 0.5 / spacing;
 	}
 
-	// 0.5 + 0.5 * sign(v) * sqrt(|v| / NORMAL_RANGE): fine steps for the gentle
-	// slopes that most of a planet has
-	inline uint8_t EncodeNormal(const double v)
-	{
-		const double s = std::sqrt(std::min(std::abs(v) / NORMAL_RANGE, 1.0));
-		return static_cast<uint8_t>(Clamp(std::round(127.5 + (v < 0.0 ? -127.5 : 127.5) * s), 0.0, 255.0));
-	}
-
 	// Rows [row0, row0 + rows) of a face. The heights have a border of one
 	// texel around them for the normals.
 	void BakeStrip(TerrainFarTexture::BakeState &state, const int face, const int row0, const int rows)
@@ -113,41 +106,21 @@ namespace {
 			}
 		}
 
-		auto position = [&](const size_t i) { return dirs[i] * (1.0 + heights[i]); };
-
-		// normals from the neighbouring texels, then colours and altitudes as
-		// the patches make them (setSurface in GeoPatchJobs.cpp)
-		for (int y = 1; y <= rows; y++) {
-			const int row = row0 + y - 1;
-			const double t = (row + 0.5) * step;
-			uint8_t *col = &state.colour[face][size_t(row) * n * 4];
-			uint8_t *nrm = &state.normal[face][size_t(row) * n * 4];
-			for (int x0 = 1; x0 <= n; x0 += SEGMENT) {
-				const int end = std::min(x0 + SEGMENT, n + 1);
-				const double s = (0.5 * (x0 + end) - 1.0) * step;
+		// colours, altitudes and normals, in runs band limited like the heights
+		std::vector<vector3d> colourNormals;
+		for (int x0 = 1; x0 <= n; x0 += SEGMENT) {
+			const int end = std::min(x0 + SEGMENT, n + 1);
+			const double s = (0.5 * (x0 + end) - 1.0) * step;
+			// the slope the colours see (COLOUR_SLOPE_SCALE), where the texels
+			// are finer than that (towards the face corners)
+			const bool fixedSlope = ColourSlopeNormals(terrain, dirs.data(), w, x0, end, 1, rows + 1, colourNormals);
+			for (int y = 1; y <= rows; y++) {
+				const int row = row0 + y - 1;
+				const double t = (row + 0.5) * step;
 				TerrainNoise::ScopedBandLimit bandLimit(TexelMaxFrequency(face, s, t, step));
-				for (int x = x0; x < end; x++) {
-					const size_t i = size_t(y) * w + x;
-					const vector3d &p = dirs[i];
-					const double height = heights[i];
-					vector3d normal = (position(i + 1) - position(i - 1)).Cross(position(i + w) - position(i - w)).Normalized();
-					if (normal.Dot(p) < 0.0)
-						normal = -normal;
-
-					const vector3d colour = terrain->GetColor(p, height, normal);
-					col[0] = static_cast<uint8_t>(Clamp(colour.x * 255.0, 0.0, 255.0));
-					col[1] = static_cast<uint8_t>(Clamp(colour.y * 255.0, 0.0, 255.0));
-					col[2] = static_cast<uint8_t>(Clamp(colour.z * 255.0, 0.0, 255.0));
-					col[3] = EncodeAltitude(SurfaceAltitude(terrain, p, height, colour));
-					col += 4;
-
-					const vector3d offset = normal - p;
-					nrm[0] = EncodeNormal(offset.x);
-					nrm[1] = EncodeNormal(offset.y);
-					nrm[2] = EncodeNormal(offset.z);
-					nrm[3] = 255;
-					nrm += 4;
-				}
+				const vector3d *colourNormal = fixedSlope ? &colourNormals[size_t(y - 1) * (end - x0)] : nullptr;
+				BakeSurfaceTexels(terrain, dirs.data(), heights.data(), w, x0, end, y, y + 1, colourNormal, end - x0,
+					&state.colour[face][(size_t(row) * n + (x0 - 1)) * 4], &state.normal[face][size_t(row) * n + (x0 - 1)], 0);
 			}
 		}
 	}
@@ -176,6 +149,45 @@ namespace {
 		const int m_face, m_row0, m_rows;
 	};
 } // namespace
+
+// 0.5 + 0.5 * sign(v) * sqrt(|v| / NORMAL_RANGE) in 10 bits: fine steps for
+// the gentle slopes that most of a planet has (8 bits showed as contour
+// lines in the shading when magnified)
+static inline uint32_t EncodeNormal(const double v)
+{
+	const double s = std::sqrt(std::min(std::abs(v) / NORMAL_RANGE, 1.0));
+	return static_cast<uint32_t>(Clamp(std::round(511.5 + (v < 0.0 ? -511.5 : 511.5) * s), 0.0, 1023.0));
+}
+
+void BakeSurfaceTexels(const Terrain *terrain, const vector3d *dirs, const double *heights, const int gridWidth,
+	const int x0, const int x1, const int y0, const int y1, const vector3d *colourNormals, const int colourPitch,
+	uint8_t *colour, uint32_t *normal, const size_t rowPitch)
+{
+	auto position = [&](const size_t i) { return dirs[i] * (1.0 + heights[i]); };
+	for (int y = y0; y < y1; y++) {
+		uint8_t *col = colour + size_t(y - y0) * rowPitch * 4;
+		uint32_t *nrm = normal + size_t(y - y0) * rowPitch;
+		for (int x = x0; x < x1; x++) {
+			const size_t i = size_t(y) * gridWidth + x;
+			const vector3d &p = dirs[i];
+			const double height = heights[i];
+			vector3d n = (position(i + 1) - position(i - 1)).Cross(position(i + gridWidth) - position(i - gridWidth)).Normalized();
+			if (n.Dot(p) < 0.0)
+				n = -n;
+
+			const vector3d &slope = colourNormals ? colourNormals[size_t(y - y0) * colourPitch + (x - x0)] : n;
+			const vector3d c = terrain->GetColor(p, height, slope);
+			col[0] = static_cast<uint8_t>(Clamp(c.x * 255.0, 0.0, 255.0));
+			col[1] = static_cast<uint8_t>(Clamp(c.y * 255.0, 0.0, 255.0));
+			col[2] = static_cast<uint8_t>(Clamp(c.z * 255.0, 0.0, 255.0));
+			col[3] = EncodeAltitude(SurfaceAltitude(terrain, p, height, c));
+			col += 4;
+
+			const vector3d offset = n - p;
+			*(nrm++) = EncodeNormal(offset.x) | (EncodeNormal(offset.y) << 10) | (EncodeNormal(offset.z) << 20) | (3u << 30);
+		}
+	}
+}
 
 int TerrainFarTexture::ConfiguredSize()
 {
@@ -208,10 +220,10 @@ TerrainFarTexture::TerrainFarTexture(RefCountedPtr<Terrain> terrain, const std::
 	m_state->terrain = terrain;
 	m_state->size = size;
 	// left uninitialised: the jobs write every texel
-	const size_t bytes = size_t(size) * size * 4;
+	const size_t texels = size_t(size) * size;
 	for (int face = 0; face < 6; face++) {
-		m_state->colour[face].reset(new uint8_t[bytes]);
-		m_state->normal[face].reset(new uint8_t[bytes]);
+		m_state->colour[face].reset(new uint8_t[texels * 4]);
+		m_state->normal[face].reset(new uint32_t[texels]);
 	}
 	s_baking++;
 }
@@ -245,8 +257,9 @@ void TerrainFarTexture::Update(const float frameTime)
 
 		m_jobs.clear();
 		const Graphics::TextureDescriptor desc(Graphics::TEXTURE_RGBA_8888, dataSize, Graphics::LINEAR_CLAMP, true, false, true, 0, Graphics::TEXTURE_CUBE_MAP);
+		const Graphics::TextureDescriptor normalDesc(Graphics::TEXTURE_RGB10_A2, dataSize, Graphics::LINEAR_CLAMP, true, false, true, 0, Graphics::TEXTURE_CUBE_MAP);
 		m_colour.Reset(Pi::renderer->CreateTexture(desc));
-		m_normal.Reset(Pi::renderer->CreateTexture(desc));
+		m_normal.Reset(Pi::renderer->CreateTexture(normalDesc));
 		m_stage = Stage::Uploading;
 	} break;
 
@@ -259,7 +272,7 @@ void TerrainFarTexture::Update(const float frameTime)
 			m_colour->UpdateCubeFace(face, m_state->colour[face].get(), dataSize, Graphics::TEXTURE_RGBA_8888, last);
 			m_state->colour[face].reset();
 		} else {
-			m_normal->UpdateCubeFace(face, m_state->normal[face].get(), dataSize, Graphics::TEXTURE_RGBA_8888, last);
+			m_normal->UpdateCubeFace(face, m_state->normal[face].get(), dataSize, Graphics::TEXTURE_RGB10_A2, last);
 			m_state->normal[face].reset();
 		}
 		if (++m_uploaded < 12)

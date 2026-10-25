@@ -81,7 +81,7 @@ void main(void)
 	// The sky a flat sea reflects, seen from just above the surface. Only
 	// below about 1000 m, where pixels can be water, and where the far
 	// texture (terrain-far.glsl) draws the coasts instead of the vertices.
-	bool nearWater = surfaceHeight < 0.35 || terrainFarWeight(dist) > 0.0;
+	bool nearWater = surfaceHeight < 0.35 || terrainFarWeight(dist, dot(V, -eyenorm)) > 0.0;
 	vec3 seaUp = normalize(P);
 	vec3 skyDir = reflect(eyenorm, seaUp);
 	skyDir = normalize(skyDir + seaUp * max(0.0, 0.02 - dot(skyDir, seaUp)));

@@ -15,6 +15,8 @@ Texture sampler2D terrainRelief
 Texture sampler2D terrainTiles
 Texture samplerCube farColour
 Texture samplerCube farNormal
+Texture sampler2D surfaceTileColour
+Texture sampler2D surfaceTileNormal
 
 Texture sampler2D shadowMapNear
 Texture sampler2D shadowMapMid
@@ -44,6 +46,7 @@ PushConstant vec4 MaterialSpecial binding=9
 PushConstant vec4 ReliefScale binding=10
 PushConstant vec4 PatchTile binding=11
 PushConstant vec4 FarTexture binding=12
+PushConstant vec4 PatchSurface binding=13
 
 Vertex "rayleigh_geosphere_terrain.vert"
 Fragment "rayleigh_geosphere_terrain.frag"

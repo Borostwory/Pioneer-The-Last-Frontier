@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 class GeoSphere;
 
@@ -34,6 +35,24 @@ inline unsigned char EncodeAltitude(const double metres)
 		return static_cast<unsigned char>(Clamp(std::round(127.5 + 127.5 * s), 128.0, 255.0));
 	return static_cast<unsigned char>(Clamp(std::round(127.5 - 127.5 * s), 0.0, 127.0));
 }
+
+// The colour fractals take the slope of the ground (Terrain::GetColor's
+// normal, as flatness = (p . n)^8 and the like), and finer sampling finds
+// steeper ground: less snow, more rock. So colours changed with the patch,
+// tile or texel size, and with the terrain detail setting. They get the
+// slope at this fixed scale instead (unit-sphere units: 1/512 of the radius,
+// the far texture's texel at 1024 per face). Near the ground the materials
+// put rock on steep slopes per pixel (terrain-materials.glsl).
+static constexpr double COLOUR_SLOPE_SCALE = 2.0 / 1024.0;
+
+// Normals of the ground at COLOUR_SLOPE_SCALE for the colours of the grid
+// points (x, y), x0 <= x < x1, y0 <= y < y1, of a grid of positions (on or
+// above the unit sphere, gridWidth per row, with the neighbours of those
+// points in it), into out, (x1 - x0) per row, outward. Sampled on a lattice
+// about that scale apart and interpolated. Returns false, leaving out
+// alone, where the grid is about that coarse already: its own normals are
+// then the ones to use.
+bool ColourSlopeNormals(const Terrain *terrain, const vector3d *points, int gridWidth, int x0, int x1, int y0, int y1, std::vector<vector3d> &out);
 
 // Altitude for the vertex colour's alpha. Under water only where the colour
 // fractal painted water (which has no red in it): some paint polar ice over

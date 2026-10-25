@@ -21,6 +21,7 @@ namespace Graphics {
 			case TEXTURE_RG32F: return GL_RG32F;
 			case TEXTURE_RGBA16F: return GL_RGBA16F;
 			case TEXTURE_RGBA32F: return GL_RGBA32F;
+			case TEXTURE_RGB10_A2: return GL_RGB10_A2;
 			case TEXTURE_DXT5: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 			case TEXTURE_DXT1: return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 			case TEXTURE_DEPTH: return GL_DEPTH_COMPONENT32F;
@@ -41,6 +42,7 @@ namespace Graphics {
 			case TEXTURE_RG32F: return GL_RG32F;
 			case TEXTURE_RGBA16F: return GL_RGBA16F;
 			case TEXTURE_RGBA32F: return GL_RGBA32F;
+			case TEXTURE_RGB10_A2: return GL_RGB10_A2;
 			case TEXTURE_DXT5: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 			case TEXTURE_DXT1: return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 			default: assert(0); return 0;
@@ -58,6 +60,7 @@ namespace Graphics {
 			case TEXTURE_RG32F: return GL_RG;
 			case TEXTURE_RGBA16F: return GL_RGBA;
 			case TEXTURE_RGBA32F: return GL_RGBA;
+			case TEXTURE_RGB10_A2: return GL_RGBA;
 			case TEXTURE_DXT5: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 			case TEXTURE_DXT1: return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 			case TEXTURE_DEPTH: return GL_DEPTH_COMPONENT;
@@ -82,6 +85,7 @@ namespace Graphics {
 			case TEXTURE_RG32F: return GL_FLOAT;
 			case TEXTURE_RGBA16F: return GL_FLOAT;
 			case TEXTURE_RGBA32F: return GL_FLOAT;
+			case TEXTURE_RGB10_A2: return GL_UNSIGNED_INT_2_10_10_10_REV;
 			default: return GL_UNSIGNED_BYTE;
 			}
 		}
@@ -324,6 +328,10 @@ namespace Graphics {
 			PROFILE_SCOPED()
 			assert(m_target == GL_TEXTURE_2D);
 			glActiveTexture(GL_TEXTURE0);
+			// keep the texture the render state cache has bound there: updates
+			// can come between draws (TerrainSurfaceTiles uploads every frame)
+			GLint previous = 0;
+			glGetIntegerv(GL_TEXTURE_BINDING_2D, &previous);
 			glBindTexture(m_target, m_texture);
 
 			switch (m_target) {
@@ -357,7 +365,8 @@ namespace Graphics {
 
 			BuildMipmaps(numMips);
 
-			glBindTexture(m_target, 0);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(m_target, GLuint(previous));
 			CHECKERRORS();
 		}
 

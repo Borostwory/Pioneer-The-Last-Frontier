@@ -64,20 +64,36 @@ void main(void)
 	vec3 materialDx = dFdx(varyingEyepos), materialDy = dFdy(varyingEyepos);
 	vec3 surfaceUp = normalize(varyingEyepos * geosphereInvRadius - geosphereCenter);
 
-	// colour, altitude and normal from the far texture where the mesh is
-	// coarser than it (terrain-far.glsl)
-	float farWeight = terrainFarWeight(dist);
+	// colour, altitude and normal baked from the terrain (terrain-far.glsl):
+	// the patch's surface tile where it has one, else the far texture where
+	// the mesh is coarser than it. They are the surface the relief and the
+	// bumps are added to below; baseScale: its detail as a fraction of the
+	// vertex spacing, where the relief starts
+	float facing = dot(surfaceUp, -normalize(varyingEyepos));
+	float surfaceWeight = terrainTileWeight();
+	float farWeight = terrainFarWeight(dist, facing) * (1.0 - surfaceWeight);
 	vec3 albedo = albedoColor.rgb;
-	vec3 farNormal = surfaceUp;
+	vec3 baseNormal = normalize(varyingNormal);
+	float baseScale = 1.0;
 #if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
 	float seaHeight = surfaceHeight;
 #endif
 	if (FarTexture.y > 0.0) {
 		FarSurface farSurface = terrainFarSample(surfaceUp);
 		albedo = mix(albedo, farSurface.albedo, farWeight);
-		farNormal = farSurface.normal;
+		baseNormal = normalize(mix(baseNormal, farSurface.normal, farWeight));
+		baseScale = mix(baseScale, terrainFarTexelRatio(dist, facing), farWeight);
 #if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
-		seaHeight = mix(surfaceHeight, farSurface.height, farWeight);
+		seaHeight = mix(seaHeight, farSurface.height, farWeight);
+#endif
+	}
+	if (surfaceWeight > 0.0) {
+		FarSurface surfaceTile = terrainTileSurface(texCoord0, surfaceUp);
+		albedo = mix(albedo, surfaceTile.albedo, surfaceWeight);
+		baseNormal = normalize(mix(baseNormal, surfaceTile.normal, surfaceWeight));
+		baseScale = mix(baseScale, 0.5, surfaceWeight);
+#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
+		seaHeight = mix(seaHeight, surfaceTile.height, surfaceWeight);
 #endif
 	}
 
@@ -90,10 +106,10 @@ void main(void)
 	vec4 tile = terrainTileSample(texCoord0);
 	vec2 bump;
 	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, albedo, mapping,
-		dist, varyingNormal, surfaceUp, altitude, hasWater, tile.w, bump);
+		dist, baseNormal, surfaceUp, altitude, hasWater, tile.w, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
-	// (the patterns stand in for detail the far texture has)
-	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - farWeight);
+	// (the patterns stand in for detail the baked surface has)
+	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - max(farWeight, surfaceWeight));
 	if (patternWeight > 0.0) {
 		float rock;
 		vec4 pw = terrainPatternWeights(materialWeights0, materialWeights1, rock);
@@ -102,12 +118,9 @@ void main(void)
 
 #if (NUM_LIGHTS > 0)
 	// lit per pixel, with the relief between the mesh and the pixel
-	vec3 N = terrainReliefNormal(normalize(varyingNormal), surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile);
+	vec3 N = terrainReliefNormal(baseNormal, surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile, baseScale);
 	// and the bumps of the material textures
 	N = terrainBumpNormal(N, materialDx, materialDy, bump);
-	// or the far texture's
-	if (farWeight > 0.0)
-		N = normalize(mix(N, farNormal, farWeight));
 	// shadows of ships, stations and buildings from the main star
 	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
 	vec3 light = vec3(0.0);

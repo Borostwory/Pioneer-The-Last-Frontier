@@ -111,6 +111,9 @@ public:
 	// terrain detail tile (TerrainTiles): its slot in the atlas, -1 if none
 	int GetTileSlot() const { return m_tileSlot; }
 	void SetTileSlot(int slot) { m_tileSlot = slot; }
+	// surface tile (TerrainSurfaceTiles): its slot in the atlas, -1 if none
+	int GetSurfaceSlot() const { return m_surfaceSlot; }
+	void SetSurfaceSlot(int slot) { m_surfaceSlot = slot; }
 	// a corner (0..3) on the unit sphere
 	const vector3d &GetCorner(int i) const { return i == 0 ? m_corners->m_v0 : i == 1 ? m_corners->m_v1 : i == 2 ? m_corners->m_v2 : m_corners->m_v3; }
 	// distance between vertices on the unit sphere
@@ -178,6 +181,7 @@ private:
 	bool m_needUpdateVBOs;
 	bool m_hasJobRequest;
 	int m_tileSlot = -1;
+	int m_surfaceSlot = -1;
 #if DEBUG_PATCHES
 #ifdef DEBUG_BOUNDING_SPHERES
 	std::unique_ptr<Graphics::Drawables::Sphere3D> m_boundsphere;

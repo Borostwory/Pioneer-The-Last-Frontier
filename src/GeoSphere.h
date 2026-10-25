@@ -103,6 +103,11 @@ public:
 	double GetDeepestVertexSpacing() const;
 	// weights of the detail tile styles: rolling, ridged, dunes, craters (TerrainTiles)
 	const float *GetTileStyle() const { return m_tileStyle; }
+	// the far texture as drawn this frame (TerrainFarTexture): texel size on
+	// the unit sphere and fade-in, both 0 if it is not drawn; surface tiles
+	// not much finer blend into it (GeoPatch::RenderImmediate)
+	double GetFarTexelDrawn() const { return m_farTexelDrawn; }
+	float GetFarFadeDrawn() const { return m_farFadeDrawn; }
 
 	// a patch that wants to split; the nearest ones are submitted at the end of the update
 	void AddQuadSplitCandidate(double distance, GeoPatch *patch);
@@ -153,6 +158,12 @@ private:
 	// campos: planet radii; pixelAngle: radians per pixel; spacingPerMetre:
 	// the patches' estimated vertex spacing per metre of distance
 	void SetFarTexture(const vector3d &campos, double pixelAngle, double spacingPerMetre);
+	// the patch surface tiles (TerrainSurfaceTiles) of the visible patches
+	void SetSurfaceTiles(double pixelAngle);
+	// the far texture as drawn this frame: texel size on the unit sphere and
+	// fade-in, 0 if it is not drawn
+	double m_farTexelDrawn = 0.0;
+	float m_farFadeDrawn = 0.0f;
 
 	// the starport cities, for the night lights seen from afar (city-glow.glsl);
 	// found on the first draw in a game

@@ -6,8 +6,11 @@
 
 #include "JobQueue.h"
 #include "RefCounted.h"
+#include "vector3.h"
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -17,6 +20,23 @@ class Terrain;
 namespace Graphics {
 	class Texture;
 }
+
+// The surface texels of the far texture and the patch surface tiles
+// (TerrainSurfaceTiles), as the patches make their vertices (setSurface in
+// GeoPatchJobs.cpp): for the grid points (x, y), x0 <= x < x1, y0 <= y < y1,
+// of a grid of unit-sphere directions with their heights (gridWidth points
+// per row, with the neighbours of those points in it):
+// - colour (RGBA8): the colour and the altitude above sea level
+//   (EncodeAltitude). The colours see the slope of colourNormals
+//   (ColourSlopeNormals, colourPitch per row, from the entry of (x0, y0)),
+//   or the grid's own if that is nullptr;
+// - normal (RGB10_A2): the surface normal minus the direction, each as
+//   0.5 + 0.5 * sign(v) * sqrt(|v| / 0.5) (FAR_NORMAL_RANGE in terrain-far.glsl).
+// rowPitch texels per output row, from the texel of (x0, y0). Uses the band
+// limit set by the caller (TerrainNoise::ScopedBandLimit).
+void BakeSurfaceTexels(const Terrain *terrain, const vector3d *dirs, const double *heights, int gridWidth,
+	int x0, int x1, int y0, int y1, const vector3d *colourNormals, int colourPitch,
+	uint8_t *colour, uint32_t *normal, size_t rowPitch);
 
 // The planet seen from afar: its colour, altitude above sea level and surface
 // normals baked into two cube maps from the same terrain functions as the
@@ -63,8 +83,8 @@ public:
 	// rgb: colour as in the vertex colour, a: altitude above sea level as in
 	// the vertex alpha (EncodeAltitude in GeoPatchJobs.h)
 	Graphics::Texture *GetColour() const { return m_colour.Get(); }
-	// rgb: the surface normal minus the radial direction, planet-fixed,
-	// stored as 0.5 + 0.5 * sign(v) * sqrt(|v| / 0.5) (FAR_NORMAL_RANGE)
+	// rgb (10 bits each): the surface normal minus the radial direction,
+	// planet-fixed, as BakeSurfaceTexels stores it
 	Graphics::Texture *GetNormal() const { return m_normal.Get(); }
 
 	// filled by the jobs, see TerrainFarTexture.cpp

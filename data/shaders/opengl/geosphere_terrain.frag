@@ -62,20 +62,35 @@ void main(void)
 
 	vec3 surfaceUp = normalize(eyeposScaled - geosphereCenter);
 
-	// colour, altitude and normal from the far texture where the mesh is
-	// coarser than it (terrain-far.glsl)
-	float farWeight = terrainFarWeight(dist);
+	// colour, altitude and normal baked from the terrain (terrain-far.glsl):
+	// the patch's surface tile where it has one, else the far texture where
+	// the mesh is coarser than it. They are the surface the relief and the
+	// bumps are added to below; baseScale: its detail as a fraction of the
+	// vertex spacing, where the relief starts
+	float facing = dot(surfaceUp, -eyenorm);
+	float surfaceWeight = terrainTileWeight();
+	float farWeight = terrainFarWeight(dist, facing) * (1.0 - surfaceWeight);
 	vec4 albedo = vertexColor;
-	vec3 farNormal = surfaceUp;
+	float baseScale = 1.0;
 #ifdef TERRAIN_WITH_WATER
 	float seaHeight = surfaceHeight;
 #endif
 	if (FarTexture.y > 0.0) {
 		FarSurface farSurface = terrainFarSample(surfaceUp);
 		albedo.rgb = mix(albedo.rgb, farSurface.albedo, farWeight);
-		farNormal = farSurface.normal;
+		tnorm = normalize(mix(tnorm, farSurface.normal, farWeight));
+		baseScale = mix(baseScale, terrainFarTexelRatio(dist, facing), farWeight);
 #ifdef TERRAIN_WITH_WATER
-		seaHeight = mix(surfaceHeight, farSurface.height, farWeight);
+		seaHeight = mix(seaHeight, farSurface.height, farWeight);
+#endif
+	}
+	if (surfaceWeight > 0.0) {
+		FarSurface surfaceTile = terrainTileSurface(texCoord0, surfaceUp);
+		albedo.rgb = mix(albedo.rgb, surfaceTile.albedo, surfaceWeight);
+		tnorm = normalize(mix(tnorm, surfaceTile.normal, surfaceWeight));
+		baseScale = mix(baseScale, 0.5, surfaceWeight);
+#ifdef TERRAIN_WITH_WATER
+		seaHeight = mix(seaHeight, surfaceTile.height, surfaceWeight);
 #endif
 	}
 
@@ -94,10 +109,10 @@ void main(void)
 	vec4 tile = terrainTileSample(texCoord0);
 	vec2 bump;
 	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, albedo.rgb, mapping,
-		dist, varyingNormal, surfaceUp, altitude, hasWater, tile.w, bump);
+		dist, tnorm, surfaceUp, altitude, hasWater, tile.w, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
-	// (the patterns stand in for detail the far texture has)
-	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - farWeight);
+	// (the patterns stand in for detail the baked surface has)
+	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - max(farWeight, surfaceWeight));
 	if (patternWeight > 0.0) {
 		float rock;
 		vec4 pw = terrainPatternWeights(materialWeights0, materialWeights1, rock);
@@ -105,12 +120,9 @@ void main(void)
 	}
 
 	// the relief between the mesh and the pixel
-	tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile);
+	tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile, baseScale);
 	// and the bumps of the material textures
 	tnorm = terrainBumpNormal(tnorm, materialDx, materialDy, bump);
-	// or the far texture's
-	if (farWeight > 0.0)
-		tnorm = normalize(mix(tnorm, farNormal, farWeight));
 
 #ifdef TERRAIN_WITH_WATER
 	// water: sun glint per light here, the rest after the light loop

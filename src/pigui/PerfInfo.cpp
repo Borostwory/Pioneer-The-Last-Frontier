@@ -14,6 +14,7 @@
 #include "SectorView.h"
 #include "Space.h"
 #include "TerrainFarTexture.h"
+#include "TerrainSurfaceTiles.h"
 #include "core/Log.h"
 #include "graphics/Renderer.h"
 #include "graphics/Stats.h"
@@ -727,6 +728,16 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 	}
 	if (!TerrainFarTexture::GetLastBakeInfo().empty())
 		ImGui::Text("Last far texture: %s", TerrainFarTexture::GetLastBakeInfo().c_str());
+
+	// the patches' surface tiles (TerrainSurfaceTiles); off frees the atlas,
+	// for A/B comparison
+	bool surfaceTiles = TerrainSurfaceTiles::Enabled();
+	if (ImGui::Checkbox("Surface Texture Tiles", &surfaceTiles)) {
+		Pi::config->SetInt("TerrainSurfaceTiles", surfaceTiles ? 1 : 0);
+		Pi::config->Save();
+	}
+	if (const TerrainSurfaceTiles *tiles = TerrainSurfaceTiles::Instance())
+		ImGui::Text("Surface tiles: %d in use, %d baking", tiles->GetTileCount(), tiles->GetBakingCount());
 
 	const GeoPatchGenStats stats = GetGeoPatchGenStats();
 	const double totalMs = double(stats.microseconds) / 1000.0;

@@ -17,6 +17,7 @@
 #include "Space.h"
 #include "SpaceStation.h"
 #include "TerrainFarTexture.h"
+#include "TerrainSurfaceTiles.h"
 #include "TerrainTiles.h"
 #include "RefCounted.h"
 #include "galaxy/AtmosphereParameters.h"
@@ -122,6 +123,7 @@ static double LodDistanceAtAltitude(const double altitude)
 void GeoSphere::UninitGeoSphere()
 {
 	TerrainTiles::Destroy();
+	TerrainSurfaceTiles::Destroy();
 	assert(s_patchContext.Unique());
 	s_patchContext.Reset();
 	PlanetClouds::Uninit();
@@ -144,6 +146,10 @@ void GeoSphere::UpdateAllGeoSpheres()
 	// terrain detail settings; read every frame so the sliders apply live
 	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 30.0);
 	s_lodForeshortening = ReadLodForeshortening();
+	// switched off in the Terrain Debug window: freed here, between frames,
+	// not while other planets' draws using the atlas are queued
+	if (!TerrainSurfaceTiles::Enabled())
+		TerrainSurfaceTiles::Destroy();
 	for (std::vector<GeoSphere *>::iterator i = s_allGeospheres.begin(); i != s_allGeospheres.end(); ++i) {
 		(*i)->Update();
 	}
@@ -152,6 +158,8 @@ void GeoSphere::UpdateAllGeoSpheres()
 // static
 void GeoSphere::OnChangeGeoSphereDetailLevel()
 {
+	// the tiles hold the old terrain, perhaps at another size
+	TerrainSurfaceTiles::Destroy();
 	s_patchContext.Reset(new GeoPatchContext(detail_edgeLen[Pi::detail.planets > 4 ? 4 : Pi::detail.planets]));
 
 	// reinit the geosphere terrain data
@@ -602,17 +610,36 @@ void GeoSphere::SetFarTexture(const vector3d &campos, const double pixelAngle, c
 		if (m_farTexture->IsReady()) {
 			handover = m_farTexture->GetTexelMetres() / spacingPerMetre;
 			// none of it shows when all the ground in sight (to the horizon,
-			// and mountains beyond it) is nearer, nor in the patch depth view
+			// and mountains beyond it) is nearer, nor in the patch depth view;
+			// patches seen edge-on hand over up to half as far (terrain-far.glsl)
 			const double top = 1.0 + GetMaxFeatureHeight();
 			const double farthest = (std::sqrt(camDist * camDist - 1.0) + std::sqrt(top * top - 1.0)) * GetSystemBody()->GetRadius();
-			if (farthest > handover && !(s_debugFlags & DebugFlags::DEBUG_PATCHDEPTH))
+			if (farthest > handover * (1.0 - 0.5 * GetLodForeshortening()) && !(s_debugFlags & DebugFlags::DEBUG_PATCHDEPTH))
 				fade = m_farTexture->GetFade();
 		}
 	}
+	m_farTexelDrawn = fade > 0.0f ? m_farTexture->GetTexelMetres() / GetSystemBody()->GetRadius() : 0.0;
+	m_farFadeDrawn = fade;
 	// never leave the material with textures that may be freed
 	m_surfaceMaterial->SetTexture("farColour"_hash, fade > 0.0f ? m_farTexture->GetColour() : nullptr);
 	m_surfaceMaterial->SetTexture("farNormal"_hash, fade > 0.0f ? m_farTexture->GetNormal() : nullptr);
-	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(float(handover), fade, 0.0f), 0.0f);
+	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(float(handover), fade, float(GetLodForeshortening())), 0.0f);
+}
+
+// The patch surface tiles (TerrainSurfaceTiles) for the visible patches,
+// twice as fine as their vertices; each patch sets its own in RenderImmediate.
+void GeoSphere::SetSurfaceTiles(const double pixelAngle)
+{
+	TerrainSurfaceTiles *tiles = nullptr;
+	if (TerrainSurfaceTiles::Enabled() && GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
+		tiles = TerrainSurfaceTiles::Get(2 * (s_patchContext->GetEdgeLen() - 3)); // twice the vertex gaps
+	if (tiles) {
+		// only where finer than the far texture, which is sharper from afar
+		const double farTexel = m_farTexture ? m_farTexture->GetTexelMetres() / GetSystemBody()->GetRadius() : 0.0;
+		tiles->Update(this, m_visiblePatches, pixelAngle, farTexel);
+	}
+	m_surfaceMaterial->SetTexture("surfaceTileColour"_hash, tiles ? tiles->GetColour() : nullptr);
+	m_surfaceMaterial->SetTexture("surfaceTileNormal"_hash, tiles ? tiles->GetNormal() : nullptr);
 }
 
 void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView, vector3d campos, const float radius, const std::vector<Camera::Shadow> &shadows)
@@ -630,6 +657,8 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	renderer->SetTransform(matrix4x4f(trans)); //need to set this for the following line to work
 	matrix4x4d modv = matrix4x4d(renderer->GetTransform());
 	matrix4x4d proj = matrix4x4d(renderer->GetProjection());
+	// radians per pixel, from the projection and the viewport height
+	const double pixelAngle = 2.0 / (std::max(proj[5], 1e-6) * std::max(renderer->GetViewport().h, 1));
 	Graphics::Frustum frustum(modv, proj);
 	m_tempFrustum = frustum;
 
@@ -688,8 +717,6 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		m_surfaceMaterial->SetPushConstant("ReliefScale"_hash,
 			vector3f(float(spacingPerMetre), float(deepestSpacing), 0.0f), 0.0f);
 
-		// radians per pixel, from the projection and the viewport height
-		const double pixelAngle = 2.0 / (std::max(proj[5], 1e-6) * std::max(renderer->GetViewport().h, 1));
 		SetFarTexture(campos, pixelAngle, spacingPerMetre);
 	}
 
@@ -757,6 +784,7 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		std::sort(m_visiblePatches.begin(), m_visiblePatches.end(), [&, campos](const std::pair<double, GeoPatch *> &a, const std::pair<double, GeoPatch *> &b) {
 			return (a.first) < (b.first);
 		});
+		SetSurfaceTiles(pixelAngle);
 
 		// cull occluded patches somehow?
 		// create frustum from corner points, something vertical, and the campos??? Cull anything within that frustum?
@@ -780,12 +808,10 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		else if (GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
 			tiles = TerrainTiles::Get(renderer);
 		if (tiles) {
-			// radians per pixel, from the projection and the viewport height
-			const matrix4x4f proj = renderer->GetProjection();
-			const double pixelAngle = 2.0 / (std::max(double(proj[5]), 1e-6) * std::max(renderer->GetViewport().h, 1));
 			tiles->Update(renderer, this, m_visiblePatches, pixelAngle);
 			m_surfaceMaterial->SetTexture("terrainTiles"_hash, tiles->GetAtlas());
 		}
+		SetSurfaceTiles(pixelAngle);
 		for (std::pair<double, GeoPatch *> &pPatch : m_visiblePatches) {
 			pPatch.second->RenderImmediate(renderer, campos, modelView);
 		}
