@@ -91,6 +91,7 @@ TerrainTiles::TerrainTiles(Graphics::Renderer *r)
 	const int slots = SLOTS_PER_ROW * SLOTS_PER_ROW;
 	m_owners.assign(slots, nullptr);
 	m_lastSeen.assign(slots, 0);
+	m_bakedBand.assign(slots, 0);
 	m_free.reserve(slots);
 	for (int i = slots - 1; i >= 0; i--)
 		m_free.push_back(i);
@@ -138,57 +139,103 @@ void TerrainTiles::Update(Graphics::Renderer *r, GeoSphere *sphere, const std::v
 	PROFILE_SCOPED()
 	++m_frame;
 
-	// patches large enough on screen to show the landforms, nearest first
-	std::vector<std::pair<double, GeoPatch *>> wanted;
+	const double radius = sphere->GetSystemBody()->GetRadius();
+	// the craters' finest octave follows the distance: bake again as it changes
+	const bool rebake = sphere->GetTileStyle()[3] > 0.0f;
+
+	// patches large enough on screen to show the landforms, and those whose
+	// band no longer fits their distance: (squared distance, patch, band)
+	struct Request {
+		double distSqr;
+		GeoPatch *patch;
+		int band;
+	};
+	std::vector<Request> wanted, stale;
 	for (const auto &v : visible) {
 		GeoPatch *patch = v.second;
-		if (patch->GetTileSlot() >= 0) {
-			m_lastSeen[patch->GetTileSlot()] = m_frame;
+		const double dist = std::max(std::sqrt(v.first), 1e-9);
+		const double footprint = dist * radius * pixelAngle;
+		const int slot = patch->GetTileSlot();
+		if (slot >= 0) {
+			m_lastSeen[slot] = m_frame;
+			// again once the band could be an octave finer (its finest
+			// octave LANDFORM_PIXELS / 4 on screen), or is two too fine
+			if (rebake) {
+				const int band = BandIndex(sphere, patch, footprint);
+				if (band < m_bakedBand[slot] || band > m_bakedBand[slot] + 1)
+					stale.push_back({ v.first, patch, band });
+			}
 			continue;
 		}
-		const double dist = std::max(std::sqrt(v.first), 1e-9);
+		// keep the ancestor's tile it is drawn with meanwhile
+		vector3f part;
+		const int ancestor = patch->FindTile(part);
+		if (ancestor >= 0)
+			m_lastSeen[ancestor] = m_frame;
 		const double patchPixels = patch->GetVertexSpacing() / GeoPatchContext::GetFrac() / (dist * pixelAngle);
 		if (patchPixels >= MIN_PATCH_PIXELS)
-			wanted.push_back(v);
+			wanted.push_back({ v.first, patch, BandIndex(sphere, patch, footprint) });
 	}
-	if (wanted.empty())
+	if (wanted.empty() && stale.empty())
 		return;
-	std::sort(wanted.begin(), wanted.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+	const auto nearest = [](const Request &a, const Request &b) { return a.distSqr < b.distSqr; };
+	std::sort(wanted.begin(), wanted.end(), nearest);
+	std::sort(stale.begin(), stale.end(), nearest);
 
 	Graphics::Renderer::StateTicket ticket(r);
 	r->SetRenderTarget(m_target.get());
 	int baked = 0;
-	for (const auto &v : wanted) {
+	for (const Request &b : wanted) {
 		if (baked >= BAKES_PER_FRAME)
 			break;
-		const int slot = Allocate(v.second);
+		const int slot = Allocate(b.patch);
 		if (slot < 0)
 			break;
-		const double footprint = std::sqrt(v.first) * sphere->GetSystemBody()->GetRadius() * pixelAngle;
-		Bake(r, sphere, v.second, slot, footprint);
+		Bake(r, sphere, b.patch, slot, b.band);
+		++baked;
+	}
+	for (const Request &b : stale) {
+		if (baked >= BAKES_PER_FRAME)
+			break;
+		Bake(r, sphere, b.patch, b.patch->GetTileSlot(), b.band);
 		++baked;
 	}
 }
 
-void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patch, const int slot, const double footprint)
+// octaves of the detail: wavelengths on a fixed ladder (so neighbouring
+// tiles agree), the band's longest twice the vertex spacing and at least
+// LANDFORM_PIXELS on screen (so the landforms do not depend on the terrain
+// detail distance), down to a quarter of that: at least two tile texels, as
+// a tile has four texels per vertex gap
+int TerrainTiles::BandIndex(const GeoSphere *sphere, const GeoPatch *patch, const double footprint)
+{
+	const double spacing = patch->GetVertexSpacing() * sphere->GetSystemBody()->GetRadius();
+	const double ladderBase = sphere->GetDeepestVertexSpacing() * 0.5;
+	const double largest = std::max(2.0 * spacing, LANDFORM_PIXELS * footprint);
+	return int(std::round(std::log2(std::max(largest / ladderBase, 1.0))));
+}
+
+void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patch, const int slot, const int band)
 {
 	const double radius = sphere->GetSystemBody()->GetRadius();
+	m_bakedBand[slot] = band;
 
 	// the patch centre, as the patch jobs place it (GetSpherePoint at 0.5, 0.5)
 	const vector3d &v0 = patch->GetCorner(0), &v1 = patch->GetCorner(1), &v2 = patch->GetCorner(2), &v3 = patch->GetCorner(3);
 	const vector3d centreDir = (v0 + 0.25 * (v1 - v0) + 0.25 * (v2 - v0) + 0.25 * (v3 - v0)).Normalized();
 	const vector3d centre = centreDir * radius;
 
-	// octaves of the detail: wavelengths on a fixed ladder (so neighbouring
-	// tiles agree), the largest twice the vertex spacing and at least
-	// LANDFORM_PIXELS on screen (so the landforms do not depend on the
-	// terrain detail distance), down to a quarter of that: at least two
-	// tile texels, as a tile has four texels per vertex gap
-	const double spacing = patch->GetVertexSpacing() * radius;
+	// the band's octaves (BandIndex()), and the craters' above it up to their
+	// largest size, the same for every tile
 	const double ladderBase = sphere->GetDeepestVertexSpacing() * 0.5;
-	const double largest = std::max(2.0 * spacing, LANDFORM_PIXELS * footprint);
-	const double index = std::round(std::log2(std::max(largest / ladderBase, 1.0)));
-	const double longest = ladderBase * std::pow(2.0, index);
+	const int finest = band - (BAND_OCTAVES - 1);
+	const double finestWave = ladderBase * std::pow(2.0, double(finest));
+	const float *style = sphere->GetTileStyle();
+	int count = BAND_OCTAVES;
+	if (style[3] > 0.0f) {
+		const int top = int(std::floor(std::log2(std::max(radius * CRATER_TOP_PER_RADIUS / ladderBase, 1.0))));
+		count = std::min(std::max(top - finest + 1, BAND_OCTAVES), MAX_OCTAVES);
+	}
 
 	const int x0 = (slot % SLOTS_PER_ROW) * SLOT_STRIDE;
 	const int y0 = (slot / SLOTS_PER_ROW) * SLOT_STRIDE;
@@ -200,10 +247,15 @@ void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patc
 	for (int i = 0; i < 4; i++)
 		m->SetPushConstant(cornerNames[i], vector3f(patch->GetCorner(i) * radius - centre), 0.0f);
 	m->SetPushConstant("TileCentre"_hash, vector3f(centreDir), float(radius));
-	m->SetPushConstant("TileOctaves"_hash, vector3f(float(longest), float(index), 3.0f), 0.0f);
-	m->SetPushConstant("TileOrigin"_hash,
-		vector3f(float(PositiveMod(centre.x / longest, 256.0)), float(PositiveMod(centre.y / longest, 256.0)), float(PositiveMod(centre.z / longest, 256.0))), 0.0f);
-	const float *style = sphere->GetTileStyle();
+	m->SetPushConstant("TileOctaves"_hash, vector3f(float(finestWave), float(finest), float(BAND_OCTAVES)), float(count));
+	// the patch centre in cells of the coarsest octave of each group of four,
+	// modulo 256: a float holds it for the finer octaves of its group only
+	const size_t originNames[4] = { "TileOrigin0"_hash, "TileOrigin1"_hash, "TileOrigin2"_hash, "TileOrigin3"_hash };
+	for (int g = 0; g < 4; g++) {
+		const double wave = finestWave * std::pow(2.0, double(std::min(4 * g + 3, count - 1)));
+		m->SetPushConstant(originNames[g],
+			vector3f(float(PositiveMod(centre.x / wave, 256.0)), float(PositiveMod(centre.y / wave, 256.0)), float(PositiveMod(centre.z / wave, 256.0))), 0.0f);
+	}
 	m->SetPushConstant("TileStyle"_hash, vector3f(style[0], style[1], style[2]), style[3]);
 	r->DrawBuffer(m_triangle.get(), m);
 }

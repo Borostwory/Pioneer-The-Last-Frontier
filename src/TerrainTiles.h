@@ -25,14 +25,23 @@ namespace Graphics {
 
 // Terrain detail tiles: per patch, the GPU bakes landforms (craters, ridges,
 // dunes, rolling hills; data/shaders/opengl/terrain_tile.frag) into a slot
-// of a shared atlas, once, and the terrain shaders sample it for relief and
-// materials (terrain-materials.glsl). The largest landforms are twice the
-// vertex spacing, and at least LANDFORM_PIXELS on screen: they used to
-// follow the vertex spacing alone, and only patches whose vertices were
-// 4 px apart got a tile, so at high terrain detail distances (vertices about
-// 3 px apart) the landforms vanished and bodies like the Moon looked smooth,
-// or showed them on some patches only. Nearest first; patches too small on
-// screen keep the generic relief. Mesh and collision are unchanged.
+// of a shared atlas, and the terrain shaders sample it for relief and
+// materials (terrain-materials.glsl). Mesh and collision are unchanged.
+//
+// A tile holds a band of BAND_OCTAVES octaves: the longest twice the vertex
+// spacing, and at least LANDFORM_PIXELS on screen (they used to follow the
+// vertex spacing alone, and only patches whose vertices were 4 px apart got
+// a tile, so at high terrain detail distances the landforms vanished and
+// bodies like the Moon looked smooth, or showed them on some patches only).
+// Craters add every octave above the band up to CRATER_TOP_PER_RADIUS of
+// the radius: with the band alone the craters a patch showed depended on its
+// depth and distance, so zooming in swapped them for smaller ones elsewhere.
+// Now the same craters show at every distance, and only the finest come and
+// go; on cratered bodies tiles are baked again as the distance changes so
+// their finest octave keeps about LANDFORM_PIXELS / 4 on screen.
+// Nearest first; until a patch has its own tile it is drawn with its part of
+// an ancestor's (GeoPatch::FindTile), patches too small on screen keep the
+// generic relief.
 class TerrainTiles {
 public:
 	// texels across a patch, the border around it (for filtering across the
@@ -46,9 +55,15 @@ public:
 	static constexpr int BAKES_PER_FRAME = 24;
 	// patches get a tile once they are this many pixels across
 	static constexpr double MIN_PATCH_PIXELS = 16.0;
-	// the largest landforms are at least this many pixels long, the
+	// the band's largest landforms are at least this many pixels long, the
 	// smallest a quarter of that
 	static constexpr double LANDFORM_PIXELS = 32.0;
+	static constexpr int BAND_OCTAVES = 3;
+	// craters: largest wavelength as a fraction of the planet radius (as the
+	// band's from where a planet is about 300 px across), and the most octaves
+	// in a tile (TILE_MAX_OCTAVES in terrain_tile.frag; four origins of four)
+	static constexpr double CRATER_TOP_PER_RADIUS = 0.25;
+	static constexpr int MAX_OCTAVES = 16;
 
 	// the shared atlas, created on first use; nullptr if it cannot be
 	static TerrainTiles *Get(Graphics::Renderer *r);
@@ -56,11 +71,12 @@ public:
 	// frees a patch's tile (safe after Destroy)
 	static void ReleaseSlot(int slot);
 
-	// Gives tiles to the visible patches that need one, nearest first,
-	// baking at most BAKES_PER_FRAME; when the atlas is full, takes the tiles
-	// of patches not seen for a few frames. visible: (squared distance in
-	// planet radii, patch). pixelAngle: radians per pixel. Changes the render
-	// target and viewport.
+	// Gives tiles to the visible patches that need one, nearest first, then
+	// on cratered bodies bakes again those whose band no longer fits their
+	// distance, at most BAKES_PER_FRAME in all; when the atlas is full, takes
+	// the tiles of patches not seen for a few frames (nor drawn with by a
+	// descendant). visible: (squared distance in planet radii, patch).
+	// pixelAngle: radians per pixel. Changes the render target and viewport.
 	void Update(Graphics::Renderer *r, GeoSphere *sphere, const std::vector<std::pair<double, GeoPatch *>> &visible, double pixelAngle);
 
 	Graphics::Texture *GetAtlas() const;
@@ -70,8 +86,9 @@ public:
 private:
 	explicit TerrainTiles(Graphics::Renderer *r);
 	int Allocate(GeoPatch *patch);
-	// footprint: metres per pixel at the patch
-	void Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patch, int slot, double footprint);
+	// ladder index of the band's longest octave; footprint: metres per pixel at the patch
+	static int BandIndex(const GeoSphere *sphere, const GeoPatch *patch, double footprint);
+	void Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patch, int slot, int band);
 
 	static constexpr int SLOT_STRIDE = TILE_SIZE + 2 * TILE_BORDER;
 	static constexpr int SLOTS_PER_ROW = ATLAS_SIZE / SLOT_STRIDE;
@@ -81,6 +98,7 @@ private:
 	std::unique_ptr<Graphics::VertexArray> m_triangle;
 	std::vector<GeoPatch *> m_owners; // per slot, nullptr if free
 	std::vector<uint32_t> m_lastSeen; // per slot, frame its patch was last visible
+	std::vector<int> m_bakedBand;	  // per slot, BandIndex() it was baked with
 	std::vector<int> m_free;
 	uint32_t m_frame = 0;
 };

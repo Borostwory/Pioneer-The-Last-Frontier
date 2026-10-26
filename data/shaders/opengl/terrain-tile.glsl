@@ -1,14 +1,15 @@
 // Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
-// Terrain detail tiles: the landforms between a patch's mesh and a quarter
-// of its vertex spacing, baked once per patch on the GPU (TerrainTiles in
-// the C++, terrain_tile.frag) into an atlas, and sampled by the terrain
-// shaders for relief and materials.
+// Terrain detail tiles: landforms below a patch's mesh, down to a quarter of
+// its vertex spacing, baked per patch on the GPU (TerrainTiles in the C++,
+// terrain_tile.frag) into an atlas, and sampled by the terrain shaders for
+// relief and materials.
 //
 // Detail comes in octaves of planet-fixed noise with a fixed ladder of
 // wavelengths, so neighbouring tiles agree. Four styles, mixed per planet:
-// rolling (eroded fBm), ridged, dunes and craters.
+// rolling (eroded fBm), ridged, dunes and craters. Craters take every octave
+// up to a size set by the planet, so they stay put as the camera moves.
 //
 // A tile texel holds the slope of the detail (planet-fixed, along the
 // surface) and a landform value: high on crests, ridges and crater rims,

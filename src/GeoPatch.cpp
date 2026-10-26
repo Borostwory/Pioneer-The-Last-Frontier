@@ -50,6 +50,9 @@ namespace PatchMaths{
 static constexpr double GEOPATCH_SUBDIVIDE_AT_CAMDIST = 5.0;
 // children are merged back only beyond this multiple of the split distance
 static constexpr double LOD_MERGE_HYSTERESIS = 1.25;
+// until a patch's detail tile is baked, it is drawn with an ancestor's up to
+// this many levels up (GeoPatch::FindTile)
+static constexpr int TILE_ANCESTOR_LEVELS = 2;
 
 #if USE_SUB_CENTROID_CLIPPING
 #if NUM_HORIZON_POINTS == 9
@@ -354,9 +357,16 @@ void GeoPatch::RenderImmediate(Graphics::Renderer *renderer, const vector3d &cam
 
 		m_geosphere->GetSurfaceMaterial()->SetPushConstant("PatchDetailFrequency"_hash, fDetailFrequency);
 
-		// this patch's detail tile: atlas texture coordinates (origin, size), and whether it has one
-		const TerrainTiles *tiles = m_tileSlot >= 0 ? TerrainTiles::Get(renderer) : nullptr;
-		const vector3f tile = tiles ? tiles->SlotUV(m_tileSlot) : vector3f(0.0f, 0.0f, 0.0f);
+		// this patch's detail tile, or its part of an ancestor's: atlas
+		// texture coordinates (origin, size), and whether it has one
+		vector3f part;
+		const int tileSlot = FindTile(part);
+		const TerrainTiles *tiles = tileSlot >= 0 ? TerrainTiles::Get(renderer) : nullptr;
+		vector3f tile(0.0f, 0.0f, 0.0f);
+		if (tiles) {
+			const vector3f slot = tiles->SlotUV(tileSlot);
+			tile = vector3f(slot.x + part.x * slot.z, slot.y + part.y * slot.z, part.z * slot.z);
+		}
 		m_geosphere->GetSurfaceMaterial()->SetPushConstant("PatchTile"_hash, tile, tiles ? 1.0f : 0.0f);
 
 		// this patch's surface tile: atlas texture coordinates (origin, size)
@@ -416,6 +426,26 @@ void GeoPatch::RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d
 double GeoPatch::GetVertexSpacing() const
 {
 	return m_edgeLength * m_ctx->GetFrac();
+}
+
+int GeoPatch::FindTile(vector3f &part) const
+{
+	// a child covers a quarter of its parent (QuadPatchJob): patch
+	// coordinates x, y offset by 0 or 0.5, and texture u = 1 - x, v = y
+	part = vector3f(0.0f, 0.0f, 1.0f);
+	const GeoPatch *p = this;
+	for (int up = 0; up <= TILE_ANCESTOR_LEVELS; up++) {
+		if (p->m_tileSlot >= 0)
+			return p->m_tileSlot;
+		if (!p->m_parent)
+			break;
+		const int idx = p->m_parent->GetChildIdx(p);
+		const float u = (idx == 0 || idx == 3) ? 0.5f : 0.0f;
+		const float v = (idx >= 2) ? 0.5f : 0.0f;
+		part = vector3f(u + 0.5f * part.x, v + 0.5f * part.y, 0.5f * part.z);
+		p = p->m_parent;
+	}
+	return -1;
 }
 
 void GeoPatch::GatherRenderablePatches(std::vector<std::pair<double, GeoPatch *>> &visiblePatches, Graphics::Renderer *renderer, const vector3d &campos, const Graphics::Frustum &frustum)
@@ -558,6 +588,7 @@ void GeoPatch::ReceiveHeightmaps(SQuadSplitResult *psr)
 			m_kids[i].reset(new GeoPatch(m_ctx, m_geosphere,
 				data.v0, data.v1, data.v2, data.v3,
 				newDepth, data.patchID));
+			m_kids[i]->m_parent = this;
 		}
 
 		for (int i = 0; i < NUM_KIDS; i++) {

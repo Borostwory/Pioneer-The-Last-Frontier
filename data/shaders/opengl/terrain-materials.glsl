@@ -38,7 +38,8 @@ uniform vec4 MaterialSpecial;
 
 // the atlas of terrain detail tiles (TerrainTiles in the C++, terrain-tile.glsl)
 uniform sampler2D terrainTiles;
-// xy: atlas coordinates of this patch's tile, z: its size; w: 1 if the patch has one
+// xy: atlas coordinates of this patch's tile (or of its part of an
+// ancestor's, until its own is baked), z: its size; w: 1 if the patch has one
 uniform vec4 PatchTile;
 // as TILE_SLOPE_RANGE in terrain-tile.glsl
 #define TERRAIN_TILE_SLOPE_RANGE 1.5

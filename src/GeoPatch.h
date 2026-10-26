@@ -111,6 +111,10 @@ public:
 	// terrain detail tile (TerrainTiles): its slot in the atlas, -1 if none
 	int GetTileSlot() const { return m_tileSlot; }
 	void SetTileSlot(int slot) { m_tileSlot = slot; }
+	// the detail tile the patch is drawn with: its own, or until that is
+	// baked the part of an ancestor's it covers. Returns the slot (-1: none);
+	// part: the patch's offset (xy) and size (z) in that tile's coordinates
+	int FindTile(vector3f &part) const;
 	// surface tile (TerrainSurfaceTiles): its slot in the atlas, -1 if none
 	int GetSurfaceSlot() const { return m_surfaceSlot; }
 	void SetSurfaceSlot(int slot) { m_surfaceSlot = slot; }
@@ -165,6 +169,7 @@ private:
 	std::unique_ptr<Corners> m_corners;
 	std::unique_ptr<PatchVBOData> m_patchVBOData;
 	std::unique_ptr<GeoPatch> m_kids[NUM_KIDS];
+	GeoPatch *m_parent = nullptr; // owns this patch, nullptr for the root patches
 
 	vector3d m_clipCentroid;
 #if USE_SUB_CENTROID_CLIPPING
