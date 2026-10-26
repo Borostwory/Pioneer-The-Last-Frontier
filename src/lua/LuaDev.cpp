@@ -2,10 +2,20 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 #include "LuaDev.h"
+#include "Frame.h"
 #include "Game.h"
+#include "LuaConstants.h"
 #include "LuaObject.h"
+#include "MathUtil.h"
 #include "Pi.h"
+#include "Ship.h"
+#include "Space.h"
 #include "WorldView.h"
+#include "galaxy/Galaxy.h"
+#include "galaxy/GalaxyCache.h"
+#include "galaxy/GalaxyGenerator.h"
+#include "galaxy/Sector.h"
+#include <algorithm>
 #include <sstream>
 
 /*
@@ -243,6 +253,157 @@ static int l_dev_set_camera_offset(lua_State *l)
 	return 0;
 }
 
+/*
+ * Find the systems nearest to a system that have a star of the given type,
+ * searching outwards in shells of sectors. Only the sector data is generated,
+ * so this is cheap per system, but large radii still take a moment.
+ *
+ * > results = Dev.FindSystemsWithStarType(type, center, maxRadius, maxResults)
+ *
+ *   type - a <Constants.BodyType> star type, e.g. 'STAR_K_GIANT'
+ *   center - <SystemPath> to search around
+ *   maxRadius - furthest shell to search, in sectors
+ *   maxResults - stop after the shell in which this many systems were found
+ *
+ * Returns an array of { path = <SystemPath>, name = string, distance = light years },
+ * nearest first
+ */
+static int l_dev_find_systems_with_star_type(lua_State *l)
+{
+	if (!Pi::game)
+		return luaL_error(l, "Dev.FindSystemsWithStarType only works when there is a game running");
+
+	const auto type = static_cast<SystemBody::BodyType>(LuaConstants::GetConstantFromArg(l, "BodyType", 1));
+	const SystemPath *center = LuaObject<SystemPath>::CheckFromLua(2);
+	const int maxRadius = LuaPull<int>(l, 3);
+	const size_t maxResults = size_t(std::max(LuaPull<int>(l, 4), 1));
+
+	RefCountedPtr<Galaxy> galaxy = Pi::game->GetGalaxy();
+
+	vector3f centerPos = Sector::SIZE * vector3f(center->sectorX + 0.5f, center->sectorY + 0.5f, center->sectorZ + 0.5f);
+	if (center->HasValidSystem()) {
+		RefCountedPtr<const Sector> sec = galaxy->GetSector(center->SectorOnly());
+		if (center->systemIndex < sec->m_systems.size())
+			centerPos = sec->m_systems[center->systemIndex].GetFullPosition();
+	}
+
+	struct Found {
+		SystemPath path;
+		std::string name;
+		float distance;
+	};
+	std::vector<Found> found;
+
+	for (int r = 0; r <= maxRadius && found.size() < maxResults; r++) {
+		// the shell of sectors at Chebyshev distance r
+		for (int dx = -r; dx <= r; dx++) {
+			for (int dy = -r; dy <= r; dy++) {
+				for (int dz = -r; dz <= r; dz++) {
+					if (std::max({ std::abs(dx), std::abs(dy), std::abs(dz) }) != r)
+						continue;
+
+					const SystemPath secPath(center->sectorX + dx, center->sectorY + dy, center->sectorZ + dz);
+					// generated without the cache, so a big search doesn't fill it
+					RefCountedPtr<const Sector> sec = galaxy->GetGenerator()->Generate<Sector, SectorCache>(galaxy, secPath, nullptr);
+					for (const Sector::System &sys : sec->m_systems) {
+						for (unsigned i = 0; i < sys.GetNumStars(); i++) {
+							if (sys.GetStarType(i) == type) {
+								found.push_back({ sys.GetPath(), sys.GetName(), (sys.GetFullPosition() - centerPos).Length() });
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	std::sort(found.begin(), found.end(), [](const Found &a, const Found &b) { return a.distance < b.distance; });
+	if (found.size() > maxResults)
+		found.resize(maxResults);
+
+	lua_createtable(l, int(found.size()), 0);
+	for (size_t i = 0; i < found.size(); i++) {
+		lua_createtable(l, 0, 3);
+		LuaObject<SystemPath>::PushToLua(found[i].path);
+		lua_setfield(l, -2, "path");
+		lua_pushstring(l, found[i].name.c_str());
+		lua_setfield(l, -2, "name");
+		lua_pushnumber(l, found[i].distance);
+		lua_setfield(l, -2, "distance");
+		lua_rawseti(l, -2, int(i + 1));
+	}
+	return 1;
+}
+
+/*
+ * Move a flying ship to a body in the current system, a number of the body's
+ * radii from its centre, at rest relative to it and facing it. Bodies that
+ * orbit a star (planets, but also companion stars and brown dwarfs) are
+ * approached from that star's side, so it doesn't sit behind them; the
+ * system's main star from the ship's side.
+ *
+ * > Dev.TeleportNearBody(ship, body, radii)
+ */
+static int l_dev_teleport_near_body(lua_State *l)
+{
+	if (!Pi::game || !Pi::game->GetSpace())
+		return luaL_error(l, "Dev.TeleportNearBody only works when there is a game running");
+
+	Ship *ship = LuaObject<Ship>::CheckFromLua(1);
+	Body *body = LuaObject<Body>::CheckFromLua(2);
+	const double radii = std::max(luaL_checknumber(l, 3), 1.1);
+
+	if (ship->GetFlightState() != Ship::FLYING)
+		return luaL_error(l, "Dev.TeleportNearBody: the ship must be flying");
+
+	const SystemBody *sbody = body->GetSystemBody();
+	const double radius = std::max(sbody ? sbody->GetRadius() : 0.0, body->GetPhysRadius());
+	const double distance = radius * radii;
+
+	const FrameId frameId = Frame::GetFrame(body->GetFrame())->GetNonRotFrame();
+	const vector3d bodyPos = body->GetPositionRelTo(frameId);
+
+	// the side to approach from: towards the body's star, or towards the ship for stars
+	vector3d towards = ship->GetPositionRelTo(frameId) - bodyPos;
+	const SystemBody *star = sbody ? sbody->GetParent() : nullptr;
+	while (star && star->GetSuperType() != SystemBody::SUPERTYPE_STAR)
+		star = star->GetParent();
+	if (star) {
+		const SystemPath starPath = star->GetPath();
+		if (Body *starBody = Pi::game->GetSpace()->FindBodyForPath(&starPath))
+			towards = starBody->GetPositionRelTo(frameId) - bodyPos;
+	}
+	if (towards.LengthSqr() < 1e-6)
+		towards = vector3d(0.0, 0.0, 1.0);
+	towards = towards.Normalized();
+
+	// turn 25 degrees off that line, so planets show a sliver of their night side
+	vector3d side = towards.Cross(vector3d(0.0, 1.0, 0.0));
+	if (side.LengthSqr() < 1e-6)
+		side = vector3d(1.0, 0.0, 0.0);
+	side = side.Normalized();
+	const double offAngle = DEG2RAD(25.0);
+	const vector3d dir = (towards * cos(offAngle) + side * sin(offAngle)).Normalized();
+
+	// face the body: ships look along -z
+	const vector3d z = dir;
+	vector3d x = vector3d(0.0, 1.0, 0.0).Cross(z);
+	if (x.LengthSqr() < 1e-6)
+		x = vector3d(1.0, 0.0, 0.0);
+	x = x.Normalized();
+	const vector3d y = z.Cross(x);
+
+	ship->AIClearInstructions();
+	ship->ClearThrusterState();
+	ship->SetFrame(frameId);
+	ship->SetPosition(bodyPos + dir * distance);
+	ship->SetVelocity(body->GetVelocityRelTo(frameId));
+	ship->SetAngVelocity(vector3d(0.0));
+	ship->SetOrient(matrix3x3d::FromVectors(x, y, z));
+	return 0;
+}
+
 void LuaDev::Register()
 {
 	lua_State *l = Lua::manager->GetLuaState();
@@ -252,6 +413,8 @@ void LuaDev::Register()
 	static const luaL_Reg methods[] = {
 		{ "GalaxyStats", l_dev_galaxy_stats },
 		{ "SetCameraOffset", l_dev_set_camera_offset },
+		{ "FindSystemsWithStarType", l_dev_find_systems_with_star_type },
+		{ "TeleportNearBody", l_dev_teleport_near_body },
 		{ 0, 0 }
 	};
 
