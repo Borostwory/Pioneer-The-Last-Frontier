@@ -353,6 +353,11 @@ namespace Sound {
 		return m_backend->EventSetVolume(eid, vol_left, vol_right);
 	}
 
+	bool Event::SetPitch(const float pitch)
+	{
+		return m_backend->EventSetPitch(eid, pitch);
+	}
+
 	bool Event::FadeOut(float dv_dt, Op op)
 	{
 		bool found = m_backend->EventVolumeAnimate(eid, 0.0f, 0.0f, dv_dt, dv_dt);

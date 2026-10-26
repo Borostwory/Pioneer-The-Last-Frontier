@@ -35,6 +35,8 @@ namespace Sound {
 		virtual bool EventSetOp(eventid eid, Op op) = 0;
 		virtual bool EventVolumeAnimate(eventid eid, const float targetVol1, const float targetVol2, const float dv_dt1, const float dv_dt2) = 0;
 		virtual bool EventSetVolume(eventid eid, const float vol_left, const float vol_right) = 0;
+		// playback rate multiplier (1.0 = original pitch); backends that can't resample ignore it
+		virtual bool EventSetPitch(eventid /*eid*/, const float /*pitch*/) { return false; }
 
 		virtual void Pause(int on) = 0;
 

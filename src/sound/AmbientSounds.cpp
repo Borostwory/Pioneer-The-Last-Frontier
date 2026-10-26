@@ -17,24 +17,52 @@ enum EAtmosphereNoiseChannels {
 	eAtmoNoise1 = 0,
 	eAtmoNoise2,
 	eAtmoNoise3,
-	eAtmoNoise4,
 	eMaxNumAtmosphereSounds
 };
 
+// airflow04 (high hiss) deliberately unused: too shrill
 static const char *s_airflowTable[eMaxNumAtmosphereSounds] = {
 	"airflow01",
 	"airflow02",
-	"airflow03",
-	"airflow04"
+	"airflow03"
 };
 
-//	start, inverse range
-static const float s_rangeTable[eMaxNumAtmosphereSounds][2] = {
-	{ 0.0f, 1.0f / (1.0f - 0.0f) }, // 1
-	{ 1.0f, 1.0f / (3.0f - 1.0f) }, // 2
-	{ 2.0f, 1.0f / (7.0f - 3.0f) }, // 4
-	{ 4.0f, 1.0f / (15.0f - 7.0f) } // 8
+// Airflow model (mockup). Everything is driven by an "intensity" in 0..1 derived
+// from dynamic pressure q = 0.5 * rho * v^2 on a log scale, so it is audible at
+// normal flying speeds and still has headroom for hypersonic flight.
+//	   q [Pa]   Earth sea level   intensity
+//	       30        ~7 m/s          0.0
+//	     1500        50 m/s          0.38
+//	     6000       100 m/s          0.51
+//	    55000       300 m/s          0.72
+//	  1000000      1280 m/s          1.0
+static const float AIRFLOW_LOG_Q_MIN = 1.48f; // log10(30 Pa)
+static const float AIRFLOW_LOG_Q_MAX = 6.0f;  // log10(1 MPa)
+
+// Each layer fades in over [start, end] of intensity; layers are cumulative.
+// The bass rumble (airflow01) carries the sound; the mids only add some edge
+// at high intensity. Sample RMS for reference: 0.44, 0.07, 0.16.
+//	start, end, gain
+static const float s_airflowLayerTable[eMaxNumAtmosphereSounds][3] = {
+	{ 0.00f, 0.35f, 0.70f }, // airflow01: low rumble (lead)
+	{ 0.45f, 0.85f, 0.80f }, // airflow02: mid
+	{ 0.60f, 1.00f, 0.50f }	 // airflow03: mid
 };
+
+// pitch from airspeed: 0.75x at 10 m/s .. 1.25x at 2000 m/s (log scale), kept low to stay bassy
+static const float AIRFLOW_PITCH_LOW = 0.75f;
+static const float AIRFLOW_PITCH_HIGH = 1.25f;
+static const float AIRFLOW_LOG_V_MIN = 1.0f; // log10(10 m/s)
+static const float AIRFLOW_LOG_V_MAX = 3.3f; // log10(2000 m/s)
+// pitch from pressure: thin air hisses higher, thick air rumbles lower
+// (1 atm: 1.0x, 0.01 atm: 1.2x, 90 atm: 0.8x)
+static const float AIRFLOW_PITCH_PER_DECADE_ATM = -0.1f;
+// buffeting: volume wobble depth at full intensity, and wobble rate range [Hz]
+static const float AIRFLOW_TURBULENCE_DEPTH = 0.15f;
+static const float AIRFLOW_TURBULENCE_HZ_LOW = 0.3f;
+static const float AIRFLOW_TURBULENCE_HZ_HIGH = 1.5f;
+// smoothing time constant for volume and pitch changes [s]
+static const float AIRFLOW_SMOOTHING = 0.25f;
 
 static const Uint32 NUM_SURFACE_LIFE_SOUNDS = 12;
 static const char *s_surfaceLifeSounds[NUM_SURFACE_LIFE_SOUNDS] = {
@@ -61,6 +89,9 @@ static int astroNoiseSeed;
 static Sound::Event s_stationNoise;
 static Sound::Event s_starNoise;
 static Sound::Event s_atmosphereNoises[eMaxNumAtmosphereSounds];
+static float s_airflowVolumes[eMaxNumAtmosphereSounds];
+static float s_airflowPitch = 1.0f;
+static float s_airflowTurbulencePhase = 0.0f;
 static Sound::Event s_planetSurfaceNoise;
 static sigc::connection onChangeCamTypeConnection;
 
@@ -210,25 +241,46 @@ void AmbientSounds::Update()
 			double dist = Pi::player->GetPosition().Length();
 			double pressure, density;
 			static_cast<const Planet *>(astro)->GetAtmosphericState(dist, &pressure, &density);
-			// maximum volume at around 2km/sec at earth density, pressure
-			const float pressureVolume = float(density * Pi::player->GetVelocity().Length() * 0.0005);
-			//volume = Clamp(volume, 0.0f, 1.0f) * v_env;
-			float volumes[eMaxNumAtmosphereSounds];
-			for (int i = 0; i < eMaxNumAtmosphereSounds; i++) {
-				const float beg = s_rangeTable[i][0];
-				const float inv = s_rangeTable[i][1];
-				volumes[i] = Clamp((pressureVolume - beg) * inv, 0.0f, 1.0f) * v_env;
-			}
+			// velocity in the planet's rotating frame is airspeed (the atmosphere co-rotates)
+			const double airspeed = Pi::player->GetVelocity().Length();
+			const double dynamicPressure = 0.5 * density * airspeed * airspeed;
+
+			const float intensity = dynamicPressure > 0.0 ?
+				Clamp((float(log10(dynamicPressure)) - AIRFLOW_LOG_Q_MIN) / (AIRFLOW_LOG_Q_MAX - AIRFLOW_LOG_Q_MIN), 0.0f, 1.0f) :
+				0.0f;
+			const float speedNorm = airspeed > 0.0 ?
+				Clamp((float(log10(airspeed)) - AIRFLOW_LOG_V_MIN) / (AIRFLOW_LOG_V_MAX - AIRFLOW_LOG_V_MIN), 0.0f, 1.0f) :
+				0.0f;
+
+			float targetPitch = AIRFLOW_PITCH_LOW + (AIRFLOW_PITCH_HIGH - AIRFLOW_PITCH_LOW) * speedNorm;
+			if (pressure > 0.0)
+				targetPitch *= Clamp(1.0f + AIRFLOW_PITCH_PER_DECADE_ATM * float(log10(pressure)), 0.8f, 1.2f);
+
+			// buffeting: two incommensurate sines, faster and deeper with speed and pressure
+			const float dt = Pi::GetFrameTime();
+			const float turbulenceHz = AIRFLOW_TURBULENCE_HZ_LOW + (AIRFLOW_TURBULENCE_HZ_HIGH - AIRFLOW_TURBULENCE_HZ_LOW) * speedNorm;
+			s_airflowTurbulencePhase = fmodf(s_airflowTurbulencePhase + float(2.0 * M_PI) * turbulenceHz * dt, float(2.0 * M_PI) * 100.0f);
+			const float turbulence = 1.0f + AIRFLOW_TURBULENCE_DEPTH * intensity * (0.6f * sinf(s_airflowTurbulencePhase) + 0.4f * sinf(2.37f * s_airflowTurbulencePhase + 1.3f));
+
+			const float smoothing = 1.0f - expf(-dt / AIRFLOW_SMOOTHING);
+			s_airflowPitch += (targetPitch - s_airflowPitch) * smoothing;
 
 			for (int i = 0; i < eMaxNumAtmosphereSounds; i++) {
-				const float volume = volumes[i];
-				if (s_atmosphereNoises[i].IsPlaying()) {
-					const float target[2] = { volume, volume };
-					const float dv_dt[2] = { 1.0f, 1.0f };
-					s_atmosphereNoises[i].VolumeAnimate(target, dv_dt);
-				} else {
-					s_atmosphereNoises[i].Play(s_airflowTable[i], volume, volume, Sound::OP_REPEAT);
+				const float beg = s_airflowLayerTable[i][0];
+				const float end = s_airflowLayerTable[i][1];
+				const float gain = s_airflowLayerTable[i][2];
+				const float target = Clamp((intensity - beg) / (end - beg), 0.0f, 1.0f) * gain * turbulence * v_env;
+
+				if (!s_atmosphereNoises[i].IsPlaying()) {
+					// start silent and let the smoothing bring it up; SetVolume (unlike Play)
+					// applies the sfx volume once, matching v_env
+					s_atmosphereNoises[i].Play(s_airflowTable[i], 0.0f, 0.0f, Sound::OP_REPEAT);
+					s_airflowVolumes[i] = 0.0f;
 				}
+				s_airflowVolumes[i] += (target - s_airflowVolumes[i]) * smoothing;
+				s_atmosphereNoises[i].SetVolume(s_airflowVolumes[i]);
+				// spread the layers slightly so identical pitches don't phase
+				s_atmosphereNoises[i].SetPitch(s_airflowPitch * (0.98f + 0.02f * i));
 			}
 		} else {
 			for (int i = 0; i < eMaxNumAtmosphereSounds; i++) {

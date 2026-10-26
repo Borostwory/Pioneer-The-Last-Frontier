@@ -39,6 +39,8 @@ namespace Sound {
 		{
 			return SetVolume(vol, vol);
 		}
+		// playback rate multiplier, 1.0 = original pitch (OpenAL backend only)
+		bool SetPitch(const float pitch);
 		bool FadeOut(float dv_dt, Op op = 0);
 
 	private:

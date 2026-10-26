@@ -32,6 +32,7 @@ namespace Sound {
 		bool EventSetOp(eventid eid, Op op) override;
 		bool EventVolumeAnimate(eventid eid, const float targetVol1, const float targetVol2, const float dv_dt1, const float dv_dt2) override;
 		bool EventSetVolume(eventid eid, const float vol_left, const float vol_right) override;
+		bool EventSetPitch(eventid eid, const float pitch) override;
 
 		void Pause(int on) override;
 
@@ -66,6 +67,7 @@ namespace Sound {
 			void SetGain(float gain);
 			void SetGain(float gainL, float gainR);
 			void SetVolume(float vol);
+			void SetPitch(float pitch);
 			void SetOp(Op op);
 			void SetTargetGain(float gain, float rate);
 			void SetTargetGain(float gainL, float gainR, float rate);

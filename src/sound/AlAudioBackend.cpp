@@ -134,6 +134,17 @@ bool Sound::AlAudioBackend::EventSetVolume(eventid eid, const float vol_left, co
 	return true;
 }
 
+bool Sound::AlAudioBackend::EventSetPitch(eventid eid, const float pitch)
+{
+	auto it = m_events.find(eid);
+	if (it == m_events.end()) {
+		return false;
+	}
+	// 0.5..2.0 is the range the OpenAL spec guarantees
+	it->second.SetPitch(std::clamp(pitch, 0.5f, 2.0f));
+	return true;
+}
+
 void Sound::AlAudioBackend::Pause(int on)
 {
 	m_paused = on;
@@ -447,6 +458,11 @@ void Sound::AlAudioBackend::SoundEvent::SetVolume(float vol)
 {
 	volume = vol;
 	CHECK_OPENAL_ERROR(alSourcef, source, AL_GAIN, current_gain * volume);
+}
+
+void Sound::AlAudioBackend::SoundEvent::SetPitch(float pitch)
+{
+	CHECK_OPENAL_ERROR(alSourcef, source, AL_PITCH, pitch);
 }
 
 void Sound::AlAudioBackend::SoundEvent::SetOp(Op new_op)
