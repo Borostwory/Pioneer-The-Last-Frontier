@@ -106,11 +106,13 @@ vec4 tileDunes(vec3 q, float salt)
 	return vec4(g * 0.075, h * 2.0 - 1.0);
 }
 
-vec4 tileCraters(vec3 q, float salt, float density)
+// inside: 1 in a crater's bowl, fading to 0 at its rim
+vec4 tileCraters(vec3 q, float salt, float density, out float inside)
 {
 	vec3 cell = floor(q);
 	vec3 grad = vec3(0.0);
 	float form = 0.0;
+	inside = 0.0;
 	for (int z = -1; z <= 1; ++z)
 		for (int y = -1; y <= 1; ++y)
 			for (int x = -1; x <= 1; ++x) {
@@ -123,6 +125,7 @@ vec4 tileCraters(vec3 q, float salt, float density)
 				vec3 d = q - centre;
 				float dist = length(d);
 				float x01 = dist / radius;
+				inside = max(inside, 1.0 - smoothstep(0.7, 1.0, x01));
 				if (x01 > 1.6 || dist < 1e-5)
 					continue;
 				// bowl inside, raised rim around the edge, fading outside

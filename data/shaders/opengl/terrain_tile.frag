@@ -30,6 +30,10 @@ uniform vec4 TileStyle;
 
 // as TerrainTiles::MAX_OCTAVES
 #define TILE_MAX_OCTAVES 16
+// craters stack at most this deep: inside as many larger craters' bowls,
+// smaller ones fade out, so crater floors are smoother than the ground
+// around them instead of holding craters within craters without end
+#define CRATER_MAX_NEST 2.0
 
 out vec4 frag_color;
 
@@ -61,6 +65,8 @@ void main(void)
 	vec3 grad = vec3(0.0);
 	float form = 0.0, formWeight = 0.0;
 	vec3 accumulated = vec3(0.0);
+	// how many larger craters' bowls the point lies in
+	float nest = 0.0;
 	int band = int(TileOctaves.z);
 	int count = int(TileOctaves.w);
 	for (int i = TILE_MAX_OCTAVES - 1; i >= 0; --i) {
@@ -80,8 +86,15 @@ void main(void)
 			if (TileStyle.z > 0.0)
 				o += TileStyle.z * tileDunes(q, salt);
 		}
-		if (TileStyle.w > 0.0)
-			o += TileStyle.w * tileCraters(q, salt, 0.35);
+		if (TileStyle.w > 0.0) {
+			// faded craters do not count towards the nesting
+			float allowed = 1.0 - smoothstep(CRATER_MAX_NEST - 0.75, CRATER_MAX_NEST, nest);
+			if (allowed > 0.0) {
+				float inside;
+				o += TileStyle.w * allowed * tileCraters(q, salt, 0.35, inside);
+				nest += allowed * inside;
+			}
+		}
 		grad += w * o.xyz;
 		if (i < band) {
 			// weighted towards the band's longest octave
