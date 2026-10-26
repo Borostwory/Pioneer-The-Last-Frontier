@@ -121,12 +121,21 @@ void main(void)
 		detailMul.rgb *= mix(1.0, terrainSurfacePatternFor(varyingEyepos, dist, pw, rock), patternWeight);
 	}
 
-	// the streets and paved ground of the nearest city (city-ground.glsl),
-	// dusted with the terrain's colour
+	// the streets and paved ground of the nearest city, dusted with the
+	// terrain's colour, and the gardens under its domes with their own
+	// grass, moss and soil in place of the terrain's materials
+	// (city-ground.glsl)
 	vec3 cityPaving;
 	float pavingSmoothing;
-	float paved = cityGroundAt(varyingEyepos, albedo, cityPaving, pavingSmoothing);
+	vec4 garden;
+	float paved = cityGroundAt(varyingEyepos, albedo, cityPaving, pavingSmoothing, garden);
 	albedo = mix(albedo, cityPaving, paved);
+	if (garden.w > 0.0) {
+		vec2 gardenBump;
+		float gardenDetail = cityGardenDetail(garden, mapping, dist, gardenBump);
+		detailMul.rgb = mix(detailMul.rgb, vec3(gardenDetail), garden.w);
+		bump = mix(bump, gardenBump, garden.w);
+	}
 	detailMul.rgb = mix(detailMul.rgb, vec3(1.0), pavingSmoothing);
 
 	// the lamps of nearby ships on the land and the water, added after the

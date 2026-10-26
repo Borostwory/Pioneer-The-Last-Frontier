@@ -83,6 +83,9 @@ public:
 	Graphics::Texture *GetRoadTexture() const { return m_roadTexture.Get(); }
 	Graphics::Texture *GetLotTexture() const { return m_lotTexture.Get(); }
 	static constexpr double GROUND_RANGE = 40000.0;
+	// and the gardens under its domes alone further out, fading out towards
+	// GARDEN_RANGE
+	static constexpr double GARDEN_RANGE = 500000.0;
 
 	// The radius (m) of the city a ground station will have, without generating
 	// it, for the planet's night lights seen from afar (city-glow.glsl).

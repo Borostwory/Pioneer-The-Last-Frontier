@@ -63,14 +63,18 @@ namespace Graphics {
 	static_assert(sizeof(CityLightDataBlock) == 112, "CityLightDataBlock must match the std140 layout of CityLightData");
 
 	// Layout of the CityGroundData uniform buffer (std140, see city-ground.glsl):
-	// the streets and paved ground of the city nearest the camera
+	// the streets and paved ground of the city nearest the camera, and the
+	// gardens under its domes
 	struct CityGroundDataBlock {
-		matrix4x4f viewToCity; // view space -> city space (the station's frame, metres, y up)
-		float roadRect[4];	   // x, z of the road lookup grid's corner in city space, its cell size (m), cells per side
-		float lotRect[4];	   // x, z of the lot grid's corner in city space, its cell size (m), cells per side
-		float atlas[4];		   // first index texel, first segment texel, strength (0: none), unused
+		static constexpr int MAX_DOMES = 8;
+
+		matrix4x4f viewToCity;	  // view space -> city space (the station's frame, metres, y up)
+		float roadRect[4];		  // x, z of the road lookup grid's corner in city space, its cell size (m), cells per side
+		float lotRect[4];		  // x, z of the lot grid's corner in city space, its cell size (m), cells per side
+		float atlas[4];			  // first index texel, first segment texel, strength (0: none), number of domes
+		float domes[MAX_DOMES][4]; // x, y, z of each dome's sphere's centre in city space, its radius (m)
 	};
-	static_assert(sizeof(CityGroundDataBlock) == 112, "CityGroundDataBlock must match the std140 layout of CityGroundData");
+	static_assert(sizeof(CityGroundDataBlock) == 240, "CityGroundDataBlock must match the std140 layout of CityGroundData");
 
 	// Layout of the CityGlowData uniform buffer (std140, see city-glow.glsl):
 	// a planet's starport cities seen from afar

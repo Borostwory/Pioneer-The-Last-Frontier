@@ -670,12 +670,15 @@ void Camera::SetShipLights() const
 
 void Camera::SetCityGround() const
 {
+	// the nearest city with its streets in range, or the gardens under its domes
 	const BodyAttrs *nearest = nullptr;
 	for (const BodyAttrs &attrs : m_sortedBodies) {
-		if (!attrs.body->IsType(ObjectType::SPACESTATION) || attrs.camDist > CityOnPlanet::GROUND_RANGE)
+		if (!attrs.body->IsType(ObjectType::SPACESTATION) || attrs.camDist > CityOnPlanet::GARDEN_RANGE)
 			continue;
 		const CityOnPlanet *city = static_cast<const SpaceStation *>(attrs.body)->GetAdjacentCity();
-		if (city && city->HasGround() && (!nearest || attrs.camDist < nearest->camDist))
+		if (!city || !city->HasGround() || (attrs.camDist > CityOnPlanet::GROUND_RANGE && !city->HasForcefield()))
+			continue;
+		if (!nearest || attrs.camDist < nearest->camDist)
 			nearest = &attrs;
 	}
 	if (!nearest)
@@ -689,6 +692,13 @@ void Camera::SetCityGround() const
 	Graphics::CityGroundDataBlock data;
 	city->GetGroundData(data);
 	data.viewToCity = matrix4x4f(cityToView.Inverse());
+	if (nearest->camDist > CityOnPlanet::GROUND_RANGE) {
+		// the gardens alone (no road lookup cells, no lot cells), fading out
+		data.roadRect[3] = 0.0f;
+		data.lotRect[3] = 0.0f;
+		const double fade = (CityOnPlanet::GARDEN_RANGE - nearest->camDist) / (0.4 * CityOnPlanet::GARDEN_RANGE);
+		data.atlas[2] = float(Clamp(fade, 0.0, 1.0));
+	}
 	m_renderer->SetCityGroundData(&data, city->GetRoadTexture(), city->GetLotTexture());
 }
 

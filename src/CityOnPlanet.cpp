@@ -62,6 +62,16 @@ static constexpr float LAMP_BRIGHTNESS = 80.0f;
 // along the streets, and both sides of the main roads (m)
 static constexpr double LAMP_SPACING = 38.0;
 static constexpr double MAIN_LAMP_SPACING = 32.0;
+// garden lamps scattered over the greens under the domes: low, warm and dim,
+// each open cell of the plan with this chance of one, clear of the roads and
+// the buildings by this much and of the domes' rims, where the grass thins
+// out (city-ground.glsl), by that much (m)
+static constexpr float GARDEN_LAMP_HEIGHT = 3.0f;
+static constexpr float GARDEN_LAMP_RADIUS = 16.0f;
+static constexpr float GARDEN_LAMP_BRIGHTNESS = 14.0f;
+static constexpr double GARDEN_LAMP_CHANCE = 0.45;
+static constexpr double GARDEN_LAMP_CLEARANCE = 6.0;
+static constexpr double GARDEN_LAMP_RIM = 70.0;
 // lights at the foot of the buildings' facades
 static constexpr float FACADE_HEIGHT = 4.0f;
 static constexpr float FACADE_OFFSET = 4.0f;
@@ -976,6 +986,53 @@ void CityOnPlanet::GenerateFixedLights(const SpaceStation *station)
 		}
 	}
 
+	// garden lamps, at random over the cells under the domes with no lot,
+	// building or starport on them
+	std::vector<CityLayout::Dome> domes = m_layout->GetDomes();
+	if (domes.empty() && NeedsForcefield(m_body, m_cityType->forcefield))
+		domes.push_back({ 0.0, 0.0, m_cityRadius * m_cityType->forcefield.radiusScale });
+	if (!domes.empty()) {
+		const int n = m_layout->GetSize();
+		const double corner = m_layout->GetCorner();
+		std::vector<uint8_t> built(size_t(n) * n, 0);
+		for (const BuildingInstance &building : m_buildings) {
+			const BuildingType &type = m_cityType->buildingTypes[building.instIndex];
+			const vector3d centre = vector3d(building.pos) * m_stationOrient;
+			const double r = std::hypot(std::max(-type.minX, type.maxX), std::max(-type.minZ, type.maxZ)) + GARDEN_LAMP_CLEARANCE;
+			const int i0 = std::max(0, int(std::floor((centre.x - r - corner) / CityLayout::CELL)));
+			const int i1 = std::min(n - 1, int(std::floor((centre.x + r - corner) / CityLayout::CELL)));
+			const int j0 = std::max(0, int(std::floor((centre.z - r - corner) / CityLayout::CELL)));
+			const int j1 = std::min(n - 1, int(std::floor((centre.z + r - corner) / CityLayout::CELL)));
+			for (int j = j0; j <= j1; j++)
+				for (int i = i0; i <= i1; i++)
+					built[size_t(j) * n + i] = 1;
+		}
+
+		const vector3f gardenColour = vector3f(1.0f, 0.8f, 0.55f) * GARDEN_LAMP_BRIGHTNESS;
+		size_t gardenLamps = 0;
+		for (int j = 0; j < n; j++) {
+			for (int i = 0; i < n; i++) {
+				if (built[size_t(j) * n + i] || m_layout->GetLot(i, j) != CityLayout::LOT_NONE || m_layout->IsPort(i, j) || m_layout->IsSea(i, j))
+					continue;
+				if (m_rand.Double() >= GARDEN_LAMP_CHANCE)
+					continue;
+				const double xz[2] = {
+					m_layout->CellX(i) + m_rand.Double(-0.4, 0.4) * CityLayout::CELL,
+					m_layout->CellZ(j) + m_rand.Double(-0.4, 0.4) * CityLayout::CELL,
+				};
+				const bool inGarden = std::any_of(domes.begin(), domes.end(), [&](const CityLayout::Dome &dome) {
+					return std::hypot(xz[0] - dome.x, xz[1] - dome.z) < dome.radius - GARDEN_LAMP_RIM;
+				});
+				if (!inGarden || m_layout->Clearance(xz, 1) < GARDEN_LAMP_CLEARANCE)
+					continue;
+				const float brightness = float(m_rand.Double(0.8, 1.2));
+				m_fixedLights.push_back({ onGround(xz[0], xz[1]) + vector3f(0.0f, GARDEN_LAMP_HEIGHT, 0.0f), GARDEN_LAMP_RADIUS, gardenColour * brightness, GARDEN_LAMP_HEIGHT });
+				gardenLamps++;
+			}
+		}
+		Log::Verbose("\tCityOnPlanet: {} garden lamps", gardenLamps);
+	}
+
 	// floodlights around the spaceport, on its ground at the station's origin
 	const Aabb &aabb = station->GetAabb();
 	const double margin = 10.0;
@@ -1238,7 +1295,18 @@ void CityOnPlanet::GetGroundData(Graphics::CityGroundDataBlock &out) const
 	out.atlas[0] = m_roadAtlas[0];
 	out.atlas[1] = m_roadAtlas[1];
 	out.atlas[2] = 1.0f;
-	out.atlas[3] = 0.0f;
+
+	// the spheres of the domes, the ground inside them a garden (the plans
+	// have no more than MAX_DOMES)
+	const int domes = std::min(int(m_forcefields.size()), Graphics::CityGroundDataBlock::MAX_DOMES);
+	for (int d = 0; d < domes; d++) {
+		const Forcefield &field = *m_forcefields[d];
+		out.domes[d][0] = float(field.centre.Dot(m_stationOrient.VectorX()));
+		out.domes[d][1] = float(field.centre.Dot(m_stationOrient.VectorY()));
+		out.domes[d][2] = float(field.centre.Dot(m_stationOrient.VectorZ()));
+		out.domes[d][3] = float(field.radius);
+	}
+	out.atlas[3] = float(domes);
 }
 
 void CityOnPlanet::BuildGround()
