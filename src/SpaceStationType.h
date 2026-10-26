@@ -15,6 +15,7 @@
 //Space station definition, loaded from data/stations
 
 class Ship;
+class SystemBody;
 namespace SceneGraph {
 	class Model;
 }
@@ -116,6 +117,7 @@ private:
 	BayPathMap m_bayPaths;
 	TPorts m_ports;
 	float padOffset;
+	float flattenRadius;
 	bool customOnly;
 
 	static std::vector<SpaceStationType *> surfaceTypes;
@@ -162,12 +164,17 @@ public:
 	DockStage LastUndockStage() const { return lastUndockStage; }
 	float ParkingDistance() const { return parkingDistance; }
 	float ParkingGapSize() const { return parkingGapSize; }
+	// metres from the model's origin the ground is levelled for a surface station
+	float FlattenRadius() const { return flattenRadius; }
 	const TPorts &Ports() const { return m_ports; }
 
 	static void Init();
 
 	static const SpaceStationType *RandomStationType(Random &random, const bool bIsGround);
 	static const SpaceStationType *FindByName(const std::string &name);
+	// the type of the station at sbody: its custom type, or one picked with
+	// random (seeded from sbody); nullptr before Init or without any types
+	static const SpaceStationType *ForSystemBody(const SystemBody *sbody, Random &random);
 };
 
 #endif

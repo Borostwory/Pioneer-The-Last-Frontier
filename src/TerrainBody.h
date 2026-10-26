@@ -33,8 +33,9 @@ public:
 	double GetTerrainHeight(const vector3d &pos) const;
 	// the height fractal without erosion (Terrain::GetBaseHeights), metres from the centre
 	double GetBaseTerrainHeight(const vector3d &pos) const;
-	// keeps the ground around pos uneroded (Terrain::ProtectSite)
-	void ProtectTerrainSite(const vector3d &pos);
+	// keeps the ground around a surface starport at pos uneroded and levels
+	// the ground under it (Terrain::ProtectSite)
+	void ProtectTerrainSite(const SystemBody *starport, const vector3d &pos);
 	// GetTerrainHeight for many directions at once (unit vectors), leaving
 	// out features narrower than minFeature metres (0: none), m from the centre
 	void GetTerrainHeights(const vector3d *dirs, double *heightsOut, size_t count, double minFeature = 0.0) const;

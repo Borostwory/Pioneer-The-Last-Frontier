@@ -299,7 +299,7 @@ Space::Space(Game *game, RefCountedPtr<Galaxy> galaxy, const Json &jsonObj, doub
 					matrix3x3d rot;
 					vector3d pos;
 					RelocateStarportIfNecessary(kid, planet, pos, rot, posAccum);
-					planet->ProtectTerrainSite(pos);
+					planet->ProtectTerrainSite(kid, pos);
 					// the surface starport's location is stored in its "orbit", as orientation matrix
 					kid->SetOrbitPlane(rot);
 					// accumulate for testing against
@@ -863,7 +863,7 @@ static FrameId MakeFramesFor(const double at_time, SystemBody *sbody, Body *b, F
 		vector3d pos;
 		Planet *planet = static_cast<Planet *>(rotFrame->GetBody());
 		RelocateStarportIfNecessary(sbody, planet, pos, rot, prevPositions);
-		planet->ProtectTerrainSite(pos);
+		planet->ProtectTerrainSite(sbody, pos);
 		sbody->SetOrbitPlane(rot);
 		b->SetPosition(pos * planet->GetTerrainHeight(pos));
 		b->SetOrient(rot);

@@ -172,10 +172,10 @@ double TerrainBody::GetBaseTerrainHeight(const vector3d &pos_) const
 	return radius * (1.0 + h);
 }
 
-void TerrainBody::ProtectTerrainSite(const vector3d &pos)
+void TerrainBody::ProtectTerrainSite(const SystemBody *starport, const vector3d &pos)
 {
 	if (m_baseSphere)
-		m_baseSphere->GetTerrain()->ProtectSite(pos);
+		m_baseSphere->GetTerrain()->ProtectSite(starport, pos);
 }
 
 void TerrainBody::GetTerrainHeights(const vector3d *dirs, double *heightsOut, size_t count, double minFeature) const

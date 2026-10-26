@@ -3,17 +3,26 @@
 
 #include "Terrain.h"
 #include "TerrainErosion.h"
+#include "TerrainNoise.h"
 
 #include "FileSystem.h"
 #include "FloatComparison.h"
 #include "GameConfig.h"
 #include "MathUtil.h"
 #include "perlin.h"
+#include "SpaceStationType.h"
 #include "core/macros.h"
 #include "core/Log.h"
 #include "../galaxy/SystemBody.h"
 
 #include <iterator>
+
+namespace {
+	// ground levelled beyond a starport's footprint (SpaceStationType::FlattenRadius)
+	constexpr double SITE_MARGIN_M = 30.0;
+	// the slope back to the natural ground: as wide as the level disc's radius, at least this
+	constexpr double SITE_BLEND_MIN_M = 300.0;
+} // namespace
 
 // static instancer. selects the best height and color classes for the body
 Terrain *Terrain::InstanceTerrain(const SystemBody *body)
@@ -28,7 +37,9 @@ Terrain *Terrain::InstanceTerrain(const SystemBody *body)
 			InstanceGenerator<TerrainHeightMapped2, TerrainColorRock2>
 		};
 		assert(body->GetHeightMapFractal() < COUNTOF(choices));
-		return choices[body->GetHeightMapFractal()](body);
+		Terrain *terrain = choices[body->GetHeightMapFractal()](body);
+		terrain->AddStarportSites(body);
+		return terrain;
 	}
 
 	Random rand(body->GetSeed());
@@ -364,7 +375,9 @@ Terrain *Terrain::InstanceTerrain(const SystemBody *body)
 		break;
 	}
 
-	return gi(body);
+	Terrain *terrain = gi(body);
+	terrain->AddStarportSites(body);
+	return terrain;
 }
 
 static size_t bufread_or_die(void *ptr, size_t size, size_t nmemb, ByteRange &buf)
@@ -656,12 +669,77 @@ void Terrain::GetHeights(const vector3d *vP, double *heightsOut, const size_t co
 	GetBaseHeights(vP, heightsOut, count);
 	if (m_erosion)
 		m_erosion->Apply(*this, vP, heightsOut, count);
+	LevelSites(vP, heightsOut, count);
 }
 
-void Terrain::ProtectSite(const vector3d &p)
+void Terrain::ProtectSite(const SystemBody *starport, const vector3d &p)
 {
 	if (m_erosion)
 		m_erosion->AddCity(p);
+	SetFlatSite(starport, p);
+}
+
+void Terrain::AddStarportSites(const SystemBody *body)
+{
+	for (const SystemBody *kid : body->GetChildren())
+		if (kid->GetType() == SystemBody::TYPE_STARPORT_SURFACE)
+			SetFlatSite(kid, kid->GetOrbit().GetPlane() * vector3d(0.0, 1.0, 0.0));
+}
+
+void Terrain::SetFlatSite(const SystemBody *starport, const vector3d &p)
+{
+	// the type SpaceStation::InitStation gives the starport, from the same seed
+	Random rand(starport->GetSeed());
+	const SpaceStationType *type = SpaceStationType::ForSystemBody(starport, rand);
+	if (!type || type->FlattenRadius() <= 0.0f)
+		return;
+
+	FlatSite site;
+	site.starport = starport;
+	site.pos = p.Normalized();
+	{
+		// the ground at full detail, like collision
+		TerrainNoise::ScopedBandLimit bandLimit(0.0);
+		GetBaseHeights(&site.pos, &site.height, 1);
+	}
+	const double flat = type->FlattenRadius() + SITE_MARGIN_M;
+	site.flatChord = flat / m_planetRadius;
+	site.blendChord = (flat + std::max(SITE_BLEND_MIN_M, flat)) / m_planetRadius;
+
+	std::lock_guard<std::mutex> lock(m_flatSitesLock);
+	auto sites = m_flatSites ? std::make_shared<std::vector<FlatSite>>(*m_flatSites) : std::make_shared<std::vector<FlatSite>>();
+	auto same = std::find_if(sites->begin(), sites->end(), [starport](const FlatSite &s) { return s.starport == starport; });
+	if (same != sites->end())
+		*same = site;
+	else
+		sites->push_back(site);
+	m_flatSites = std::move(sites);
+}
+
+std::shared_ptr<const std::vector<Terrain::FlatSite>> Terrain::FlatSites() const
+{
+	std::lock_guard<std::mutex> lock(m_flatSitesLock);
+	return m_flatSites;
+}
+
+void Terrain::LevelSites(const vector3d *vP, double *heightsOut, const size_t count) const
+{
+	const std::shared_ptr<const std::vector<FlatSite>> sites = FlatSites();
+	if (!sites)
+		return;
+
+	for (const FlatSite &site : *sites) {
+		const double blendSqr = site.blendChord * site.blendChord;
+		for (size_t i = 0; i < count; i++) {
+			const double distanceSqr = (vP[i] - site.pos).LengthSqr();
+			if (distanceSqr >= blendSqr)
+				continue;
+			// smooth from the level disc back to the natural ground
+			const double t = Clamp((sqrt(distanceSqr) - site.flatChord) / (site.blendChord - site.flatChord), 0.0, 1.0);
+			const double natural = t * t * (3.0 - 2.0 * t);
+			heightsOut[i] = site.height + (heightsOut[i] - site.height) * natural;
+		}
+	}
 }
 
 /**

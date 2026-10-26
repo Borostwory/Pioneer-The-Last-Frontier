@@ -15,7 +15,9 @@
 
 #include <algorithm>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <vector>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4250) // workaround for MSVC 2008 multiple inheritance bug
@@ -50,13 +52,16 @@ public:
 
 	// Heights (unit-sphere units above the radius) at points on the unit
 	// sphere: the height fractal, with river valleys cut in on bodies with
-	// erosion (TerrainErosion). Collision and the terrain patches use this.
+	// erosion (TerrainErosion) and the ground levelled under surface
+	// starports. Collision and the terrain patches use this.
 	void GetHeights(const vector3d *vP, double *heightsOut, const size_t count) const;
-	// The height fractal alone; never below GetHeights.
+	// The height fractal alone, without erosion or levelling.
 	virtual void GetBaseHeights(const vector3d *vP, double *heightsOut, const size_t count) const = 0;
 	// Keeps the ground around p (unit sphere) as GetBaseHeights makes it,
-	// for a surface starport's city. Call before the terrain is drawn there.
-	void ProtectSite(const vector3d &p);
+	// for a surface starport's city, and levels the ground the starport
+	// stands on, replacing any earlier site of the same starport. Call before
+	// the terrain is drawn there.
+	void ProtectSite(const SystemBody *starport, const vector3d &p);
 	virtual vector3d GetColor(const vector3d &p, double height, const vector3d &norm) const = 0;
 
 	virtual const char *GetHeightFractalName() const = 0;
@@ -204,6 +209,26 @@ protected:
 
 	// river valleys, null on bodies without erosion
 	std::unique_ptr<TerrainErosion> m_erosion;
+
+	// ground levelled under a surface starport: flat out to flatChord from
+	// pos, back to the natural ground at blendChord (chords on the unit sphere)
+	struct FlatSite {
+		const SystemBody *starport;
+		vector3d pos;
+		double height; // unit-sphere units, the base height at pos
+		double flatChord;
+		double blendChord;
+	};
+	// replaced as a whole when a site changes, so height jobs on other
+	// threads keep a consistent copy
+	std::shared_ptr<const std::vector<FlatSite>> m_flatSites;
+	mutable std::mutex m_flatSitesLock;
+	std::shared_ptr<const std::vector<FlatSite>> FlatSites() const;
+	// the site where the starport stands now (its orbit plane), set up once
+	// the height fractal can be read
+	void AddStarportSites(const SystemBody *body);
+	void SetFlatSite(const SystemBody *starport, const vector3d &p);
+	void LevelSites(const vector3d *vP, double *heightsOut, const size_t count) const;
 
 	// the palette materials of the Earth-like colour fractals (EarthLike, TFGood, TFPoor)
 	void AddPaletteMaterials();

@@ -12,6 +12,7 @@
 #include "scenegraph/Model.h"
 #include "utils.h"
 #include "EnumStrings.h"
+#include "galaxy/SystemBody.h"
 
 #include <algorithm>
 #include <map>
@@ -35,6 +36,7 @@ SpaceStationType::SpaceStationType(const std::string &id_, const std::string &pa
 	lastUndockStage(DockStage::UNDOCK_ANIMATION_NONE),
 	parkingDistance(0),
 	parkingGapSize(0),
+	flattenRadius(0),
 	customOnly(false)
 {
 	Json data = JsonUtils::LoadJsonDataFile(path_);
@@ -69,6 +71,17 @@ SpaceStationType::SpaceStationType(const std::string &id_, const std::string &pa
 		Output("couldn't initialize station type '%s' because the corresponding model ('%s') could not be found.\n", path_.c_str(), modelName.c_str());
 		throw StationTypeLoadError();
 	}
+
+	// the ground levelled under a surface station (Terrain::ProtectSite): as
+	// given, or the collision mesh's reach across the ground (x and z)
+	flattenRadius = data.value("flatten_radius", 0.0f);
+	if (flattenRadius <= 0.0f && model->GetCollisionMesh().Valid()) {
+		const Aabb &aabb = model->GetCollisionMesh()->GetAabb();
+		const double x = std::max(fabs(aabb.min.x), fabs(aabb.max.x));
+		const double z = std::max(fabs(aabb.min.z), fabs(aabb.max.z));
+		flattenRadius = float(sqrt(x * x + z * z));
+	}
+
 	OnSetupComplete();
 }
 
@@ -311,6 +324,22 @@ const SpaceStationType *SpaceStationType::RandomStationType(Random &random, cons
 	}
 
 	return orbitalTypes[random.Int32(SpaceStationType::orbitalTypes.size())];
+}
+
+/*static*/
+const SpaceStationType *SpaceStationType::ForSystemBody(const SystemBody *sbody, Random &random)
+{
+	const std::string &custom = sbody->GetSpaceStationType();
+	if (!custom.empty()) {
+		if (const SpaceStationType *type = FindByName(custom))
+			return type;
+		Output("WARNING: SpaceStation::InitStation wants to initialize a custom station of type %s, but no station type with that id has been found.\n", custom.c_str());
+	}
+
+	const bool ground = sbody->GetType() != SystemBody::TYPE_STARPORT_ORBITAL;
+	if ((ground ? surfaceTypes : orbitalTypes).empty())
+		return nullptr;
+	return RandomStationType(random, ground);
 }
 
 /*static*/

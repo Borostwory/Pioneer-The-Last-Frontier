@@ -178,14 +178,8 @@ void SpaceStation::InitStation()
 		m_staticSlot[i] = false;
 	Random rand(m_sbody->GetSeed());
 	const bool ground = m_sbody->GetType() == SystemBody::TYPE_STARPORT_ORBITAL ? false : true;
-	const std::string &space_station_type = m_sbody->GetSpaceStationType();
-	if (space_station_type != "") {
-		m_type = SpaceStationType::FindByName(space_station_type);
-		if (m_type == nullptr)
-			Output("WARNING: SpaceStation::InitStation wants to initialize a custom station of type %s, but no station type with that id has been found.\n", space_station_type.c_str());
-	}
-	if (m_type == nullptr)
-		m_type = SpaceStationType::RandomStationType(rand, ground);
+	// the same pick as Terrain makes for the ground it levels here
+	m_type = SpaceStationType::ForSystemBody(m_sbody, rand);
 
 	if (m_shipDocking.empty()) {
 		m_shipDocking.reserve(m_type->NumDockingPorts());
