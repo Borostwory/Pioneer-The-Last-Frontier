@@ -6,6 +6,7 @@
 #include "sgaussian.glsl"
 #include "shadows.glsl"
 #include "city-lights.glsl"
+#include "ship-lights.glsl"
 
 #ifdef TEXTURE0
 uniform sampler2D texture0; //diffuse
@@ -138,6 +139,15 @@ void main(void)
 	vec3 citySpecular = vec3(0.0);
 	diffuse += surface.color.xyz * cityGain * cityLightAt(eyePos, surface.normal, surface.shininess, citySpecular);
 	specular += surface.specular * cityGain * citySpecular;
+
+	// lamps of nearby ships, through the terrain's tone curve so that they
+	// light models as they light the ground, and as the city's light, less
+	// on the sides the star lights
+	vec3 shipSpecular = vec3(0.0);
+	vec3 shipLight = shipLightAt(eyePos, surface.normal, surface.shininess, shipSpecular);
+	float shipGain = 1.0 - CITY_SUNLIT_DIMMING * smoothstep(0.0, 0.3, sunlit);
+	diffuse += shipGain * toSRGB(1.0 - exp(-surface.color.xyz * shipLight));
+	specular += shipGain * surface.specular * (1.0 - exp(-shipSpecular));
 
 #if 0
 	// sturnclaw: toying with spherical gaussian indirect lighting.

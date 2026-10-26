@@ -141,7 +141,8 @@ public:
 private:
 	void SetCityLights() const;
 	void SetCityGround() const;
-	double CityDarkness(const SpaceStation *station, const vector3d &up) const;
+	void SetShipLights() const;
+	double CityDarkness(const Body *body, const vector3d &up) const;
 	void DrawCityDots(FrameId camFrameId) const;
 
 	std::vector<float> oldLightIntensities;

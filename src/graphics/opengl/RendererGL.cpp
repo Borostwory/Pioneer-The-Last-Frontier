@@ -591,6 +591,7 @@ namespace Graphics {
 		m_cityLightMap = m_cityLightGrid = nullptr;
 		m_cityGroundUniformBuffer = {};
 		m_cityRoads = m_cityLots = nullptr;
+		m_shipLightUniformBuffer = {};
 
 		return true;
 	}
@@ -881,6 +882,18 @@ namespace Graphics {
 		auto groundData = GetDrawUniformBuffer(sizeof(CityGroundDataBlock))->Allocate<CityGroundDataBlock>(m_cityGroundUniformBuffer);
 		assert(groundData.isValid());
 		*groundData.data() = *data;
+	}
+
+	void RendererOGL::SetShipLightData(const ShipLightDataBlock *data)
+	{
+		m_shipLightUniformBuffer = {};
+		if (!data)
+			return;
+
+		// ScopedMap will be released at the end of the function
+		auto shipData = GetDrawUniformBuffer(sizeof(ShipLightDataBlock))->Allocate<ShipLightDataBlock>(m_shipLightUniformBuffer);
+		assert(shipData.isValid());
+		*shipData.data() = *data;
 	}
 
 	bool RendererOGL::DrawBuffer(const VertexArray *v, Material *m)
@@ -1364,6 +1377,17 @@ namespace Graphics {
 			*groundData.data() = CityGroundDataBlock {};
 		}
 		return m_cityGroundUniformBuffer;
+	}
+
+	const BufferBinding<UniformBuffer> &RendererOGL::GetShipLightUniformBuffer()
+	{
+		if (!m_shipLightUniformBuffer.buffer) {
+			// shaders reading ShipLightData always need a valid block; this one has no lights
+			auto shipData = GetDrawUniformBuffer(sizeof(ShipLightDataBlock))->Allocate<ShipLightDataBlock>(m_shipLightUniformBuffer);
+			assert(shipData.isValid());
+			*shipData.data() = ShipLightDataBlock {};
+		}
+		return m_shipLightUniformBuffer;
 	}
 
 	OGL::UniformLinearBuffer *RendererOGL::GetDrawUniformBuffer(Uint32 size)

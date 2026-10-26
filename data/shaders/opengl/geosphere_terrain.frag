@@ -30,6 +30,7 @@ in float surfaceHeight;
 #include "terrain-far.glsl"
 #include "shadows.glsl"
 #include "city-ground.glsl"
+#include "ship-lights.glsl"
 
 in float dist;
 
@@ -212,6 +213,12 @@ void main(void)
 		  (0.02-clamp(fogFactor,0.0,0.01))*diff*ldprod*sunset +	      //increase fog scatter
 		  (pow((1.0-pow(fogFactor,0.75)),256.0)*0.4*diff*atmosColor)*sunset;  //distant fog.
 #endif //ATMOSPHERE
+
+	// the lamps of nearby ships (ship-lights.glsl), on the ground's own
+	// colours, through the tone curve the other terrain shader has
+	vec3 shipSpecular = vec3(0.0);
+	vec3 shipLight = shipLightAt(varyingEyepos, tnorm, 0.0, shipSpecular);
+	frag_color.rgb += toSRGB(1.0 - exp(-albedo.rgb * detailMul.rgb * shipLight));
 
 	frag_color.rgb *= sceneShadowTint(varyingEyepos, normalize(varyingNormal));
 

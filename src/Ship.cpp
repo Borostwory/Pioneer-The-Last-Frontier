@@ -235,6 +235,7 @@ Ship::Ship(const Json &jsonObj, Space *space) :
 		m_wheelTransition = shipObj["wheel_transition"];
 		m_wheelState = shipObj["wheel_state"];
 		m_forceWheelUpdate = true;
+		SetLightsLevel(shipObj.value("lights_level", 0));
 		m_launchLockTimeout = shipObj["launch_lock_timeout"];
 		m_testLanded = shipObj["test_landed"];
 		m_flightState = shipObj["flight_state"];
@@ -351,8 +352,41 @@ void Ship::Init()
 	}
 
 	InitMaterials();
+	InitLightMounts();
 
 	m_exhaustSpawner.RefreshMounts(GetModel());
+}
+
+void Ship::SetLightsLevel(int level)
+{
+	m_lightsLevel = Clamp(level, 0, MAX_LIGHTS_LEVEL);
+}
+
+// The lamps: the model's tag_light_* tags, shining along their +z (as a
+// thruster's exhaust), or for models without them a pair under the nose,
+// shining ahead and down (ships look along -z)
+void Ship::InitLightMounts()
+{
+	m_lightMounts.clear();
+
+	std::vector<SceneGraph::Tag *> tags;
+	GetModel()->FindTagsByStartOfName("tag_light_", tags);
+	for (const SceneGraph::Tag *tag : tags) {
+		const matrix4x4f &m = tag->GetGlobalTransform();
+		m_lightMounts.push_back({ m.GetTranslate(), m.ApplyRotationOnly(vector3f(0.f, 0.f, 1.f)).NormalizedSafe() });
+	}
+	if (!m_lightMounts.empty())
+		return;
+
+	const Aabb &aabb = GetAabb();
+	const vector3f size(aabb.max - aabb.min);
+	const float x = 0.5f * float(aabb.min.x + aabb.max.x);
+	const float y = float(aabb.min.y) + 0.25f * size.y;
+	const float z = float(aabb.min.z) + 0.15f * size.z;
+	const float down = DEG2RAD(20.f);
+	const vector3f direction(0.f, -std::sin(down), -std::cos(down));
+	m_lightMounts.push_back({ vector3f(x - 0.2f * size.x, y, z), direction });
+	m_lightMounts.push_back({ vector3f(x + 0.2f * size.x, y, z), direction });
 }
 
 void Ship::PostLoadFixup(Space *space)
@@ -375,6 +409,7 @@ void Ship::SaveToJson(Json &jsonObj, Space *space)
 	m_skin.SaveToJson(shipObj);
 	shipObj["wheel_transition"] = m_wheelTransition;
 	shipObj["wheel_state"] = m_wheelState;
+	shipObj["lights_level"] = m_lightsLevel;
 	shipObj["launch_lock_timeout"] = m_launchLockTimeout;
 	shipObj["test_landed"] = m_testLanded;
 	shipObj["flight_state"] = int(m_flightState);

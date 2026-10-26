@@ -923,6 +923,58 @@ static int l_ship_toggle_wheel_state(lua_State *l)
 	return 0;
 }
 
+/* Method: GetLightsLevel
+ *
+ * Return the brightness of the ship's lamps, lighting the ground and
+ * everything around.
+ *
+ * > level, maxLevel = ship:GetLightsLevel()
+ *
+ * Returns:
+ *
+ *    level - 0 when the lamps are off, up to maxLevel at their brightest
+ *
+ *    maxLevel - the brightest level
+ *
+ */
+static int l_ship_get_lights_level(lua_State *l)
+{
+	Ship *s = LuaObject<Ship>::CheckFromLua(1);
+	lua_pushinteger(l, s->GetLightsLevel());
+	lua_pushinteger(l, Ship::MAX_LIGHTS_LEVEL);
+	return 2;
+}
+
+/* Method: SetLightsLevel
+ *
+ * Set the brightness of the ship's lamps: 0 switches them off, the brightest
+ * level is the second value <GetLightsLevel> returns.
+ *
+ * > ship:SetLightsLevel(level)
+ *
+ */
+static int l_ship_set_lights_level(lua_State *l)
+{
+	Ship *s = LuaObject<Ship>::CheckFromLua(1);
+	s->SetLightsLevel(int(luaL_checkinteger(l, 2)));
+	return 0;
+}
+
+/* Method: CycleLights
+ *
+ * Step the ship's lamps through their brightness levels: from off to each
+ * level brighter, and from the brightest back to off.
+ *
+ * > ship:CycleLights()
+ *
+ */
+static int l_ship_cycle_lights(lua_State *l)
+{
+	Ship *s = LuaObject<Ship>::CheckFromLua(1);
+	s->CycleLights();
+	return 0;
+}
+
 /*
  * Method: GetVelocity
  *
@@ -1502,6 +1554,9 @@ void LuaObject<Ship>::RegisterClass()
 
 		{ "GetWheelState", l_ship_get_wheel_state },
 		{ "ToggleWheelState", l_ship_toggle_wheel_state },
+		{ "GetLightsLevel", l_ship_get_lights_level },
+		{ "SetLightsLevel", l_ship_set_lights_level },
+		{ "CycleLights", l_ship_cycle_lights },
 		{ "GetFlightState", l_ship_get_flight_state },
 		{ "GetCruiseSpeed", l_ship_get_cruise_speed },
 		{ "GetFollowTarget", l_ship_get_follow_target },

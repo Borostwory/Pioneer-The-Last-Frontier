@@ -152,6 +152,20 @@ public:
 	void SetFlightState(FlightState s);
 	float GetWheelState() const { return m_wheelState; }
 	int GetWheelTransition() const { return m_wheelTransition; }
+
+	// lamps lighting the ground and everything around (Camera::SetShipLights)
+	struct LightMount {
+		vector3f position;	// model space
+		vector3f direction; // model space, along the beam
+	};
+	// brightness: 0 (off) to MAX_LIGHTS_LEVEL
+	static constexpr int MAX_LIGHTS_LEVEL = 3;
+	int GetLightsLevel() const { return m_lightsLevel; }
+	void SetLightsLevel(int level);
+	// off, then each level brighter, then off again
+	void CycleLights() { m_lightsLevel = (m_lightsLevel + 1) % (MAX_LIGHTS_LEVEL + 1); }
+	bool GetLightsOn() const { return m_lightsLevel > 0; }
+	const std::vector<LightMount> &GetLightMounts() const { return m_lightMounts; }
 	bool SpawnCargo(CargoBody *c_body);
 	void ProcessSpawnQueue();
 
@@ -309,6 +323,7 @@ private:
 	void UpdateFuel(float timeStep);
 	void SetShipId(const ShipType::Id &shipId);
 	void SetupShields();
+	void InitLightMounts();
 	struct ReentryGlowMatPair {
 		uint64_t formatHash = 0;
 		RefCountedPtr<Graphics::Material> backShellPass;  // CULL_FRONT: far side of shell first
@@ -362,6 +377,9 @@ private:
 
 	SceneGraph::Animation *m_landingGearAnimation;
 	std::unique_ptr<NavLights> m_navLights;
+
+	int m_lightsLevel = 0;
+	std::vector<LightMount> m_lightMounts;
 
 	std::unique_ptr<Sensors> m_sensors;
 	std::unordered_map<Body *, Uint8> m_relationsMap;

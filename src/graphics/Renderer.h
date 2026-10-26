@@ -83,6 +83,18 @@ namespace Graphics {
 	};
 	static_assert(sizeof(CityGlowDataBlock) == 336, "CityGlowDataBlock must match the std140 layout of CityGlowData");
 
+	// Layout of the ShipLightData uniform buffer (std140, see ship-lights.glsl):
+	// the spotlights of the ships near the camera that have their lights on
+	struct ShipLightDataBlock {
+		static constexpr int MAX_LIGHTS = 8;
+
+		float position[MAX_LIGHTS][4];	// view-space position, range (m)
+		float direction[MAX_LIGHTS][4]; // view-space beam direction, cosine of the cone's outer edge
+		float colour[MAX_LIGHTS][4];	// intensity (irradiance d metres down the beam: colour / (d^2 + 1)), cosine of the cone's inner edge
+		float state[4];					// number of lights, unused, unused, unused
+	};
+	static_assert(sizeof(ShipLightDataBlock) == 400, "ShipLightDataBlock must match the std140 layout of ShipLightData");
+
 	// Renderer base, functions return false if
 	// failed/unsupported
 	class Renderer {
@@ -189,6 +201,12 @@ namespace Graphics {
 		// (city-ground.glsl). Pass nullptr to switch them off; the renderer also
 		// does at the end of the frame. The textures must stay alive until then.
 		virtual void SetCityGroundData(const CityGroundDataBlock *data, Texture *roads, Texture *lots) {}
+
+		// Spotlights of the ships near the camera (see Ship::SetLightsLevel), used
+		// by every material whose shader declares the ShipLightData buffer
+		// (ship-lights.glsl). Pass nullptr to switch them off; the renderer also
+		// does at the end of the frame.
+		virtual void SetShipLightData(const ShipLightDataBlock *data) {}
 
 		//drawing functions
 		// TODO: placeholder API; here until CommandLists are exposed

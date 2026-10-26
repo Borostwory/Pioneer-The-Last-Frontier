@@ -51,6 +51,10 @@ in vec3 waterSkyLight;
 #include "city-lights.glsl"
 #include "city-glow.glsl"
 #include "city-ground.glsl"
+#include "ship-lights.glsl"
+
+// the glint of the ships' lamps on water
+#define SHIP_WATER_SHINE 128.0
 
 void main(void)
 {
@@ -123,6 +127,11 @@ void main(void)
 	albedo = mix(albedo, cityPaving, paved);
 	detailMul.rgb = mix(detailMul.rgb, vec3(1.0), paved);
 
+	// the lamps of nearby ships on the land and the water, added after the
+	// cloud shadows (ship-lights.glsl)
+	vec3 shipLight = vec3(0.0);
+	vec3 shipLand = vec3(0.0);
+
 #if (NUM_LIGHTS > 0)
 	// lit per pixel, with the relief between the mesh and the pixel
 	vec3 N = terrainReliefNormal(baseNormal, surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile, baseScale);
@@ -156,6 +165,11 @@ void main(void)
 	cityLand += cityGlowAt(surfaceUp, geosphereRadius, max(length(materialDx), length(materialDy)), dot(daylight, vec3(0.3, 0.59, 0.11)));
 	land += cityLand * viewTransmittance;
 	frag_color = vec4(land, 0.0);
+
+	// the lamps of nearby ships, on the ground's own colours
+	vec3 shipSpecular = vec3(0.0);
+	shipLight = shipLightAt(varyingEyepos, N, 0.0, shipSpecular);
+	shipLand = albedo * detailMul.rgb * shipLight * viewTransmittance;
 #else
 	frag_color = detailMul * vertexColor;
 #endif
@@ -177,9 +191,16 @@ void main(void)
 			water += lightIn * waterSpecular(ws, V, L) * smoothstep(-0.02, 0.05, dot(up, L));
 			bodyLight += lightIn * max(dot(up, L), 0.0);
 		}
-		water += waterBody(albedo, max(-terrainAltitude(seaHeight), 0.0)) * bodyLight * (1.0 - F);
+		vec3 body = waterBody(albedo, max(-terrainAltitude(seaHeight), 0.0));
+		water += body * bodyLight * (1.0 - F);
 		water = water * viewTransmittance + viewInscatter;
 		frag_color.rgb = mix(frag_color.rgb, water, waterMask);
+
+		// the ships' lamps: their glint and the water body they light
+		vec3 shipGlint = vec3(0.0);
+		if (shipLightState.x > 0.0)
+			shipLightAt(varyingEyepos, ws.N, SHIP_WATER_SHINE, shipGlint);
+		shipLand = mix(shipLand, (F * shipGlint + body * shipLight * (1.0 - F)) * viewTransmittance, waterMask);
 	}
 #endif
 
@@ -194,6 +215,8 @@ void main(void)
 	frag_color.rgb *= mix(1.0, shadow, 0.75);
 #endif
 #endif
+
+	frag_color.rgb += shipLand;
 
 #ifdef TERRAIN_WITH_LAVA
 	// lava glows, in shadow and at night too

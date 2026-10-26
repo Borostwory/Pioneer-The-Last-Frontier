@@ -36,6 +36,7 @@ Buffer ShadowData binding=4
 Buffer CityLightData binding=5
 Buffer CityGlowData binding=6
 Buffer CityGroundData binding=7
+Buffer ShipLightData binding=8
 
 PushConstant int NumShadows binding=0
 PushConstant float PatchDetailFrequency binding=1

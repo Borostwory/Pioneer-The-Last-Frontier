@@ -14,6 +14,7 @@
 #include "Player.h"
 #include "SceneShadows.h"
 #include "Sfx.h"
+#include "Ship.h"
 #include "Space.h"
 #include "SpaceStation.h"
 
@@ -50,6 +51,22 @@ static const double CITY_DOT_GONE = 10.0;
 static const double CITY_DOT_BRIGHTNESS = 0.6;
 static const double CITY_DOT_LIFT = 0.01;
 static const double CITY_DOT_MIN_PLANET = 32.0;
+
+// ships' lamps (Ship::SetLightsLevel, ship-lights.glsl): their intensity at
+// the first level (irradiance d metres down the beam: intensity / (d^2 + 1);
+// about 8 lumens per unit and lamp), and at each level its multiple and the
+// lamps' reach (m), where their light has faded out; their colour, the
+// half-angles (degrees) of the beam's bright core and of its edge; the ships
+// further than this from the camera whose lamps are left out (m), and the
+// share of their strength the lamps keep in full daylight
+static const float SHIP_LIGHT_INTENSITY = 2500.0f;
+static const float SHIP_LIGHT_LEVELS[Ship::MAX_LIGHTS_LEVEL + 1] = { 0.0f, 1.0f, 2.0f, 4.0f };
+static const float SHIP_LIGHT_RANGES[Ship::MAX_LIGHTS_LEVEL + 1] = { 0.0f, 400.0f, 800.0f, 1600.0f };
+static const vector3f SHIP_LIGHT_COLOUR(1.0f, 0.97f, 0.92f);
+static const float SHIP_LIGHT_INNER_ANGLE = 15.0f;
+static const float SHIP_LIGHT_OUTER_ANGLE = 25.0f;
+static const double SHIP_LIGHTS_DISTANCE = 5000.0;
+static const double SHIP_LIGHTS_DAYLIGHT = 0.1;
 
 CameraContext::CameraContext(float width, float height, float fovAng, float zNear, float zFar) :
 	m_width(width),
@@ -383,6 +400,8 @@ void Camera::Draw(const Body *excludeBody)
 	SetCityLights();
 	// and its streets, for the terrain (city-ground.glsl)
 	SetCityGround();
+	// the lamps of the ships around, for the lit shaders (ship-lights.glsl)
+	SetShipLights();
 
 	m_renderer->BeginGpuTimer("bodies");
 	for (std::list<BodyAttrs>::iterator i = m_sortedBodies.begin(); i != m_sortedBodies.end(); ++i) {
@@ -416,6 +435,7 @@ void Camera::Draw(const Body *excludeBody)
 	m_renderer->EndGpuTimer();
 	m_renderer->SetCityLightData(nullptr, nullptr, nullptr);
 	m_renderer->SetCityGroundData(nullptr, nullptr, nullptr);
+	m_renderer->SetShipLightData(nullptr);
 
 	// city forcefields queued by their stations, over everything solid and
 	// the clouds, without hiding what comes after (CityOnPlanet.h)
@@ -442,13 +462,14 @@ void Camera::Draw(const Body *excludeBody)
 // starlight on level ground, dimmed by the distance to the star (as the
 // terrain shaders do), by the air above and by eclipses (city-glow.glsl does
 // the same per pixel). up: the view-space direction up at the city.
-double Camera::CityDarkness(const SpaceStation *station, const vector3d &up) const
+// body: the city's station, or a ship over a planet (SetShipLights).
+double Camera::CityDarkness(const Body *body, const vector3d &up) const
 {
 	double airMass = 0.0; // the air overhead relative to Earth's
-	const Body *planet = Frame::GetFrame(station->GetFrame())->GetBody();
+	const Body *planet = Frame::GetFrame(body->GetFrame())->GetBody();
 	if (planet && planet->IsType(ObjectType::PLANET)) {
 		double pressure, density;
-		static_cast<const Planet *>(planet)->GetAtmosphericState(station->GetPosition().Length(), &pressure, &density);
+		static_cast<const Planet *>(planet)->GetAtmosphericState(body->GetPosition().Length(), &pressure, &density);
 		airMass = density / EARTH_ATMOSPHERE_SURFACE_DENSITY;
 	}
 	double daylight = 0.0;
@@ -464,7 +485,7 @@ double Camera::CityDarkness(const SpaceStation *station, const vector3d &up) con
 		if (sunUp <= 0.0)
 			continue;
 		const double starLight = source.GetLight().GetDiffuse().GetLuminance() / 255.0 * AU / toStar.Length();
-		daylight += starLight * sunUp * std::exp(-CITY_AIR_EXTINCTION * airMass / std::max(sunUp, 0.05)) * ShadowedIntensity(int(i), station);
+		daylight += starLight * sunUp * std::exp(-CITY_AIR_EXTINCTION * airMass / std::max(sunUp, 0.05)) * ShadowedIntensity(int(i), body);
 	}
 	const double t = Clamp((CITY_LIGHTS_BRIGHT - daylight) / (CITY_LIGHTS_BRIGHT - CITY_LIGHTS_DARK), 0.0, 1.0);
 	return t * t * (3.0 - 2.0 * t);
@@ -572,6 +593,79 @@ void Camera::SetCityLights() const
 	data.viewToCity = matrix4x4f(cityToView.Inverse());
 	data.state[0] = float(strength);
 	m_renderer->SetCityLightData(&data, city->GetLightMap(), city->GetLightGrid());
+}
+
+static void SetVec4(float *out, const vector3f &v, float w)
+{
+	out[0] = v.x;
+	out[1] = v.y;
+	out[2] = v.z;
+	out[3] = w;
+}
+
+// Hands the renderer the lamps of the ships near the camera that have their
+// lights on, nearest ship first, as many as the shaders take. Over a planet
+// they dim in daylight, as the city lights do; ships drawn in the starlight
+// elsewhere dim them on their sunlit sides (multi.frag).
+void Camera::SetShipLights() const
+{
+	const FrameId camFrame = m_context->GetTempFrame();
+
+	struct LitShip {
+		const Ship *ship;
+		matrix4x4d modelToView;
+		double distance;
+		float strength;
+	};
+	std::vector<LitShip> ships;
+	for (const Body *b : Pi::game->GetSpace()->GetBodies()) {
+		if (!b->IsType(ObjectType::SHIP))
+			continue;
+		// (the player's ship too when the camera is inside it)
+		const Ship *ship = static_cast<const Ship *>(b);
+		if (!ship->GetLightsOn() || ship->GetLightMounts().empty() || !ship->IsInSpace())
+			continue;
+
+		const Frame *f = Frame::GetFrame(b->GetFrame());
+		const matrix4x4d frameToView(f->GetInterpOrientRelTo(camFrame), f->GetInterpPositionRelTo(camFrame));
+		const matrix4x4d modelToView = frameToView * b->GetInterpMatrix();
+		const double distance = modelToView.GetTranslate().Length();
+		if (distance > SHIP_LIGHTS_DISTANCE)
+			continue;
+
+		double strength = 1.0;
+		const Body *planet = f->GetBody();
+		if (planet && planet->IsType(ObjectType::PLANET)) {
+			const vector3d up = frameToView.ApplyRotationOnly(b->GetInterpPosition().NormalizedSafe());
+			strength = SHIP_LIGHTS_DAYLIGHT + (1.0 - SHIP_LIGHTS_DAYLIGHT) * CityDarkness(b, up);
+		}
+		ships.push_back({ ship, modelToView, distance, float(strength) });
+	}
+	if (ships.empty())
+		return;
+	std::sort(ships.begin(), ships.end(), [](const LitShip &a, const LitShip &b) { return a.distance < b.distance; });
+
+	const float cosInner = std::cos(DEG2RAD(SHIP_LIGHT_INNER_ANGLE));
+	const float cosOuter = std::cos(DEG2RAD(SHIP_LIGHT_OUTER_ANGLE));
+	Graphics::ShipLightDataBlock data = {};
+	int count = 0;
+	for (const LitShip &lit : ships) {
+		const int level = lit.ship->GetLightsLevel();
+		const vector3f colour = SHIP_LIGHT_COLOUR * (SHIP_LIGHT_INTENSITY * SHIP_LIGHT_LEVELS[level] * lit.strength);
+		const float range = SHIP_LIGHT_RANGES[level];
+		for (const Ship::LightMount &mount : lit.ship->GetLightMounts()) {
+			if (count == Graphics::ShipLightDataBlock::MAX_LIGHTS)
+				break;
+			const vector3f pos(lit.modelToView * vector3d(mount.position));
+			const vector3f dir(lit.modelToView.ApplyRotationOnly(vector3d(mount.direction)).NormalizedSafe());
+			SetVec4(data.position[count], pos, range);
+			SetVec4(data.direction[count], dir, cosOuter);
+			SetVec4(data.colour[count], colour, cosInner);
+			count++;
+		}
+	}
+	data.state[0] = float(count);
+	m_renderer->SetShipLightData(&data);
 }
 
 void Camera::SetCityGround() const

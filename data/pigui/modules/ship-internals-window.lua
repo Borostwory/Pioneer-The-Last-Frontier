@@ -155,6 +155,18 @@ local function button_wheelstate()
 	end
 end
 
+local function button_lights()
+	-- one click steps through off, each level brighter, and off again
+	local level, maxLevel = player:GetLightsLevel()
+	local tooltip = lui.HUD_BUTTON_LIGHTS_ARE_OFF
+	if level > 0 then
+		tooltip = string.interp(lui.HUD_BUTTON_LIGHTS_LEVEL, { level = level, max = maxLevel })
+	end
+	if ui.mainMenuButton(icons.sun, tooltip .. "##ship_lights", level > 0) then
+		player:CycleLights()
+	end
+end
+
 local function button_rotation_damping()
 	local rotation_damping = player:GetRotationDamping()
 	if rotation_damping then
@@ -173,7 +185,7 @@ local function displayShipFunctionWindow()
 	if ui.optionsWindow.isOpen then return end
 	player = Game.player
 	local current_view = Game.CurrentView()
-	local buttons = 3
+	local buttons = 4
 	local circleCount = 3 -- thrust, TWR, gravity
 	local itemSpacing = ui.getItemSpacing().x
 	local thrust_widget_size = Vector2(thrustWidgetDiameter * circleCount + itemSpacing * (circleCount - 1), thrustWidgetDiameter)
@@ -188,6 +200,8 @@ local function displayShipFunctionWindow()
 			local shift = Vector2(0, thrust_widget_size.y - mainButtonSize.y)
 			ui.addCursorPos(shift)
 			button_wheelstate()
+			ui.sameLine()
+			button_lights()
 			ui.sameLine()
 			button_rotation_damping()
 			ui.sameLine()

@@ -44,6 +44,7 @@ namespace Graphics {
 		static size_t s_cityGroundDataName = "CityGroundData"_hash;
 		static size_t s_cityRoadsName = "cityRoads"_hash;
 		static size_t s_cityLotsName = "cityLots"_hash;
+		static size_t s_shipLightDataName = "ShipLightData"_hash;
 
 		// XXX potential target for allocation optimization
 		// (e.g. use renderer-owned freelist block allocator and align and group all three buffers into one allocation?)
@@ -79,6 +80,7 @@ namespace Graphics {
 			m_shadowDataBinding = s->GetBufferBindingInfo(s_shadowDataName).binding;
 			m_cityLightBinding = s->GetBufferBindingInfo(s_cityLightDataName).binding;
 			m_cityGroundBinding = s->GetBufferBindingInfo(s_cityGroundDataName).binding;
+			m_shipLightBinding = s->GetBufferBindingInfo(s_shipLightDataName).binding;
 		}
 
 		Program *Material::EvaluateVariant()
@@ -139,6 +141,10 @@ namespace Graphics {
 				SetTexture(s_cityRoadsName, m_renderer->GetCityRoads());
 				SetTexture(s_cityLotsName, m_renderer->GetCityLots());
 			}
+
+			// lights of the nearby ships, see Ship::SetLightsLevel
+			if (m_shipLightBinding != Shader::InvalidBinding)
+				SetBuffer(s_shipLightDataName, m_renderer->GetShipLightUniformBuffer());
 
 			// this should always be present, but just in case...
 			if (m_perDrawBinding != Shader::InvalidBinding) {

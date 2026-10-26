@@ -29,6 +29,7 @@ Buffer LightData binding=0
 Buffer DrawData binding=1
 Buffer ShadowData binding=4
 Buffer CityLightData binding=5
+Buffer ShipLightData binding=8
 
 Vertex "multi.vert"
 Fragment "multi.frag"
