@@ -104,6 +104,8 @@ public:
 	bool HasForcefield() const { return !m_forcefields.empty(); }
 	// radius round the station holding the forcefields, m; 0 without one
 	double GetForcefieldExtent() const { return m_ffExtent; }
+	// whether the player is inside one of its domes
+	bool IsPlayerInsideForcefield() const;
 	// for a contact of the ship with it (Space.cpp): true if it stops the ship
 	bool ForcefieldStops(SpaceStation *station, Ship *ship);
 	// openings round crossing ships, impact waves

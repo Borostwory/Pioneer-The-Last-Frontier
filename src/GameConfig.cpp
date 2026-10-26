@@ -28,6 +28,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["AudioBackend"] = "";
 	map["MasterVolume"] = "0.8";
 	map["MusicVolume"] = "0.8";
+	map["WindHowlVolume"] = "50"; // percent: surface wind near the ground of planets with an atmosphere
 	map["MasterMuted"] = "0";
 	map["SfxMuted"] = "0";
 	map["MusicMuted"] = "0";

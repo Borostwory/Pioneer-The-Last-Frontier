@@ -3,11 +3,14 @@
 
 #include "AmbientSounds.h"
 
+#include "CityOnPlanet.h"
 #include "Frame.h"
 #include "Game.h"
+#include "GameConfig.h"
 #include "Pi.h"
 #include "Planet.h"
 #include "Player.h"
+#include "Random.h"
 #include "Sound.h"
 #include "Space.h"
 #include "SpaceStation.h"
@@ -64,6 +67,66 @@ static const float AIRFLOW_TURBULENCE_HZ_HIGH = 1.5f;
 // smoothing time constant for volume and pitch changes [s]
 static const float AIRFLOW_SMOOTHING = 0.25f;
 
+// Wind howl: the surface wind heard while hovering, landed, docked or flying
+// slowly near the ground of a planet with an atmosphere. Each planet gets a
+// sound from its surface conditions (first match wins):
+//	dense (> 5 atm), hot (> 400 K) or volcanic   Roar + Sub bed
+//	thin (< 0.2 atm)                             Whistle
+//	cold (< 240 K) or icy                        MoanA or MoanB (by seed)
+//	temperate with life or oxygen                Gusty
+//	anything else                                Whistle
+// It fades with speed (the airflow layers take over), height above the
+// terrain and thinner air, and is silent inside a city's forcefield dome.
+struct WindHowlSound {
+	const char *sample;
+	float gain;
+	const char *sub; // sub-bass bed under it, or nullptr
+	float subGain;
+};
+static const WindHowlSound s_windHowlDense = { "WindHowl_Roar", 0.35f, "WindHowl_Sub", 0.4f };
+static const WindHowlSound s_windHowlThin = { "WindHowl_Whistle", 0.35f, nullptr, 0.0f };
+static const WindHowlSound s_windHowlCold[2] = {
+	{ "WindHowl_MoanA", 0.35f, nullptr, 0.0f },
+	{ "WindHowl_MoanB", 0.35f, nullptr, 0.0f }
+};
+static const WindHowlSound s_windHowlTemperate = { "WindHowl_Gusty", 0.35f, nullptr, 0.0f };
+
+static const double WINDHOWL_DENSE_ATM = 5.0;
+static const int WINDHOWL_HOT_K = 400;
+static const double WINDHOWL_VOLCANIC = 0.5;
+static const double WINDHOWL_THIN_ATM = 0.2;
+static const int WINDHOWL_COLD_K = 240;
+static const double WINDHOWL_ICY = 0.3;
+static const int WINDHOWL_TEMPERATE_MAX_K = 330;
+static const double WINDHOWL_LIFE = 0.1;
+static const double WINDHOWL_OXIDIZING = 0.5;
+
+// level from air density at the ship, log scale: 0.3 at 0.001 kg/m^3 (silent
+// below) .. 1.0 at 10 kg/m^3 (Mars ~0.5, Earth ~0.85)
+static const double WINDHOWL_MIN_DENSITY = 0.001;
+static const float WINDHOWL_LOG_DENSITY_MIN = -3.0f;
+static const float WINDHOWL_LOG_DENSITY_MAX = 1.0f;
+static const float WINDHOWL_DENSITY_LEVEL_MIN = 0.3f;
+// full up to the first speed [m/s] / height above terrain [m], gone at the second
+static const float WINDHOWL_SPEED_FULL = 15.0f;
+static const float WINDHOWL_SPEED_GONE = 120.0f;
+static const float WINDHOWL_ALTITUDE_FULL = 1500.0f;
+static const float WINDHOWL_ALTITUDE_GONE = 6000.0f;
+// gusts: a new volume target in [min, 1] every few seconds; slow pitch drift
+// on the main sound so the loop doesn't repeat exactly
+static const float WINDHOWL_GUST_MIN = 0.6f;
+static const float WINDHOWL_GUST_INTERVAL_MIN = 2.0f; // s
+static const float WINDHOWL_GUST_INTERVAL_MAX = 6.0f;
+static const float WINDHOWL_GUST_SMOOTHING = 1.2f; // s
+static const float WINDHOWL_PITCH_DRIFT = 0.05f;   // +-
+static const float WINDHOWL_PITCH_INTERVAL_MIN = 3.0f;
+static const float WINDHOWL_PITCH_INTERVAL_MAX = 8.0f;
+static const float WINDHOWL_PITCH_SMOOTHING = 2.5f;
+// fade in/out time constant, also used when switching sounds [s]
+static const float WINDHOWL_SMOOTHING = 1.5f;
+// stations looked at for a forcefield the player may be inside [m]
+static const double WINDHOWL_FORCEFIELD_SEARCH = 20000.0;
+
 static const Uint32 NUM_SURFACE_LIFE_SOUNDS = 12;
 static const char *s_surfaceLifeSounds[NUM_SURFACE_LIFE_SOUNDS] = {
 	"Wind", "Thunder_1", "Thunder_2", "Thunder_3",
@@ -93,7 +156,130 @@ static float s_airflowVolumes[eMaxNumAtmosphereSounds];
 static float s_airflowPitch = 1.0f;
 static float s_airflowTurbulencePhase = 0.0f;
 static Sound::Event s_planetSurfaceNoise;
+static Sound::Event s_windHowl;
+static Sound::Event s_windHowlSub;
+static const char *s_windHowlPlaying = nullptr;
+static const char *s_windHowlSubPlaying = nullptr;
+static float s_windHowlVolume = 0.0f;
+static float s_windHowlSubVolume = 0.0f;
+static float s_windGust = 1.0f;
+static float s_windGustTarget = 1.0f;
+static float s_windGustTimer = 0.0f;
+static float s_windPitch = 1.0f;
+static float s_windPitchTarget = 1.0f;
+static float s_windPitchTimer = 0.0f;
+static Random s_windRng;
 static sigc::connection onChangeCamTypeConnection;
+
+static const WindHowlSound &ChooseWindHowl(const SystemBody *sbody)
+{
+	const double pressure = sbody->GetAtmSurfacePressure();
+	const int temp = sbody->GetAverageTemp();
+	if (pressure > WINDHOWL_DENSE_ATM || temp > WINDHOWL_HOT_K || sbody->GetVolcanicity() > WINDHOWL_VOLCANIC)
+		return s_windHowlDense;
+	if (pressure < WINDHOWL_THIN_ATM)
+		return s_windHowlThin;
+	if (temp < WINDHOWL_COLD_K || sbody->GetVolatileIces() > WINDHOWL_ICY)
+		return s_windHowlCold[sbody->GetSeed() % 2];
+	if (temp <= WINDHOWL_TEMPERATE_MAX_K && (sbody->GetLife() > WINDHOWL_LIFE || sbody->GetAtmosOxidizing() > WINDHOWL_OXIDIZING))
+		return s_windHowlTemperate;
+	return s_windHowlThin;
+}
+
+static bool IsPlayerInCityForcefield()
+{
+	for (Body *body : Pi::game->GetSpace()->GetBodiesMaybeNear(Pi::player, WINDHOWL_FORCEFIELD_SEARCH)) {
+		if (!body->IsType(ObjectType::SPACESTATION))
+			continue;
+		const CityOnPlanet *city = static_cast<const SpaceStation *>(body)->GetAdjacentCity();
+		if (city && city->IsPlayerInsideForcefield())
+			return true;
+	}
+	return false;
+}
+
+// Fades one wind howl event towards target, starting it if needed. When a
+// different sample is wanted, the current one fades out and is stopped first.
+static void UpdateWindHowlEvent(Sound::Event &ev, const char *&playing, float &volume, const char *wanted, float target, float pitch, float smoothing)
+{
+	if (!ev.IsPlaying()) {
+		playing = nullptr;
+		volume = 0.0f;
+	}
+	if (playing && playing != wanted)
+		target = 0.0f;
+	if (!playing) {
+		if (!wanted || target <= 0.0f)
+			return;
+		// SetVolume (unlike Play) applies the sfx volume once, matching v_env
+		ev.Play(wanted, 0.0f, 0.0f, Sound::OP_REPEAT);
+		playing = wanted;
+	}
+	volume += (target - volume) * smoothing;
+	if (target <= 0.0f && volume < 0.002f) {
+		ev.Stop();
+		playing = nullptr;
+		volume = 0.0f;
+		return;
+	}
+	ev.SetVolume(volume);
+	ev.SetPitch(pitch);
+}
+
+static void UpdateWindHowl(const float v_env)
+{
+	const float dt = Pi::GetFrameTime();
+	const WindHowlSound *sound = nullptr;
+	float level = 0.0f;
+
+	Frame *playerFrame = Pi::game->IsNormalSpace() ? Frame::GetFrame(Pi::player->GetFrame()) : nullptr;
+	const Body *astro = playerFrame ? playerFrame->GetBody() : nullptr;
+	if (astro && playerFrame->IsRotFrame() && astro->IsType(ObjectType::PLANET)) {
+		const Planet *planet = static_cast<const Planet *>(astro);
+		double pressure, density;
+		planet->GetAtmosphericState(Pi::player->GetPosition().Length(), &pressure, &density);
+		if (density > WINDHOWL_MIN_DENSITY) {
+			sound = &ChooseWindHowl(planet->GetSystemBody());
+			const float densityLevel = Clamp((float(log10(density)) - WINDHOWL_LOG_DENSITY_MIN) / (WINDHOWL_LOG_DENSITY_MAX - WINDHOWL_LOG_DENSITY_MIN), 0.0f, 1.0f);
+			// velocity in the planet's rotating frame is airspeed (the atmosphere co-rotates)
+			const float speed = float(Pi::player->GetVelocity().Length());
+			const float altitude = float(Pi::player->GetAltitudeRelTo(planet, AltitudeType::ABOVE_TERRAIN));
+			level = (WINDHOWL_DENSITY_LEVEL_MIN + (1.0f - WINDHOWL_DENSITY_LEVEL_MIN) * densityLevel) *
+				(1.0f - Clamp((speed - WINDHOWL_SPEED_FULL) / (WINDHOWL_SPEED_GONE - WINDHOWL_SPEED_FULL), 0.0f, 1.0f)) *
+				(1.0f - Clamp((altitude - WINDHOWL_ALTITUDE_FULL) / (WINDHOWL_ALTITUDE_GONE - WINDHOWL_ALTITUDE_FULL), 0.0f, 1.0f));
+			if (level > 0.0f && IsPlayerInCityForcefield())
+				level = 0.0f;
+		}
+	}
+
+	s_windGustTimer -= dt;
+	if (s_windGustTimer <= 0.0f) {
+		s_windGustTimer = float(s_windRng.Double(WINDHOWL_GUST_INTERVAL_MIN, WINDHOWL_GUST_INTERVAL_MAX));
+		s_windGustTarget = float(s_windRng.Double(WINDHOWL_GUST_MIN, 1.0));
+	}
+	s_windGust += (s_windGustTarget - s_windGust) * (1.0f - expf(-dt / WINDHOWL_GUST_SMOOTHING));
+
+	s_windPitchTimer -= dt;
+	if (s_windPitchTimer <= 0.0f) {
+		s_windPitchTimer = float(s_windRng.Double(WINDHOWL_PITCH_INTERVAL_MIN, WINDHOWL_PITCH_INTERVAL_MAX));
+		s_windPitchTarget = float(s_windRng.Double(1.0 - WINDHOWL_PITCH_DRIFT, 1.0 + WINDHOWL_PITCH_DRIFT));
+	}
+	s_windPitch += (s_windPitchTarget - s_windPitch) * (1.0f - expf(-dt / WINDHOWL_PITCH_SMOOTHING));
+
+	// WindHowlVolume setting, percent (settings window, sound)
+	level *= Clamp(Pi::config->Int("WindHowlVolume", 50), 0, 200) * 0.01f;
+
+	const float smoothing = 1.0f - expf(-dt / WINDHOWL_SMOOTHING);
+	UpdateWindHowlEvent(s_windHowl, s_windHowlPlaying, s_windHowlVolume,
+		sound ? sound->sample : nullptr,
+		sound ? sound->gain * level * s_windGust * v_env : 0.0f,
+		s_windPitch, smoothing);
+	// the sub bed follows the gusts only half as much and keeps its pitch
+	UpdateWindHowlEvent(s_windHowlSub, s_windHowlSubPlaying, s_windHowlSubVolume,
+		sound ? sound->sub : nullptr,
+		sound ? sound->subGain * level * (0.5f + 0.5f * s_windGust) * v_env : 0.0f,
+		1.0f, smoothing);
+}
 
 void AmbientSounds::Init()
 {
@@ -108,6 +294,8 @@ void AmbientSounds::Uninit()
 void AmbientSounds::Update()
 {
 	const float v_env = (Pi::game->GetWorldView()->shipView->IsExteriorView() ? 1.0f : 0.5f) * Sound::GetSfxVolume();
+
+	UpdateWindHowl(v_env);
 
 	if (Pi::player->GetFlightState() == Ship::DOCKED) {
 		if (s_starNoise.IsPlaying()) {

@@ -556,6 +556,11 @@ local function showSoundOptions()
 	c,effectsLevel = slider(lui.EFFECTS, effectsLevel, 0, 100)
 	if c then Engine.SetEffectsVolume(effectsLevel/100) end
 
+	local windHowlLevel = Engine.SettingsGetInt("WindHowlVolume")
+	c,windHowlLevel = slider("Wind howl (%)", windHowlLevel, 0, 200,
+		"Loudness of the surface wind heard when hovering, landed or flying slowly near the ground of a planet with an atmosphere. 100 is the designed level; it also follows the effects volume.")
+	if c then Engine.SettingsSetInt("WindHowlVolume", windHowlLevel) end
+
 	if binaural_supported then
 		c,binaural_enabled = checkbox(lui.BINAURAL_RENDERING, binaural_enabled, lui.BINAURAL_RENDERING_DESC)
 		if c then Engine.SetBinauralRendering(binaural_enabled) end

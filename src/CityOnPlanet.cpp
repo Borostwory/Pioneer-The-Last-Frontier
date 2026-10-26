@@ -1803,6 +1803,15 @@ void CityOnPlanet::KeepPlayerOut(SpaceStation *station, Forcefield &field)
 	field.playerInside = inside;
 }
 
+bool CityOnPlanet::IsPlayerInsideForcefield() const
+{
+	for (const auto &field : m_forcefields) {
+		if (field->playerInside)
+			return true;
+	}
+	return false;
+}
+
 void CityOnPlanet::UpdateForcefield(float timeStep, SpaceStation *station)
 {
 	if (!HasForcefield())
