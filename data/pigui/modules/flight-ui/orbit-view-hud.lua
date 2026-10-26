@@ -95,6 +95,7 @@ local function getBodyIcon(obj)
 	elseif obj.type == Projectable.PERIAPSIS then return icons.periapsis
 	elseif obj.type == Projectable.ASCENDING_NODE then return icons.normal_thin
 	elseif obj.type == Projectable.DESCENDING_NODE then return icons.antinormal_thin
+	elseif obj.type == Projectable.IMPACT then return icons.impact_warning
 	elseif obj.type == Projectable.L4 or obj.type == Projectable.L5 then return icons.lagrange_marker
 	elseif obj.base == Projectable.PLAYER or obj.base == Projectable.PLANNER or obj.base == Projectable.PLANNER_BURN then
 		local shipClass = obj.ref and obj.ref:GetShipClass()
@@ -125,6 +126,9 @@ local function getLabel(obj)
 	if markerLabels[obj.type] and obj.altitude then
 		return markerLabels[obj.type] .. " " .. ui.Format.Distance(obj.altitude)
 	end
+	if obj.type == Projectable.IMPACT then
+		return "Impact in " .. ui.Format.Duration(math.max((obj.time or 0) - Game.time, 0), 2)
+	end
 	if obj.type == Projectable.OBJECT then
 		if obj.base == Projectable.SYSTEMBODY then return obj.ref.name
 		elseif obj.base == Projectable.PLANNER then return ""
@@ -145,7 +149,7 @@ local function getColor(obj)
 		elseif obj.base == Projectable.PLANNER_BURN then return colors.systemMapPlannerBurn
 		else return colors.systemMapObject
 		end
-	elseif markerLabels[obj.type] then
+	elseif markerLabels[obj.type] or obj.type == Projectable.IMPACT then
 		if obj.base == Projectable.SYSTEMBODY then return colors.systemMapSystemBodyOrbit
 		elseif obj.base == Projectable.PLAYER then return colors.systemMapPlayerOrbit
 		elseif obj.base == Projectable.PLANNER then return colors.systemMapPlannerOrbit
@@ -204,8 +208,10 @@ local function drawProjectedOverlay(systemView, widgetOrigin, widgetSize)
 					end
 					local pos = mainCoords + Vector2(label_offset, 0)
 					local font = mouseover and hudfont_highlight or hudfont
+					-- the impact warning reads in red; its icon keeps its orbit's colour
+					local labelColor = mainObject.type == Projectable.IMPACT and colors.alertRed or getColor(mainObject)
 					ui.addStyledText(pos + Vector2(1, 1), ui.anchor.left, ui.anchor.center, label, colors.black, font)
-					ui.addStyledText(pos, ui.anchor.left, ui.anchor.center, label, getColor(mainObject), font)
+					ui.addStyledText(pos, ui.anchor.left, ui.anchor.center, label, labelColor, font)
 				end
 			end
 		end

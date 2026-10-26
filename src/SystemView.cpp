@@ -49,6 +49,10 @@ static constexpr int N_PLANNER_LEG_MIN_POINTS = 64;
 static constexpr int N_PLANNER_LEG_MAX_POINTS = 4096;
 // maximum fraction the per-burn segment colours are lerped toward white
 static constexpr float PLANNER_SEG_WHITEN = 0.6f;
+// latitude and longitude lines: drawn on a body once its disc is this many
+// pixels in radius, each circle in steps of this many degrees
+static constexpr float LATLONG_MIN_PIXELS = 24.f;
+static constexpr int LATLONG_STEP_DEG = 5;
 static const float MIN_ZOOM = 1e-30f; // Just to avoid having 0
 static const float MAX_ZOOM = 1e30f;
 static const float MIN_ATLAS_ZOOM = 0.5f; // Just to avoid having 0
@@ -313,6 +317,21 @@ void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double t
 		const double planetRadius = playerAround->GetRadius();
 		map->AddOrbitTrack({ Projectable::ORBIT, Projectable::PLAYER, PlayerBody, offset }, &playerOrbit, map->svColor[Col::PLAYER_ORBIT], planetRadius);
 
+		// where the current orbit comes down onto the surface of the body it
+		// is drawn around, followed from the live state in that body's frame
+		PlannerConics::Conic live;
+		live.pos = PlayerBody->GetPositionRelTo(playerNonRotFrameId);
+		live.vel = PlayerBody->GetVelocityRelTo(playerNonRotFrameId);
+		live.epoch = m_game->GetTime();
+		live.mu = PlannerConics::FrameMu(playerNonRotFrame);
+		double liveImpact = 0.0;
+		const bool liveImpacts = PlannerConics::FindImpact(live, planetRadius, live.epoch, std::numeric_limits<double>::infinity(), liveImpact);
+		if (liveImpacts) {
+			Projectable impact(Projectable::IMPACT, Projectable::PLAYER, PlayerBody, offset + live.PosAt(liveImpact));
+			impact.time = liveImpact;
+			map->AddObjectTrack(impact);
+		}
+
 		const double mass = playerAround->GetMass();
 		if (m_planner->HasPlan() && m_planner->GetBurnCount() > 0) {
 			const size_t burnCount = m_planner->GetBurnCount();
@@ -326,13 +345,31 @@ void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double t
 			std::vector<TransferPlanner::TrajectorySegment> trajectory;
 			m_planner->GetPlannedTrajectory(std::numeric_limits<double>::infinity(), trajectory);
 			const size_t segCount = trajectory.size();
-			for (size_t s = 0; s < segCount; ++s) {
+			bool planImpacts = false;
+			double planImpact = 0.0;
+			for (size_t s = 0; s < segCount && !planImpacts; ++s) {
 				const TransferPlanner::TrajectorySegment &seg = trajectory[s];
-				const double span = seg.end - seg.start;
-				if (!(span > 0.0))
-					continue;
 				vector3d segOffset(0.0);
 				CalculateFramePositionAtTime(seg.frame, time, segOffset);
+
+				// The plan ends where it first comes down onto the surface of a
+				// leg's body: that leg is drawn to there, and nothing after it.
+				// Before the first burn the impact is the current orbit's,
+				// already marked.
+				double end = seg.end;
+				planImpacts = PlannerConics::FindImpact(seg.conic, PlannerConics::FrameBodyRadius(Frame::GetFrame(seg.frame)), seg.start, seg.end, planImpact);
+				if (planImpacts) {
+					end = planImpact;
+					if (!liveImpacts || std::fabs(planImpact - liveImpact) > 1.0) {
+						Projectable marker(Projectable::IMPACT, Projectable::PLANNER, PlayerBody, segOffset + seg.conic.PosAt(planImpact));
+						marker.time = planImpact;
+						map->AddObjectTrack(marker);
+					}
+				}
+
+				const double span = end - seg.start;
+				if (!(span > 0.0))
+					continue;
 				std::vector<vector3d> leg;
 				double t = seg.start;
 				for (int i = 0; i < N_PLANNER_LEG_MAX_POINTS; ++i) {
@@ -340,10 +377,10 @@ void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double t
 					if (!seg.conic.At(t, p, v))
 						break;
 					leg.push_back(segOffset + p);
-					if (t >= seg.end)
+					if (t >= end)
 						break;
 					const double local = p.Length() / std::max(v.Length(), 1e-3);
-					t = std::min(seg.end, t + Clamp(PLANNER_LEG_STEP_SHARE * local, span / N_PLANNER_LEG_MAX_POINTS, span / N_PLANNER_LEG_MIN_POINTS));
+					t = std::min(end, t + Clamp(PLANNER_LEG_STEP_SHARE * local, span / N_PLANNER_LEG_MAX_POINTS, span / N_PLANNER_LEG_MIN_POINTS));
 				}
 				const float whiten = (segCount > 1) ? (PLANNER_SEG_WHITEN * float(s) / float(segCount - 1)) : 0.f;
 				Color legColor = map->svColor[Col::PLANNER_ORBIT];
@@ -378,7 +415,10 @@ void SystemView::PopulatePlayerAndPlannerTracks(SystemMapViewport *map, double t
 				PlannerConics::Apsides(m_planner->GetPos(idx), m_planner->GetVel(idx), G * burnMass, periapsis, apoapsis);
 				const bool closes = std::isfinite(apoapsis) &&
 					(!burnFrame->GetParent().valid() || apoapsis < burnFrame->GetRadius());
-				if (closes) {
+				// a burn after the plan has come down onto a surface is never
+				// flown: no orbit leaves it
+				const bool reached = !planImpacts || m_planner->GetStartTime(idx) < planImpact;
+				if (closes && reached) {
 					segOrbits.push_back(Orbit::FromBodyState(m_planner->GetPos(idx), m_planner->GetVel(idx), burnMass));
 					const float whiten = (burnCount > 1) ? (PLANNER_SEG_WHITEN * float(i) / float(burnCount - 1)) : 0.f;
 					Color segColor = map->svColor[Col::PLANNER_ORBIT];
@@ -829,31 +869,26 @@ void SystemMapViewport::RenderOrbit(const Projectable &p, const ProjectedOrbit *
 
 	double ecc = orbitData->orbit.GetEccentricity();
 	double timeshift = ecc > 0.6 ? 0.0 : 0.5;
-	double maxT = 1.;
-	unsigned short num_vertices = 0;
-	for (unsigned short i = 0; i < N_VERTICES_MAX; ++i) {
-		const double t = (double(i) + timeshift) / double(N_VERTICES_MAX);
-		const vector3d pos = orbitData->orbit.EvenSpacedPosTrajectory(t);
-		if (pos.Length() < orbitData->planetRadius) {
-			maxT = t;
-			break;
-		}
-	}
+	const double tMinust0 = p.base == Projectable::SYSTEMBODY ? m_time : m_time - m_refTime;
+
+	// the orbit ends where it first comes down onto the planet, its last
+	// vertex on the surface; one that starts inside is not drawn
+	const double toSurface = orbitData->orbit.EvenSpacedTrajectoryToRadius(orbitData->planetRadius, tMinust0);
+	const bool cut = toSurface >= 0.0 && toSurface < 1.0;
+	const double maxT = cut ? toSurface : 1.;
 
 	static const float startTrailPercent = 0.85;
 	static const float fadedColorParameter = 0.8;
 
 	Uint16 fadingColors = 0;
-	const double tMinust0 = p.base == Projectable::SYSTEMBODY ? m_time : m_time - m_refTime;
-	for (unsigned short i = 0; i < N_VERTICES_MAX; ++i) {
-		const double t = (double(i) + timeshift) / double(N_VERTICES_MAX) * maxT;
+	unsigned short num_vertices = 0;
+	for (unsigned short i = 0; maxT > 0.0 && i < N_VERTICES_MAX; ++i) {
+		const double t = cut ? maxT * double(i) / double(N_VERTICES_MAX - 1) : (double(i) + timeshift) / double(N_VERTICES_MAX);
 		if (fadingColors == 0 && t >= startTrailPercent * maxT)
 			fadingColors = i;
 		const vector3d pos = orbitData->orbit.EvenSpacedPosTrajectory(t, tMinust0);
 		m_orbitVts[i] = vector3f(offset + pos);
 		++num_vertices;
-		if (pos.Length() < orbitData->planetRadius)
-			break;
 	}
 
 	if (num_vertices > 1) {
@@ -976,21 +1011,108 @@ void SystemMapViewport::RenderBody(const SystemBody *b, const vector3d &position
 	if (b->GetSuperType() == SystemBody::SUPERTYPE_STARPORT)
 		return;
 
-	const double radius = b->GetRadius();
+	// In camera space, the camera at the origin. Bodies are pre-transformed
+	// in double precision to use 0,0,0 as view-space center. The disc is the
+	// body's outline as the camera sees it: square on to the camera, on the
+	// circle where the sight lines graze the sphere. So a body seen from
+	// close by fills as much of the view as the sphere would, and the near
+	// side of the sphere - its latitude and longitude lines - lies in front
+	// of the disc.
+	const vector3f centre = trans * vector3f(position);
+	const float radius = float(b->GetRadius()) * trans.ApplyRotationOnly(vector3f(1.f, 0.f, 0.f)).Length();
+	const float dist = centre.Length();
 
-	matrix4x4f invRot = trans;
-	invRot.ClearToRotOnly();
-	invRot.Renormalize();
-	invRot = invRot.Inverse();
+	matrix4x4f bodyTrans = matrix4x4f::Identity;
+	if (dist > radius * 1.001f) {
+		const float k = radius / dist;
+		const vector3f toCamera = -centre / dist;
+		const vector3f side = (std::fabs(toCamera.y) < 0.9f ? vector3f(0.f, 1.f, 0.f) : vector3f(1.f, 0.f, 0.f)).Cross(toCamera).Normalized();
+		bodyTrans.Translate(centre * (1.f - k * k));
+		bodyTrans = bodyTrans * matrix4x4f(matrix3x3f::FromVectors(side, toCamera.Cross(side), toCamera));
+		bodyTrans.Scale(radius * std::sqrt(1.f - k * k));
 
-	// Bodies are pre-transformed in double precision to use 0,0,0 as view-space center
-	matrix4x4f bodyTrans = trans;
-	bodyTrans.Translate(vector3f(position));
-	bodyTrans.Scale(radius);
+		const SystemBody::BodySuperType st = b->GetSuperType();
+		if (m_latLongStep > 0 && (st == SystemBody::SUPERTYPE_ROCKY_PLANET || st == SystemBody::SUPERTYPE_GAS_GIANT))
+			AddLatLongLines(b, centre, radius, trans);
+	} else {
+		bodyTrans.Translate(centre);
+		bodyTrans.Scale(radius);
+	}
 
-	m_renderer->SetTransform(bodyTrans * invRot);
+	m_renderer->SetTransform(bodyTrans);
 	m_bodyMat->diffuse = svColor[SYSTEMBODY];
 	m_bodyIcon->Draw(m_renderer, m_bodyMat.get());
+}
+
+// Latitude and longitude lines every m_latLongStep degrees, on the side of
+// the sphere the camera sees, queued in camera space and drawn after all the
+// bodies, so a body in front hides them. The body is turned as the game turns
+// it at map time, axial tilt and all: longitude as the game reads it, and a
+// surface starport at its own latitude and longitude.
+void SystemMapViewport::AddLatLongLines(const SystemBody *b, const vector3f &centre, float radius, const matrix4x4f &trans)
+{
+	const float dist = centre.Length();
+	const float k = radius / dist;
+	// too small on screen to read
+	const float pixels = k / std::sqrt(1.f - k * k) / std::tan(DEG2RAD(CAMERA_FOV) * 0.5f) * float(m_viewportSize.h) * 0.5f;
+	if (pixels < LATLONG_MIN_PIXELS)
+		return;
+
+	const double period = b->GetRotationPeriod();
+	const double spin = (period > 0.0 ? -2.0 * M_PI / period * m_time : 0.0) + b->GetRotationPhaseAtStart();
+	const matrix3x3d orient = matrix3x3d::RotateX(b->GetAxialTilt()) * matrix3x3d::RotateY(spin);
+	// the body's own axes in camera space; y is its spin axis
+	const auto axis = [&](const vector3d &v) { return trans.ApplyRotationOnly(vector3f(orient * v)).Normalized(); };
+	const vector3f ax = axis(vector3d(1.0, 0.0, 0.0));
+	const vector3f ay = axis(vector3d(0.0, 1.0, 0.0));
+	const vector3f az = axis(vector3d(0.0, 0.0, 1.0));
+	const auto normalAt = [&](double lat, double lon) {
+		return ax * float(std::cos(lat) * std::sin(lon)) + ay * float(std::sin(lat)) + az * float(std::cos(lat) * std::cos(lon));
+	};
+
+	// a point of the sphere is in sight where its normal leans toward the
+	// camera by more than k; a hair more keeps the lines off the disc's edge
+	const vector3f toCamera = -centre / dist;
+	const float horizon = k + 1e-3f;
+
+	// one circle, from `from` to `to` along it, cut at the horizon
+	const auto addLine = [&](const auto &normal, double from, double to, const Color &color) {
+		const int steps = std::max(1, int(std::lround(RAD2DEG(to - from) / LATLONG_STEP_DEG)));
+		double prevT = from;
+		vector3f prevN = normal(from);
+		float prevF = prevN.Dot(toCamera) - horizon;
+		for (int i = 1; i <= steps; ++i) {
+			const double t = from + (to - from) * double(i) / double(steps);
+			const vector3f n = normal(t);
+			const float f = n.Dot(toCamera) - horizon;
+			if (prevF >= 0.f || f >= 0.f) {
+				vector3f a = prevN, c = n;
+				if (prevF < 0.f || f < 0.f) {
+					const vector3f cut = normal(prevT + (t - prevT) * double(prevF / (prevF - f)));
+					(prevF < 0.f ? a : c) = cut;
+				}
+				m_latLongVerts.push_back(centre + a * radius);
+				m_latLongVerts.push_back(centre + c * radius);
+				m_latLongColors.push_back(color);
+				m_latLongColors.push_back(color);
+			}
+			prevT = t;
+			prevN = n;
+			prevF = f;
+		}
+	};
+
+	// lighter than the disc; the equator and the prime meridian more so
+	const Color line = svColor[SYSTEMBODY].Tint(0.25f);
+	const Color primary = svColor[SYSTEMBODY].Tint(0.55f);
+	for (int lat = -90 + m_latLongStep; lat < 90; lat += m_latLongStep) {
+		const double phi = DEG2RAD(double(lat));
+		addLine([&](double lon) { return normalAt(phi, lon); }, 0.0, 2.0 * M_PI, lat == 0 ? primary : line);
+	}
+	for (int lon = 0; lon < 360; lon += m_latLongStep) {
+		const double lambda = DEG2RAD(double(lon));
+		addLine([&](double lat) { return normalAt(lat, lambda); }, -0.5 * M_PI, 0.5 * M_PI, lon == 0 ? primary : line);
+	}
 }
 
 void SystemMapViewport::Draw3D()
@@ -1103,6 +1225,8 @@ void SystemMapViewport::DrawOrreryView()
 	}
 
 	// Transform all tracks + render system bodies
+	m_latLongVerts.clear();
+	m_latLongColors.clear();
 	for (auto &track : m_objectTracks) {
 		m_renderer->SetTransform(m_cameraSpace);
 		const vector3d viewpos = track.worldpos - m_trans;
@@ -1136,6 +1260,13 @@ void SystemMapViewport::DrawOrreryView()
 		m_orbits.SetData(Uint32(legVerts.size()), legVerts.data(), plannerLeg.color);
 		m_renderer->SetTransform(m_cameraSpace);
 		m_orbits.Draw(m_renderer, m_lineMat.get());
+	}
+
+	// the bodies' latitude and longitude lines, queued in camera space
+	if (!m_latLongVerts.empty()) {
+		m_latLongLines.SetData(Uint32(m_latLongVerts.size()), m_latLongVerts.data(), m_latLongColors.data());
+		m_renderer->SetTransform(matrix4x4f::Identity);
+		m_latLongLines.Draw(m_renderer, m_gridMat.get());
 	}
 
 	m_renderer->SetTransform(m_cameraSpace);
@@ -1590,6 +1721,12 @@ void SystemMapViewport::SetVisibility(const std::string &param)
 		m_cloudDrawing = CLOUD_ARRIVAL;
 	} else if (param == "CLOUDS_DEPARTURE") {
 		m_cloudDrawing = CLOUD_DEPARTURE;
+	} else if (param == "LATLONG_OFF") {
+		m_latLongStep = 0;
+	} else if (param == "LATLONG_30") {
+		m_latLongStep = 30;
+	} else if (param == "LATLONG_15") {
+		m_latLongStep = 15;
 	} else {
 		Output("Unknown visibility: %s\n", param.c_str());
 	}

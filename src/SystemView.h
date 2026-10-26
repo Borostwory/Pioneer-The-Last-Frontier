@@ -99,8 +99,9 @@ struct Projectable {
 		PERIAPSIS = 5,
 		ASCENDING_NODE = 6,	 // where an orbit crosses the planner's reference plane northwards
 		DESCENDING_NODE = 7, // ... and southwards
-		ORBIT = 8, // <enum skip>
-		_MAX = 9 // <enum skip>
+		IMPACT = 8,			 // where the player's or the planner's trajectory meets a body's surface
+		ORBIT = 9, // <enum skip>
+		_MAX = 10 // <enum skip>
 	} type;
 	enum bases {		// <enum name=ProjectableBases scope='Projectable' public>
 		SYSTEMBODY = 0, // ref class SystemBody, may not have a physical body
@@ -121,6 +122,8 @@ struct Projectable {
 	// apsis and node markers of the player's and the planner's orbits: the
 	// marker's height above the surface of the orbited body
 	double altitude = 0.0;
+	// impact markers: the game time the trajectory meets the surface
+	double time = 0.0;
 
 	Projectable(const types t, const bases b, const Body *obj, const vector3d &pos = vector3d()) :
 		type(t), base(b), worldpos(pos)
@@ -410,6 +413,8 @@ private:
 	// Project a track to screenspace with the current renderer state and add it to the list of projected objects
 	void AddProjected(Projectable p, Projectable::types type, const vector3d &transformedPos, float screensize = 0.f);
 	void RenderBody(const SystemBody *b, const vector3d &pos, const matrix4x4f &trans);
+	// queue a planet's or moon's latitude and longitude lines, in camera space
+	void AddLatLongLines(const SystemBody *b, const vector3f &centre, float radius, const matrix4x4f &trans);
 	void RenderOrbit(const Projectable &p, const ProjectedOrbit *orbitData, const vector3d &transformedPos);
 
 	// draw a grid with `radius` * 2 gridlines on an evenly spaced 1-AU grid
@@ -448,6 +453,9 @@ private:
 	ShipDrawing m_shipDrawing;
 	CloudDrawing m_cloudDrawing;
 	GridDrawing m_gridDrawing;
+	// latitude and longitude lines on planets and moons, every this many
+	// degrees; 0 when off
+	int m_latLongStep = 0;
 
 	bool m_rotateWithMouseButton = false;
 	bool m_rotateView = false;
@@ -479,6 +487,11 @@ private:
 
 	std::unique_ptr<Graphics::VertexArray> m_lineVerts;
 	Graphics::Drawables::Lines m_lines;
+
+	// this frame's latitude and longitude lines, in camera space
+	std::vector<vector3f> m_latLongVerts;
+	std::vector<Color> m_latLongColors;
+	Graphics::Drawables::Lines m_latLongLines;
 };
 
 #endif /* _SYSTEMVIEW_H */

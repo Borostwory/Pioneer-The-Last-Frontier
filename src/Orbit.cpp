@@ -261,6 +261,38 @@ vector3d Orbit::EvenSpacedPosTrajectory(double t, double timeOffset) const
 	return m_orient * vector3d(-cos(v) * r, sin(v) * r, 0);
 }
 
+double Orbit::EvenSpacedTrajectoryToRadius(double radius, double timeOffset) const
+{
+	if (!(radius > 0.0))
+		return -1.0;
+	// a static body's trajectory sits at the centre
+	if (is_zero_general(m_semiMajorAxis))
+		return 0.0;
+	// EvenSpacedPosTrajectory steps the true anomaly v by 2 pi t, and the
+	// radius there, p / (1 + e cos v), is at or inside radius where cos v >= c
+	const double e = m_eccentricity;
+	const double p = m_semiMajorAxis * std::fabs(1.0 - e * e);
+	if (is_zero_general(e))
+		return p <= radius ? 0.0 : -1.0;
+	const double c = (p / radius - 1.0) / e;
+	if (c > 1.0)
+		return -1.0;
+	if (c <= -1.0)
+		return 0.0;
+	const double inside = std::acos(c);
+	const double v = std::remainder(TrueAnomalyFromMeanAnomaly(MeanAnomalyAtTime(timeOffset)), 2.0 * M_PI);
+	if (std::fabs(v) <= inside)
+		return 0.0;
+	// in at -inside: an open orbit, which never comes round again, only
+	// before it; a closed one on this revolution or the next
+	if (e >= 1.0)
+		return v < -inside ? (-inside - v) / (2.0 * M_PI) : -1.0;
+	double turn = -inside - v;
+	if (turn < 0.0)
+		turn += 2.0 * M_PI;
+	return turn / (2.0 * M_PI);
+}
+
 double Orbit::Period() const
 {
 	if (m_eccentricity < 1 && m_eccentricity >= 0) {

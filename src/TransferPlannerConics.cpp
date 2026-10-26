@@ -143,6 +143,86 @@ namespace PlannerConics {
 		return true;
 	}
 
+	bool FindImpact(const Conic &conic, double radius, double from, double to, double &time)
+	{
+		if (!(radius > 0.0) || !(to > from) || !(conic.mu > 0.0))
+			return false;
+		vector3d p, v;
+		if (!conic.At(from, p, v) || p.Length() <= radius)
+			return false;
+		double periapsis, apoapsis;
+		Apsides(p, v, conic.mu, periapsis, apoapsis);
+		if (periapsis >= radius)
+			return false;
+
+		// The surface is met on the way in to periapsis, at the true anomaly
+		// where the conic's radius is the body's. True anomaly only grows
+		// along a conic, so the time it gets there is bisected on how far the
+		// conic has turned since from - which needs no Kepler solve of its own
+		// and holds right through the near-parabolic.
+		const vector3d h = p.Cross(v);
+		const vector3d eVec = v.Cross(h) / conic.mu - p.Normalized();
+		const double e = eVec.Length();
+		if (!(e > 0.0) || !(h.LengthSqr() > 0.0))
+			return false;
+		const vector3d eDir = eVec / e;
+		const vector3d qDir = h.Normalized().Cross(eDir);
+		const auto anomaly = [&](const vector3d &q) { return std::atan2(q.Dot(qDir), q.Dot(eDir)); };
+		const double semiLatus = h.LengthSqr() / conic.mu;
+		const double surface = -std::acos(std::clamp((semiLatus / radius - 1.0) / e, -1.0, 1.0));
+		const double start = anomaly(p);
+		const bool closed = e < 1.0;
+		double turn = surface - start;
+		if (turn < 0.0) {
+			// past it: on the way up from periapsis, which an open conic never
+			// comes back from - or at the surface already on the way down
+			if (!closed)
+				return false;
+			turn = (start <= 0.0) ? 0.0 : turn + 2.0 * M_PI;
+		}
+		const auto reached = [&](double t) {
+			vector3d q, w;
+			if (!conic.At(t, q, w))
+				return false;
+			double turned = anomaly(q) - start;
+			if (closed && turned < 0.0)
+				turned += 2.0 * M_PI;
+			return turned >= turn;
+		};
+
+		// a closed conic gets there within a revolution; an open one is
+		// widened to until it does
+		double lo = from, hi;
+		if (closed) {
+			const double a = semiLatus / (1.0 - e * e);
+			hi = from + 2.0 * M_PI * std::sqrt(a * a * a / conic.mu);
+		} else {
+			double step = 60.0;
+			hi = from + step;
+			for (int i = 0; !reached(hi); ++i) {
+				if (hi >= to || i >= 64)
+					return false;
+				lo = hi;
+				step *= 2.0;
+				hi = from + step;
+			}
+		}
+		if (hi > to) {
+			if (!reached(to))
+				return false;
+			hi = to;
+		}
+		for (int i = 0; i < kRefineSteps && hi - lo > 1e-3; ++i) {
+			const double mid = 0.5 * (lo + hi);
+			if (reached(mid))
+				hi = mid;
+			else
+				lo = mid;
+		}
+		time = hi;
+		return true;
+	}
+
 	bool NextApsis(const Conic &conic, bool periapsis, double from, double horizon, double &time)
 	{
 		// an apsis is where the radial velocity changes sign: from inwards to

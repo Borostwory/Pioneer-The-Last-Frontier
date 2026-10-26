@@ -53,6 +53,10 @@ public:
 
 	// 0.0 <= t <= 1.0. Not for finding orbital pos
 	vector3d EvenSpacedPosTrajectory(double t, double timeOffset = 0) const;
+	// the least t >= 0 at which EvenSpacedPosTrajectory(t, timeOffset) is at
+	// or inside radius - where the drawn orbit first comes down onto a body's
+	// surface; negative when it never gets there
+	double EvenSpacedTrajectoryToRadius(double radius, double timeOffset = 0) const;
 
 	double Period() const;
 	vector3d Apogeum() const;

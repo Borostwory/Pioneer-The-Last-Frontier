@@ -33,6 +33,9 @@ LuaTable projectable_to_lua_row(const Projectable &p, lua_State *l)
 		p.type == Projectable::ASCENDING_NODE || p.type == Projectable::DESCENDING_NODE;
 	if (marker && (p.base == Projectable::PLAYER || p.base == Projectable::PLANNER))
 		proj_table.Set("altitude", p.altitude);
+	// impact markers are labelled with the time left until the impact
+	if (p.type == Projectable::IMPACT)
+		proj_table.Set("time", p.time);
 	return proj_table;
 }
 

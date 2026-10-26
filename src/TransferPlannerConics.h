@@ -48,6 +48,11 @@ namespace PlannerConics {
 	bool FindEntry(const Conic &conic, const Frame *child, double from, double to,
 		double &entry, vector3d &relPos, vector3d &relVel);
 
+	// The first time between from and to that the conic comes down to radius
+	// - the surface of its frame's body - on its way in. False if it does not
+	// get there, or starts below it.
+	bool FindImpact(const Conic &conic, double radius, double from, double to, double &time);
+
 	// the first periapsis (or apoapsis) of the conic after from, within
 	// horizon seconds; false if none comes
 	bool NextApsis(const Conic &conic, bool periapsis, double from, double horizon, double &time);

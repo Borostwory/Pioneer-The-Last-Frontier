@@ -58,6 +58,7 @@ local svColor = {
 	FONT = colors.font,
 	GRID = colors.systemMapGrid,
 	GRID_LEG = colors.systemMapGridLeg,
+	IMPACT_LABEL = colors.alertRed,
 	LAGRANGE = colors.systemMapLagrangePoint,
 	NAV_TARGET = colors.navTarget,
 	OBJECT = colors.systemMapObject,
@@ -232,6 +233,23 @@ local l4l5DisplayMode = SystemViewComboState:new{
 	configKeySelectedItem = "L4L5DisplayMode",
 }
 
+-- latitude and longitude lines on planets and moons, toggled by their own
+-- button; no lang keys exist for these strings
+local LATLONG_DISPLAY_MODE = "Latitude and longitude lines"
+local latLongDisplayMode = SystemViewComboState:new{
+	items = {
+		"Every 30°",
+		"Every 15°"
+	},
+	displayModes = {
+		"LATLONG_30",
+		"LATLONG_15"
+	},
+	displayModeOff = "LATLONG_OFF",
+	configKeySelectedItem = "LatLongDisplayMode",
+	configKeyDoDisplay = "LatLongDisplayModeOn"
+}
+
 local onGameStart = function ()
 	--connect to class SystemView
 	systemView = Game.systemView
@@ -244,6 +262,7 @@ local onGameStart = function ()
 	cloudDisplayMode:loadConfig()
 	gridDisplayMode:loadConfig()
 	l4l5DisplayMode:loadConfig()
+	latLongDisplayMode:loadConfig()
 end
 
 local onGameEnd = function ()
@@ -252,6 +271,7 @@ local onGameEnd = function ()
 	cloudDisplayMode:saveConfig()
 	gridDisplayMode:saveConfig()
 	l4l5DisplayMode:saveConfig()
+	latLongDisplayMode:saveConfig()
 	Engine.SaveSettings()
 end
 
@@ -549,6 +569,7 @@ local function getBodyIcon(obj, forWorld, isOrrery)
 	elseif obj.type == Projectable.PERIAPSIS then return icons.periapsis
 	elseif obj.type == Projectable.ASCENDING_NODE then return icons.normal_thin
 	elseif obj.type == Projectable.DESCENDING_NODE then return icons.antinormal_thin
+	elseif obj.type == Projectable.IMPACT then return icons.impact_warning
 	elseif obj.type == Projectable.L4 then return icons.lagrange_marker
 	elseif obj.type == Projectable.L5 then return icons.lagrange_marker
 	elseif obj.base == Projectable.PLAYER or obj.base == Projectable.PLANNER or obj.base == Projectable.PLANNER_BURN then
@@ -667,6 +688,12 @@ local settingsView = {
 				c,ret = ui.combo("##Cloud", cloudDisplayMode.selectedItem, cloudDisplayMode.items)
 				if c then
 					cloudDisplayMode:update{selectedItem = ret}
+				end
+
+				ui.text(LATLONG_DISPLAY_MODE)
+				c,ret = ui.combo("##LatLong", latLongDisplayMode.selectedItem, latLongDisplayMode.items)
+				if c then
+					latLongDisplayMode:update{selectedItem = ret}
 				end
 			end)
 		end
@@ -1327,6 +1354,9 @@ function Windows.edgeButtons.Show()
 			if ui.mainMenuButton(icons.hyperspace, lc.HYPERSPACE_CLOUDS_DISPLAY_MODE_TOGGLE, buttonState[cloudDisplayMode.doDisplay].state) then
 				cloudDisplayMode:toggleDisplay()
 			end
+			if ui.mainMenuButton(icons.planet_grid, LATLONG_DISPLAY_MODE, buttonState[latLongDisplayMode.doDisplay].state) then
+				latLongDisplayMode:toggleDisplay()
+			end
 		end
 	end)
 end
@@ -1365,6 +1395,9 @@ local function getLabel(obj)
 	if markerLabels[obj.type] and obj.altitude then
 		return markerLabels[obj.type] .. " " .. ui.Format.Distance(obj.altitude)
 	end
+	if obj.type == Projectable.IMPACT then
+		return "Impact in " .. ui.Format.Duration(math.max((obj.time or 0) - Game.time, 0), 2)
+	end
 	if obj.type == Projectable.OBJECT then
 		if obj.base == Projectable.SYSTEMBODY then return obj.ref.name
 		elseif obj.base == Projectable.PLANNER then return ""
@@ -1387,7 +1420,7 @@ local function getColor(obj)
 		elseif obj.base == Projectable.PLANNER_BURN then return svColor.PLANNER_BURN
 		else return svColor.OBJECT
 		end
-	elseif markerLabels[obj.type] then
+	elseif markerLabels[obj.type] or obj.type == Projectable.IMPACT then
 		if obj.base == Projectable.SYSTEMBODY then return svColor.SYSTEMBODY_ORBIT
 		elseif obj.base == Projectable.SHIP then
 			if obj.ref == selectedObject then return svColor.SELECTED_SHIP_ORBIT
@@ -1647,8 +1680,10 @@ local function displayOnScreenObjects()
 				local pos = mainCoords + Vector2(label_offset, 0)
 				local hovered = mouseover and mainObject.type == Projectable.OBJECT
 				local font = (hovered or isSelected) and hudfont_highlight or hudfont
+				-- the impact warning reads in red; its icon keeps its orbit's colour
+				local labelColor = mainObject.type == Projectable.IMPACT and svColor.IMPACT_LABEL or getColor(mainObject)
 				ui.addStyledText(pos + Vector2(2, 1), ui.anchor.left, ui.anchor.center, label , ui.theme.colors.black, font)
-				ui.addStyledText(pos, ui.anchor.left, ui.anchor.center, label , getColor(mainObject), font)
+				ui.addStyledText(pos, ui.anchor.left, ui.anchor.center, label , labelColor, font)
 			else
 				local labeled = nil -- hovered or selected
 				local labeled_center = nil
