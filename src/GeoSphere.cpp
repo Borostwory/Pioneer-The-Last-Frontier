@@ -16,6 +16,7 @@
 #include "PlanetClouds.h"
 #include "Space.h"
 #include "SpaceStation.h"
+#include "Star.h"
 #include "TerrainFarTexture.h"
 #include "TerrainSurfaceTiles.h"
 #include "TerrainTiles.h"
@@ -756,6 +757,12 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		ambient.a = 255;
 		emission = GetSystemBody()->GetStarColor();
 		emission.a = 255;
+
+		// per-type surface look and its animation (geosphere_star.frag)
+		const Star::VisualProfile vp = Star::GetVisualProfile(GetSystemBody());
+		m_surfaceMaterial->SetPushConstant("StarSurface"_hash,
+			vector3f(vp.granuleFrequency, vp.granuleContrast, vp.spotAmount), vp.bakedWeight);
+		m_surfaceMaterial->SetPushConstant("StarTime"_hash, Star::GetAnimationAngles(), 0.0f);
 	} else {
 		// give planet some ambient lighting if the viewer is close to it
 		double camdist = 0.1 / campos.LengthSqr();

@@ -1,0 +1,14 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+Shader star_halo
+
+Buffer DrawData binding=1
+
+PushConstant vec4 StarColor binding=0
+PushConstant vec4 StarHalo binding=1
+PushConstant vec4 StarHaloGeom binding=2
+PushConstant vec4 StarTime binding=3
+
+Vertex "star_halo.vert"
+Fragment "star_halo.frag"

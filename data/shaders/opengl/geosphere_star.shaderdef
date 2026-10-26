@@ -5,5 +5,8 @@ Shader geosphere_star
 
 Buffer DrawData binding=1
 
+PushConstant vec4 StarSurface binding=0
+PushConstant vec4 StarTime binding=1
+
 Vertex "geosphere_star.vert"
 Fragment "geosphere_star.frag"
