@@ -32,14 +32,44 @@ uniform sampler2D cityLots;
 
 #define GROUND_ASPHALT vec3(0.075, 0.075, 0.08)
 #define GROUND_PAVEMENT vec3(0.40, 0.39, 0.37)
+#define GROUND_CONCRETE vec3(0.45, 0.43, 0.40)
 #define GROUND_WHITE vec3(0.78, 0.78, 0.76)
 #define GROUND_YELLOW vec3(0.75, 0.58, 0.12)
+// the lots' concrete slabs, staggered row by row [m]
+#define GROUND_SLAB 4.0
+// share of the terrain's detail and relief the lots' paving hides (the
+// roads hide all of it)
+#define GROUND_LOT_SMOOTHING 0.6
 
 float groundHash(vec2 p)
 {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
 	p3 += dot(p3, p3.zyx + 31.32);
 	return fract((p3.x + p3.y) * p3.z);
+}
+
+// value noise, 0..1
+float groundNoise(vec2 p)
+{
+	vec2 i = floor(p), f = fract(p);
+	vec2 u = f * f * (3.0 - 2.0 * f);
+	return mix(mix(groundHash(i), groundHash(i + vec2(1.0, 0.0)), u.x),
+		mix(groundHash(i + vec2(0.0, 1.0)), groundHash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+// octaves of it from features scale [m] wide down, each fading to its mean
+// where it gets smaller than the pixel, px wide
+float groundFbm(vec2 p, float scale, int octaves, float px)
+{
+	float s = 0.0, amp = 0.5, total = 0.0;
+	for (int o = 0; o < octaves; o++) {
+		float fade = clamp(1.5 - px / scale, 0.0, 1.0);
+		s += amp * mix(0.5, groundNoise(p / scale + float(o) * vec2(17.3, -9.1)), fade);
+		total += amp;
+		amp *= 0.5;
+		scale *= 0.5;
+	}
+	return s / total;
 }
 
 vec4 groundTexel(int texel)
@@ -75,8 +105,9 @@ int groundLotAt(ivec2 c)
 	return int(texelFetch(cityLots, c, 0).r * 255.0 + 0.5);
 }
 
-// the paving of the cell's lot, with its cover of the pixel
-float groundLot(vec2 p, float px, out vec3 colour)
+// the paving of the cell's lot, weathered and dusted with the soil round
+// it, with its cover of the pixel
+float groundLot(vec2 p, float px, vec3 soil, out vec3 colour)
 {
 	vec2 g = (p - groundLotRect.xy) / groundLotRect.z;
 	ivec2 c = ivec2(floor(g));
@@ -92,28 +123,44 @@ float groundLot(vec2 p, float px, out vec3 colour)
 	float b = groundLotAt(c + ivec2(0, -1)) == k ? -9.0 : 3.0;
 	float t = groundLotAt(c + ivec2(0, 1)) == k ? -9.0 : 3.0;
 	float inside = min(min(f.x - l, S - f.x - r), min(f.y - b, S - f.y - t));
-	float n = groundHash(floor(p / 3.0) + 7.0);
-	if (k == 1) { // plazas, paved plots
-		colour = GROUND_PAVEMENT * (0.94 + 0.06 * n);
-		colour *= 1.0 - 0.15 * max(groundLine(fract(p.x / 6.0) - 0.5, 0.008, px / 6.0), groundLine(fract(p.y / 6.0) - 0.5, 0.008, px / 6.0));
-	} else if (k == 2) { // yards
-		colour = vec3(0.21, 0.20, 0.19) * (0.85 + 0.25 * n);
+	// dust: patches of it, and drifts along the edges
+	float drifts = groundFbm(p + 210.0, 35.0, 3, px);
+	float edge = 1.0 - smoothstep(0.0, 9.0, inside);
+	if (k == 1) { // plazas, paved plots: concrete slabs, stained
+		colour = GROUND_CONCRETE * (0.92 + 0.14 * groundFbm(p + 220.0, 7.0, 3, px));
+		float row = floor(p.y / GROUND_SLAB);
+		float u = p.x / GROUND_SLAB + 0.5 * row;
+		colour *= 0.93 + 0.14 * groundHash(vec2(floor(u), row) + 31.0);
+		float joint = max(groundLine(abs(fract(u) - 0.5) - 0.5, 0.012, px / GROUND_SLAB),
+			groundLine(abs(fract(p.y / GROUND_SLAB) - 0.5) - 0.5, 0.012, px / GROUND_SLAB));
+		colour *= 1.0 - 0.3 * joint;
+		colour *= 1.0 - 0.25 * smoothstep(0.6, 0.78, groundFbm(p + 330.0, 5.0, 3, px));
+		colour = mix(colour, soil * 0.97, clamp(0.28 + 0.3 * drifts + 0.45 * edge, 0.0, 0.9));
+	} else if (k == 2) { // yards: gravel
+		colour = mix(soil * 0.72, vec3(0.31, 0.30, 0.28), 0.45) * (0.85 + 0.3 * groundFbm(p + 230.0, 1.2, 2, px));
+		colour = mix(colour, soil, clamp(0.15 + 0.3 * drifts + 0.4 * edge, 0.0, 0.8));
 	} else if (k == 3) { // the spaceport's apron
+		float n = groundHash(floor(p / 3.0) + 7.0);
 		colour = vec3(0.46, 0.46, 0.45) * (0.96 + 0.04 * n);
 		colour = mix(colour, GROUND_YELLOW, groundLine(fract(p.x / 25.0) - 0.5, 0.008, px / 25.0));
-	} else { // car parks
-		colour = GROUND_ASPHALT * (0.9 + 0.2 * n);
+		colour = mix(colour, soil, 0.1 + 0.2 * drifts);
+	} else { // car parks: worn markings
+		colour = GROUND_ASPHALT * (0.9 + 0.2 * groundFbm(p + 230.0, 1.2, 2, px));
+		colour = mix(colour, soil * 0.75, clamp(0.22 + 0.25 * drifts + 0.3 * edge, 0.0, 0.8));
 		float stall = groundLine(fract(p.x / 2.7) - 0.5, 0.03, px / 2.7) * step(abs(fract(p.y / 16.0) - 0.5), 0.3);
-		colour = mix(colour, vec3(0.7), stall);
+		stall *= 0.4 + 0.6 * groundFbm(p + 360.0, 3.0, 2, px);
+		colour = mix(colour, vec3(0.6, 0.58, 0.55), stall);
 	}
 	return clamp(inside / px + 0.5, 0.0, 1.0);
 }
 
-// The city's ground at view-space position viewPos: its colour, and how much
-// of the pixel it covers (0: the terrain's own)
-float cityGroundAt(vec3 viewPos, out vec3 colour)
+// The city's ground at view-space position viewPos, on the terrain's own
+// colour soil: its colour, how much of the pixel it covers (0: the
+// terrain's own) and how much of the terrain's detail and relief it hides
+float cityGroundAt(vec3 viewPos, vec3 soil, out vec3 colour, out float smoothing)
 {
 	colour = vec3(0.0);
+	smoothing = 0.0;
 	vec3 pos = (groundViewToCity * vec4(viewPos, 1.0)).xyz;
 	// pixel size, before any branch on the position
 	vec2 p = pos.xz;
@@ -122,8 +169,9 @@ float cityGroundAt(vec3 viewPos, out vec3 colour)
 		return 0.0;
 
 	vec3 lotColour;
-	float cover = groundLot(p, px, lotColour) * clamp(groundAtlas.z, 0.0, 1.0);
+	float cover = groundLot(p, px, soil, lotColour) * clamp(groundAtlas.z, 0.0, 1.0);
 	colour = lotColour;
+	smoothing = cover * GROUND_LOT_SMOOTHING;
 
 	ivec2 c = ivec2(floor((p - groundRoadRect.xy) / groundRoadRect.z));
 	int N = int(groundRoadRect.w);
@@ -223,5 +271,7 @@ float cityGroundAt(vec3 viewPos, out vec3 colour)
 		}
 	}
 	colour = cover > 0.0 ? mix(lotColour, surface, surfaceCover) : surface;
-	return max(cover, surfaceCover) * clamp(groundAtlas.z, 0.0, 1.0);
+	float strength = clamp(groundAtlas.z, 0.0, 1.0);
+	smoothing = max(smoothing, surfaceCover * strength);
+	return max(cover, surfaceCover) * strength;
 }
