@@ -9,8 +9,11 @@
 #include "Pi.h"
 #include "Space.h"
 #include "TerrainBody.h"
+#include "ModelBody.h"
 #include "collider/CollisionContact.h"
 #include "collider/CollisionSpace.h"
+#include "collider/Geom.h"
+#include "collider/GeomTree.h"
 #include "galaxy/SystemBody.h"
 #include "gameconsts.h"
 
@@ -51,6 +54,8 @@ namespace {
 	constexpr double EVA_ACCEL = 3.0;
 	constexpr double EVA_MAX_SPEED = 10.0;
 	constexpr double EVA_BOUNCE = 0.2;
+	// within this of its length the line counts as taut (m)
+	constexpr double EVA_TAUT_MARGIN = 0.25;
 
 	// the orientation of a frame's axes in the root frame's
 	matrix3x3d ToRoot(FrameId frame)
@@ -80,7 +85,8 @@ Walker::Walker() :
 	m_relPos(0.0),
 	m_oldRelPos(0.0),
 	m_relVel(0.0),
-	m_evaOrient(matrix3x3d::Identity)
+	m_evaOrient(matrix3x3d::Identity),
+	m_evaHatch(0.0)
 {
 	SetLabel("Walker");
 	SetPhysRadius(RADIUS);
@@ -159,9 +165,11 @@ void Walker::NotifyRemoved(const Body *const removedBody)
 		m_evaShip = nullptr;
 }
 
-void Walker::StartEva(const Body *ship, const vector3d &relPos, const matrix3x3d &orient)
+void Walker::StartEva(const Body *ship, const vector3d &relPos, const matrix3x3d &orient, const vector3d &hatch)
 {
 	m_evaShip = ship;
+	m_evaHatch = hatch;
+	m_evaTaut = false;
 	m_relPos = relPos;
 	m_oldRelPos = relPos;
 	m_relVel = vector3d(0.0);
@@ -216,6 +224,30 @@ void Walker::FollowShipInterp(double alpha)
 	m_interpOrient = fromRoot * m_evaOrient;
 }
 
+bool Walker::HullHit(const vector3d &from, const vector3d &dir, double len, double &dist, vector3d &normal) const
+{
+	if (!m_evaShip || !m_evaShip->IsType(ObjectType::MODELBODY))
+		return false;
+	const Geom *geom = static_cast<const ModelBody *>(m_evaShip)->GetGeom();
+	if (!geom)
+		return false;
+	const GeomTree *tree = geom->GetGeomTree();
+
+	// root axes to the ship's model space
+	const matrix3x3d shipToRoot = ToRoot(m_evaShip->GetFrame()) * m_evaShip->GetOrient();
+	const matrix3x3d rootToShip = shipToRoot.Transpose();
+	isect_t isect;
+	isect.triIdx = -1;
+	isect.dist = float(len);
+	tree->TraceRay(vector3f(rootToShip * from), vector3f(rootToShip * dir), &isect);
+	if (isect.triIdx == -1)
+		return false;
+
+	dist = isect.dist;
+	normal = (shipToRoot * vector3d(tree->GetTriNormal(isect.triIdx))).NormalizedSafe();
+	return true;
+}
+
 void Walker::EvaStep(double dt)
 {
 	// where the ship is now, consistent with its collision mesh
@@ -237,16 +269,17 @@ void Walker::EvaStep(double dt)
 	if (m_relVel.LengthSqr() > EVA_MAX_SPEED * EVA_MAX_SPEED)
 		m_relVel = m_relVel.Normalized() * EVA_MAX_SPEED;
 
-	// the hull (and anything else solid): slide along it, bouncing a little
+	// The hull: tested against the ship's own collision mesh in its model
+	// space. The collision space's trees are built before the ship moves, so
+	// at orbital speed (a hundred metres a step) their rays miss the hull;
+	// relative to the ship it doesn't matter how fast it goes or turns.
+	// Slide along it, bouncing a little.
 	vector3d move = m_relVel * dt;
 	const double moveLen = move.Length();
 	if (moveLen > 1e-9) {
-		const Frame *frame = Frame::GetFrame(GetFrame());
-		const matrix3x3d toRoot = ToRoot(GetFrame());
-		CollisionContact c;
-		frame->GetCollisionSpace()->TraceRay(GetPosition(), toRoot.Transpose() * (move / moveLen), moveLen + RADIUS, &c);
-		if (c.userData1 && c.normal.LengthSqr() > 0.0) {
-			vector3d n = (toRoot * c.normal).Normalized();
+		double dist;
+		vector3d n;
+		if (HullHit(m_relPos, move / moveLen, moveLen + RADIUS, dist, n)) {
 			if (n.Dot(move) > 0.0)
 				n = -n;
 			move -= n * move.Dot(n);
@@ -257,11 +290,32 @@ void Walker::EvaStep(double dt)
 	}
 	m_relPos += move;
 
-	// the line to the ship
-	const double dist = m_relPos.Length();
+	// kept RADIUS off the hull, where it came at the walker (the ship
+	// turning) or an edge slipped past the ray above
+	static const vector3d PROBES[] = {
+		{ 1.0, 0.0, 0.0 }, { -1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 },
+		{ 0.0, -1.0, 0.0 }, { 0.0, 0.0, 1.0 }, { 0.0, 0.0, -1.0 }
+	};
+	for (const vector3d &probe : PROBES) {
+		double dist;
+		vector3d n;
+		if (HullHit(m_relPos, probe, RADIUS, dist, n)) {
+			m_relPos -= probe * (RADIUS - dist);
+			const double into = m_relVel.Dot(probe);
+			if (into > 0.0)
+				m_relVel -= probe * into;
+		}
+	}
+
+	// the line to the hatch: held at its length, and taut within a hand's
+	// breadth of it (the line is drawn straight then, see EvaTether)
+	const vector3d hatch = ToRoot(GetFrame()) * (m_evaShip->GetOrient() * m_evaHatch);
+	const vector3d fromHatch = m_relPos - hatch;
+	const double dist = fromHatch.Length();
+	m_evaTaut = dist > EVA_TETHER - EVA_TAUT_MARGIN;
 	if (dist > EVA_TETHER) {
-		const vector3d out = m_relPos / dist;
-		m_relPos = out * EVA_TETHER;
+		const vector3d out = fromHatch / dist;
+		m_relPos = hatch + out * EVA_TETHER;
 		const double away = m_relVel.Dot(out);
 		if (away > 0.0)
 			m_relVel -= out * away;

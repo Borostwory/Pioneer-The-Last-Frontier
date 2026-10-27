@@ -69,8 +69,9 @@ public:
 	// to the ship, in root frame axes, and the ship carries it along (Player
 	// calls FollowShip and FollowShipInterp after it has moved), so both share
 	// the ship's orbit exactly. relPos: from the ship; orient: x right, y up,
-	// looking along -z, in root frame axes
-	void StartEva(const Body *ship, const vector3d &relPos, const matrix3x3d &orient);
+	// looking along -z, in root frame axes; hatch: where the line is tied, in
+	// the ship's model space
+	void StartEva(const Body *ship, const vector3d &relPos, const matrix3x3d &orient, const vector3d &hatch);
 	bool IsEva() const { return m_evaShip != nullptr; }
 	// turns the view about its own axes: yaw to the right, pitch up (radians)
 	void LookEva(double yaw, double pitch);
@@ -79,8 +80,10 @@ public:
 	void FollowShip();
 	void FollowShipInterp(double alpha);
 
-	// the farthest the line lets it drift from the ship, metres
+	// the farthest the line lets it drift from the hatch, metres
 	static constexpr double EVA_TETHER = 300.0;
+	// the line is holding it back (at EVA_TETHER, give or take a little)
+	bool IsEvaTetherTaut() const { return m_evaTaut; }
 
 	// Distance from the planet centre of the ground under pos: the terrain or,
 	// if higher, the first collision geom below a ray from `above` metres over
@@ -98,6 +101,10 @@ private:
 	// burns thrust (0 to 1) for dt, or refills when idle
 	void BurnJetpack(double thrust, double dt);
 	void EvaStep(double dt);
+	// a ray against the EVA ship's collision mesh, from `from` (relative to
+	// the ship, root axes) along unit dir for len: the distance and the
+	// surface normal (root axes) of the nearest hit
+	bool HullHit(const vector3d &from, const vector3d &dir, double len, double &dist, vector3d &normal) const;
 	void UpdateOrient();
 
 	vector3d m_vel;
@@ -122,6 +129,8 @@ private:
 	vector3d m_oldRelPos;
 	vector3d m_relVel;
 	matrix3x3d m_evaOrient;
+	vector3d m_evaHatch;
+	bool m_evaTaut = false;
 };
 
 #endif /* _WALKER_H */

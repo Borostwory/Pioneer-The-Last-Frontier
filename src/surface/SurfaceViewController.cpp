@@ -4,11 +4,15 @@
 #include "SurfaceViewController.h"
 
 #include "Camera.h"
+#include "EvaTether.h"
 #include "Excursion.h"
+#include "Frame.h"
 #include "Game.h"
 #include "GameConfig.h"
 #include "MathUtil.h"
 #include "Pi.h"
+#include "Player.h"
+#include "Space.h"
 #include "Walker.h"
 #include "WorldView.h"
 #include "sound/Sound.h"
@@ -31,6 +35,8 @@ namespace {
 	constexpr double RUN_PACE = 4.5;
 	constexpr double RUN_PITCH = 1.4;
 	constexpr double STEP_MIN_SPEED = 0.3;
+	// where the line is clipped on: the walker's belt, below and ahead of the eyes
+	const vector3d TETHER_BELT(0.15, -0.6, -0.2);
 } // namespace
 
 REGISTER_INPUT_BINDING(SurfaceViewController)
@@ -66,7 +72,12 @@ void SurfaceViewController::InputBinding::RegisterBindings()
 
 SurfaceViewController::SurfaceViewController(WorldView *v) :
 	ViewController(v),
-	InputBindings(Pi::input)
+	InputBindings(Pi::input),
+	m_camPos(0.0),
+	m_camOrient(matrix3x3d::Identity),
+	m_tether(new EvaTether()),
+	m_tetherRootToView(matrix3x3d::Identity),
+	m_tetherShipInView(0.0)
 {
 	InputBindings.RegisterBindings();
 	m_onJumpCon = InputBindings.jump->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnJump));
@@ -95,6 +106,7 @@ void SurfaceViewController::Deactivated()
 	SetMouseCaptured(false);
 	m_jetSound.Stop();
 	m_footsteps.Stop();
+	m_tether->Clear();
 	if (Walker *walker = Pi::game->GetExcursion()->GetWalker())
 		walker->SetMoveInput(0.0, 0.0, 0.0, false);
 }
@@ -167,6 +179,35 @@ void SurfaceViewController::Update()
 	}
 
 	PlaceCamera(walker);
+	if (walker->IsEva())
+		UpdateTether(walker);
+	else
+		m_tether->Clear();
+}
+
+void SurfaceViewController::UpdateTether(const Walker *walker)
+{
+	const Player *ship = Pi::game->GetPlayer();
+	const FrameId root = Pi::game->GetSpace()->GetRootFrame();
+	const matrix3x3d toRoot = Frame::GetFrame(walker->GetFrame())->GetInterpOrientRelTo(root);
+
+	// both ends relative to the ship, in root frame axes, as the rope keeps them
+	const vector3d shipPos = ship->GetInterpPosition();
+	const vector3d anchor = toRoot * (ship->GetInterpOrient() * Pi::game->GetExcursion()->GetHatchPoint());
+	const vector3d end = toRoot * (walker->GetInterpPosition() - shipPos + m_camOrient * TETHER_BELT);
+	m_tether->Update(anchor, end, Pi::game->IsPaused() ? 0.0 : Pi::GetFrameTime(), walker->IsEvaTetherTaut());
+
+	m_tetherRootToView = m_camOrient.Transpose() * toRoot.Transpose();
+	m_tetherShipInView = m_camOrient.Transpose() * (shipPos - m_camPos);
+}
+
+void SurfaceViewController::Draw(Camera *camera)
+{
+	if (!m_tether->IsActive())
+		return;
+	// the camera's projection, in case drawing the world changed it
+	m_parentView->GetCameraContext()->ApplyDrawTransforms(Pi::renderer);
+	m_tether->Draw(Pi::renderer, m_tetherRootToView, m_tetherShipInView);
 }
 
 void SurfaceViewController::UpdateJetSound(const Walker *walker)
@@ -204,8 +245,10 @@ void SurfaceViewController::PlaceCamera(const Walker *walker)
 
 	// in EVA the walker is all eyes
 	if (walker->IsEva()) {
-		camera->SetCameraPosition(walker->GetInterpPosition());
-		camera->SetCameraOrient(walker->GetEvaOrient());
+		m_camPos = walker->GetInterpPosition();
+		m_camOrient = walker->GetEvaOrient();
+		camera->SetCameraPosition(m_camPos);
+		camera->SetCameraOrient(m_camOrient);
 		return;
 	}
 

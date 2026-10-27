@@ -104,6 +104,15 @@ bool Excursion::FindExitPoint(vector3d &pos, vector3d &facing) const
 	return false;
 }
 
+vector3d Excursion::GetHatchPoint() const
+{
+	const Player *ship = m_game->GetPlayer();
+	if (const SceneGraph::Tag *hatch = ship->GetModel()->FindTagByName("tag_hatch"))
+		return vector3d(hatch->GetGlobalTransform().GetTranslate());
+	const Aabb &aabb = ship->GetAabb();
+	return vector3d(aabb.max.x, 0.5 * (aabb.min.y + aabb.max.y), 0.5 * (aabb.min.z + aabb.max.z));
+}
+
 bool Excursion::CanStartEva() const
 {
 	const Player *player = m_game->GetPlayer();
@@ -147,7 +156,7 @@ void Excursion::StartEva()
 
 	m_walker = new Walker();
 	m_walker->SetFrame(player->GetFrame());
-	m_walker->StartEva(player, relPos, orient);
+	m_walker->StartEva(player, relPos, orient, GetHatchPoint());
 
 	// left alone, the ship coasts
 	if (PlayerShipController *controller = player->GetPlayerController())

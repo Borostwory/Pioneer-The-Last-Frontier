@@ -57,6 +57,10 @@ public:
 	void OnShipMoved();
 	void OnShipInterpolated(double alpha);
 
+	// where the hatch is in the ship's model space: its tag_hatch, or the
+	// middle of the right side of its bounding box
+	vector3d GetHatchPoint() const;
+
 	static constexpr double BOARD_DISTANCE = 3.0;
 
 private:
