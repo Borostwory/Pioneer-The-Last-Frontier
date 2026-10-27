@@ -141,7 +141,8 @@ function Sidebar:DrawButtons()
 end
 
 -- Draw inactive / HUD modules when the sidebar is closed
-function Sidebar:DrawHudModules()
+-- offShip - only the modules with showOffShip (the player is out of the ship)
+function Sidebar:DrawHudModules(offShip)
 	-- Make a copy of the size/pos vectors to allow clipping
 	local min = Vector2(self.displayPos.x, self.displayPos.y)
 	local max = min + self.displaySize
@@ -150,11 +151,18 @@ function Sidebar:DrawHudModules()
 	-- they intend to render into
 	ui.withStyleVars({ Alpha = self.hudAlpha }, function()
 		for i, v in ipairs(self.hudModules) do
-			if not Game.InHyperspace() or v.showInHyperspace then
+			if (not Game.InHyperspace() or v.showInHyperspace) and (not offShip or v.showOffShip) then
 				v:draw(min, max)
 			end
 		end
 	end)
+end
+
+-- Out of the ship: no sidebar, only the HUD modules shown off the ship
+function Sidebar:DrawOffShip()
+	self:UpdateCoords()
+	self.hudAlpha = animateAlpha(self.hudAlpha, true)
+	self:DrawHudModules(true)
 end
 
 -- Draw active display modules

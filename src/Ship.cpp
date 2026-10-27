@@ -41,6 +41,7 @@
 #include "scenegraph/StaticGeometry.h"
 #include "ship/GunManager.h"
 #include "ship/PlayerShipController.h"
+#include "surface/Excursion.h"
 
 #include <algorithm>
 #include <cmath>
@@ -979,6 +980,8 @@ void Ship::SetFlightState(Ship::FlightState newState)
 void Ship::Blastoff()
 {
 	if (m_flightState != LANDED) return;
+	// not without the player aboard
+	if (IsType(ObjectType::PLAYER) && Pi::game->GetExcursion()->IsOffShip()) return;
 
 	vector3d up = GetPosition().Normalized();
 

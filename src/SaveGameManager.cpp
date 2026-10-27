@@ -11,6 +11,7 @@
 #include "Player.h"
 #include "Pi.h"
 #include "profiler/Profiler.h"
+#include "surface/Excursion.h"
 
 
 static const char s_saveDirName[] = "savefiles";
@@ -117,6 +118,11 @@ void SaveGameManager::SaveGame(const std::string &name, Game *game)
 
 	if (game->GetPlayer()->IsDead()) {
 		throw CannotSaveDeadPlayer();
+	}
+
+	// the walker is not saved (yet): board first
+	if (game->GetExcursion()->IsOffShip()) {
+		throw CannotSaveOffShip();
 	}
 
 	if (!FileSystem::IsValidFilename(name)) {

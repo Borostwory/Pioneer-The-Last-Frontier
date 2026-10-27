@@ -2566,11 +2566,13 @@ static int l_pigui_get_projected_bodies_grouped(lua_State *l)
 	PiGui::TSS_vector filtered;
 	filtered.reserve(Pi::game->GetSpace()->GetNumBodies());
 
+	// seen from where the player is: the ship, or the walker out of it (whose ship is then marked)
+	const Body *self = Pi::game->GetControlledBody();
 	for (Body *body : Pi::game->GetSpace()->GetBodies()) {
-		if (body == Pi::game->GetPlayer()) continue;
+		if (body == self || body->IsType(ObjectType::WALKER)) continue;
 		if (body->GetType() == ObjectType::PROJECTILE) continue;
 		if ((body->GetType() == ObjectType::SHIP || body->GetType() == ObjectType::CARGOBODY || body->GetType() == ObjectType::HYPERSPACECLOUD) &&
-			body->GetPositionRelTo(Pi::player).Length() > ship_max_distance) continue;
+			body->GetPositionRelTo(self).Length() > ship_max_distance) continue;
 		const PiGui::TScreenSpace res = lua_world_space_to_screen_space(body); // defined in LuaPiGui.cpp
 		if (!res._onScreen) continue;
 		filtered.emplace_back(res);
@@ -2671,8 +2673,9 @@ static int l_pigui_get_projected_bodies(lua_State *l)
 	PROFILE_SCOPED()
 	PiGui::TSS_vector filtered;
 	filtered.reserve(Pi::game->GetSpace()->GetNumBodies());
+	const Body *self = Pi::game->GetControlledBody();
 	for (Body *body : Pi::game->GetSpace()->GetBodies()) {
-		if (body == Pi::game->GetPlayer()) continue;
+		if (body == self || body->IsType(ObjectType::WALKER)) continue;
 		if (body->GetType() == ObjectType::PROJECTILE) continue;
 		const PiGui::TScreenSpace res = lua_world_space_to_screen_space(body); // defined in LuaPiGui.cpp
 		if (!res._onScreen) continue;

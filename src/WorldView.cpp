@@ -30,6 +30,8 @@
 #include "ship/GunManager.h"
 #include "ship/ShipViewController.h"
 #include "sound/Sound.h"
+#include "surface/Excursion.h"
+#include "surface/SurfaceViewController.h"
 
 WorldView::~WorldView() {}
 
@@ -180,6 +182,7 @@ void WorldView::InitObject()
 	InputBindings.RegisterBindings();
 	shipView.reset(new ShipViewController(this));
 	shipView->Init();
+	surfaceView.reset(new SurfaceViewController(this));
 	SetViewController(shipView.get());
 
 	m_onToggleHudModeCon = InputBindings.toggleHudMode->onPressed.connect(sigc::mem_fun(this, &WorldView::OnToggleLabels));
@@ -211,7 +214,16 @@ void WorldView::OnRequestTimeAccelDec()
 
 void WorldView::SetViewController(ViewController *newView)
 {
+	if (newView == m_viewController)
+		return;
+
+	// a switch while the view is shown hands the input over at once
+	const bool shown = Pi::GetView() == this;
+	if (shown && m_viewController)
+		m_viewController->Deactivated();
 	m_viewController = newView;
+	if (shown && m_viewController)
+		m_viewController->Activated();
 }
 
 void WorldView::Draw3D()
@@ -229,13 +241,16 @@ void WorldView::Draw3D()
 	// Things like the cockpit and AR features like hudtrails, space dust etc.
 	m_viewController->Draw(m_camera.get());
 
+	// the ship's 3D HUD is not shown out of the ship
+	const bool offShip = m_game->GetExcursion()->IsOffShip();
+
 	// Draw 3D HUD
 	// Speed lines
-	if (Pi::AreSpeedLinesDisplayed())
+	if (Pi::AreSpeedLinesDisplayed() && !offShip)
 		m_speedLines->Render(m_renderer);
 
 	// Contact trails
-	if (Pi::AreHudTrailsDisplayed()) {
+	if (Pi::AreHudTrailsDisplayed() && !offShip) {
 		for (auto it = Pi::player->GetSensors()->GetContacts().begin(); it != Pi::player->GetSensors()->GetContacts().end(); ++it)
 			it->trail->Render(m_renderer);
 	}
@@ -247,8 +262,8 @@ void WorldView::Draw3D()
 
 	m_cameraContext->EndFrame();
 
-	// don't draw crosshairs etc in hyperspace
-	if (Pi::player->GetFlightState() == Ship::HYPERSPACE) return;
+	// don't draw crosshairs etc in hyperspace or out of the ship
+	if (Pi::player->GetFlightState() == Ship::HYPERSPACE || offShip) return;
 
 	// setup orthographic projection the indicator coordinate system expects
 	// (could also draw this using ImGui methods in DrawPiGui, but this is a quick patch for release)

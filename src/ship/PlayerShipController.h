@@ -28,6 +28,8 @@ public:
 	double GetCruiseSpeed() const override { return m_cruiseSpeed; }
 	void ChangeCruiseSpeed(double delta) override { m_cruiseSpeed += delta; }
 	FlightControlState GetFlightControlState() const override { return m_flightControlState; }
+	// the flight controls take no input while the player is out of the ship (Excursion)
+	void SetInputEnabled(bool enabled);
 	vector3d GetMouseDir() const; // in local frame
 
 	// Return the current mouse direction in camera space.

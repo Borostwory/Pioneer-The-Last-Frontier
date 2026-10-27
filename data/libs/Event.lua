@@ -538,6 +538,33 @@ end
 --
 
 --
+-- Event: onPlayerDisembark
+--
+-- Triggered when the player gets out of the landed ship on foot
+-- (Game.Disembark).
+--
+-- > local onPlayerDisembark = function (ship) ... end
+-- > Event.Register("onPlayerDisembark", onPlayerDisembark)
+--
+-- Parameters:
+--
+--   ship - the player's <Ship>, left behind
+--
+
+--
+-- Event: onPlayerBoard
+--
+-- Triggered when the player on foot gets back into the ship (Game.Board).
+--
+-- > local onPlayerBoard = function (ship) ... end
+-- > Event.Register("onPlayerBoard", onPlayerBoard)
+--
+-- Parameters:
+--
+--   ship - the player's <Ship>
+--
+
+--
 -- Event: onPlayerTargetChanged
 --
 -- This event fires when a body is (de)selected as a nav or combat target.

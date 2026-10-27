@@ -10,6 +10,8 @@
 #include "gameconsts.h"
 #include <string>
 
+class Body;
+class Excursion;
 class GameLog;
 class HyperspaceCloud;
 class Player;
@@ -22,6 +24,7 @@ namespace Graphics {
 struct CannotSaveCurrentGameState {};
 struct CannotSaveInHyperspace : public CannotSaveCurrentGameState {};
 struct CannotSaveDeadPlayer : public CannotSaveCurrentGameState {};
+struct CannotSaveOffShip : public CannotSaveCurrentGameState {};
 struct InvalidGameStartLocation {
 	std::string error;
 	InvalidGameStartLocation(const std::string &error_) :
@@ -56,6 +59,11 @@ public:
 	Space *GetSpace() const { return m_space.get(); }
 	double GetTime() const { return m_time; }
 	Player *GetPlayer() const { return m_player.get(); }
+
+	// the player out of the ship (on foot)
+	Excursion *GetExcursion() const { return m_excursion.get(); }
+	// where the player is and looks from: the walker off the ship, the ship otherwise
+	Body *GetControlledBody() const;
 
 	// physics step
 	void TimeStep(float step);
@@ -149,6 +157,7 @@ private:
 	void SwitchToNormalSpace();
 
 	std::unique_ptr<Player> m_player;
+	std::unique_ptr<Excursion> m_excursion;
 
 	RefCountedPtr<Galaxy> m_galaxy;
 	std::unique_ptr<Views> m_gameViews;

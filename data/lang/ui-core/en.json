@@ -963,6 +963,14 @@
     "description": "Tooltip: Blastoff",
     "message": "Blastoff"
   },
+  "HUD_BUTTON_EVA": {
+    "description": "Tooltip: leave the ship in space, floating beside it with the jetpack (extravehicular activity)",
+    "message": "EVA"
+  },
+  "HUD_BUTTON_DISEMBARK": {
+    "description": "Tooltip: get out of the landed ship on foot",
+    "message": "Disembark"
+  },
   "HUD_BUTTON_CRUISE_FORWARD": {
     "description": "Tooltip for button",
     "message": "Forward cruise mode"
@@ -2582,6 +2590,26 @@
   "SUMMARY": {
     "description": "Tab item in the start game menu",
     "message": "Summary"
+  },
+  "SURFACE_BOARD_SHIP": {
+    "description": "On-foot HUD prompt: the key and this board the ship",
+    "message": "Board ship"
+  },
+  "SURFACE_FREE_CURSOR": {
+    "description": "On-foot HUD hint: hold Alt to free the mouse cursor",
+    "message": "Hold Alt for the mouse cursor"
+  },
+  "SURFACE_EVA_SHIP": {
+    "description": "EVA HUD: distance to the player's ship and the speed relative to it, e.g. 'Ship 35 m, 0.4 m/s'",
+    "message": "Ship {distance}, {speed}"
+  },
+  "SURFACE_JETPACK": {
+    "description": "On-foot HUD: label of the jetpack fuel bar",
+    "message": "Jetpack"
+  },
+  "SURFACE_YOUR_SHIP": {
+    "description": "On-foot HUD: label of the marker of the player's own ship on the compass",
+    "message": "Ship"
   },
   "SYSTEM_BODY_INDEX_IS_OUT_OF_RANGE": {
     "description": "Message when restoring savegame",

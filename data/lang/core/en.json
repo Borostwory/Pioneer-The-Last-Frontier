@@ -167,6 +167,10 @@
     "description": "",
     "message": "Can't save game after the player has died"
   },
+  "CANT_SAVE_OFF_SHIP": {
+    "description": "Error when saving while the player is out of the ship, on foot",
+    "message": "Can't save game while out of the ship. Board it first"
+  },
   "CANT_SAVE_IN_HYPERSPACE": {
     "description": "",
     "message": "Can't save game while in hyperspace"

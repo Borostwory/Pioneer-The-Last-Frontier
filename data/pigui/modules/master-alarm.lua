@@ -186,6 +186,6 @@ local function alarm ()
 
 end
 
-ui.registerModule("world-view", alarm)
+ui.registerModule("world-view", { draw = alarm, showOffShip = true })
 
 return {}

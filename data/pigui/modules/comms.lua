@@ -95,6 +95,7 @@ local windowFlags = {"NoTitleBar", "NoResize", "NoFocusOnAppearing", "NoBringToF
 gameView.registerHudModule("comms", {
 	side = "left",
 	showInHyperspace = true,
+	showOffShip = true,
 	priority = 0, -- Comms should be drawn at the top
 	debugReload = function() package.reimport() end,
 	draw = function(_, min, max)

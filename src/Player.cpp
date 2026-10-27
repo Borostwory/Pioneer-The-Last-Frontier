@@ -23,6 +23,7 @@
 #include "ship/PlayerShipController.h"
 #include "ship/ShipController.h"
 #include "sound/Sound.h"
+#include "surface/Excursion.h"
 
 //Some player specific sounds
 static Sound::Event s_soundUndercarriage;
@@ -332,9 +333,19 @@ void Player::StaticUpdate(const float timeStep)
 		m_cockpit->Update(this, timeStep);
 }
 
+void Player::UpdateInterpTransform(double alpha)
+{
+	Ship::UpdateInterpTransform(alpha);
+	// after the ship, so the player out on EVA is drawn where the ship is
+	Pi::game->GetExcursion()->OnShipInterpolated(alpha);
+}
+
 void Player::TimeStepUpdate(const float timeStep)
 {
 	Ship::TimeStepUpdate(timeStep);
+
+	// the player out on EVA moves with the ship
+	Pi::game->GetExcursion()->OnShipMoved();
 
 	// executed delta-v accounting: project the thrust the ship actually applied
 	// this tick (resolved by Ship::TimeStepUpdate above) onto the planned

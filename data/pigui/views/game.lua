@@ -185,6 +185,7 @@ end
 
 gameView.registerModule("onscreen-objects", {
 	showInHyperspace = false,
+	showOffShip = true,
 	draw = function(self, dT)
 		displayOnScreenObjects()
 	end
@@ -195,11 +196,22 @@ function gameView:refresh()
 	self.rightSidebar:Refresh()
 end
 
+-- Out of the ship (on foot) only the modules with showOffShip are drawn: the
+-- ship's HUD shows the parked ship, and its keys (F5 take off...) must not act
+local function isOffShip()
+	return Game.GetExcursionMode() ~= "ship"
+end
+
+local function shownOffShip(module)
+	return module.showOffShip
+end
+
 function gameView:draw()
 	self:updateModules()
+	local offShip = isOffShip()
 
 	for i, module in ipairs(gameView.modules) do
-		local shouldDraw = not Game.InHyperspace() or module.showInHyperspace
+		local shouldDraw = (not Game.InHyperspace() or module.showInHyperspace) and (not offShip or module.showOffShip)
 		if (not module.disabled) and shouldDraw then
 			local ok, err = ui.pcall(module.draw, module, Engine.frameTime)
 			if not ok then
@@ -209,9 +221,13 @@ function gameView:draw()
 		end
 	end
 
-	self.leftSidebar:Draw()
-
-	self.rightSidebar:Draw()
+	if offShip then
+		self.leftSidebar:DrawOffShip()
+		self.rightSidebar:DrawOffShip()
+	else
+		self.leftSidebar:Draw()
+		self.rightSidebar:Draw()
+	end
 end
 
 local function displayScreenshotInfo()
@@ -231,8 +247,12 @@ local drawHUD = function()
 	if ui.shouldDrawUI() then
 		gameView:draw()
 
-		ui.callModules("world-view")
-		ui.radialMenu("game")
+		if isOffShip() then
+			ui.callModules("world-view", shownOffShip)
+		else
+			ui.callModules("world-view")
+			ui.radialMenu("game")
+		end
 	else
 		displayScreenshotInfo()
 	end
@@ -300,7 +320,7 @@ ui.registerHandler('game', function(delta_t)
 		-- keep a copy of the current view so modules can react to the escape key and change the view
 		-- without triggering the options dialog
 
-		ui.callModules('game')
+		ui.callModules('game', isOffShip() and shownOffShip or nil)
 		ui.callModules('modal')
 		ui.callModules('ui-timer')
 

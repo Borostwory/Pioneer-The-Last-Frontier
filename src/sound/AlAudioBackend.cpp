@@ -5,6 +5,7 @@
 #if BUILD_WITH_OPENAL
 
 #include "AlAudioBackend.h"
+#include "Game.h"
 #include "Pi.h"
 #include "Player.h"
 #include "core/Log.h"
@@ -184,8 +185,10 @@ void Sound::AlAudioBackend::BodyMakeNoise(const Body *b, std::string_view key, f
 	// would be beneficial.
 	constexpr double distance_threshold = 3000;
 
-	auto pos = b->GetPositionRelTo(Pi::player);
-	pos = pos * Pi::player->GetOrient();
+	// heard from where the player is: the ship, or the walker out of it
+	const Body *listener = Pi::game ? Pi::game->GetControlledBody() : Pi::player;
+	auto pos = b->GetPositionRelTo(listener);
+	pos = pos * listener->GetOrient();
 
 	if (pos.Length() > distance_threshold) {
 		return;
@@ -203,8 +206,8 @@ void Sound::AlAudioBackend::BodyMakeNoise(const Body *b, std::string_view key, f
 
 	CHECK_OPENAL_ERROR(alSource3f, it->second.GetSource(), AL_POSITION, pos.x, pos.y, pos.z);
 
-	auto vel = b->GetVelocityRelTo(Pi::player);
-	vel = vel * Pi::player->GetOrient();
+	auto vel = b->GetVelocityRelTo(listener);
+	vel = vel * listener->GetOrient();
 	CHECK_OPENAL_ERROR(alSource3f, it->second.GetSource(), AL_VELOCITY, vel.x, vel.y, vel.z);
 
 	CHECK_OPENAL_ERROR(alSourcei, it->second.GetSource(), AL_REFERENCE_DISTANCE, 10);

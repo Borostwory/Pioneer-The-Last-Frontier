@@ -25,6 +25,8 @@
 #include "core/GZipFormat.h"
 #include "galaxy/Galaxy.h"
 #include "pigui/LuaPiGui.h"
+#include "surface/Excursion.h"
+#include "surface/Walker.h"
 
 /*
  * Interface: Game
@@ -259,6 +261,8 @@ static int l_game_save_game(lua_State *l)
 		return luaL_error(l, "%s", Lang::CANT_SAVE_IN_HYPERSPACE);
 	} catch (const CannotSaveDeadPlayer &) {
 		return luaL_error(l, "%s", Lang::CANT_SAVE_DEAD_PLAYER);
+	} catch (const CannotSaveOffShip &) {
+		return luaL_error(l, "%s", Lang::CANT_SAVE_OFF_SHIP);
 	} catch (const CouldNotOpenFileException &) {
 		const std::string message = stringf(Lang::COULD_NOT_OPEN_FILENAME, formatarg("path", path));
 		lua_pushlstring(l, message.c_str(), message.size());
@@ -441,6 +445,200 @@ static int l_game_attr_paused(lua_State *l)
 static int l_game_in_hyperspace(lua_State *l)
 {
 	LuaPush(l, Pi::game->IsHyperspace() || Pi::player->GetFlightState() == Ship::HYPERSPACE);
+	return 1;
+}
+
+/*
+ * Function: GetExcursionMode
+ *
+ * Where the player is: aboard the ship, out of it on foot, or floating
+ * beside it in space.
+ *
+ * > mode = Game.GetExcursionMode()
+ *
+ * Return:
+ *
+ *   mode - "ship", "on_foot" or "eva"
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_get_excursion_mode(lua_State *l)
+{
+	if (!Pi::game)
+		return luaL_error(l, "Game.GetExcursionMode only works when there is a game running");
+	switch (Pi::game->GetExcursion()->GetMode()) {
+	case Excursion::Mode::ON_FOOT: lua_pushstring(l, "on_foot"); break;
+	case Excursion::Mode::EVA: lua_pushstring(l, "eva"); break;
+	default: lua_pushstring(l, "ship"); break;
+	}
+	return 1;
+}
+
+/*
+ * Function: CanDisembark
+ *
+ * Whether the player can get out of the ship now: landed (not docked) on a
+ * planet with dry ground beside the ship, or flying in space (above any
+ * atmosphere and terrain) without the autopilot, for an EVA.
+ *
+ * > ok = Game.CanDisembark()
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_can_disembark(lua_State *l)
+{
+	lua_pushboolean(l, Pi::game && Pi::game->GetExcursion()->CanDisembark());
+	return 1;
+}
+
+/*
+ * Function: Disembark
+ *
+ * Get out of the ship: on foot when landed, on EVA in space. Triggers
+ * onPlayerDisembark.
+ *
+ * > ok = Game.Disembark()
+ *
+ * Return:
+ *
+ *   ok - false if the player can't get out now (see <CanDisembark>)
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_disembark(lua_State *l)
+{
+	lua_pushboolean(l, Pi::game && Pi::game->GetExcursion()->Disembark());
+	return 1;
+}
+
+/*
+ * Function: Board
+ *
+ * Get back into the ship from beside it. Triggers onPlayerBoard.
+ *
+ * > ok = Game.Board()
+ *
+ * Return:
+ *
+ *   ok - false if the player is not on foot next to the ship
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_board(lua_State *l)
+{
+	lua_pushboolean(l, Pi::game && Pi::game->GetExcursion()->Board());
+	return 1;
+}
+
+/*
+ * Function: GetExcursionAction
+ *
+ * What the interact key would do now, for the on-foot HUD.
+ *
+ * > action = Game.GetExcursionAction()
+ *
+ * Return:
+ *
+ *   action - "board", or nil if nothing
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_get_excursion_action(lua_State *l)
+{
+	if (Pi::game && Pi::game->GetExcursion()->GetAvailableAction() == Excursion::Action::BOARD)
+		lua_pushstring(l, "board");
+	else
+		lua_pushnil(l);
+	return 1;
+}
+
+/*
+ * Function: GetExcursionNavInfo
+ *
+ * The on-foot compass: the view's heading and the bearing to the ship, in
+ * degrees clockwise from north, and the distance to the ship.
+ *
+ * > heading, shipBearing, shipDistance = Game.GetExcursionNavInfo()
+ *
+ * Return:
+ *
+ *   heading - degrees, or nil when the player is aboard
+ *   shipBearing - degrees
+ *   shipDistance - metres
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_get_excursion_nav_info(lua_State *l)
+{
+	double heading, shipBearing, shipDistance;
+	if (!Pi::game || !Pi::game->GetExcursion()->GetNavInfo(heading, shipBearing, shipDistance))
+		return 0;
+	lua_pushnumber(l, heading);
+	lua_pushnumber(l, shipBearing);
+	lua_pushnumber(l, shipDistance);
+	return 3;
+}
+
+/*
+ * Function: GetJetpackState
+ *
+ * The jetpack of the player on foot, for the HUD.
+ *
+ * > fuel, thrust, burntOut = Game.GetJetpackState()
+ *
+ * Return:
+ *
+ *   fuel - 0 to 1, or nil when the player is aboard
+ *   thrust - 0 to 1, how hard it is burning now
+ *   burntOut - true while it refills after running dry, before it relights
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_get_jetpack_state(lua_State *l)
+{
+	const Walker *walker = Pi::game ? Pi::game->GetExcursion()->GetWalker() : nullptr;
+	if (!walker)
+		return 0;
+	lua_pushnumber(l, walker->GetJetFuel());
+	lua_pushnumber(l, walker->GetJetThrust());
+	lua_pushboolean(l, walker->IsJetBurntOut());
+	return 3;
+}
+
+/*
+ * Function: GetControlledBody
+ *
+ * Where the player is: the player's ship aboard, the walker body on foot.
+ *
+ * > body = Game.GetControlledBody()
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_get_controlled_body(lua_State *l)
+{
+	if (!Pi::game)
+		return luaL_error(l, "Game.GetControlledBody only works when there is a game running");
+	Body *body = Pi::game->GetControlledBody();
+	if (body == Pi::game->GetPlayer())
+		LuaObject<Player>::PushToLua(Pi::game->GetPlayer());
+	else
+		LuaObject<Body>::PushToLua(body);
 	return 1;
 }
 
@@ -694,6 +892,14 @@ void LuaGame::Register()
 		{ "ListSaves", l_game_list_saves },
 		{ "EndGame", l_game_end_game },
 		{ "InHyperspace", l_game_in_hyperspace },
+		{ "GetExcursionMode", l_game_get_excursion_mode },
+		{ "CanDisembark", l_game_can_disembark },
+		{ "Disembark", l_game_disembark },
+		{ "Board", l_game_board },
+		{ "GetExcursionAction", l_game_get_excursion_action },
+		{ "GetExcursionNavInfo", l_game_get_excursion_nav_info },
+		{ "GetJetpackState", l_game_get_jetpack_state },
+		{ "GetControlledBody", l_game_get_controlled_body },
 		{ "SaveGameStats", l_game_savegame_stats },
 		{ "CurrentSaveVersion", l_game_current_save_version },
 

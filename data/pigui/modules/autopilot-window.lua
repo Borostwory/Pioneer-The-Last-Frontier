@@ -70,6 +70,13 @@ local function button_undock()
 			AutoSave.Save()
 			player:BlastOff()
 		end
+		-- get out on foot (Game.Board gets back in)
+		if Game.CanDisembark() then
+			ui.sameLine()
+			if ui.mainMenuButton(icons.personal, lui.HUD_BUTTON_DISEMBARK) then
+				Game.Disembark()
+			end
+		end
 		return true
 	elseif player:IsDocked() then
 		if ui.mainMenuButton(icons.autopilot_undock, lui.HUD_BUTTON_UNDOCK) or (ui.noModifierHeld() and ui.isKeyReleased(ui.keys.f5)) then
@@ -80,6 +87,17 @@ local function button_undock()
 		return true
 	end
 	return false
+end
+
+-- out of the ship in space: an EVA (Game.Board gets back in)
+local function button_eva()
+	if player:IsLanded() or player:IsDocked() or not Game.CanDisembark() then
+		return false
+	end
+	if ui.mainMenuButton(icons.personal, lui.HUD_BUTTON_EVA) then
+		Game.Disembark()
+	end
+	return true
 end
 
 local speed_limiter = (function()
@@ -262,6 +280,7 @@ local function displayAutoPilotWindow()
 				ui.addCursorPos(Vector2(0, shift))
 				if button_hyperspace() then ui.sameLine() end
 				if button_undock() then ui.sameLine() end
+				if button_eva() then ui.sameLine() end
 				speed_limiter.show()
 			end -- current_view == "WorldView"
 		end)

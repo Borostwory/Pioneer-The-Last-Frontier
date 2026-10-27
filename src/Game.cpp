@@ -34,6 +34,7 @@
 #include "WorldView.h"
 #include "galaxy/GalaxyGenerator.h"
 #include "ship/PlayerShipController.h"
+#include "surface/Excursion.h"
 
 Game::Game(const SystemPath &path, const double startDateTime, const char *shipType) :
 	m_galaxy(GalaxyGenerator::Create()),
@@ -49,6 +50,8 @@ Game::Game(const SystemPath &path, const double startDateTime, const char *shipT
 	m_forceTimeAccel(false)
 {
 	PROFILE_SCOPED()
+	m_excursion.reset(new Excursion(this));
+
 	// Now that we have a Galaxy, check the starting location
 	if (!path.IsBodyPath())
 		throw InvalidGameStartLocation("SystemPath is not a body path");
@@ -143,12 +146,20 @@ Game::~Game()
 	m_galaxy->FlushCaches();
 }
 
+Body *Game::GetControlledBody() const
+{
+	return m_excursion->GetControlledBody();
+}
+
 Game::Game(const Json &jsonObj) :
 	m_timeAccel(TIMEACCEL_PAUSED),
 	m_requestedTimeAccel(TIMEACCEL_PAUSED),
 	m_forceTimeAccel(false)
 {
 	PROFILE_SCOPED()
+	// saving is refused off the ship, so a loaded game starts aboard
+	m_excursion.reset(new Excursion(this));
+
 	try {
 		int version = jsonObj["version"];
 		Output("savefile version: %d\n", version);
@@ -387,8 +398,14 @@ bool Game::UpdateTimeAccel()
 
 	TimeAccel newTimeAccel = m_requestedTimeAccel;
 
+	// out of the ship: real time only
+	if (m_excursion->IsOffShip()) {
+		newTimeAccel = std::min(newTimeAccel, Game::TIMEACCEL_1X);
+		RequestTimeAccel(newTimeAccel);
+	}
+
 	// ludicrous speed
-	if (m_player->GetFlightState() == Ship::HYPERSPACE) {
+	else if (m_player->GetFlightState() == Ship::HYPERSPACE) {
 		newTimeAccel = Game::TIMEACCEL_HYPERSPACE;
 		RequestTimeAccel(newTimeAccel);
 	}

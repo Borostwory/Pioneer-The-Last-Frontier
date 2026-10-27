@@ -55,6 +55,8 @@ public:
 
 	virtual void StaticUpdate(const float timeStep) override;
 	virtual void TimeStepUpdate(const float timeStep) override;
+	// also carries the player's EVA walker along (Excursion)
+	void UpdateInterpTransform(double alpha) override;
 	virtual vector3d GetManeuverVelocity() const;
 	virtual int GetManeuverTime() const;
 	// per-burn variants; the no-argument forms above resolve the active burn

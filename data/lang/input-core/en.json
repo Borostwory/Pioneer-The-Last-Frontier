@@ -71,6 +71,10 @@
     "description": "Descriptive name for the FrontCamera action.",
     "message": "Switch to Front Camera"
   },
+  "BIND_INTERACT": {
+    "description": "Descriptive name for the Interact action (on foot: board the ship)",
+    "message": "Interact"
+  },
   "BIND_INCREASE_TIME_ACCELERATION": {
     "description": "Descriptive name for the IncreaseTimeAcceleration action.",
     "message": "Increase Time Acceleration"
@@ -82,6 +86,10 @@
   "BIND_LEFT_CAMERA": {
     "description": "Descriptive name for the LeftCamera action.",
     "message": "Switch to Left Camera"
+  },
+  "BIND_JETPACK_UP": {
+    "description": "Descriptive name for the on-foot Jetpack Up / Down axis",
+    "message": "Jetpack Up / Down"
   },
   "BIND_LOOK_PITCH": {
     "description": "Descriptive name for the Freelook Pitch axis.",
@@ -219,6 +227,30 @@
     "description": "Descriptive name for the TopCamera action.",
     "message": "Switch to Top Camera"
   },
+  "BIND_WALK_FORWARD": {
+    "description": "Descriptive name for the on-foot Walk Forward / Back axis",
+    "message": "Walk Forward / Back"
+  },
+  "BIND_WALK_JUMP": {
+    "description": "Descriptive name for the on-foot Jump action",
+    "message": "Jump"
+  },
+  "BIND_WALK_LOOK_PITCH": {
+    "description": "Descriptive name for the on-foot Look Up / Down axis",
+    "message": "Look Up / Down"
+  },
+  "BIND_WALK_LOOK_YAW": {
+    "description": "Descriptive name for the on-foot Look Left / Right axis",
+    "message": "Look Left / Right"
+  },
+  "BIND_WALK_RIGHT": {
+    "description": "Descriptive name for the on-foot Strafe Right / Left axis",
+    "message": "Strafe Right / Left"
+  },
+  "BIND_WALK_RUN": {
+    "description": "Descriptive name for the on-foot Run action (hold)",
+    "message": "Run"
+  },
   "BIND_VIEW_ZOOM": {
     "description": "Descriptive name for the View Zoom axis",
     "message": "View Zoom"
@@ -251,6 +283,10 @@
     "description": "Header for the GeneralViewControls input group.",
     "message": "General View Controls"
   },
+  "GROUP_INTERACTION": {
+    "description": "Header for the Interaction input group.",
+    "message": "Interaction"
+  },
   "GROUP_LANDING_CONTROL": {
     "description": "Group label for landing-related inputs",
     "message": "Landing Control"
@@ -261,6 +297,10 @@
   },
   "GROUP_MISCELLANEOUS": {
     "message": "Miscellaneous"
+  },
+  "GROUP_MOVEMENT": {
+    "description": "Header for the Movement input group.",
+    "message": "Movement"
   },
   "GROUP_RADAR_CONTROL": {
     "description": "Group label for radar-related inputs",
@@ -333,6 +373,10 @@
   "PAGE_GENERAL": {
     "description": "Header for the General input page.",
     "message": "General Controls"
+  },
+  "PAGE_ON_FOOT": {
+    "description": "Header for the OnFoot input page.",
+    "message": "On Foot"
   },
   "PAGE_MAP_CONTROLS": {
     "description": "Header for the MapControls input page.",

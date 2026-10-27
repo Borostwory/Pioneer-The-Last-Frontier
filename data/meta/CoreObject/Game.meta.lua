@@ -104,6 +104,29 @@ function Game.GetWorldCamType() end
 ---@param type string
 function Game.SetWorldCamType(type) end
 
+-- The player out of the ship, on foot
+
+---@return "ship"|"on_foot"|"eva"
+function Game.GetExcursionMode() end
+---@return boolean
+function Game.CanDisembark() end
+---@return boolean
+function Game.Disembark() end
+---@return boolean
+function Game.Board() end
+---@return "board"|nil
+function Game.GetExcursionAction() end
+---@return number? heading
+---@return number? shipBearing
+---@return number? shipDistance
+function Game.GetExcursionNavInfo() end
+---@return number? fuel
+---@return number? thrust
+---@return boolean? burntOut
+function Game.GetJetpackState() end
+---@return Body
+function Game.GetControlledBody() end
+
 --------------------------------------------------------------------------------
 --- Setters and Getters for game configuration options.
 ---

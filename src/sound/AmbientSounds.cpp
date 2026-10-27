@@ -9,6 +9,7 @@
 #include "GameConfig.h"
 #include "Pi.h"
 #include "Planet.h"
+#include "surface/Excursion.h"
 #include "Player.h"
 #include "Random.h"
 #include "Sound.h"
@@ -232,18 +233,20 @@ static void UpdateWindHowl(const float v_env)
 	const WindHowlSound *sound = nullptr;
 	float level = 0.0f;
 
-	Frame *playerFrame = Pi::game->IsNormalSpace() ? Frame::GetFrame(Pi::player->GetFrame()) : nullptr;
+	// where the player is: the ship, or the walker out of it
+	Body *listener = Pi::game->GetControlledBody();
+	Frame *playerFrame = Pi::game->IsNormalSpace() ? Frame::GetFrame(listener->GetFrame()) : nullptr;
 	const Body *astro = playerFrame ? playerFrame->GetBody() : nullptr;
 	if (astro && playerFrame->IsRotFrame() && astro->IsType(ObjectType::PLANET)) {
 		const Planet *planet = static_cast<const Planet *>(astro);
 		double pressure, density;
-		planet->GetAtmosphericState(Pi::player->GetPosition().Length(), &pressure, &density);
+		planet->GetAtmosphericState(listener->GetPosition().Length(), &pressure, &density);
 		if (density > WINDHOWL_MIN_DENSITY) {
 			sound = &ChooseWindHowl(planet->GetSystemBody());
 			const float densityLevel = Clamp((float(log10(density)) - WINDHOWL_LOG_DENSITY_MIN) / (WINDHOWL_LOG_DENSITY_MAX - WINDHOWL_LOG_DENSITY_MIN), 0.0f, 1.0f);
 			// velocity in the planet's rotating frame is airspeed (the atmosphere co-rotates)
-			const float speed = float(Pi::player->GetVelocity().Length());
-			const float altitude = float(Pi::player->GetAltitudeRelTo(planet, AltitudeType::ABOVE_TERRAIN));
+			const float speed = float(listener->GetVelocity().Length());
+			const float altitude = float(listener->GetAltitudeRelTo(planet, AltitudeType::ABOVE_TERRAIN));
 			level = (WINDHOWL_DENSITY_LEVEL_MIN + (1.0f - WINDHOWL_DENSITY_LEVEL_MIN) * densityLevel) *
 				(1.0f - Clamp((speed - WINDHOWL_SPEED_FULL) / (WINDHOWL_SPEED_GONE - WINDHOWL_SPEED_FULL), 0.0f, 1.0f)) *
 				(1.0f - Clamp((altitude - WINDHOWL_ALTITUDE_FULL) / (WINDHOWL_ALTITUDE_GONE - WINDHOWL_ALTITUDE_FULL), 0.0f, 1.0f));
@@ -293,7 +296,9 @@ void AmbientSounds::Uninit()
 
 void AmbientSounds::Update()
 {
-	const float v_env = (Pi::game->GetWorldView()->shipView->IsExteriorView() ? 1.0f : 0.5f) * Sound::GetSfxVolume();
+	// muffled inside the ship, full outside it
+	const bool exterior = Pi::game->GetWorldView()->shipView->IsExteriorView() || Pi::game->GetExcursion()->IsOffShip();
+	const float v_env = (exterior ? 1.0f : 0.5f) * Sound::GetSfxVolume();
 
 	UpdateWindHowl(v_env);
 

@@ -73,6 +73,6 @@ local function displayTimeWindow()
 	end)
 end
 
-ui.registerModule("game", { id = "time-window", draw = displayTimeWindow })
+ui.registerModule("game", { id = "time-window", draw = displayTimeWindow, showOffShip = true })
 
 return { window_height = window_height }

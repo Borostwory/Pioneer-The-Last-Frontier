@@ -45,6 +45,7 @@
 #include "WorldView.h"
 #include "graphics/Types.h"
 #include "graphics/VertexBuffer.h"
+#include "surface/Excursion.h"
 
 #if WITH_OBJECTVIEWER
 #include "ObjectViewerView.h"
@@ -814,6 +815,9 @@ void Pi::HandleKeyDown(SDL_Keysym *key)
 
 		if (Pi::game->IsHyperspace())
 			Pi::game->log->Add(Lang::CANT_SAVE_IN_HYPERSPACE);
+
+		else if (Pi::game->GetExcursion()->IsOffShip())
+			Pi::game->log->Add(Lang::CANT_SAVE_OFF_SHIP);
 
 		else {
 			const std::string name = "_quicksave";

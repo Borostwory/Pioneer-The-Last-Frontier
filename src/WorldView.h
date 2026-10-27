@@ -12,6 +12,7 @@
 class Body;
 class Camera;
 class SpeedLines;
+class SurfaceViewController;
 class Game;
 
 enum VelIconType {
@@ -43,6 +44,8 @@ public:
 	void SetViewController(ViewController *newView);
 
 	std::unique_ptr<ShipViewController> shipView;
+	// the player out of the ship, on foot (Excursion)
+	std::unique_ptr<SurfaceViewController> surfaceView;
 
 	int GetActiveWeapon() const;
 
@@ -102,7 +105,7 @@ private:
 	void SelectBody(Body *, bool reselectIsDeselect);
 
 	Game *m_game;
-	ViewController *m_viewController;
+	ViewController *m_viewController = nullptr;
 
 	std::unique_ptr<SpeedLines> m_speedLines;
 

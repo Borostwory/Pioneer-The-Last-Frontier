@@ -160,9 +160,10 @@ function ui.getModules(mode)
 	return modules[mode] or {}
 end
 
-function ui.callModules(mode)
+-- filter - optional, function(module) returning whether to draw it
+function ui.callModules(mode, filter)
 	for k, v in ipairs(ui.getModules(mode)) do
-		if not v.disabled then
+		if not v.disabled and (not filter or filter(v)) then
 			v.disabled = not ui.pcall(v.draw, v)
 		end
 	end

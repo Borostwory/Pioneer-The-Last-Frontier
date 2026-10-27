@@ -15,6 +15,7 @@
 #include "AudioBackend.h"
 #include "Body.h"
 #include "FileSystem.h"
+#include "Game.h"
 #include "JobQueue.h"
 #include "Pi.h"
 #include "Player.h"
@@ -64,9 +65,11 @@ namespace Sound {
 	{
 		vector3d pos(0.0);
 
-		if (b != Pi::player) {
-			pos = b->GetPositionRelTo(Pi::player);
-			pos = pos * Pi::player->GetOrient();
+		// heard from where the player is: the ship, or the walker out of it
+		const Body *listener = Pi::game ? Pi::game->GetControlledBody() : Pi::player;
+		if (b != listener) {
+			pos = b->GetPositionRelTo(listener);
+			pos = pos * listener->GetOrient();
 		}
 
 		const float len = pos.Length();

@@ -302,6 +302,14 @@ PlayerShipController::~PlayerShipController()
 	Pi::input->RemoveInputFrame(&InputBindings);
 }
 
+void PlayerShipController::SetInputEnabled(bool enabled)
+{
+	if (enabled)
+		Pi::input->AddInputFrame(&InputBindings);
+	else
+		Pi::input->RemoveInputFrame(&InputBindings);
+}
+
 void PlayerShipController::SaveToJson(Json &jsonObj, Space *space)
 {
 	Json playerShipControllerObj({}); // Create JSON object to contain player ship controller data.
