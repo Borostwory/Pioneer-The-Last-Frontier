@@ -71,10 +71,13 @@ local function drawMissionCargo(mission)
 	end
 	for _, entry in ipairs(Hangar.FindHeldCargo(mission)) do
 		found[entry.name] = (found[entry.name] or 0) + entry.count
+		local station = entry.hangar and entry.hangar.station or "?"
 		table.insert(lines, { icon = icons.alert_generic, color = colors.alertYellow,
-			text = string.interp(lm.HELD_ON_STORED_SHIP, {
-				amount = entry.count, commodity = commodityName(entry.name), ship = entry.rec.name,
-				station = entry.hangar and entry.hangar.station or "?" }) })
+			text = entry.rec
+				and string.interp(lm.HELD_ON_STORED_SHIP, {
+					amount = entry.count, commodity = commodityName(entry.name), ship = entry.rec.name, station = station })
+				or string.interp(lm.HELD_IN_HANGAR, {
+					amount = entry.count, commodity = commodityName(entry.name), station = station }) })
 	end
 
 	-- Deliveries know how much they carry: say if some of it is gone

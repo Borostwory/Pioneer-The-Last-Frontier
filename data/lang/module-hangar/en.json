@@ -15,6 +15,10 @@
     "description": "Button: lease one more bay in this hangar",
     "message": "Add bay"
   },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "all"
+  },
   "ALL_THAT_FITS": {
     "description": "Button in the swap window: take as much cargo as fits",
     "message": "All that fits"
@@ -47,21 +51,41 @@
     "description": "Ship Market, after buying",
     "message": "\"{ship}\" is stored in your hangar here."
   },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "The hull of \"{ship}\" is sold: {items} item(s) went to the equipment store, {tons} t of cargo to the cargo store and {crew} crew to the lounge."
+  },
   "BRING_ABOARD": {
     "description": "Tooltip: button bringing a crew member aboard",
     "message": "Bring aboard"
   },
-  "BUY_STORE_NOTE": {
+  "BUY_DESC_HULL": {
     "description": "",
-    "message": "\"{ship}\" goes into your hangar here, with the cargo you don't take along. Crew never stays on a stored ship: whoever isn't ticked below waits in the lounge here."
+    "message": "Its equipment goes to the hangar's equipment store and its cargo to the hangar's cargo store; only the hull is sold."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Kept as it is, with its equipment and all its cargo; nothing moves to the new ship. You pay the full price."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Sold with all its equipment. All its cargo moves to the new ship."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Trade in the bare hull of \"{ship}\""
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Store \"{ship}\" in a bay here"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Trade in \"{ship}\""
   },
   "BUY_TITLE": {
     "description": "Ship Market purchase window",
     "message": "Buy a {ship}?"
-  },
-  "BUY_TRADE_IN_NOTE": {
-    "description": "",
-    "message": "\"{ship}\" is traded in and all cargo moves to the new ship. Whoever isn't ticked below waits in the lounge here."
   },
   "CABIN_OCCUPIED": {
     "description": "",
@@ -90,6 +114,26 @@
   "CARGO_RACK_IN_USE": {
     "description": "",
     "message": "the cargo it holds wouldn't fit without it"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Cargo store at {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "The cargo store is empty."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Unload goods into the hangar's cargo store and load them into the ship you're flying. Unlimited and free; mission cargo keeps its mark."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Cargo"
   },
   "COL_BAY": {
     "description": "Bay table column",
@@ -138,6 +182,18 @@
   "CREW_LOUNGE": {
     "description": "Hangar sub-tab",
     "message": "Crew lounge"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Crew for the new ship"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Whoever isn't ticked waits in the lounge here."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "What happens to \"{ship}\"? Choose one:"
   },
   "DISMISS_OWED": {
     "description": "",
@@ -239,9 +295,21 @@
     "description": "Bulletin board, crew for hire",
     "message": "Thanks! I'll wait in the crew lounge here until you need me aboard."
   },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "the cargo hold is full"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Cargo hold: {used} of {total} t used"
+  },
   "HULL": {
     "description": "",
     "message": "Hull"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "All crew but you wait in the lounge here. Bring them aboard from the Hangar tab, Crew lounge."
   },
   "HYPERDRIVE": {
     "description": "",
@@ -274,6 +342,10 @@
   "LIGHT_YEARS_AWAY": {
     "description": "Crew tab: distance to a lounge in another system",
     "message": "{dist} ly away"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Load aboard"
   },
   "LOUNGE_AFTER_SWAP": {
     "description": "Swap window",
@@ -535,6 +607,10 @@
     "description": "Tooltip on a disabled bring-aboard button",
     "message": "\"{ship}\" takes at most {max} crew."
   },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Price: {price}"
+  },
   "SHIP_STORED_OPTION": {
     "description": "Ship picker entry for a stored ship",
     "message": "\"{name}\" (stored here)"
@@ -582,14 +658,6 @@
   "STORE_HELP": {
     "description": "",
     "message": "Unfit items into the store, then fit them to the ship picked on the left, or sell them to this station. Equipment Market rules and prices, no fee for fitting. Pick an empty slot first to fit an item into that slot."
-  },
-  "STORE_INSTEAD": {
-    "description": "Ship Market checkbox",
-    "message": "Store \"{ship}\" in your hangar here instead of trading it in (you pay the full price)"
-  },
-  "STORE_INSTEAD_UNAVAILABLE": {
-    "description": "Ship Market, when the current ship can't be stored",
-    "message": "Storing \"{ship}\" instead of trading it in: {reason}"
   },
   "STORE_NEEDS_BAY": {
     "description": "",
@@ -645,7 +713,11 @@
   },
   "TRADE_IN_CARGO": {
     "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
-    "message": "A {ship} holds {room} t, and you have {used} t aboard. When trading in, all cargo moves to the new ship: sell or unload {over} t first, or store \"{current}\" in your hangar here and choose what comes along."
+    "message": "A {ship} holds {room} t, and you have {used} t aboard. When trading in, all cargo moves to the new ship: sell or unload {over} t first, or choose another option."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "You have {used} t of cargo and a {ship} holds {room} t."
   },
   "UNFIT_ALL": {
     "description": "Button",
@@ -662,6 +734,10 @@
   "UNFIT_TOOLTIP": {
     "description": "Tooltip on the unfit button",
     "message": "Unfit into the store"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Unload into the cargo store"
   },
   "WAGE_PER_WEEK": {
     "description": "",
@@ -706,5 +782,9 @@
   "YOU_PAY": {
     "description": "",
     "message": "You pay: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "You receive: {amount}"
   }
 }

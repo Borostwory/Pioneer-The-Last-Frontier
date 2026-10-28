@@ -35,6 +35,9 @@ local widgetSizes = ui.rescaleUI({
 	buyButton = Vector2(96, 36),
 	confirmButtonSize = Vector2(384, 48),
 	itemSpacing = Vector2(18, 4),
+	cardPadding = Vector2(10, 6),
+	modalItemSpacing = Vector2(8, 6),
+	purchaseButtons = Vector2(220, 0),
 }, Vector2(1600, 900))
 widgetSizes.iconSpacer = (widgetSizes.buyButton - widgetSizes.iconSize)/2
 
@@ -54,8 +57,8 @@ local cachedPattern = nil
 
 -- The Last Frontier: store the current ship in the hangar here instead of
 -- trading it in, and pick the cargo and crew for the new ship
-local storeCurrent = false
-local purchase = nil ---@type { sos: table, store: boolean, take: table, aboard: table }?
+local buyMode = "tradein" -- see Hangar.BUY_MODES
+local purchase = nil ---@type { sos: table, mode: string, aboard: table }?
 local purchaseModal -- created below
 
 local shipClassString = {
@@ -170,33 +173,29 @@ local tradeInValue = function(ship)
 	return math.ceil(value)
 end
 
--- What the player pays: the full price when storing the current ship
-local function purchaseCost(sos, store)
+-- The bare hull's trade-in value ("hull" mode keeps the equipment)
+local hullTradeInValue = function(ship)
+	return math.ceil(ShipDef[ship.shipId].basePrice * shipSellPriceReduction * ship.hullPercent/100)
+end
+
+-- What the player pays with each buy mode (see Hangar.BUY_MODES)
+local function purchaseCost(sos, mode)
 	local price = advertDataCache[sos].price
-	return store and price or price - tradeInValue(Game.player)
+	if mode == "store" then return price end
+	if mode == "hull" then return price - hullTradeInValue(Game.player) end
+	return price - tradeInValue(Game.player)
 end
 
--- Can the current ship go into the hangar here instead of being traded in?
--- Returns the reason when it can't.
-local function storeBlocked()
-	local h = Hangar.GetHangarAt(Game.player:GetDockedWith())
-	if not h then return lh.STORE_NEEDS_HANGAR end
-	if Hangar.IsLocked(h) then return lh.HANGAR_LOCKED end
-	if Hangar.FreeBays(h) < 1 then return lh.STORE_NEEDS_BAY end
-	return nil
-end
-
--- Buy ship `sos`. With `store`, the current ship goes into the hangar here
--- with the cargo not in `take`; otherwise it is traded in. `aboard` is who
--- flies the new ship (nil: everyone aboard now).
-local function completePurchase (mkt, sos, store, take, aboard)
+-- Buy ship `sos`, dealing with the current ship as `mode` says. `aboard` is
+-- who flies the new ship (nil: everyone aboard now).
+local function completePurchase (mkt, sos, mode, aboard)
 	local player = Game.player
 	local station = assert(player:GetDockedWith())
 	local def = sos.def
 
 	local shipData = advertDataCache[sos]
 
-	local cost = purchaseCost(sos, store)
+	local cost = purchaseCost(sos, mode)
 	if math.floor(cost) ~= cost then
 		error("Ship price non-integer value.")
 	end
@@ -206,7 +205,7 @@ local function completePurchase (mkt, sos, store, take, aboard)
 		return
 	end
 
-	local blockers = Hangar.CheckBuy(def, shipData.equip, store, take, aboard)
+	local blockers = Hangar.CheckBuy(def, shipData.equip, mode, aboard)
 	if #blockers > 0 then
 		mkt.popup.msg = blockers[1]
 		mkt.popup:open()
@@ -215,11 +214,19 @@ local function completePurchase (mkt, sos, store, take, aboard)
 
 	PlayerState.AddMoney(-cost)
 
-	local storedName = player.shipName
-	if store then
-		assert(Hangar.StoreCurrentShip(take))
+	local oldName = player.shipName
+	local message = l.THANKS_AND_REMEMBER_TO_BUY_FUEL
+	if mode == "store" then
+		-- as it is: equipment and cargo stay with it
+		assert(Hangar.StoreCurrentShip(nil))
 		station:RemoveShipOnSale(sos)
+		message = string.interp(lh.BOUGHT_AND_STORED, { ship = oldName }) .. "\n" .. message
 	else
+		if mode == "hull" then
+			local _, tons, crew, items = Hangar.StripCurrentShip()
+			aboard = Hangar.OnlyCommander()
+			message = string.interp(lh.BOUGHT_HULL_SOLD, { ship = oldName, items = items, tons = tons, crew = crew }) .. "\n" .. message
+		end
 		station:ReplaceShipOnSale(sos, {
 			def     = ShipDef[player.shipId],
 			skin    = player:GetSkin(),
@@ -234,7 +241,7 @@ local function completePurchase (mkt, sos, store, take, aboard)
 	player:SetLabel(sos.label)
 	-- the stored ship keeps its name; the new one is named after its type
 	-- until the player renames it
-	if store then player:SetShipName(ls[def.i18n_key]) end
+	if mode == "store" then player:SetShipName(ls[def.i18n_key]) end
 
 	-- TODO: ship ads should support an explicit list of (pre-owned) equipment as well as / instead of factory-default items
 	-- At current we just build a list from the HullConfig's default items
@@ -273,43 +280,115 @@ local function completePurchase (mkt, sos, store, take, aboard)
 
 	refreshShipMarket();
 
-	mkt.popup.msg = store
-		and string.interp(lh.BOUGHT_AND_STORED, { ship = storedName }) .. "\n" .. l.THANKS_AND_REMEMBER_TO_BUY_FUEL
-		or l.THANKS_AND_REMEMBER_TO_BUY_FUEL
+	mkt.popup.msg = message
 	mkt.popup:open()
 end
 
--- The Buy ship button: straight to the purchase when trading in and the crew
--- fits; otherwise a window to pick the cargo (when storing) and the crew
+-- The Buy ship button opens the purchase window: what happens to the current
+-- ship, who flies the new one, and what's in the way
 local function buyShip (mkt, sos)
-	local player = Game.player
-	local def = sos.def
-	local store = storeCurrent and storeBlocked() == nil
-
-	if PlayerState.GetMoney() < purchaseCost(sos, store) then
-		mkt.popup.msg = l.YOU_NOT_ENOUGH_MONEY
-		mkt.popup:open()
-		return
-	end
-
-	if not store and player:CrewNumber() <= def.maxCrew then
-		-- completePurchase says why when the cargo doesn't fit (counting the
-		-- new ship's default cargo racks)
-		completePurchase(mkt, sos, false, nil, nil)
-		return
-	end
-
-	local room, lifeSupport = Hangar.NewShipCargo(def, advertDataCache[sos].equip)
-	purchase = {
-		sos = sos,
-		store = store,
-		take = store and Hangar.FitCargoInto(room, lifeSupport) or {},
-		aboard = Pickers.everyoneAboard(),
-	}
+	if Hangar.BuyModeBlocked(buyMode) then buyMode = "tradein" end
+	purchase = { sos = sos, mode = buyMode, aboard = Pickers.everyoneAboard() }
 	purchaseModal:open()
 end
 
+-- "You pay $X", or "You receive $X" when the trade-in is worth more
+local function payText(cost)
+	if cost < 0 then
+		return string.interp(lh.YOU_RECEIVE, { amount = Format.Money(-cost, false) }), ui.theme.colors.econProfit
+	end
+	return string.interp(lh.YOU_PAY, { cost = Format.Money(cost, false) }), ui.theme.colors.font
+end
+
+-- The problem particular to a mode, shown on its card (nil when none)
+local function modeProblem(sos, mode)
+	local blocked = Hangar.BuyModeBlocked(mode)
+	if blocked then return blocked end
+	if mode == "tradein" then
+		local room = Hangar.NewShipCargo(sos.def, advertDataCache[sos].equip)
+		local used = Game.player:GetComponent('CargoManager'):GetUsedSpace()
+		if used > room then
+			return string.interp(lh.TRADE_IN_CARGO_SHORT, { used = used, room = room, ship = ls[sos.def.i18n_key] })
+		end
+	end
+	return nil
+end
+
+-- One choice for the current ship, drawn as a card with a radio mark: the
+-- title and price on the first line, what it does below, and what stops it.
+-- Returns true when clicked.
+local function modeCard(sos, mode, selected)
+	local colors = ui.theme.colors
+	local lineHeight = ui.getTextLineHeight()
+	local pad = widgetSizes.cardPadding
+	local width = ui.getContentRegion().x
+	local problem = modeProblem(sos, mode)
+	local usable = Hangar.BuyModeBlocked(mode) == nil
+	local ship = Game.player.shipName
+	local textColor = usable and colors.font or colors.fontDim
+
+	local top = ui.getCursorScreenPos()
+	local indent = pad.x + lineHeight * 1.2 -- room for the radio mark
+	ui.dummy(Vector2(0, pad.y))
+	ui.dummy(Vector2(indent, 0))
+	ui.sameLine(0, 0)
+	ui.beginGroup()
+		ui.textColored(textColor, string.interp(lh["BUY_MODE_" .. mode:upper()], { ship = ship }))
+		if usable then
+			local price, priceColor = payText(purchaseCost(sos, mode))
+			-- inside a group, the offset counts from the group's left edge
+			ui.sameLine(width - indent - ui.calcTextSize(price).x - pad.x)
+			ui.textColored(priceColor, price)
+		end
+		ui.pushTextWrapPos(width - pad.x)
+		ui.textColored(colors.fontDim, string.interp(lh["BUY_DESC_" .. mode:upper()], { ship = ship }))
+		if problem then
+			ui.textColored(usable and colors.alertRed or colors.fontDim, problem)
+		end
+		ui.popTextWrapPos()
+	ui.endGroup()
+	ui.dummy(Vector2(0, pad.y))
+	local bottom = ui.getCursorScreenPos()
+	local br = Vector2(top.x + width, bottom.y - ui.getItemSpacing().y)
+
+	-- frame, tint and radio mark over the card
+	local frame = selected and colors.uiPrimaryLight or colors.uiPrimaryDark
+	if selected then ui.addRectFilled(top, br, colors.lightBlueBackground, 4, ui.RoundCornersAll) end
+	ui.addRect(top, br, usable and frame or colors.tableHighlightDisabled, 4, ui.RoundCornersAll, selected and 2 or 1)
+	local center = Vector2(top.x + pad.x + lineHeight * 0.5, top.y + pad.y + lineHeight * 0.5)
+	ui.addCircle(center, lineHeight * 0.4, usable and colors.font or colors.fontDim, 20, 2)
+	if selected then ui.addCircleFilled(center, lineHeight * 0.22, colors.font, 20) end
+
+	-- the whole card is the button
+	ui.setCursorScreenPos(top)
+	local clicked = ui.invisibleButton("##buymode" .. mode, br - top) and usable
+	ui.setCursorScreenPos(Vector2(top.x, br.y + ui.getItemSpacing().y))
+	return clicked
+end
+
+local function section(title)
+	ui.spacing()
+	ui.withFont(orbiteer.body, function() ui.text(title) end)
+	ui.separator()
+end
+
+local drawPurchase
+
 purchaseModal = ModalWindow.New("ShipMarketPurchase", function(self)
+	ui.withFont(pionillium.body, function()
+		ui.withStyleVars({ ItemSpacing = widgetSizes.modalItemSpacing }, function()
+			drawPurchase(self)
+		end)
+	end)
+end, function(_, innerFn)
+	-- a fixed width so long lines wrap; the height follows the contents
+	local width = math.max(ui.screenWidth * 0.42, 560)
+	ui.setNextWindowSizeConstraints(Vector2(width, 0), Vector2(width, ui.screenHeight * 0.9))
+	innerFn()
+end)
+purchaseModal.centered = true
+
+drawPurchase = function(self)
 	if not purchase then self:close() return end
 	local player = Game.player
 	local sos = purchase.sos
@@ -320,23 +399,52 @@ purchaseModal = ModalWindow.New("ShipMarketPurchase", function(self)
 	ui.withFont(orbiteer.heading, function()
 		ui.text(string.interp(lh.BUY_TITLE, { ship = shipName }))
 	end)
-	local cost = purchaseCost(sos, purchase.store)
-	ui.text(string.interp(lh.YOU_PAY, { cost = Format.Money(cost, false) }))
-	ui.textColored(ui.theme.colors.fontDim, string.interp(purchase.store and lh.BUY_STORE_NOTE or lh.BUY_TRADE_IN_NOTE, { ship = player.shipName }))
-	ui.spacing()
+	ui.text(string.interp(lh.SHIP_PRICE, { price = Format.Money(advertDataCache[sos].price, false) }))
 
-	if purchase.store then
-		local room, lifeSupport = Hangar.NewShipCargo(def, equip)
-		Pickers.drawCargo(purchase, room, lifeSupport, player.shipName)
-		ui.spacing()
+	-- what happens to the current ship: pick one
+	section(string.interp(lh.CURRENT_SHIP_CHOICE, { ship = player.shipName }))
+	local anyBlocked = false
+	for _, m in ipairs(Hangar.BUY_MODES) do
+		if Hangar.BuyModeBlocked(m) then anyBlocked = true end
+		if modeCard(sos, m, purchase.mode == m) then
+			purchase.mode = m
+			buyMode = m
+		end
 	end
-	Pickers.drawCrew(purchase, def, shipName)
+	if anyBlocked and ui.button(lh.GO_TO_HANGAR) then
+		purchase = nil
+		self:close()
+		StationView:SwitchTo("hangarView")
+		return
+	end
+	local mode = purchase.mode
 
-	local blockers, warnings = Hangar.CheckBuy(def, equip, purchase.store, purchase.take, purchase.aboard)
+	-- who flies the new ship
+	section(lh.CREW_SECTION)
+	local aboard = purchase.aboard
+	if mode == "hull" then
+		aboard = Hangar.OnlyCommander()
+		ui.textWrapped(lh.HULL_ALL_CREW_LOUNGE)
+	else
+		Pickers.drawCrew(purchase, def, shipName)
+		ui.textColored(ui.theme.colors.fontDim, lh.CREW_STAY_HINT)
+	end
+
+	local cost = purchaseCost(sos, mode)
+	local blockers, warnings = Hangar.CheckBuy(def, equip, mode, aboard)
 	if PlayerState.GetMoney() < cost then table.insert(blockers, 1, l.YOU_NOT_ENOUGH_MONEY) end
+	ui.pushTextWrapPos(ui.getContentRegion().x)
 	Pickers.drawProblems(blockers, warnings)
+	ui.popTextWrapPos()
 
 	ui.spacing()
+	ui.separator()
+	ui.spacing()
+	local price, priceColor = payText(cost)
+	ui.textColored(priceColor, price)
+	ui.sameLine()
+	ui.dummy(Vector2(ui.getContentRegion().x - widgetSizes.purchaseButtons.x, 0))
+	ui.sameLine()
 	if ui.button(l.CANCEL) then
 		purchase = nil
 		self:close()
@@ -348,9 +456,9 @@ purchaseModal = ModalWindow.New("ShipMarketPurchase", function(self)
 		local p = purchase
 		purchase = nil
 		self:close()
-		completePurchase(shipMarket, p.sos, p.store, p.take, p.aboard)
+		completePurchase(shipMarket, p.sos, p.mode, p.mode ~= "hull" and p.aboard or nil)
 	end
-end)
+end
 
 local FormatAndCompareShips = utils.class("ui.ShipMarket.FormatAndCompareShips")
 
@@ -572,24 +680,8 @@ local tradeMenu = function()
 				ui.withFont(pionillium.heading, function()
 					ui.text(l.PRICE..": "..Format.Money(cost, false))
 					ui.sameLine()
-					if storeCurrent then
-						ui.text(string.interp(lh.YOU_PAY, { cost = Format.Money(cost, false) }))
-					else
-						ui.text(l.AFTER_TRADE_IN..": "..Format.Money(cost - tradeInValue(Game.player), false))
-					end
+					ui.text(l.AFTER_TRADE_IN..": "..Format.Money(cost - tradeInValue(Game.player), false))
 				end)
-
-				-- trade in the current ship, or store it in the hangar here
-				local blocked = storeBlocked()
-				if blocked then
-					storeCurrent = false
-					ui.textColored(ui.theme.colors.fontDim, string.interp(lh.STORE_INSTEAD_UNAVAILABLE, { ship = Game.player.shipName, reason = blocked }))
-					ui.sameLine()
-					if ui.button(lh.GO_TO_HANGAR) then StationView:SwitchTo("hangarView") end
-				else
-					local changed, value = ui.checkbox(string.interp(lh.STORE_INSTEAD, { ship = Game.player.shipName }) .. "##storeCurrent", storeCurrent)
-					if changed then storeCurrent = value end
-				end
 
 				ui.nextColumn()
 				ui.dummy(widgetSizes.iconSpacer)
@@ -723,7 +815,7 @@ StationView:registerView({
 	refresh = function()
 		refreshShipMarket()
 		shipMarket.scrollReset = true
-		storeCurrent = false
+		buyMode = "tradein"
 		purchase = nil
 	end,
 	debugReload = function()

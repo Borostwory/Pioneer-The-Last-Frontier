@@ -15,6 +15,10 @@
     "description": "Cargo sidebar tooltip",
     "message": "{amount} t held for missions. Jettison them from the cargo screen."
   },
+  "HELD_IN_HANGAR": {
+    "description": "Missions tab",
+    "message": "{amount} t {commodity} in your hangar's cargo store at {station}"
+  },
   "HELD_MISSING": {
     "description": "Missions tab",
     "message": "{amount} t {commodity} missing: jettisoned, lost or spoiled"

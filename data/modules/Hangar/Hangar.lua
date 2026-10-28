@@ -81,6 +81,8 @@ Hangar.PREPAY_DISCOUNTS = {
 ---@field debt number
 ---@field unpaidMonths integer
 ---@field store EquipType[]        equipment kept in the hangar
+---@field cargo table<string, integer>?  goods kept in the hangar: commodity name -> tons
+---@field cargoTags table<string, table<any, integer>>? how much of them missions hold
 
 ---@class Hangar.LoungeEntry
 ---@field character Character
@@ -297,6 +299,14 @@ function Hangar.FindHeldCargo(tag)
 		end
 	end
 	table.sort(found, function(a, b) return a.rec.id < b.rec.id end)
+	-- and in the hangars' cargo stores (rec is nil)
+	for _, h in pairs(hangars) do
+		for name, tags in pairs(h.cargoTags or {}) do
+			if tags[tag] then
+				table.insert(found, { hangar = h, name = name, count = tags[tag] })
+			end
+		end
+	end
 	return found
 end
 
@@ -313,12 +323,14 @@ end
 
 -- A mission ended: what a stored ship held for it becomes ordinary cargo
 local function releaseTag(tag)
-	for _, rec in pairs(ships) do
-		for name, tags in pairs(rec.cargoTags or {}) do
+	local function release(holder)
+		for name, tags in pairs(holder.cargoTags or {}) do
 			tags[tag] = nil
-			if not next(tags) then rec.cargoTags[name] = nil end
+			if not next(tags) then holder.cargoTags[name] = nil end
 		end
 	end
+	for _, rec in pairs(ships) do release(rec) end
+	for _, h in pairs(hangars) do release(h) end
 end
 
 -- Properties compared between storing a ship and taking it out again.
@@ -1092,6 +1104,100 @@ function Hangar.Fit(h, target, item, slotId)
 	return true
 end
 
+--=============================================================================
+-- Cargo store: goods kept in the hangar, tons held for missions keep their
+-- tags. Unlimited and free, like the equipment store.
+--=============================================================================
+
+local function storeCargoAdd(h, name, n, tag)
+	if n <= 0 then return end
+	h.cargo = h.cargo or {}
+	h.cargo[name] = (h.cargo[name] or 0) + n
+	if tag then
+		h.cargoTags = h.cargoTags or {}
+		h.cargoTags[name] = h.cargoTags[name] or {}
+		h.cargoTags[name][tag] = (h.cargoTags[name][tag] or 0) + n
+	end
+end
+
+-- Take up to n tons of a lot out of the store; returns how many
+local function storeCargoRemove(h, name, n, tag)
+	local total = h.cargo and h.cargo[name] or 0
+	local tags = h.cargoTags and h.cargoTags[name] or {}
+	local held = 0
+	for _, c in pairs(tags) do held = held + c end
+	local available = tag == ORDINARY and total - held or tags[tag] or 0
+	n = math.min(n, available)
+	if n <= 0 then return 0 end
+	if tag ~= ORDINARY then
+		tags[tag] = tags[tag] - n > 0 and tags[tag] - n or nil
+		if not next(tags) then h.cargoTags[name] = nil end
+	end
+	h.cargo[name] = total - n > 0 and total - n or nil
+	return n
+end
+
+-- The store's goods by lot: per commodity, mission tons first
+---@return Hangar.CargoLot[]
+function Hangar.StoreCargoLots(h)
+	local lots = {}
+	for name, total in pairs(h.cargo or {}) do
+		local ordinary = total
+		local held = {}
+		for tag, n in pairs(h.cargoTags and h.cargoTags[name] or {}) do
+			ordinary = ordinary - n
+			table.insert(held, { name = name, tag = tag, count = n, label = Hangar.TagLabel(tag) })
+		end
+		table.sort(held, function(a, b) return a.label < b.label end)
+		for _, lot in ipairs(held) do table.insert(lots, lot) end
+		if ordinary > 0 then table.insert(lots, { name = name, tag = ORDINARY, count = ordinary }) end
+	end
+	table.sort(lots, function(a, b)
+		if a.name ~= b.name then return a.name < b.name end
+		return a.tag ~= ORDINARY and b.tag == ORDINARY
+	end)
+	return lots
+end
+
+function Hangar.StoreCargoTotal(h)
+	return cargoTotal(h.cargo or {})
+end
+
+-- Unload up to n tons of a lot of the active ship's cargo into the store
+---@param h Hangar.Lease
+function Hangar.UnloadCargo(h, name, tag, n)
+	if Hangar.IsLocked(h) then return 0, l.HANGAR_LOCKED end
+	local removed = Game.player:GetComponent('CargoManager'):RemoveCommodity(Commodities[name], n, tag)
+	storeCargoAdd(h, name, removed, tag ~= ORDINARY and tag or nil)
+	return removed
+end
+
+-- How many tons of a store lot the active ship can take now, and why not
+-- more when it's none
+function Hangar.CanLoadCargo(h, name, tag)
+	if Hangar.IsLocked(h) then return 0, l.HANGAR_LOCKED end
+	local commodity = Commodities[name]
+	local player = Game.player
+	if (commodity.life_support or 0) > (player:hasprop("cargo_life_support_cap") and player.cargo_life_support_cap or 0) then
+		return 0, l.NEEDS_CARGO_LIFE_SUPPORT
+	end
+	local room = math.floor(player:GetComponent('CargoManager'):GetFreeSpace() / (commodity.mass or 1))
+	if room <= 0 then return 0, l.HOLD_FULL end
+	return room
+end
+
+-- Load up to n tons of a store lot into the active ship
+---@param h Hangar.Lease
+function Hangar.LoadCargo(h, name, tag, n)
+	local room, reason = Hangar.CanLoadCargo(h, name, tag)
+	if room <= 0 then return 0, reason end
+	local taken = storeCargoRemove(h, name, math.min(n, room), tag)
+	if taken > 0 then
+		Game.player:GetComponent('CargoManager'):AddCommodity(Commodities[name], taken, tag ~= ORDINARY and tag or nil)
+	end
+	return taken
+end
+
 -- What the station here pays for an item from the store: the Equipment
 -- Market's resale price
 ---@param station SpaceStation
@@ -1474,25 +1580,47 @@ function Hangar.NewShipCargo(def, equip)
 	return room, lifeSupport
 end
 
--- Reasons ship `def` can't be bought here now. With `store`, the current
--- ship goes into the hangar here and `take` is the cargo moved across;
--- otherwise it is traded in and all cargo has to fit. `aboard` is who flies
--- the new ship (nil: the crew aboard now).
-function Hangar.CheckBuy(def, equip, store, take, aboard)
+-- How the current ship is dealt with when buying another:
+--   "tradein" - sold with everything on it, all cargo moves to the new ship
+--   "store"   - put in a free bay here as it is, with its equipment and cargo
+--   "hull"    - the bare hull is sold; its equipment goes to the hangar's
+--               store, its cargo to the hangar's cargo store and the crew to
+--               the lounge
+Hangar.BUY_MODES = { "tradein", "store", "hull" }
+
+-- Why a buy mode can't be used here now (nil when it can)
+function Hangar.BuyModeBlocked(mode)
+	if mode == "tradein" then return nil end
+	local h = Hangar.GetHangarAt(Game.player:GetDockedWith())
+	if not h then return l.STORE_NEEDS_HANGAR end
+	if Hangar.IsLocked(h) then return l.HANGAR_LOCKED end
+	if mode == "store" and Hangar.FreeBays(h) < 1 then return l.STORE_NEEDS_BAY end
+	return nil
+end
+
+-- Everyone aboard but the commander waits in the lounge ("hull" mode)
+function Hangar.OnlyCommander()
+	for member in Game.player:EachCrewMember() do
+		if member.player then return { [member] = true } end
+	end
+	return {}
+end
+
+-- Reasons ship `def` can't be bought here now with `mode` (see BUY_MODES).
+-- `aboard` is who flies the new ship (nil: the crew aboard now).
+function Hangar.CheckBuy(def, equip, mode, aboard)
 	local blockers, warnings = {}, {}
 	local name = def.name
 	local room, lifeSupport = Hangar.NewShipCargo(def, equip)
 
-	if store then
-		local h = Hangar.GetHangarAt(Game.player:GetDockedWith())
-		if not h then
-			table.insert(blockers, l.STORE_NEEDS_HANGAR)
-		elseif Hangar.IsLocked(h) then
-			table.insert(blockers, l.HANGAR_LOCKED)
-		elseif Hangar.FreeBays(h) < 1 then
-			table.insert(blockers, l.STORE_NEEDS_BAY)
-		end
-		checkBoarding(blockers, warnings, def, name, take or {}, aboard, room, lifeSupport)
+	local blocked = Hangar.BuyModeBlocked(mode)
+	if blocked then table.insert(blockers, blocked) end
+
+	if mode == "store" then
+		-- nothing comes along but the crew
+		checkBoarding(blockers, warnings, def, name, {}, aboard, room, lifeSupport)
+	elseif mode == "hull" then
+		checkBoarding(blockers, warnings, def, name, {}, Hangar.OnlyCommander(), room, lifeSupport)
 	else
 		Hangar.CheckCrew(blockers, warnings, def, name, aboard)
 		local used = Game.player:GetComponent('CargoManager'):GetUsedSpace()
@@ -1504,9 +1632,26 @@ function Hangar.CheckBuy(def, equip, store, take, aboard)
 	return blockers, warnings
 end
 
+-- Before the bare hull is sold: all cargo into the hangar's cargo store, all
+-- crew but the commander into the lounge, all equipment into the store.
+-- Returns tons, crew and items moved.
+function Hangar.StripCurrentShip()
+	local h = Hangar.GetHangarAt(Game.player:GetDockedWith())
+	if not h or Hangar.IsLocked(h) then return false end
+	local tons = 0
+	for _, lot in ipairs(Hangar.CargoLots()) do
+		tons = tons + Hangar.UnloadCargo(h, lot.name, lot.tag, lot.count)
+	end
+	local crew = Game.player:CrewNumber()
+	Hangar.MoveCrew(Hangar.OnlyCommander())
+	crew = crew - Game.player:CrewNumber()
+	local items = Hangar.UnfitAll(h, Hangar.ACTIVE)
+	return true, tons, crew, items
+end
+
 -- Put the player's current ship into a free bay of the hangar here, keeping
--- aboard only the cargo in `take`. The caller then makes the player's ship
--- the new one and calls Hangar.MoveCrew.
+-- aboard only the cargo in `take` (nil: none). The caller then makes the
+-- player's ship the new one and calls Hangar.MoveCrew.
 function Hangar.StoreCurrentShip(take)
 	local h = Hangar.GetHangarAt(Game.player:GetDockedWith())
 	if not h or Hangar.FreeBays(h) < 1 or Hangar.IsLocked(h) then return false end
@@ -1590,8 +1735,11 @@ Event.Register("onGameStart", function()
 	end
 
 	-- Missions that ended while the save held their cargo on a stored ship
-	for _, rec in pairs(ships) do
-		for _, tags in pairs(rec.cargoTags or {}) do
+	-- or in a hangar
+	local holders = utils.build_array(pairs(ships))
+	for _, h in pairs(hangars) do table.insert(holders, h) end
+	for _, holder in ipairs(holders) do
+		for _, tags in pairs(holder.cargoTags or {}) do
 			for tag in pairs(tags) do
 				local meta = getmetatable(tag)
 				if meta and meta.class == "Mission" and not tag:IsActive() then releaseTag(tag) end

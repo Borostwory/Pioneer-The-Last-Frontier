@@ -732,6 +732,95 @@ local function drawEquipment(station, h)
 end
 
 --=============================================================================
+-- Cargo sub-tab (the hangar's cargo store)
+--=============================================================================
+
+-- Buttons moving 1, 10 or all tons of a lot; returns the amount clicked
+local function amountButtons(id, glyph, count, enabled, tooltip)
+	local clicked = nil
+	for _, n in ipairs({ 1, 10 }) do
+		if count >= n then
+			if button(glyph .. " " .. n .. "##" .. id .. n, enabled, tooltip) then clicked = n end
+			ui.sameLine()
+		end
+	end
+	if button(glyph .. " " .. l.ALL .. "##" .. id .. "all", enabled, tooltip) then clicked = count end
+	return clicked
+end
+
+local function lotName(lot)
+	local c = Commodities[lot.name]
+	local name = string.format("%d t %s", lot.count, c and c:GetName() or lot.name)
+	if lot.tag ~= CargoManager.ORDINARY then
+		name = ui.get_icon_glyph(icons.mission_cargo) .. " " .. name
+	end
+	return name
+end
+
+local function drawCargoStore(station, h)
+	ui.withFont(orbiteer.heading, function()
+		ui.icon(icons.hangar, Vector2(ui.getTextLineHeight()), colors.font)
+		ui.sameLine()
+		ui.text(string.interp(l.HANGAR_AT, { station = h.station }))
+	end)
+	local locked = Hangar.IsLocked(h)
+	if locked then
+		iconText(icons.lease_locked, colors.alertRed, l.HANGAR_LOCKED)
+	end
+
+	local cargoMgr = Game.player:GetComponent('CargoManager')
+	local footer = ui.getTextLineHeightWithSpacing() * 2
+	local size = ui.getContentRegion()
+	local half = (size.x - widgetSizes.itemSpacing.x) / 2
+
+	ui.child("cargoAboard", Vector2(half, size.y - footer), function()
+		ui.text(string.interp(l.ABOARD_SHIP, { ship = Game.player.shipName }))
+		ui.textColored(colors.fontDim, string.interp(l.HOLD_USE, {
+			used = math.floor(cargoMgr:GetUsedSpace()), total = math.floor(cargoMgr:GetTotalSpace()) }))
+		ui.separator()
+		local lots = Hangar.CargoLots()
+		if #lots == 0 then ui.textColored(colors.fontDim, l.NO_CARGO_ABOARD) end
+		for _, lot in ipairs(lots) do
+			local n = amountButtons("unload" .. lot.name .. tostring(lot.tag), ui.get_icon_glyph(icons.forward),
+				lot.count, not locked, locked and l.HANGAR_LOCKED or l.UNLOAD_TOOLTIP)
+			if n then Hangar.UnloadCargo(h, lot.name, lot.tag, n) end
+			ui.sameLine()
+			ui.text(lotName(lot))
+			if lot.label then
+				ui.sameLine()
+				ui.textColored(colors.fontDim, lot.label)
+			end
+		end
+	end)
+	ui.sameLine()
+	ui.child("cargoStore", Vector2(half, size.y - footer), function()
+		ui.text(string.interp(l.CARGO_STORE_AT, { station = h.station }))
+		ui.textColored(colors.fontDim, string.interp(l.CARGO_STORE_TOTAL, { total = Hangar.StoreCargoTotal(h) }))
+		ui.separator()
+		local lots = Hangar.StoreCargoLots(h)
+		if #lots == 0 then ui.textColored(colors.fontDim, l.CARGO_STORE_EMPTY) end
+		for _, lot in ipairs(lots) do
+			local room, why = Hangar.CanLoadCargo(h, lot.name, lot.tag)
+			local n = amountButtons("load" .. lot.name .. tostring(lot.tag), ui.get_icon_glyph(icons.backward),
+				lot.count, room > 0, room > 0 and l.LOAD_TOOLTIP or why)
+			if n then Hangar.LoadCargo(h, lot.name, lot.tag, n) end
+			ui.sameLine()
+			ui.text(lotName(lot))
+			if lot.label then
+				ui.sameLine()
+				ui.textColored(colors.fontDim, lot.label)
+			end
+			if room == 0 and why and not locked then
+				ui.textColored(colors.fontDim, "      " .. why)
+			end
+		end
+	end)
+
+	ui.separator()
+	ui.textColored(colors.fontDim, l.CARGO_STORE_HELP)
+end
+
+--=============================================================================
 -- Crew lounge sub-tab (works at every station, with or without a hangar)
 --=============================================================================
 
@@ -932,6 +1021,9 @@ StationView:registerView({
 					{ ui.get_icon_glyph(icons.equipment_store) .. " " .. l.EQUIPMENT_TAB, function()
 						-- the store is part of the hangar
 						if h then drawEquipment(station, h) else drawLeaseForm(station) end
+					end },
+					{ ui.get_icon_glyph(icons.cargo_crate) .. " " .. l.CARGO_TAB, function()
+						if h then drawCargoStore(station, h) else drawLeaseForm(station) end
 					end },
 					{ ui.get_icon_glyph(icons.crew_lounge) .. " " .. l.CREW_LOUNGE, function() drawLounge(station) end },
 				})
