@@ -975,6 +975,10 @@
     "description": "Tooltip: set the surface rover down beside the landed ship and drive it",
     "message": "Drive the rover"
   },
+  "HUD_BUTTON_ROVER_PARKED": {
+    "description": "Tooltip of the disabled rover button while the surface rover is out of the ship, parked where the player left it: the planet (or moon) and the star system, e.g. 'The rover is parked on Mars, Sol'",
+    "message": "The rover is parked on {planet}, {system}"
+  },
   "HUD_BUTTON_CRUISE_FORWARD": {
     "description": "Tooltip for button",
     "message": "Forward cruise mode"
@@ -2279,6 +2283,34 @@
     "description": "The tooltip of Reset View on Hyperspace Exit in the settings menu",
     "message": "Reset view to main game view when exiting from hyperspace"
   },
+  "HEAD_BOB": {
+    "description": "Game option: the view bobs up and down as the player walks on foot",
+    "message": "Head Bob on Foot"
+  },
+  "HEAD_BOB_DESC": {
+    "description": "The tooltip of the Head Bob on Foot option in the settings menu",
+    "message": "The view bobs gently with each step while walking or running out of the ship"
+  },
+  "ROVER_DEFAULT_VIEW": {
+    "description": "Game option: the view the surface rover starts in when the player gets in",
+    "message": "Rover View on Getting In"
+  },
+  "ROVER_DEFAULT_VIEW_DESC": {
+    "description": "The tooltip of the Rover View on Getting In option in the settings menu",
+    "message": "The view when getting into the rover or driving it out of the ship. The view key still changes it while driving"
+  },
+  "ROVER_VIEW_CAB": {
+    "description": "Rover view option: from the driver's seat, with the cab drawn",
+    "message": "From the cab"
+  },
+  "ROVER_VIEW_NO_MODEL": {
+    "description": "Rover view option: from the driver's eyes, without the rover drawn (as the ship's internal view)",
+    "message": "Driver's eyes, no rover"
+  },
+  "ROVER_VIEW_EXTERNAL": {
+    "description": "Rover view option: from outside, circling the rover",
+    "message": "From outside"
+  },
   "RETURN_TO_GAME": {
     "description": "",
     "message": "Return to game"
@@ -2614,6 +2646,10 @@
   "SURFACE_ROVER_VIEW": {
     "description": "Rover HUD hint: the key and this change the view (from the cab, without the rover's model, from outside)",
     "message": "Change view"
+  },
+  "SURFACE_STOW_ROVER": {
+    "description": "Rover HUD prompt next to the ship: the key and this drive the rover into the hold and board the ship",
+    "message": "Stow the rover and board"
   },
   "SURFACE_YOUR_ROVER": {
     "description": "On-foot HUD: label of the marker of the player's surface rover on the compass",

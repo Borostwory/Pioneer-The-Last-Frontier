@@ -18,6 +18,8 @@
 #include "SpaceStation.h"
 #include "Star.h"
 #include "core/Log.h"
+#include "surface/Rover.h"
+#include "surface/Walker.h"
 #include "lua/LuaEvent.h"
 
 #include "profiler/Profiler.h"
@@ -128,6 +130,8 @@ void Body::ToJson(Json &jsonObj, Space *space)
 	case ObjectType::CARGOBODY:
 	case ObjectType::PROJECTILE:
 	case ObjectType::HYPERSPACECLOUD:
+	case ObjectType::WALKER:
+	case ObjectType::ROVER:
 		SaveToJson(jsonObj, space);
 		break;
 	default:
@@ -180,6 +184,12 @@ Body *Body::FromJson(const Json &jsonObj, Space *space)
 		break;
 	case ObjectType::HYPERSPACECLOUD:
 		body = new HyperspaceCloud(jsonObj, space);
+		break;
+	case ObjectType::WALKER:
+		body = new Walker(jsonObj, space);
+		break;
+	case ObjectType::ROVER:
+		body = new Rover(jsonObj, space);
 		break;
 	default:
 		assert(0);

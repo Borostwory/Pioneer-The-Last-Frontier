@@ -875,6 +875,20 @@ local function showGameOptions()
 	if c then
 		Engine.SetResetViewOnHyperspaceExit(resetViewOnHyperspaceExit)
 	end
+
+	-- out of the ship, on foot and in the rover
+	local headBob = Engine.SettingsGetInt("OnFootHeadBob") ~= 0
+	c,headBob = checkbox(lui.HEAD_BOB, headBob, lui.HEAD_BOB_DESC)
+	if c then
+		Engine.SettingsSetInt("OnFootHeadBob", headBob and 1 or 0)
+	end
+
+	local roverViews = { lui.ROVER_VIEW_CAB, lui.ROVER_VIEW_NO_MODEL, lui.ROVER_VIEW_EXTERNAL }
+	local roverView = math.max(0, math.min(#roverViews - 1, Engine.SettingsGetInt("RoverDefaultView")))
+	c,roverView = combo(lui.ROVER_DEFAULT_VIEW, roverView, roverViews, lui.ROVER_DEFAULT_VIEW_DESC)
+	if c then
+		Engine.SettingsSetInt("RoverDefaultView", roverView)
+	end
 end
 
 local optionsTabs = {

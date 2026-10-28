@@ -118,7 +118,7 @@ function Game.Board() end
 function Game.CanDeployRover() end
 ---@return boolean
 function Game.DeployRover() end
----@return "board"|"enter_rover"|"exit_rover"|nil
+---@return "board"|"enter_rover"|"exit_rover"|"stow_rover"|nil
 function Game.GetExcursionAction() end
 ---@return number? heading
 ---@return number? shipBearing
@@ -129,6 +129,10 @@ function Game.GetExcursionNavInfo() end
 ---@return number? speed
 ---@return boolean? onGround
 function Game.GetRoverState() end
+---@return Body? rover out of the ship in this system, driven or parked
+function Game.GetRover() end
+---@return SystemPath? planet the rover is out on, here or in another system
+function Game.GetRoverPlanet() end
 ---@return number? fuel
 ---@return number? thrust
 ---@return boolean? burntOut

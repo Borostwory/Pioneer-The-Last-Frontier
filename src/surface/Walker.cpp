@@ -5,6 +5,8 @@
 
 #include "Frame.h"
 #include "Game.h"
+#include "GameSaveError.h"
+#include "JsonUtils.h"
 #include "MathUtil.h"
 #include "Pi.h"
 #include "Space.h"
@@ -93,6 +95,76 @@ Walker::Walker() :
 	SetClipRadius(EYE_HEIGHT);
 	// the camera is inside it
 	SetFlag(FLAG_DRAW_EXCLUDE, true);
+}
+
+Walker::Walker(const Json &jsonObj, Space *space) :
+	Body(jsonObj, space),
+	m_vel(0.0),
+	m_oldPos(0.0),
+	m_forward(0.0, 0.0, -1.0),
+	m_relPos(0.0),
+	m_oldRelPos(0.0),
+	m_relVel(0.0),
+	m_evaOrient(matrix3x3d::Identity),
+	m_evaHatch(0.0)
+{
+	SetFlag(FLAG_DRAW_EXCLUDE, true);
+
+	try {
+		const Json &walkerObj = jsonObj["walker"];
+		m_vel = walkerObj["vel"];
+		m_forward = walkerObj["forward"];
+		m_groundRadius = walkerObj["ground_radius"];
+		m_onGround = walkerObj["on_ground"];
+		m_jetFuel = walkerObj["jet_fuel"];
+		m_jetIdle = walkerObj["jet_idle"];
+		m_jetBurntOut = walkerObj["jet_burnt_out"];
+		if (walkerObj.count("eva_ship")) {
+			m_evaShipIndex = walkerObj["eva_ship"];
+			m_relPos = walkerObj["rel_pos"];
+			m_relVel = walkerObj["rel_vel"];
+			m_evaOrient = walkerObj["eva_orient"];
+			m_evaHatch = walkerObj["eva_hatch"];
+			m_evaTaut = walkerObj["eva_taut"];
+		}
+	} catch (Json::type_error &) {
+		throw SavedGameCorruptException();
+	}
+
+	m_oldPos = GetPosition();
+	m_oldRelPos = m_relPos;
+	m_interpPos = GetPosition();
+	m_interpOrient = GetOrient();
+}
+
+void Walker::SaveToJson(Json &jsonObj, Space *space)
+{
+	Body::SaveToJson(jsonObj, space);
+
+	Json walkerObj = Json::object();
+	walkerObj["vel"] = m_vel;
+	walkerObj["forward"] = m_forward;
+	walkerObj["ground_radius"] = m_groundRadius;
+	walkerObj["on_ground"] = m_onGround;
+	walkerObj["jet_fuel"] = m_jetFuel;
+	walkerObj["jet_idle"] = m_jetIdle;
+	walkerObj["jet_burnt_out"] = m_jetBurntOut;
+	if (m_evaShip) {
+		walkerObj["eva_ship"] = space->GetIndexForBody(m_evaShip);
+		walkerObj["rel_pos"] = m_relPos;
+		walkerObj["rel_vel"] = m_relVel;
+		walkerObj["eva_orient"] = m_evaOrient;
+		walkerObj["eva_hatch"] = m_evaHatch;
+		walkerObj["eva_taut"] = m_evaTaut;
+	}
+	jsonObj["walker"] = walkerObj;
+}
+
+void Walker::PostLoadFixup(Space *space)
+{
+	Body::PostLoadFixup(space);
+	if (m_evaShipIndex)
+		m_evaShip = space->GetBodyByIndex(m_evaShipIndex);
 }
 
 void Walker::PlaceOnGround(const vector3d &pos, const vector3d &forward)

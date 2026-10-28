@@ -5,6 +5,9 @@
 
 #include "DynamicBody.h"
 #include "Frame.h"
+#include "GameSaveError.h"
+#include "JsonUtils.h"
+#include "Lang.h"
 #include "MathUtil.h"
 #include "Pi.h"
 #include "Quaternion.h"
@@ -152,9 +155,86 @@ Rover::Rover() :
 	m_oldOrient(matrix3x3d::Identity)
 {
 	SetModel(MODEL_NAME);
-	SetLabel("Rover");
+	// its name on the HUD's markers and as the nav target
+	SetLabel(Lang::SURFACE_ROVER);
 	SetClipRadius(GetModel()->GetDrawClipRadius());
 	FindRig();
+}
+
+Rover::Rover(const Json &jsonObj, Space *space) :
+	ModelBody(jsonObj, space),
+	m_wheelRadius(0.7),
+	m_wheelbase(3.2),
+	m_halfTrack(1.7),
+	m_vel(0.0),
+	m_forward(0.0, 0.0, -1.0),
+	m_up(0.0, 1.0, 0.0),
+	m_oldPos(0.0),
+	m_oldOrient(matrix3x3d::Identity)
+{
+	SetLabel(Lang::SURFACE_ROVER);
+	FindRig();
+
+	try {
+		const Json &roverObj = jsonObj["rover"];
+		m_vel = roverObj["vel"];
+		m_forward = roverObj["forward"];
+		m_up = roverObj["up"];
+		m_vUp = roverObj["v_up"];
+		m_speed = roverObj["speed"];
+		m_onGround = roverObj["on_ground"];
+		m_steer = roverObj["steer"];
+		m_spin = roverObj["spin"];
+		m_wheelSpeed = roverObj["wheel_speed"];
+		const Json &wheels = roverObj["wheels"];
+		for (size_t i = 0; i < 4 && i < wheels.size(); i++) {
+			m_wheels[i].contact = wheels[i]["contact"];
+			m_wheels[i].offset = wheels[i]["offset"];
+		}
+	} catch (Json::type_error &) {
+		throw SavedGameCorruptException();
+	}
+
+	ResetInterp();
+}
+
+void Rover::SaveToJson(Json &jsonObj, Space *space)
+{
+	ModelBody::SaveToJson(jsonObj, space);
+
+	Json roverObj = Json::object();
+	roverObj["vel"] = m_vel;
+	roverObj["forward"] = m_forward;
+	roverObj["up"] = m_up;
+	roverObj["v_up"] = m_vUp;
+	roverObj["speed"] = m_speed;
+	roverObj["on_ground"] = m_onGround;
+	roverObj["steer"] = m_steer;
+	roverObj["spin"] = m_spin;
+	roverObj["wheel_speed"] = m_wheelSpeed;
+	Json wheels = Json::array();
+	for (const Wheel &w : m_wheels) {
+		Json wheelObj = Json::object();
+		wheelObj["contact"] = w.contact;
+		wheelObj["offset"] = w.offset;
+		wheels.push_back(wheelObj);
+	}
+	roverObj["wheels"] = wheels;
+	jsonObj["rover"] = roverObj;
+}
+
+void Rover::ResetInterp()
+{
+	m_oldSpin = m_spin;
+	m_oldSteer = m_steer;
+	double offsets[4];
+	for (int i = 0; i < 4; i++) {
+		m_wheels[i].oldOffset = m_wheels[i].offset;
+		offsets[i] = m_wheels[i].offset;
+	}
+	m_oldPos = m_interpPos = GetPosition();
+	m_oldOrient = m_interpOrient = GetOrient();
+	PoseRig(m_spin, m_steer, offsets);
 }
 
 void Rover::FindRig()
@@ -355,14 +435,11 @@ void Rover::PlaceOnGround(const vector3d &pos, const vector3d &forward)
 			m_wheels[i].contact = contacts[i];
 	}
 
-	double offsets[4] = { 0.0, 0.0, 0.0, 0.0 };
 	for (Wheel &w : m_wheels)
-		w.offset = w.oldOffset = 0.0;
+		w.offset = 0.0;
 	SetPosition(at);
 	SetOrient(MakeOrient());
-	m_oldPos = m_interpPos = at;
-	m_oldOrient = m_interpOrient = GetOrient();
-	PoseRig(m_spin, m_steer, offsets);
+	ResetInterp();
 }
 
 void Rover::TimeStepUpdate(const float timeStep)
@@ -377,7 +454,7 @@ void Rover::TimeStepUpdate(const float timeStep)
 		w.oldOffset = w.offset;
 
 	const Frame *frame = Frame::GetFrame(GetFrame());
-	if (!frame || !frame->GetBody() || !frame->GetBody()->IsType(ObjectType::TERRAINBODY))
+	if ((m_asleep && !m_driven) || !frame || !frame->GetBody() || !frame->GetBody()->IsType(ObjectType::TERRAINBODY))
 		return;
 	const TerrainBody *terrain = static_cast<const TerrainBody *>(frame->GetBody());
 	const double dt = timeStep;

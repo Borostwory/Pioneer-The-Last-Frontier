@@ -5,6 +5,8 @@
 
 #include "Frame.h"
 #include "Game.h"
+#include "GameSaveError.h"
+#include "JsonUtils.h"
 #include "MathUtil.h"
 #include "Player.h"
 #include "Rover.h"
@@ -13,6 +15,8 @@
 #include "TerrainBody.h"
 #include "Walker.h"
 #include "WorldView.h"
+#include "galaxy/StarSystem.h"
+#include "galaxy/SystemBody.h"
 #include "lua/LuaEvent.h"
 #include "scenegraph/Model.h"
 #include "scenegraph/Tag.h"
@@ -258,24 +262,20 @@ bool Excursion::Board()
 
 	Player *player = m_game->GetPlayer();
 	m_mode = Mode::SHIP;
-	WorldView *worldView = m_game->GetWorldView();
-	worldView->SetViewController(worldView->shipView.get());
-	SetShipControlsEnabled(true);
+	ShowShipView();
 
 	m_game->GetSpace()->KillBody(m_walker);
 	m_walker = nullptr;
-	StowRover();
 
 	LuaEvent::Queue("onPlayerBoard", player);
 	return true;
 }
 
-void Excursion::StowRover()
+void Excursion::ShowShipView()
 {
-	if (!m_rover)
-		return;
-	m_game->GetSpace()->KillBody(m_rover);
-	m_rover = nullptr;
+	WorldView *worldView = m_game->GetWorldView();
+	worldView->SetViewController(worldView->shipView.get());
+	SetShipControlsEnabled(true);
 }
 
 bool Excursion::FindRoverSpot(vector3d &pos, vector3d &forward) const
@@ -345,7 +345,7 @@ bool Excursion::FindRoverSpot(vector3d &pos, vector3d &forward) const
 bool Excursion::CanDeployRover() const
 {
 	const Player *player = m_game->GetPlayer();
-	if (IsOffShip() || !m_game->IsNormalSpace() || !player || player->IsDead() || player->GetFlightState() != Ship::LANDED)
+	if (IsOffShip() || IsRoverOut() || !m_game->IsNormalSpace() || !player || player->IsDead() || player->GetFlightState() != Ship::LANDED)
 		return false;
 	if (player->Properties().Get("surface_rover_cap").get_integer() < 1)
 		return false;
@@ -391,6 +391,8 @@ bool Excursion::EnterRover()
 	m_rover->SetDriven(true);
 	m_mode = Mode::ROVER;
 	m_game->GetWorldView()->surfaceView->ResetLook();
+
+	LuaEvent::Queue("onPlayerEnterRover", m_game->GetPlayer());
 	return true;
 }
 
@@ -445,13 +447,74 @@ bool Excursion::ExitRover()
 	m_game->GetSpace()->AddBody(m_walker);
 	m_mode = Mode::ON_FOOT;
 	m_game->GetWorldView()->surfaceView->ResetLook();
+
+	LuaEvent::Queue("onPlayerExitRover", m_game->GetPlayer());
+	return true;
+}
+
+bool Excursion::CanStowRover() const
+{
+	if (m_mode != Mode::ROVER || !m_rover || std::abs(m_rover->GetSpeed()) > ROVER_EXIT_SPEED)
+		return false;
+	const Player *ship = m_game->GetPlayer();
+	if (!ship || ship->IsDead() || ship->GetFlightState() != Ship::LANDED || m_rover->GetFrame() != ship->GetFrame())
+		return false;
+
+	// the rover's collision box against the ship's: its corners and the
+	// middles of its sides, at half its height
+	const Aabb &box = m_rover->GetAabb();
+	const double y = 0.5 * (box.min.y + box.max.y);
+	for (const double x : { box.min.x, 0.5 * (box.min.x + box.max.x), box.max.x }) {
+		for (const double z : { box.min.z, 0.5 * (box.min.z + box.max.z), box.max.z }) {
+			const vector3d p = m_rover->GetPosition() + m_rover->GetOrient() * vector3d(x, y, z);
+			if (DistanceToBox(ship, p) <= STOW_REACH)
+				return true;
+		}
+	}
+	return false;
+}
+
+bool Excursion::StowRover()
+{
+	if (!CanStowRover())
+		return false;
+
+	Player *player = m_game->GetPlayer();
+	m_mode = Mode::SHIP;
+	ShowShipView();
+
+	m_game->GetSpace()->KillBody(m_rover);
+	m_rover = nullptr;
+
+	LuaEvent::Queue("onRoverStowed", player);
+	LuaEvent::Queue("onPlayerBoard", player);
+	return true;
+}
+
+bool Excursion::GetRoverPlanet(SystemPath &path) const
+{
+	if (m_roverAway) {
+		path = m_roverPlanet;
+		return true;
+	}
+	if (!m_rover)
+		return false;
+	const Frame *frame = Frame::GetFrame(m_rover->GetFrame());
+	const SystemBody *sbody = frame && frame->GetBody() ? frame->GetBody()->GetSystemBody() : nullptr;
+	if (!sbody)
+		return false;
+	path = sbody->GetPath();
 	return true;
 }
 
 Excursion::Action Excursion::GetAvailableAction() const
 {
-	if (m_mode == Mode::ROVER)
+	// at the ship, driving into the hold; getting out a little farther off
+	if (m_mode == Mode::ROVER) {
+		if (CanStowRover())
+			return Action::STOW_ROVER;
 		return CanExitRover() ? Action::EXIT_ROVER : Action::NONE;
+	}
 
 	const bool board = CanBoard();
 	const bool enter = CanEnterRover();
@@ -474,6 +537,7 @@ Excursion::Action Excursion::Interact()
 	case Action::BOARD: done = Board(); break;
 	case Action::ENTER_ROVER: done = EnterRover(); break;
 	case Action::EXIT_ROVER: done = ExitRover(); break;
+	case Action::STOW_ROVER: done = StowRover(); break;
 	case Action::NONE: break;
 	}
 	return done ? action : Action::NONE;
@@ -516,12 +580,135 @@ void Excursion::OnShipMoved()
 {
 	if (m_mode == Mode::EVA && m_walker)
 		m_walker->FollowShip();
+
+	if (m_rover) {
+		const Body *me = GetControlledBody();
+		const bool near = m_mode == Mode::ROVER ||
+			(me->GetFrame() == m_rover->GetFrame() && me->GetPositionRelTo(m_rover).LengthSqr() < ROVER_WAKE_DISTANCE * ROVER_WAKE_DISTANCE);
+		m_rover->SetAsleep(!near);
+	}
 }
 
 void Excursion::OnShipInterpolated(double alpha)
 {
 	if (m_mode == Mode::EVA && m_walker)
 		m_walker->FollowShipInterp(alpha);
+}
+
+void Excursion::SaveToJson(Json &jsonObj, Space *space) const
+{
+	Json excursionObj = Json::object();
+	excursionObj["mode"] = int(m_mode);
+	if (m_walker)
+		excursionObj["walker"] = space->GetIndexForBody(m_walker);
+	if (m_rover)
+		excursionObj["rover"] = space->GetIndexForBody(m_rover);
+	if (m_roverAway) {
+		Json awayObj = Json::object();
+		m_roverPlanet.ToJson(awayObj);
+		awayObj["pos"] = m_roverPos;
+		awayObj["forward"] = m_roverForward;
+		excursionObj["rover_away"] = awayObj;
+	}
+	jsonObj["excursion"] = excursionObj;
+}
+
+void Excursion::LoadFromJson(const Json &jsonObj, Space *space)
+{
+	m_mode = Mode::SHIP;
+	m_walker = nullptr;
+	m_rover = nullptr;
+	m_roverAway = false;
+	// saved before there was anything to save: aboard
+	if (!jsonObj.count("excursion"))
+		return;
+	const Json &excursionObj = jsonObj["excursion"];
+
+	auto body = [&](const char *key, ObjectType type) -> Body * {
+		if (!excursionObj.count(key))
+			return nullptr;
+		Body *b = space->GetBodyByIndex(excursionObj[key].get<Uint32>());
+		return b && b->IsType(type) ? b : nullptr;
+	};
+	m_walker = static_cast<Walker *>(body("walker", ObjectType::WALKER));
+	m_rover = static_cast<Rover *>(body("rover", ObjectType::ROVER));
+
+	// a mode whose body didn't come back is aboard, and a walker aboard is
+	// no one
+	const Mode mode = Mode(excursionObj.value("mode", int(Mode::SHIP)));
+	if ((mode == Mode::ON_FOOT || mode == Mode::EVA) && m_walker)
+		m_mode = mode;
+	else if (mode == Mode::ROVER && m_rover)
+		m_mode = mode;
+	if (m_walker && m_mode != Mode::ON_FOOT && m_mode != Mode::EVA) {
+		space->KillBody(m_walker);
+		m_walker = nullptr;
+	}
+
+	if (excursionObj.count("rover_away") && !m_rover) {
+		try {
+			const Json &awayObj = excursionObj["rover_away"];
+			m_roverPlanet = SystemPath::FromJson(awayObj);
+			m_roverPos = awayObj["pos"];
+			m_roverForward = awayObj["forward"];
+		} catch (Json::type_error &) {
+			throw SavedGameCorruptException();
+		}
+		m_roverAway = true;
+		BringBackRover(space);
+	}
+}
+
+void Excursion::OnGameLoaded()
+{
+	if (m_rover)
+		m_rover->SetDriven(m_mode == Mode::ROVER);
+	if (IsOffShip())
+		ShowSurfaceView();
+}
+
+void Excursion::OnSpaceDestroyed()
+{
+	// parked: where it is, for coming back to it
+	SystemPath planet;
+	if (m_rover && GetRoverPlanet(planet)) {
+		m_roverAway = true;
+		m_roverPlanet = planet;
+		m_roverPos = m_rover->GetPosition();
+		m_roverForward = m_rover->GetForward();
+	}
+
+	m_walker = nullptr;
+	m_rover = nullptr;
+	if (IsOffShip()) {
+		m_mode = Mode::SHIP;
+		ShowShipView();
+	}
+}
+
+void Excursion::OnSpaceCreated()
+{
+	BringBackRover(m_game->GetSpace());
+}
+
+void Excursion::BringBackRover(Space *space)
+{
+	const StarSystem *system = space->GetStarSystem().Get();
+	if (!m_roverAway || !system || !system->GetPath().IsSameSystem(m_roverPlanet))
+		return;
+
+	// as it was left, on the ground as drawn from afar (it settles on it as
+	// the player comes near and the terrain is drawn finer); gone with a
+	// planet that isn't there
+	m_roverAway = false;
+	Body *planet = space->FindBodyForPath(&m_roverPlanet);
+	if (!planet || !planet->IsType(ObjectType::PLANET))
+		return;
+	m_rover = new Rover();
+	m_rover->SetFrame(planet->GetFrame());
+	m_rover->PlaceOnGround(m_roverPos, m_roverForward);
+	m_rover->SetAsleep(true);
+	space->AddBody(m_rover);
 }
 
 void Excursion::SetShipControlsEnabled(bool enabled)

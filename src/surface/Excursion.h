@@ -4,11 +4,14 @@
 #ifndef _EXCURSION_H
 #define _EXCURSION_H
 
+#include "JsonFwd.h"
+#include "galaxy/SystemPath.h"
 #include "vector3.h"
 
 class Body;
 class Game;
 class Rover;
+class Space;
 class Walker;
 
 // The player outside the ship: getting out of a landed ship on foot, or out
@@ -19,9 +22,15 @@ class Walker;
 // HUD markers).
 //
 // The rover is ship equipment (the surface_rover capability). Deployed from
-// the landed ship with the player at the wheel, it stays out while the player
-// gets in and out of it, and goes back into the hold when the player boards
-// the ship, wherever it is parked.
+// the landed ship with the player at the wheel, it stays where it is parked
+// while the player gets in and out of it, boards the ship and gets out again,
+// and when the ship takes off without it: it waits on the planet, in this
+// system or another, until the player comes back, drives it up to the ship
+// and stows it. Until then no other rover comes out of the hold.
+//
+// Saved games keep the mode, the walker and the rover (both bodies in Space;
+// the rover in another system as its planet, position and heading) and load
+// straight back into the surface view.
 // See docs/implementation_plans/on-foot-and-buggy_research.md
 class Excursion {
 public:
@@ -37,7 +46,8 @@ public:
 		NONE,
 		BOARD,
 		ENTER_ROVER,
-		EXIT_ROVER
+		EXIT_ROVER,
+		STOW_ROVER
 	};
 
 	explicit Excursion(Game *game);
@@ -45,8 +55,12 @@ public:
 	Mode GetMode() const { return m_mode; }
 	bool IsOffShip() const { return m_mode != Mode::SHIP; }
 	Walker *GetWalker() const { return m_walker; }
-	// the rover while it is out of the ship, driven or parked
+	// the rover while it is out of the ship in this system, driven or parked
 	Rover *GetRover() const { return m_rover; }
+	// out of the ship, here or parked in another system
+	bool IsRoverOut() const { return m_rover || m_roverAway; }
+	// the planet the rover is out on; false while it is in the hold
+	bool GetRoverPlanet(SystemPath &path) const;
 	// the walker or the rover off the ship, the player's ship otherwise
 	Body *GetControlledBody() const;
 
@@ -57,11 +71,11 @@ public:
 	bool Disembark();
 	// the walker is within BOARD_DISTANCE of the ship's bounding box
 	bool CanBoard() const;
-	// boarding stows a deployed rover
+	// a parked rover stays where it is
 	bool Board();
 
 	// the ship is landed on a planet, has a rover aboard (the surface_rover
-	// capability) and room beside it to set it down
+	// capability, and none out anywhere) and room beside it to set it down
 	bool CanDeployRover() const;
 	// sets the rover down beside the ship with the player at the wheel
 	bool DeployRover();
@@ -71,6 +85,10 @@ public:
 	// in the rover, with dry ground beside its door (or the other side's)
 	bool CanExitRover() const;
 	bool ExitRover();
+	// in the rover, slow, within STOW_REACH of the ship's bounding box
+	bool CanStowRover() const;
+	// drives it into the hold, and the player boards the ship
+	bool StowRover();
 
 	Action GetAvailableAction() const;
 	// does what the interact key would do; the action done, NONE if nothing
@@ -88,7 +106,8 @@ public:
 	bool GetNavInfo(NavInfo &info) const;
 
 	// the ship has moved (Player::TimeStepUpdate) or been interpolated for
-	// drawing (Player::UpdateInterpTransform): an EVA walker follows it
+	// drawing (Player::UpdateInterpTransform): an EVA walker follows it, and
+	// the parked rover sleeps with no one within ROVER_WAKE_DISTANCE
 	void OnShipMoved();
 	void OnShipInterpolated(double alpha);
 
@@ -96,9 +115,26 @@ public:
 	// middle of the right side of its bounding box
 	vector3d GetHatchPoint() const;
 
+	// the mode and the walker and the rover (by body index; Space saves the
+	// bodies; the rover in another system by where it is), in the game's JSON
+	// (Game::ToJson, after Space)
+	void SaveToJson(Json &jsonObj, Space *space) const;
+	void LoadFromJson(const Json &jsonObj, Space *space);
+	// once the views are made: back to the surface view if off the ship
+	void OnGameLoaded();
+	// the bodies are about to go with the space (into hyperspace): back
+	// aboard, and where the rover is parked kept for coming back
+	void OnSpaceDestroyed();
+	// out of hyperspace: the rover parked in this system is back on its planet
+	void OnSpaceCreated();
+
 	static constexpr double BOARD_DISTANCE = 3.0;
 	// from the rover's collision box, to get in
 	static constexpr double ROVER_REACH = 2.0;
+	// from the ship's bounding box to the rover's, to stow it
+	static constexpr double STOW_REACH = 2.0;
+	// from the parked rover to the walker or the ship, for it to wake (m)
+	static constexpr double ROVER_WAKE_DISTANCE = 10000.0;
 
 private:
 	// where the walker stands after getting out, in the ship's frame, and the
@@ -109,12 +145,15 @@ private:
 	bool FindRoverSpot(vector3d &pos, vector3d &forward) const;
 	// where the walker stands getting out of the rover, and the way it faces
 	bool FindRoverExit(vector3d &pos, vector3d &facing) const;
-	// takes the rover back aboard
-	void StowRover();
 	// the world view's surface controller, looking ahead
 	void ShowSurfaceView();
+	// back to the ship's view and controls
+	void ShowShipView();
 	bool CanStartEva() const;
 	void StartEva();
+	// the rover parked in another system, back on its planet if that is in
+	// this space
+	void BringBackRover(Space *space);
 	// the ship's flight controls take no input while the player is outside
 	void SetShipControlsEnabled(bool enabled);
 
@@ -122,6 +161,13 @@ private:
 	Mode m_mode = Mode::SHIP;
 	Walker *m_walker = nullptr;
 	Rover *m_rover = nullptr;
+
+	// the rover parked in another system: its planet, and its position and
+	// heading in the planet's rotating frame
+	bool m_roverAway = false;
+	SystemPath m_roverPlanet;
+	vector3d m_roverPos;
+	vector3d m_roverForward;
 };
 
 #endif /* _EXCURSION_H */

@@ -19,6 +19,8 @@ class TerrainBody;
 // In EVA it floats beside the ship in space instead (StartEva): its position
 // is then the eyes, it turns freely about its own axes, and the jetpack
 // pushes it along them as a ship's thrusters.
+//
+// Saved with the game as any other body (Excursion keeps which one it is).
 class Walker : public Body {
 public:
 	OBJDEF(Walker, Body, WALKER);
@@ -29,6 +31,8 @@ public:
 	static constexpr double MASS = 100.0; // with the suit
 
 	Walker();
+	Walker(const Json &jsonObj, Space *space);
+	void PostLoadFixup(Space *space) override;
 
 	void Render(Graphics::Renderer *r, const Camera *camera, const vector3d &viewCoords, const matrix4x4d &viewTransform) override {}
 	void TimeStepUpdate(const float timeStep) override;
@@ -94,6 +98,9 @@ public:
 	// whether the ground at radius groundRadius in direction up is sea
 	static bool IsSea(const TerrainBody *terrain, const vector3d &up, double groundRadius);
 
+protected:
+	void SaveToJson(Json &jsonObj, Space *space) override;
+
 private:
 	// a wall along the ground: rays at knee and chest height from feet along
 	// dir (unit) for len plus the walker's radius; the hit normal if any
@@ -127,6 +134,7 @@ private:
 	bool m_jetBurntOut = false;
 
 	const Body *m_evaShip = nullptr;
+	Uint32 m_evaShipIndex = 0; // loading: m_evaShip's, until PostLoadFixup
 	vector3d m_relPos;
 	vector3d m_oldRelPos;
 	vector3d m_relVel;

@@ -2510,6 +2510,10 @@ bool PiGui::first_body_is_more_important_than(Body *body, Body *other)
 		result = true;
 	else if (b == ObjectType::HYPERSPACECLOUD)
 		result = false;
+	else if (a == ObjectType::ROVER)
+		result = true;
+	else if (b == ObjectType::ROVER)
+		result = false;
 	else if (a == ObjectType::CARGOBODY)
 		result = true;
 	else if (b == ObjectType::CARGOBODY)
@@ -2566,11 +2570,11 @@ static int l_pigui_get_projected_bodies_grouped(lua_State *l)
 	PiGui::TSS_vector filtered;
 	filtered.reserve(Pi::game->GetSpace()->GetNumBodies());
 
-	// seen from where the player is: the ship, or the walker out of it (whose ship is then marked);
-	// the rover is on the surface HUD's compass instead
+	// seen from where the player is: the ship, or the walker or the rover out of it (whose ship is
+	// then marked); the parked rover is marked as any other body, at any distance, to find it again
 	const Body *self = Pi::game->GetControlledBody();
 	for (Body *body : Pi::game->GetSpace()->GetBodies()) {
-		if (body == self || body->IsType(ObjectType::WALKER) || body->IsType(ObjectType::ROVER)) continue;
+		if (body == self || body->IsType(ObjectType::WALKER)) continue;
 		if (body->GetType() == ObjectType::PROJECTILE) continue;
 		if ((body->GetType() == ObjectType::SHIP || body->GetType() == ObjectType::CARGOBODY || body->GetType() == ObjectType::HYPERSPACECLOUD) &&
 			body->GetPositionRelTo(self).Length() > ship_max_distance) continue;
@@ -2676,7 +2680,7 @@ static int l_pigui_get_projected_bodies(lua_State *l)
 	filtered.reserve(Pi::game->GetSpace()->GetNumBodies());
 	const Body *self = Pi::game->GetControlledBody();
 	for (Body *body : Pi::game->GetSpace()->GetBodies()) {
-		if (body == self || body->IsType(ObjectType::WALKER) || body->IsType(ObjectType::ROVER)) continue;
+		if (body == self || body->IsType(ObjectType::WALKER)) continue;
 		if (body->GetType() == ObjectType::PROJECTILE) continue;
 		const PiGui::TScreenSpace res = lua_world_space_to_screen_space(body); // defined in LuaPiGui.cpp
 		if (!res._onScreen) continue;

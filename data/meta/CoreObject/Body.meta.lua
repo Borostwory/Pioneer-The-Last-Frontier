@@ -164,6 +164,9 @@ function Body:IsGroundStation() end
 ---@return boolean
 function Body:IsCargoContainer() end
 
+---@return boolean the player's surface rover
+function Body:IsRover() end
+
 ---@return SystemBody?
 function Body:GetSystemBody() end
 

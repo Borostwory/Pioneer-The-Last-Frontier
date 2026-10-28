@@ -77,11 +77,21 @@ local function button_undock()
 				Game.Disembark()
 			end
 		end
-		-- or drive out in the rover, if the ship carries one
+		-- or drive out in the rover, if the ship carries one; while it is
+		-- out, where it was left
 		if Game.CanDeployRover() then
 			ui.sameLine()
 			if ui.mainMenuButton(icons.planet_grid, lui.HUD_BUTTON_DEPLOY_ROVER) then
 				Game.DeployRover()
+			end
+		else
+			local roverPlanet = Game.GetRoverPlanet()
+			if roverPlanet then
+				ui.sameLine()
+				ui.mainMenuButton(icons.planet_grid, string.interp(lui.HUD_BUTTON_ROVER_PARKED, {
+					planet = roverPlanet:GetSystemBody().name,
+					system = roverPlanet:GetStarSystem().name
+				}), ui.theme.buttonColors.disabled)
 			end
 		end
 		return true

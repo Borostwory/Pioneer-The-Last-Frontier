@@ -18,10 +18,12 @@ class Rover;
 class Walker;
 
 // The world view while the player is out of the ship (Excursion): a
-// first-person camera at the walker's eyes or in the rover's driving seat,
-// mouse look, and the on-foot controls, which also drive the rover (forward
-// and right for throttle and steering, jump for the brake). Its input frame
-// replaces the ship's flight and camera controls.
+// first-person camera at the walker's eyes (bobbing as it walks, unless the
+// OnFootHeadBob setting is off) or in the rover's driving seat, mouse look,
+// and the on-foot controls, which also drive the rover (forward and right for
+// throttle and steering, jump for the brake). Its input frame replaces the
+// ship's flight and camera controls. Getting into the rover, the view is the
+// RoverDefaultView setting's: 0 the cab, 1 without the rover, 2 from outside.
 class SurfaceViewController : public ViewController {
 public:
 	SurfaceViewController(WorldView *v);
@@ -32,13 +34,9 @@ public:
 	void Update() override;
 	void Draw(Camera *camera) override;
 
-	// level the view, looking ahead (on getting out of the ship, or in or
-	// out of the rover)
-	void ResetLook()
-	{
-		m_pitch = 0.0;
-		m_roverYaw = 0.0;
-	}
+	// level the view, looking ahead, and the rover's view the default one
+	// (on getting out of the ship, or in or out of the rover)
+	void ResetLook();
 
 	struct InputBinding : public Input::InputFrame {
 		using InputFrame::InputFrame;
@@ -73,6 +71,8 @@ private:
 	void PlaceRoverExternalCamera(const Rover *rover);
 	void UpdateJetSound(const Walker *walker);
 	void UpdateFootsteps(const Walker *walker);
+	// how far through its stride the walker is, and how much the head bobs
+	void UpdateHeadBob(const Walker *walker);
 	void SilenceWalker();
 	// the line to the ship on EVA, after the camera is placed
 	void UpdateTether(const Walker *walker);
@@ -91,6 +91,10 @@ private:
 	double m_extYaw = 0.0;
 	double m_extPitch;
 	double m_extDistance;
+	// the head bob: radians through the stride (pi a step), and the height of
+	// the bob now (m), easing in and out as the walker starts and stops
+	double m_bobPhase = 0.0;
+	double m_bobHeight = 0.0;
 	bool m_mouseCaptured = false;
 	bool m_skipMouseMotion = false;
 	bool m_jumpRequested = false;

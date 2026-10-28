@@ -4,7 +4,8 @@
 -- The HUD out of the ship, on foot or in the rover (Game.GetExcursionMode):
 -- a dot in the middle of the view, a compass along the top with the bearing
 -- and distance to the ship (and to the rover, on foot), what the interact
--- key would do, the jetpack's fuel, and the rover's speed.
+-- key would do, the jetpack's fuel, and the rover's speed. (The parked
+-- rover is marked in the world view as other bodies are, game.lua.)
 
 local Game = require 'Game'
 local Lang = require 'Lang'
@@ -75,7 +76,8 @@ end
 local prompts = {
 	board = "SURFACE_BOARD_SHIP",
 	enter_rover = "SURFACE_ENTER_ROVER",
-	exit_rover = "SURFACE_EXIT_ROVER"
+	exit_rover = "SURFACE_EXIT_ROVER",
+	stow_rover = "SURFACE_STOW_ROVER"
 }
 
 local function displayPrompt()

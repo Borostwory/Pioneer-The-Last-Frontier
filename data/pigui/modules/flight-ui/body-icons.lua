@@ -71,6 +71,8 @@ local function getBodyIcon(body, forWorld)
 		return icons.bullseye -- TODO: better icon
 	elseif body:IsCargoContainer() then
 		return icons.rocky_planet -- TODO: better icon
+	elseif body:IsRover() then
+		return icons.planet_grid -- as the button driving it out
 	else
 		print("getBodyIcon(): not sure how to process body, supertype: " .. (st and st or "nil") .. ", type: " .. (t and t or "nil"))
 		utils.print_r(body)

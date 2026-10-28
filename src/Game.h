@@ -24,7 +24,6 @@ namespace Graphics {
 struct CannotSaveCurrentGameState {};
 struct CannotSaveInHyperspace : public CannotSaveCurrentGameState {};
 struct CannotSaveDeadPlayer : public CannotSaveCurrentGameState {};
-struct CannotSaveOffShip : public CannotSaveCurrentGameState {};
 struct InvalidGameStartLocation {
 	std::string error;
 	InvalidGameStartLocation(const std::string &error_) :

@@ -157,7 +157,7 @@ Game::Game(const Json &jsonObj) :
 	m_forceTimeAccel(false)
 {
 	PROFILE_SCOPED()
-	// saving is refused off the ship, so a loaded game starts aboard
+	// aboard, unless the save says otherwise (after Space is loaded)
 	m_excursion.reset(new Excursion(this));
 
 	try {
@@ -198,6 +198,9 @@ Game::Game(const Json &jsonObj) :
 
 		assert(!m_player->IsDead()); // Pioneer does not support necromancy
 
+		// out of the ship: on foot, on EVA or in the rover, and the rover parked
+		m_excursion->LoadFromJson(jsonObj, m_space.get());
+
 		// hyperspace clouds being brought over from the previous system
 		Json hyperspaceCloudArray = jsonObj["hyperspace_clouds"].get<Json::array_t>();
 		for (Uint32 i = 0; i < hyperspaceCloudArray.size(); i++) {
@@ -213,6 +216,7 @@ Game::Game(const Json &jsonObj) :
 
 	// views
 	LoadViewsFromJson(jsonObj);
+	m_excursion->OnGameLoaded();
 
 	// lua components
 	// the contents of m_space->m_bodies must not change until after this call
@@ -261,6 +265,7 @@ void Game::ToJson(Json &jsonObj)
 	// space, all the bodies and things
 	m_space->ToJson(jsonObj);
 	jsonObj["player"] = m_space->GetIndexForBody(m_player.get());
+	m_excursion->SaveToJson(jsonObj, m_space.get());
 
 	// hyperspace clouds being brought over from the previous system
 	Json hyperspaceCloudArray = Json::array(); // Create JSON array to contain hyperspace cloud data.
@@ -549,6 +554,10 @@ void Game::SwitchToHyperspace()
 	// remove the player from space
 	m_space->RemoveBody(m_player.get());
 
+	// the walker and the rover stay behind with the system; where the rover
+	// is parked is kept for coming back to it
+	m_excursion->OnSpaceDestroyed();
+
 	// create hyperspace :)
 	m_space.reset(); // HACK: Here because next line will create Frames *before* deleting existing ones
 	m_space.reset(new Space(this, m_galaxy, m_space.get()));
@@ -598,6 +607,9 @@ void Game::SwitchToNormalSpace()
 	// put the player in it
 	m_player->SetFrame(m_space->GetRootFrame());
 	m_space->AddBody(m_player.get());
+
+	// the rover parked in this system, where it was left
+	m_excursion->OnSpaceCreated();
 
 	// place it
 	vector3d pos, vel;

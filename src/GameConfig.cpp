@@ -22,6 +22,8 @@ GameConfig::GameConfig(const map_string &override_)
 	map["EnableJoystick"] = "1";
 	map["InvertMouseY"] = "0";
 	map["FOVVertical"] = "65";
+	map["OnFootHeadBob"] = "1";     // the view bobs as the player walks (SurfaceViewController)
+	map["RoverDefaultView"] = "0";  // getting into the rover: 0 from the cab, 1 without the rover drawn, 2 from outside
 	map["DisplayNavTunnel"] = "0";
 	map["CompactRadar"] = "1";
 	map["ConfirmQuit"] = "1";

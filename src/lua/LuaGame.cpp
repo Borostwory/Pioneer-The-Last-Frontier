@@ -262,8 +262,6 @@ static int l_game_save_game(lua_State *l)
 		return luaL_error(l, "%s", Lang::CANT_SAVE_IN_HYPERSPACE);
 	} catch (const CannotSaveDeadPlayer &) {
 		return luaL_error(l, "%s", Lang::CANT_SAVE_DEAD_PLAYER);
-	} catch (const CannotSaveOffShip &) {
-		return luaL_error(l, "%s", Lang::CANT_SAVE_OFF_SHIP);
 	} catch (const CouldNotOpenFileException &) {
 		const std::string message = stringf(Lang::COULD_NOT_OPEN_FILENAME, formatarg("path", path));
 		lua_pushlstring(l, message.c_str(), message.size());
@@ -522,8 +520,9 @@ static int l_game_disembark(lua_State *l)
 /*
  * Function: Board
  *
- * Get back into the ship from beside it. A deployed rover goes back into
- * the hold, wherever it is parked. Triggers onPlayerBoard.
+ * Get back into the ship from beside it. A parked rover stays where it is,
+ * also when the ship leaves without it (see <DeployRover>). Triggers
+ * onPlayerBoard.
  *
  * > ok = Game.Board()
  *
@@ -545,8 +544,8 @@ static int l_game_board(lua_State *l)
  * Function: CanDeployRover
  *
  * Whether the surface rover can be set down now: the ship is landed on a
- * planet, carries a rover (the surface_rover capability) and has open,
- * dry ground beside it.
+ * planet, carries a rover (the surface_rover capability) that is not out
+ * already (<GetRoverPlanet>) and has open, dry ground beside it.
  *
  * > ok = Game.CanDeployRover()
  *
@@ -564,7 +563,9 @@ static int l_game_can_deploy_rover(lua_State *l)
  * Function: DeployRover
  *
  * Set the rover down beside the landed ship with the player at the wheel.
- * Triggers onPlayerDisembark.
+ * It stays out, where it is parked (also when the ship leaves without it),
+ * until it is driven back to the ship and stowed (the interact key,
+ * triggering onRoverStowed and onPlayerBoard). Triggers onPlayerDisembark.
  *
  * > ok = Game.DeployRover()
  *
@@ -591,7 +592,8 @@ static int l_game_deploy_rover(lua_State *l)
  *
  * Return:
  *
- *   action - "board", "enter_rover", "exit_rover", or nil if nothing
+ *   action - "board", "enter_rover", "exit_rover", "stow_rover" (driving
+ *            it into the ship's hold and boarding), or nil if nothing
  *
  * Status:
  *
@@ -603,6 +605,7 @@ static int l_game_get_excursion_action(lua_State *l)
 	case Excursion::Action::BOARD: lua_pushstring(l, "board"); break;
 	case Excursion::Action::ENTER_ROVER: lua_pushstring(l, "enter_rover"); break;
 	case Excursion::Action::EXIT_ROVER: lua_pushstring(l, "exit_rover"); break;
+	case Excursion::Action::STOW_ROVER: lua_pushstring(l, "stow_rover"); break;
 	default: lua_pushnil(l); break;
 	}
 	return 1;
@@ -669,6 +672,59 @@ static int l_game_get_rover_state(lua_State *l)
 	lua_pushnumber(l, excursion->GetRover()->GetSpeed());
 	lua_pushboolean(l, excursion->GetRover()->IsOnGround());
 	return 2;
+}
+
+/*
+ * Function: GetRover
+ *
+ * The player's surface rover while it is out of the ship in this star
+ * system, driven or parked: a <Body> (its position: GetGroundPosition,
+ * GetPositionRelTo, ...).
+ *
+ * > rover = Game.GetRover()
+ *
+ * Return:
+ *
+ *   rover - the rover, or nil when it is in the hold, parked in another
+ *           system (<GetRoverPlanet>), or there is none
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_get_rover(lua_State *l)
+{
+	Rover *rover = Pi::game ? Pi::game->GetExcursion()->GetRover() : nullptr;
+	if (!rover)
+		return 0;
+	LuaObject<Body>::PushToLua(rover);
+	return 1;
+}
+
+/*
+ * Function: GetRoverPlanet
+ *
+ * Where the player's surface rover is while it is out of the ship, in this
+ * star system or parked in another one the ship left it in.
+ *
+ * > path = Game.GetRoverPlanet()
+ *
+ * Return:
+ *
+ *   path - the <SystemPath> of the planet (or moon) it is on, or nil when
+ *          it is in the hold (or there is none)
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_get_rover_planet(lua_State *l)
+{
+	SystemPath path;
+	if (!Pi::game || !Pi::game->GetExcursion()->GetRoverPlanet(path))
+		return 0;
+	LuaObject<SystemPath>::PushToLua(path);
+	return 1;
 }
 
 /*
@@ -983,6 +1039,8 @@ void LuaGame::Register()
 		{ "GetExcursionAction", l_game_get_excursion_action },
 		{ "GetExcursionNavInfo", l_game_get_excursion_nav_info },
 		{ "GetRoverState", l_game_get_rover_state },
+		{ "GetRover", l_game_get_rover },
+		{ "GetRoverPlanet", l_game_get_rover_planet },
 		{ "GetJetpackState", l_game_get_jetpack_state },
 		{ "GetControlledBody", l_game_get_controlled_body },
 		{ "SaveGameStats", l_game_savegame_stats },

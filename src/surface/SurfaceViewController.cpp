@@ -51,6 +51,15 @@ namespace {
 	constexpr double RUN_PACE = 4.5;
 	constexpr double RUN_PITCH = 1.4;
 	constexpr double STEP_MIN_SPEED = 0.3;
+	// the head bob: down at each footfall and up between, swaying over to the
+	// foot it stands on; walking or running, this high (m), steps this long
+	// (m), and easing to a new height at BOB_FADE (1/s)
+	constexpr double BOB_WALK_HEIGHT = 0.03;
+	constexpr double BOB_RUN_HEIGHT = 0.05;
+	constexpr double BOB_WALK_STEP = 0.75;
+	constexpr double BOB_RUN_STEP = 1.3;
+	constexpr double BOB_SWAY = 0.5; // of the height
+	constexpr double BOB_FADE = 8.0;
 	// where the line is clipped on: the walker's belt, below and ahead of the eyes
 	const vector3d TETHER_BELT(0.15, -0.6, -0.2);
 } // namespace
@@ -136,6 +145,20 @@ void SurfaceViewController::Deactivated()
 	if (Rover *rover = Pi::game->GetExcursion()->GetRover())
 		rover->SetDriveInput(0.0, 0.0, true);
 	ShowRoverModel(true);
+}
+
+void SurfaceViewController::ResetLook()
+{
+	m_pitch = 0.0;
+	m_roverYaw = 0.0;
+	m_extYaw = 0.0;
+	m_extPitch = EXTERNAL_PITCH;
+	m_bobHeight = 0.0;
+	switch (Pi::config->Int("RoverDefaultView")) {
+	case 1: m_roverView = RoverView::NO_MODEL; break;
+	case 2: m_roverView = RoverView::EXTERNAL; break;
+	default: m_roverView = RoverView::CAB; break;
+	}
 }
 
 void SurfaceViewController::OnRoverView()
@@ -240,7 +263,7 @@ void SurfaceViewController::Update()
 		// boarding switches the world view back to the ship's controller;
 		// getting in or out of the rover changes who carries the camera
 		const Excursion::Action done = excursion->Interact();
-		if (done == Excursion::Action::BOARD)
+		if (done == Excursion::Action::BOARD || done == Excursion::Action::STOW_ROVER)
 			return;
 		if (done != Excursion::Action::NONE) {
 			walker = excursion->GetWalker();
@@ -263,6 +286,7 @@ void SurfaceViewController::Update()
 
 	UpdateJetSound(walker);
 	UpdateFootsteps(walker);
+	UpdateHeadBob(walker);
 	PlaceCamera(walker);
 	if (walker->IsEva())
 		UpdateTether(walker);
@@ -388,6 +412,21 @@ void SurfaceViewController::UpdateFootsteps(const Walker *walker)
 	}
 }
 
+void SurfaceViewController::UpdateHeadBob(const Walker *walker)
+{
+	const double dt = Pi::game->IsPaused() ? 0.0 : Pi::GetFrameTime();
+	const double speed = walker->IsOnGround() && !walker->IsEva() ? walker->GetVelocity().Length() : 0.0;
+	const double run = Clamp((speed - WALK_PACE) / (RUN_PACE - WALK_PACE), 0.0, 1.0);
+
+	const double step = BOB_WALK_STEP + (BOB_RUN_STEP - BOB_WALK_STEP) * run;
+	m_bobPhase = std::fmod(m_bobPhase + speed * dt / step * M_PI, 2.0 * M_PI);
+
+	double height = 0.0;
+	if (Pi::config->Int("OnFootHeadBob") != 0 && speed > STEP_MIN_SPEED)
+		height = (BOB_WALK_HEIGHT + (BOB_RUN_HEIGHT - BOB_WALK_HEIGHT) * run) * std::min(speed / WALK_PACE, 1.0);
+	m_bobHeight += (height - m_bobHeight) * (1.0 - std::exp(-BOB_FADE * dt));
+}
+
 void SurfaceViewController::PlaceCamera(const Walker *walker)
 {
 	RefCountedPtr<CameraContext> camera = m_parentView->GetCameraContext();
@@ -414,6 +453,9 @@ void SurfaceViewController::PlaceCamera(const Walker *walker)
 	const vector3d viewForward = forward * c + up * s;
 	const vector3d viewUp = up * c - forward * s;
 
-	camera->SetCameraPosition(feet + up * Walker::EYE_HEIGHT);
+	// a footfall at every pi of the stride
+	const vector3d bob = up * (-m_bobHeight * std::cos(2.0 * m_bobPhase)) + right * (BOB_SWAY * m_bobHeight * std::sin(m_bobPhase));
+
+	camera->SetCameraPosition(feet + up * Walker::EYE_HEIGHT + bob);
 	camera->SetCameraOrient(matrix3x3d::FromVectors(right, viewUp, -viewForward));
 }

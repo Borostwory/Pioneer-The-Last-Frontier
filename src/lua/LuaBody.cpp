@@ -251,6 +251,14 @@ static int l_body_is_cargo_container(lua_State *l)
 	return 1;
 }
 
+// the player's surface rover (Game.GetRover)
+static int l_body_is_rover(lua_State *l)
+{
+	Body *body = LuaObject<Body>::CheckFromLua(1);
+	LuaPush<bool>(l, body->GetType() == ObjectType::ROVER);
+	return 1;
+}
+
 static int l_body_is_ship(lua_State *l)
 {
 	Body *body = LuaObject<Body>::CheckFromLua(1);
@@ -839,6 +847,7 @@ void LuaObject<Body>::RegisterClass()
 		{ "IsSpaceStation", l_body_is_space_station },
 		{ "IsGroundStation", l_body_is_ground_station },
 		{ "IsCargoContainer", l_body_is_cargo_container },
+		{ "IsRover", l_body_is_rover },
 		{ "GetSystemBody", l_body_get_system_body },
 		{ "GetGravityForce", l_body_get_gravity_force },
 		{ "GetMass", l_body_get_mass },

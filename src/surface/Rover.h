@@ -27,6 +27,10 @@ namespace SceneGraph {
 // rl and rr, susp_C moves the wheel up and down, steer_C turns it and wheel_C
 // spins it about the axle. Its tags: tag_seat_driver (the driver's eyes),
 // tag_exit_l and tag_exit_r (where the player stands after getting out).
+//
+// Saved with the game as any other body, driven or parked (Excursion keeps
+// which one it is, and whether it is driven). Parked in a system the player
+// leaves, Excursion keeps where it is and puts it back on the player's return.
 class Rover : public ModelBody {
 public:
 	OBJDEF(Rover, ModelBody, ROVER);
@@ -39,6 +43,7 @@ public:
 	static Aabb GetModelAabb();
 
 	Rover();
+	Rover(const Json &jsonObj, Space *space);
 
 	void Render(Graphics::Renderer *r, const Camera *camera, const vector3d &viewCoords, const matrix4x4d &viewTransform) override;
 	void TimeStepUpdate(const float timeStep) override;
@@ -57,6 +62,10 @@ public:
 	// -1 to 1, and the brake. Without a driver it holds still on its brakes.
 	void SetDriveInput(double throttle, double steer, bool brake);
 	void SetDriven(bool driven);
+	// parked with no one near (Excursion::OnShipMoved): it holds still where
+	// it is, whatever the ground does as it is drawn coarser far from the
+	// camera, and settles on the ground again once woken
+	void SetAsleep(bool asleep) { m_asleep = asleep; }
 
 	// m/s along its heading, negative in reverse
 	double GetSpeed() const { return m_speed; }
@@ -68,6 +77,9 @@ public:
 	vector3d GetDriverEye() const;
 	// side: 0 left, 1 right
 	vector3d GetExitPoint(int side) const;
+
+protected:
+	void SaveToJson(Json &jsonObj, Space *space) override;
 
 private:
 	// one node of the wheel rig, in one LOD: its pose in the model, and the
@@ -89,6 +101,8 @@ private:
 	};
 
 	void FindRig();
+	// the previous step and the drawn pose as they are now (just placed or loaded)
+	void ResetInterp();
 	// the distance from the planet centre of the ground under each wheel, for
 	// the rover at pos with orient; false into the sea, or up a step too high
 	// for a wheel to climb
@@ -119,6 +133,7 @@ private:
 	double m_steerInput = 0.0;
 	bool m_brake = true;
 	bool m_driven = false;
+	bool m_asleep = false;
 
 	double m_steer = 0.0; // radians, to the right
 	double m_spin = 0.0; // wheel angle rolled forward, radians

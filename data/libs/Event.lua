@@ -554,10 +554,54 @@ end
 --
 -- Event: onPlayerBoard
 --
--- Triggered when the player on foot gets back into the ship (Game.Board).
+-- Triggered when the player on foot gets back into the ship (Game.Board),
+-- or drives the rover into it (after onRoverStowed).
 --
 -- > local onPlayerBoard = function (ship) ... end
 -- > Event.Register("onPlayerBoard", onPlayerBoard)
+--
+-- Parameters:
+--
+--   ship - the player's <Ship>
+--
+
+--
+-- Event: onPlayerEnterRover
+--
+-- Triggered when the player on foot gets into the parked surface rover.
+-- (Driving it out of the ship is onPlayerDisembark.) Where it is:
+-- Game.GetRover().
+--
+-- > local onPlayerEnterRover = function (ship) ... end
+-- > Event.Register("onPlayerEnterRover", onPlayerEnterRover)
+--
+-- Parameters:
+--
+--   ship - the player's <Ship>, left behind
+--
+
+--
+-- Event: onPlayerExitRover
+--
+-- Triggered when the player gets out of the surface rover on foot, leaving
+-- it parked.
+--
+-- > local onPlayerExitRover = function (ship) ... end
+-- > Event.Register("onPlayerExitRover", onPlayerExitRover)
+--
+-- Parameters:
+--
+--   ship - the player's <Ship>
+--
+
+--
+-- Event: onRoverStowed
+--
+-- Triggered when the player drives the surface rover up to the ship and
+-- stows it in the hold; onPlayerBoard follows.
+--
+-- > local onRoverStowed = function (ship) ... end
+-- > Event.Register("onRoverStowed", onRoverStowed)
 --
 -- Parameters:
 --
