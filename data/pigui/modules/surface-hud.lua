@@ -1,9 +1,10 @@
 -- Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
 -- Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
--- The HUD out of the ship, on foot (Game.GetExcursionMode): a dot in the
--- middle of the view, a compass along the top with the bearing and distance
--- to the ship, what the interact key would do, and the jetpack's fuel.
+-- The HUD out of the ship, on foot or in the rover (Game.GetExcursionMode):
+-- a dot in the middle of the view, a compass along the top with the bearing
+-- and distance to the ship (and to the rover, on foot), what the interact
+-- key would do, the jetpack's fuel, and the rover's speed.
 
 local Game = require 'Game'
 local Lang = require 'Lang'
@@ -17,6 +18,7 @@ local lui = Lang.GetResource("ui-core")
 local pionillium = ui.fonts.pionillium
 
 local interact = bindManager.registerAction('BindInteract')
+local roverView = bindManager.registerAction('BindRoverCycleView')
 
 -- degrees of heading across the compass
 local COMPASS_SPAN = 120
@@ -31,7 +33,14 @@ local function wrap180(deg)
 	return (deg + 180) % 360 - 180
 end
 
-local function displayCompass(heading, shipBearing, shipDistance)
+-- a marker under the compass, held at its nearer end when off it
+local function compassMarker(centre, width, heading, bearing, text, color)
+	local offset = math.max(-COMPASS_SPAN / 2, math.min(COMPASS_SPAN / 2, wrap180(bearing - heading)))
+	local pos = Vector2(centre.x + offset / COMPASS_SPAN * width, centre.y + 4)
+	ui.addStyledText(pos, ui.anchor.center, ui.anchor.top, text, color, pionillium.small, "")
+end
+
+local function displayCompass(heading, shipBearing, shipDistance, roverBearing, roverDistance)
 	local colors = ui.theme.colors
 	local width = math.min(ui.screenWidth * 0.4, 640)
 	local centre = Vector2(ui.screenWidth / 2, ui.screenHeight * 0.07)
@@ -55,19 +64,27 @@ local function displayCompass(heading, shipBearing, shipDistance)
 	-- where the view looks
 	ui.addLine(centre, centre + Vector2(0, 10), colors.white, 2)
 
-	-- the ship, on the compass or held at its nearer end
-	local offset = math.max(-COMPASS_SPAN / 2, math.min(COMPASS_SPAN / 2, wrap180(shipBearing - heading)))
-	local shipPos = Vector2(centre.x + offset / COMPASS_SPAN * width, centre.y + 4)
-	ui.addStyledText(shipPos, ui.anchor.center, ui.anchor.top,
-		lui.SURFACE_YOUR_SHIP .. " " .. ui.Format.Distance(shipDistance), colors.navTarget, pionillium.small, "")
+	compassMarker(centre, width, heading, shipBearing,
+		lui.SURFACE_YOUR_SHIP .. " " .. ui.Format.Distance(shipDistance), colors.navTarget)
+	if roverBearing then
+		compassMarker(centre + Vector2(0, pionillium.small.size + 4), width, heading, roverBearing,
+			lui.SURFACE_YOUR_ROVER .. " " .. ui.Format.Distance(roverDistance), colors.white)
+	end
 end
+
+local prompts = {
+	board = "SURFACE_BOARD_SHIP",
+	enter_rover = "SURFACE_ENTER_ROVER",
+	exit_rover = "SURFACE_EXIT_ROVER"
+}
 
 local function displayPrompt()
 	local colors = ui.theme.colors
-	if Game.GetExcursionAction() ~= "board" then return end
+	local prompt = prompts[Game.GetExcursionAction()]
+	if not prompt then return end
 
 	local key = bindManager.getChordDesc(interact.action.binding)
-	local text = lui.SURFACE_BOARD_SHIP
+	local text = lui[prompt]
 	if key ~= "" then
 		text = "[" .. key .. "]  " .. text
 	end
@@ -90,6 +107,22 @@ local function displayJetpack()
 	ui.addRectFilled(min, Vector2(min.x + size.x * fuel, max.y), fill, 0, ui.RoundCornersNone)
 	ui.addStyledText(Vector2(ui.screenWidth / 2, min.y - 2), ui.anchor.center, ui.anchor.bottom,
 		lui.SURFACE_JETPACK, colors.navigationalElements, pionillium.small, "")
+end
+
+-- in the rover: its speed under the view
+local function displayRover()
+	local speed = Game.GetRoverState()
+	if not speed then return end
+	local colors = ui.theme.colors
+	local text = string.interp(lui.SURFACE_ROVER_SPEED, { speed = string.format("%d", math.floor(math.abs(speed) * 3.6 + 0.5)) })
+	ui.addStyledText(Vector2(ui.screenWidth / 2, ui.screenHeight * 0.9), ui.anchor.center, ui.anchor.bottom,
+		text, colors.white, pionillium.large, nil, colors.lightBlackBackground)
+
+	local key = bindManager.getChordDesc(roverView.action.binding)
+	if key ~= "" then
+		ui.addStyledText(Vector2(ui.screenWidth / 2, ui.screenHeight * 0.9 + 4), ui.anchor.center, ui.anchor.top,
+			"[" .. key .. "]  " .. lui.SURFACE_ROVER_VIEW, colors.navigationalElements, pionillium.small, "")
+	end
 end
 
 -- in space: how far the ship is and how fast it is coming or going
@@ -115,14 +148,15 @@ local function displaySurfaceHud()
 	if Game.GetExcursionMode() == "eva" then
 		displayEvaShip()
 	else
-		local heading, shipBearing, shipDistance = Game.GetExcursionNavInfo()
+		local heading, shipBearing, shipDistance, roverBearing, roverDistance = Game.GetExcursionNavInfo()
 		if heading then
-			displayCompass(heading, shipBearing, shipDistance)
+			displayCompass(heading, shipBearing, shipDistance, roverBearing, roverDistance)
 		end
 	end
 
 	displayPrompt()
 	displayJetpack()
+	displayRover()
 
 	ui.addStyledText(Vector2(ui.screenWidth / 2, ui.screenHeight - 8), ui.anchor.center, ui.anchor.bottom,
 		lui.SURFACE_FREE_CURSOR, colors.navigationalElements, pionillium.small, "")

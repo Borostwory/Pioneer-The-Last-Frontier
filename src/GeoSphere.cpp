@@ -421,6 +421,15 @@ void GeoSphere::BuildFirstPatches()
 	m_initStage = eRequestedFirstPatches;
 }
 
+bool GeoSphere::GetDrawnRadius(const vector3d &p, double &radius) const
+{
+	for (int i = 0; i < NUM_PATCHES; i++) {
+		if (m_patches[i] && m_patches[i]->GetDrawnRadius(p, radius))
+			return true;
+	}
+	return false;
+}
+
 double GeoSphere::GetDeepestVertexSpacing() const
 {
 	// as CalculateMaxPatchDepth() works it out

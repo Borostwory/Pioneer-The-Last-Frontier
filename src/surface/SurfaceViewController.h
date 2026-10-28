@@ -14,11 +14,14 @@
 #include <memory>
 
 class EvaTether;
+class Rover;
 class Walker;
 
 // The world view while the player is out of the ship (Excursion): a
-// first-person camera at the walker's eyes, mouse look, and the on-foot
-// controls. Its input frame replaces the ship's flight and camera controls.
+// first-person camera at the walker's eyes or in the rover's driving seat,
+// mouse look, and the on-foot controls, which also drive the rover (forward
+// and right for throttle and steering, jump for the brake). Its input frame
+// replaces the ship's flight and camera controls.
 class SurfaceViewController : public ViewController {
 public:
 	SurfaceViewController(WorldView *v);
@@ -29,8 +32,13 @@ public:
 	void Update() override;
 	void Draw(Camera *camera) override;
 
-	// level the view (on getting out of the ship)
-	void ResetLook() { m_pitch = 0.0; }
+	// level the view, looking ahead (on getting out of the ship, or in or
+	// out of the rover)
+	void ResetLook()
+	{
+		m_pitch = 0.0;
+		m_roverYaw = 0.0;
+	}
 
 	struct InputBinding : public Input::InputFrame {
 		using InputFrame::InputFrame;
@@ -43,6 +51,7 @@ public:
 		Action *run;
 		Action *jump;
 		Action *interact;
+		Action *roverView;
 
 		void RegisterBindings() override;
 	} InputBindings;
@@ -50,17 +59,38 @@ public:
 private:
 	void OnJump() { m_jumpRequested = true; }
 	void OnInteract() { m_interactRequested = true; }
+	// the rover's views in turn: the cab, without the rover, from outside
+	void OnRoverView();
+	void OnMouseWheel(bool up);
+	// the rover's model is drawn unless the driver has hidden it
+	void ShowRoverModel(bool show);
 	// the mouse is captured for looking around, and freed while the game is
 	// paused, the console is open, or Alt is held (to click the HUD)
 	void UpdateMouseCapture();
 	void SetMouseCaptured(bool captured);
 	void PlaceCamera(const Walker *walker);
+	void PlaceRoverCamera(const Rover *rover);
+	void PlaceRoverExternalCamera(const Rover *rover);
 	void UpdateJetSound(const Walker *walker);
 	void UpdateFootsteps(const Walker *walker);
+	void SilenceWalker();
 	// the line to the ship on EVA, after the camera is placed
 	void UpdateTether(const Walker *walker);
 
 	double m_pitch = 0.0;
+	// in the rover, looking round from its heading, to the right
+	double m_roverYaw = 0.0;
+	enum class RoverView {
+		CAB,
+		NO_MODEL, // as the ship's internal view: the driver's eyes, no rover drawn
+		EXTERNAL  // circling the rover, as the ship's external view
+	};
+	RoverView m_roverView = RoverView::CAB;
+	// the external view: round from behind the rover (to its right), up, and
+	// how far from it (m)
+	double m_extYaw = 0.0;
+	double m_extPitch;
+	double m_extDistance;
 	bool m_mouseCaptured = false;
 	bool m_skipMouseMotion = false;
 	bool m_jumpRequested = false;
@@ -79,4 +109,6 @@ private:
 
 	ConnectionTicket m_onJumpCon;
 	ConnectionTicket m_onInteractCon;
+	ConnectionTicket m_onRoverViewCon;
+	ConnectionTicket m_onMouseWheelCon;
 };

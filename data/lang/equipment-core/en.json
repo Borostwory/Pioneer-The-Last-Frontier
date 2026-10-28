@@ -875,6 +875,14 @@
     "description": "Stat label for equipment weight",
     "message": "Weight"
   },
+  "SURFACE_ROVER": {
+    "description": "Ship equipment: a pressurised four-wheeled vehicle carried in the hold, driven out of the landed ship",
+    "message": "Surface rover"
+  },
+  "SURFACE_ROVER_DESCRIPTION": {
+    "description": "",
+    "message": "A pressurised four-wheeled rover for two, carried in the hold. Land, set it down beside the ship and drive out to explore the surface."
+  },
   "SURFACE_SCANNER": {
     "description": "A ship equipment that records data of terrain, for cartography mapping/geological survey. Note: Scout Mission module reference and distinguishes between 'orbital' and 'surface' scanner types, the former scans planet from orbit, the latter from low altitude. Model manufacturer name is meant to sound like a cheap brand.",
     "message": "Surface scanner Nadir-150"

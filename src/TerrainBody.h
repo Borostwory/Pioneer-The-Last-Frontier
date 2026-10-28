@@ -31,6 +31,11 @@ public:
 	virtual bool OnCollision(Body *b, Uint32 flags, double relVel) override { return true; }
 	double GetMass() const override { return m_mass; }
 	double GetTerrainHeight(const vector3d &pos) const;
+	// The ground as drawn along pos (unit), metres from the centre: on the
+	// terrain mesh, whose vertices are tens of metres apart, so between them
+	// it can be metres above or below GetTerrainHeight, which stands in where
+	// the mesh isn't drawn yet. What a walker or a rover stands on.
+	double GetDrawnTerrainHeight(const vector3d &pos) const;
 	// the height fractal without erosion (Terrain::GetBaseHeights), metres from the centre
 	double GetBaseTerrainHeight(const vector3d &pos) const;
 	// keeps the ground around a surface starport at pos uneroded and levels

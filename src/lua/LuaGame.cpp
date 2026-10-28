@@ -26,6 +26,7 @@
 #include "galaxy/Galaxy.h"
 #include "pigui/LuaPiGui.h"
 #include "surface/Excursion.h"
+#include "surface/Rover.h"
 #include "surface/Walker.h"
 
 /*
@@ -451,14 +452,14 @@ static int l_game_in_hyperspace(lua_State *l)
 /*
  * Function: GetExcursionMode
  *
- * Where the player is: aboard the ship, out of it on foot, or floating
- * beside it in space.
+ * Where the player is: aboard the ship, out of it on foot, floating beside
+ * it in space, or driving the surface rover.
  *
  * > mode = Game.GetExcursionMode()
  *
  * Return:
  *
- *   mode - "ship", "on_foot" or "eva"
+ *   mode - "ship", "on_foot", "eva" or "rover"
  *
  * Status:
  *
@@ -471,6 +472,7 @@ static int l_game_get_excursion_mode(lua_State *l)
 	switch (Pi::game->GetExcursion()->GetMode()) {
 	case Excursion::Mode::ON_FOOT: lua_pushstring(l, "on_foot"); break;
 	case Excursion::Mode::EVA: lua_pushstring(l, "eva"); break;
+	case Excursion::Mode::ROVER: lua_pushstring(l, "rover"); break;
 	default: lua_pushstring(l, "ship"); break;
 	}
 	return 1;
@@ -520,7 +522,8 @@ static int l_game_disembark(lua_State *l)
 /*
  * Function: Board
  *
- * Get back into the ship from beside it. Triggers onPlayerBoard.
+ * Get back into the ship from beside it. A deployed rover goes back into
+ * the hold, wherever it is parked. Triggers onPlayerBoard.
  *
  * > ok = Game.Board()
  *
@@ -539,15 +542,56 @@ static int l_game_board(lua_State *l)
 }
 
 /*
+ * Function: CanDeployRover
+ *
+ * Whether the surface rover can be set down now: the ship is landed on a
+ * planet, carries a rover (the surface_rover capability) and has open,
+ * dry ground beside it.
+ *
+ * > ok = Game.CanDeployRover()
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_can_deploy_rover(lua_State *l)
+{
+	lua_pushboolean(l, Pi::game && Pi::game->GetExcursion()->CanDeployRover());
+	return 1;
+}
+
+/*
+ * Function: DeployRover
+ *
+ * Set the rover down beside the landed ship with the player at the wheel.
+ * Triggers onPlayerDisembark.
+ *
+ * > ok = Game.DeployRover()
+ *
+ * Return:
+ *
+ *   ok - false if it can't be done now (see <CanDeployRover>)
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_deploy_rover(lua_State *l)
+{
+	lua_pushboolean(l, Pi::game && Pi::game->GetExcursion()->DeployRover());
+	return 1;
+}
+
+/*
  * Function: GetExcursionAction
  *
- * What the interact key would do now, for the on-foot HUD.
+ * What the interact key would do now, for the surface HUD.
  *
  * > action = Game.GetExcursionAction()
  *
  * Return:
  *
- *   action - "board", or nil if nothing
+ *   action - "board", "enter_rover", "exit_rover", or nil if nothing
  *
  * Status:
  *
@@ -555,26 +599,31 @@ static int l_game_board(lua_State *l)
  */
 static int l_game_get_excursion_action(lua_State *l)
 {
-	if (Pi::game && Pi::game->GetExcursion()->GetAvailableAction() == Excursion::Action::BOARD)
-		lua_pushstring(l, "board");
-	else
-		lua_pushnil(l);
+	switch (Pi::game ? Pi::game->GetExcursion()->GetAvailableAction() : Excursion::Action::NONE) {
+	case Excursion::Action::BOARD: lua_pushstring(l, "board"); break;
+	case Excursion::Action::ENTER_ROVER: lua_pushstring(l, "enter_rover"); break;
+	case Excursion::Action::EXIT_ROVER: lua_pushstring(l, "exit_rover"); break;
+	default: lua_pushnil(l); break;
+	}
 	return 1;
 }
 
 /*
  * Function: GetExcursionNavInfo
  *
- * The on-foot compass: the view's heading and the bearing to the ship, in
- * degrees clockwise from north, and the distance to the ship.
+ * The surface compass: the heading (of the view on foot, of the rover while
+ * driving) and the bearing to the ship, in degrees clockwise from north, and
+ * the distance to the ship; on foot with the rover out, the same for it.
  *
- * > heading, shipBearing, shipDistance = Game.GetExcursionNavInfo()
+ * > heading, shipBearing, shipDistance, roverBearing, roverDistance = Game.GetExcursionNavInfo()
  *
  * Return:
  *
- *   heading - degrees, or nil when the player is aboard
+ *   heading - degrees, or nil when the player is aboard or in space
  *   shipBearing - degrees
  *   shipDistance - metres
+ *   roverBearing - degrees, or nil without a rover to walk to
+ *   roverDistance - metres
  *
  * Status:
  *
@@ -582,13 +631,44 @@ static int l_game_get_excursion_action(lua_State *l)
  */
 static int l_game_get_excursion_nav_info(lua_State *l)
 {
-	double heading, shipBearing, shipDistance;
-	if (!Pi::game || !Pi::game->GetExcursion()->GetNavInfo(heading, shipBearing, shipDistance))
+	Excursion::NavInfo info;
+	if (!Pi::game || !Pi::game->GetExcursion()->GetNavInfo(info))
 		return 0;
-	lua_pushnumber(l, heading);
-	lua_pushnumber(l, shipBearing);
-	lua_pushnumber(l, shipDistance);
-	return 3;
+	lua_pushnumber(l, info.heading);
+	lua_pushnumber(l, info.shipBearing);
+	lua_pushnumber(l, info.shipDistance);
+	if (!info.hasRover)
+		return 3;
+	lua_pushnumber(l, info.roverBearing);
+	lua_pushnumber(l, info.roverDistance);
+	return 5;
+}
+
+/*
+ * Function: GetRoverState
+ *
+ * The rover the player is driving, for the HUD.
+ *
+ * > speed, onGround = Game.GetRoverState()
+ *
+ * Return:
+ *
+ *   speed - m/s along its heading, negative in reverse, or nil when the
+ *           player is not driving
+ *   onGround - false while it flies off a bump
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_get_rover_state(lua_State *l)
+{
+	const Excursion *excursion = Pi::game ? Pi::game->GetExcursion() : nullptr;
+	if (!excursion || excursion->GetMode() != Excursion::Mode::ROVER || !excursion->GetRover())
+		return 0;
+	lua_pushnumber(l, excursion->GetRover()->GetSpeed());
+	lua_pushboolean(l, excursion->GetRover()->IsOnGround());
+	return 2;
 }
 
 /*
@@ -619,10 +699,12 @@ static int l_game_get_jetpack_state(lua_State *l)
 	return 3;
 }
 
+
 /*
  * Function: GetControlledBody
  *
- * Where the player is: the player's ship aboard, the walker body on foot.
+ * Where the player is: the player's ship aboard, the walker body on foot,
+ * the rover while driving.
  *
  * > body = Game.GetControlledBody()
  *
@@ -896,8 +978,11 @@ void LuaGame::Register()
 		{ "CanDisembark", l_game_can_disembark },
 		{ "Disembark", l_game_disembark },
 		{ "Board", l_game_board },
+		{ "CanDeployRover", l_game_can_deploy_rover },
+		{ "DeployRover", l_game_deploy_rover },
 		{ "GetExcursionAction", l_game_get_excursion_action },
 		{ "GetExcursionNavInfo", l_game_get_excursion_nav_info },
+		{ "GetRoverState", l_game_get_rover_state },
 		{ "GetJetpackState", l_game_get_jetpack_state },
 		{ "GetControlledBody", l_game_get_controlled_body },
 		{ "SaveGameStats", l_game_savegame_stats },

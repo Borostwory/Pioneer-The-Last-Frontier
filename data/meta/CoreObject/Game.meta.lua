@@ -104,9 +104,9 @@ function Game.GetWorldCamType() end
 ---@param type string
 function Game.SetWorldCamType(type) end
 
--- The player out of the ship, on foot
+-- The player out of the ship, on foot or in the rover
 
----@return "ship"|"on_foot"|"eva"
+---@return "ship"|"on_foot"|"eva"|"rover"
 function Game.GetExcursionMode() end
 ---@return boolean
 function Game.CanDisembark() end
@@ -114,12 +114,21 @@ function Game.CanDisembark() end
 function Game.Disembark() end
 ---@return boolean
 function Game.Board() end
----@return "board"|nil
+---@return boolean
+function Game.CanDeployRover() end
+---@return boolean
+function Game.DeployRover() end
+---@return "board"|"enter_rover"|"exit_rover"|nil
 function Game.GetExcursionAction() end
 ---@return number? heading
 ---@return number? shipBearing
 ---@return number? shipDistance
+---@return number? roverBearing
+---@return number? roverDistance
 function Game.GetExcursionNavInfo() end
+---@return number? speed
+---@return boolean? onGround
+function Game.GetRoverState() end
 ---@return number? fuel
 ---@return number? thrust
 ---@return boolean? burntOut

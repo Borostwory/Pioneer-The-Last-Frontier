@@ -2566,10 +2566,11 @@ static int l_pigui_get_projected_bodies_grouped(lua_State *l)
 	PiGui::TSS_vector filtered;
 	filtered.reserve(Pi::game->GetSpace()->GetNumBodies());
 
-	// seen from where the player is: the ship, or the walker out of it (whose ship is then marked)
+	// seen from where the player is: the ship, or the walker out of it (whose ship is then marked);
+	// the rover is on the surface HUD's compass instead
 	const Body *self = Pi::game->GetControlledBody();
 	for (Body *body : Pi::game->GetSpace()->GetBodies()) {
-		if (body == self || body->IsType(ObjectType::WALKER)) continue;
+		if (body == self || body->IsType(ObjectType::WALKER) || body->IsType(ObjectType::ROVER)) continue;
 		if (body->GetType() == ObjectType::PROJECTILE) continue;
 		if ((body->GetType() == ObjectType::SHIP || body->GetType() == ObjectType::CARGOBODY || body->GetType() == ObjectType::HYPERSPACECLOUD) &&
 			body->GetPositionRelTo(self).Length() > ship_max_distance) continue;
@@ -2675,7 +2676,7 @@ static int l_pigui_get_projected_bodies(lua_State *l)
 	filtered.reserve(Pi::game->GetSpace()->GetNumBodies());
 	const Body *self = Pi::game->GetControlledBody();
 	for (Body *body : Pi::game->GetSpace()->GetBodies()) {
-		if (body == self || body->IsType(ObjectType::WALKER)) continue;
+		if (body == self || body->IsType(ObjectType::WALKER) || body->IsType(ObjectType::ROVER)) continue;
 		if (body->GetType() == ObjectType::PROJECTILE) continue;
 		const PiGui::TScreenSpace res = lua_world_space_to_screen_space(body); // defined in LuaPiGui.cpp
 		if (!res._onScreen) continue;

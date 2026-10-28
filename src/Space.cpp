@@ -936,8 +936,10 @@ static void hitCallback(CollisionContact *c)
 
 	const bool po1_isDynBody = po1->IsType(ObjectType::DYNAMICBODY);
 	const bool po2_isDynBody = po2->IsType(ObjectType::DYNAMICBODY);
-	// collision response
-	assert(po1_isDynBody || po2_isDynBody);
+	// two bodies that move themselves, or one of them and a building (the
+	// surface rover, which keeps its own way clear): no response
+	if (!po1_isDynBody && !po2_isDynBody)
+		return;
 
 	// Bounce factor
 	const double coeff_rest = 0.35;

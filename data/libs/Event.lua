@@ -540,8 +540,8 @@ end
 --
 -- Event: onPlayerDisembark
 --
--- Triggered when the player gets out of the landed ship on foot
--- (Game.Disembark).
+-- Triggered when the player gets out of the ship: on foot or on EVA
+-- (Game.Disembark), or driving the rover out (Game.DeployRover).
 --
 -- > local onPlayerDisembark = function (ship) ... end
 -- > Event.Register("onPlayerDisembark", onPlayerDisembark)

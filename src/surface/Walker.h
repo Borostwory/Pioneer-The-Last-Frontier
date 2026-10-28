@@ -7,6 +7,7 @@
 #include "Body.h"
 
 class Frame;
+class Geom;
 class TerrainBody;
 
 // The player on foot, outside the landed ship (see Excursion). A first-person
@@ -87,8 +88,9 @@ public:
 
 	// Distance from the planet centre of the ground under pos: the terrain or,
 	// if higher, the first collision geom below a ray from `above` metres over
-	// pos down to `below` metres under it. hitBody: the body hit, if any.
-	static double GroundRadius(const Frame *frame, const vector3d &pos, double above, double below, const Body **hitBody = nullptr);
+	// pos down to `below` metres under it. hitBody: the body hit, if any;
+	// ignore: a geom the ray passes through (the rover's own)
+	static double GroundRadius(const Frame *frame, const vector3d &pos, double above, double below, const Body **hitBody = nullptr, const Geom *ignore = nullptr);
 	// whether the ground at radius groundRadius in direction up is sea
 	static bool IsSea(const TerrainBody *terrain, const vector3d &up, double groundRadius);
 

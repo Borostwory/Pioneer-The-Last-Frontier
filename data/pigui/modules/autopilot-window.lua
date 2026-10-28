@@ -77,6 +77,13 @@ local function button_undock()
 				Game.Disembark()
 			end
 		end
+		-- or drive out in the rover, if the ship carries one
+		if Game.CanDeployRover() then
+			ui.sameLine()
+			if ui.mainMenuButton(icons.planet_grid, lui.HUD_BUTTON_DEPLOY_ROVER) then
+				Game.DeployRover()
+			end
+		end
 		return true
 	elseif player:IsDocked() then
 		if ui.mainMenuButton(icons.autopilot_undock, lui.HUD_BUTTON_UNDOCK) or (ui.noModifierHeld() and ui.isKeyReleased(ui.keys.f5)) then

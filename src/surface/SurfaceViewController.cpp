@@ -12,7 +12,9 @@
 #include "MathUtil.h"
 #include "Pi.h"
 #include "Player.h"
+#include "Rover.h"
 #include "Space.h"
+#include "TerrainBody.h"
 #include "Walker.h"
 #include "WorldView.h"
 #include "sound/Sound.h"
@@ -25,6 +27,20 @@ namespace {
 	constexpr double MOUSE_LOOK_SPEED = 0.0025; // radians per pixel
 	constexpr double STICK_LOOK_SPEED = 2.0;	// radians per second at full deflection
 	constexpr double MAX_PITCH = DEG2RAD(89.0);
+	// looking round from the rover's driving seat
+	constexpr double MAX_ROVER_YAW = DEG2RAD(160.0);
+	constexpr double MAX_ROVER_PITCH = DEG2RAD(70.0);
+	// the external view of the rover: looking at this point of it (model
+	// space), from above the ground, no nearer or farther than these (m)
+	const vector3d EXTERNAL_TARGET(0.0, 1.8, -0.35);
+	constexpr double EXTERNAL_PITCH = DEG2RAD(20.0);
+	constexpr double EXTERNAL_MIN_PITCH = DEG2RAD(-5.0);
+	constexpr double EXTERNAL_MAX_PITCH = DEG2RAD(85.0);
+	constexpr double EXTERNAL_DISTANCE = 14.0;
+	constexpr double EXTERNAL_MIN_DISTANCE = 7.0;
+	constexpr double EXTERNAL_MAX_DISTANCE = 80.0;
+	constexpr double EXTERNAL_ZOOM_STEP = 1.15; // per wheel click
+	constexpr double EXTERNAL_GROUND_CLEARANCE = 0.5;
 	constexpr float JET_SOUND_VOLUME = 0.4f;
 	constexpr float JET_SOUND_FADE = 4.0f; // volume per second
 	// footsteps: a looped recording of walking at about WALK_PACE m/s, played
@@ -56,6 +72,8 @@ REGISTER_INPUT_BINDING(SurfaceViewController)
 
 	Input::BindingGroup *interaction = page->GetBindingGroup("Interaction");
 	input->AddActionBinding("BindInteract", interaction, Action({ SDLK_e }));
+	// as the ship's camera mode key: the rover's views in turn
+	input->AddActionBinding("BindRoverCycleView", interaction, Action({ SDLK_F1 }));
 }
 
 void SurfaceViewController::InputBinding::RegisterBindings()
@@ -68,11 +86,14 @@ void SurfaceViewController::InputBinding::RegisterBindings()
 	run = AddAction("BindWalkRun");
 	jump = AddAction("BindWalkJump");
 	interact = AddAction("BindInteract");
+	roverView = AddAction("BindRoverCycleView");
 }
 
 SurfaceViewController::SurfaceViewController(WorldView *v) :
 	ViewController(v),
 	InputBindings(Pi::input),
+	m_extPitch(EXTERNAL_PITCH),
+	m_extDistance(EXTERNAL_DISTANCE),
 	m_camPos(0.0),
 	m_camOrient(matrix3x3d::Identity),
 	m_tether(new EvaTether()),
@@ -82,6 +103,7 @@ SurfaceViewController::SurfaceViewController(WorldView *v) :
 	InputBindings.RegisterBindings();
 	m_onJumpCon = InputBindings.jump->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnJump));
 	m_onInteractCon = InputBindings.interact->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnInteract));
+	m_onRoverViewCon = InputBindings.roverView->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnRoverView));
 }
 
 SurfaceViewController::~SurfaceViewController()
@@ -98,17 +120,45 @@ void SurfaceViewController::Activated()
 	m_parentView->GetCameraContext()->SetFovAng(Pi::config->Float("FOVVertical"));
 	m_jumpRequested = false;
 	m_interactRequested = false;
+	m_onMouseWheelCon = Pi::input->onMouseWheel.connect(sigc::mem_fun(this, &SurfaceViewController::OnMouseWheel));
 }
 
 void SurfaceViewController::Deactivated()
 {
 	Pi::input->RemoveInputFrame(&InputBindings);
+	m_onMouseWheelCon.disconnect();
 	SetMouseCaptured(false);
 	m_jetSound.Stop();
 	m_footsteps.Stop();
 	m_tether->Clear();
 	if (Walker *walker = Pi::game->GetExcursion()->GetWalker())
 		walker->SetMoveInput(0.0, 0.0, 0.0, false);
+	if (Rover *rover = Pi::game->GetExcursion()->GetRover())
+		rover->SetDriveInput(0.0, 0.0, true);
+	ShowRoverModel(true);
+}
+
+void SurfaceViewController::OnRoverView()
+{
+	switch (m_roverView) {
+	case RoverView::CAB: m_roverView = RoverView::NO_MODEL; break;
+	case RoverView::NO_MODEL: m_roverView = RoverView::EXTERNAL; break;
+	case RoverView::EXTERNAL: m_roverView = RoverView::CAB; break;
+	}
+}
+
+void SurfaceViewController::OnMouseWheel(bool up)
+{
+	if (m_roverView != RoverView::EXTERNAL || Pi::game->GetExcursion()->GetMode() != Excursion::Mode::ROVER)
+		return;
+	m_extDistance = Clamp(up ? m_extDistance / EXTERNAL_ZOOM_STEP : m_extDistance * EXTERNAL_ZOOM_STEP,
+		EXTERNAL_MIN_DISTANCE, EXTERNAL_MAX_DISTANCE);
+}
+
+void SurfaceViewController::ShowRoverModel(bool show)
+{
+	if (Rover *rover = Pi::game->GetExcursion()->GetRover())
+		rover->SetFlag(Body::FLAG_DRAW_EXCLUDE, !show);
 }
 
 void SurfaceViewController::SetMouseCaptured(bool captured)
@@ -132,7 +182,8 @@ void SurfaceViewController::Update()
 {
 	Excursion *excursion = Pi::game->GetExcursion();
 	Walker *walker = excursion->GetWalker();
-	if (!walker)
+	Rover *rover = excursion->GetMode() == Excursion::Mode::ROVER ? excursion->GetRover() : nullptr;
+	if (!walker && !rover)
 		return;
 
 	UpdateMouseCapture();
@@ -151,7 +202,19 @@ void SurfaceViewController::Update()
 		}
 		m_skipMouseMotion = false;
 
-		if (walker->IsEva()) {
+		if (rover) {
+			// looking round in the seat, or circling the rover from outside;
+			// the jump key is the brake
+			if (m_roverView == RoverView::EXTERNAL) {
+				m_extYaw = std::remainder(m_extYaw + yaw, 2.0 * M_PI);
+				m_extPitch = Clamp(m_extPitch - pitch, EXTERNAL_MIN_PITCH, EXTERNAL_MAX_PITCH);
+			} else {
+				m_roverYaw = Clamp(m_roverYaw + yaw, -MAX_ROVER_YAW, MAX_ROVER_YAW);
+				m_pitch = Clamp(m_pitch + pitch, -MAX_ROVER_PITCH, MAX_ROVER_PITCH);
+			}
+			rover->SetDriveInput(InputBindings.moveForward->GetValue(), InputBindings.moveRight->GetValue(),
+				InputBindings.jump->IsActive());
+		} else if (walker->IsEva()) {
 			// floating free: turn about its own axes
 			walker->LookEva(yaw, pitch);
 		} else {
@@ -159,30 +222,82 @@ void SurfaceViewController::Update()
 			m_pitch = Clamp(m_pitch + pitch, -MAX_PITCH, MAX_PITCH);
 		}
 
-		walker->SetMoveInput(InputBindings.moveForward->GetValue(), InputBindings.moveRight->GetValue(),
-			InputBindings.jetpackUp->GetValue(), InputBindings.run->IsActive());
-		if (m_jumpRequested)
-			walker->RequestJump();
+		if (walker) {
+			walker->SetMoveInput(InputBindings.moveForward->GetValue(), InputBindings.moveRight->GetValue(),
+				InputBindings.jetpackUp->GetValue(), InputBindings.run->IsActive());
+			if (m_jumpRequested)
+				walker->RequestJump();
+		}
+	} else if (rover) {
+		rover->SetDriveInput(0.0, 0.0, true);
 	} else {
 		walker->SetMoveInput(0.0, 0.0, 0.0, false);
 	}
 	m_jumpRequested = false;
 
-	UpdateJetSound(walker);
-	UpdateFootsteps(walker);
-
 	if (m_interactRequested) {
 		m_interactRequested = false;
-		// boarding switches the world view back to the ship's controller
-		if (excursion->GetAvailableAction() == Excursion::Action::BOARD && excursion->Board())
+		// boarding switches the world view back to the ship's controller;
+		// getting in or out of the rover changes who carries the camera
+		const Excursion::Action done = excursion->Interact();
+		if (done == Excursion::Action::BOARD)
 			return;
+		if (done != Excursion::Action::NONE) {
+			walker = excursion->GetWalker();
+			rover = excursion->GetMode() == Excursion::Mode::ROVER ? excursion->GetRover() : nullptr;
+		}
 	}
 
+	// hidden only from its driver's seat
+	ShowRoverModel(!rover || m_roverView != RoverView::NO_MODEL);
+
+	if (rover) {
+		SilenceWalker();
+		m_tether->Clear();
+		if (m_roverView == RoverView::EXTERNAL)
+			PlaceRoverExternalCamera(rover);
+		else
+			PlaceRoverCamera(rover);
+		return;
+	}
+
+	UpdateJetSound(walker);
+	UpdateFootsteps(walker);
 	PlaceCamera(walker);
 	if (walker->IsEva())
 		UpdateTether(walker);
 	else
 		m_tether->Clear();
+}
+
+void SurfaceViewController::SilenceWalker()
+{
+	m_jetSound.VolumeAnimate(0.0f, 0.0f, JET_SOUND_FADE, JET_SOUND_FADE);
+	m_footsteps.VolumeAnimate(0.0f, 0.0f, STEPS_FADE, STEPS_FADE);
+}
+
+void SurfaceViewController::PlaceRoverCamera(const Rover *rover)
+{
+	RefCountedPtr<CameraContext> camera = m_parentView->GetCameraContext();
+	camera->SetCameraFrame(rover->GetFrame());
+
+	// in the driving seat, looking round from the rover's heading: the view
+	// in the rover's model axes (x right, y up, looking along -z)
+	const double cy = std::cos(m_roverYaw);
+	const double sy = std::sin(m_roverYaw);
+	const double cp = std::cos(m_pitch);
+	const double sp = std::sin(m_pitch);
+	const vector3d forward(sy * cp, sp, -cy * cp);
+	const vector3d right(cy, 0.0, sy);
+	const vector3d up = right.Cross(forward);
+
+	const matrix3x3d &orient = rover->GetInterpOrient();
+	m_camPos = rover->GetInterpPosition() + orient * rover->GetDriverEye();
+	m_camOrient = orient * matrix3x3d::FromVectors(right, up, -forward);
+	// a rotation exactly, as the camera's frame is inverted by transposing
+	m_camOrient.Renormalize();
+	camera->SetCameraPosition(m_camPos);
+	camera->SetCameraOrient(m_camOrient);
 }
 
 void SurfaceViewController::UpdateTether(const Walker *walker)
@@ -208,6 +323,41 @@ void SurfaceViewController::Draw(Camera *camera)
 	// the camera's projection, in case drawing the world changed it
 	m_parentView->GetCameraContext()->ApplyDrawTransforms(Pi::renderer);
 	m_tether->Draw(Pi::renderer, m_tetherRootToView, m_tetherShipInView);
+}
+
+void SurfaceViewController::PlaceRoverExternalCamera(const Rover *rover)
+{
+	RefCountedPtr<CameraContext> camera = m_parentView->GetCameraContext();
+	camera->SetCameraFrame(rover->GetFrame());
+
+	// in the rover's model axes: from behind it (+z), round to its right and up
+	const double cy = std::cos(m_extYaw);
+	const double sy = std::sin(m_extYaw);
+	const double cp = std::cos(m_extPitch);
+	const double sp = std::sin(m_extPitch);
+	const vector3d out(sy * cp, sp, cy * cp);
+
+	const matrix3x3d &orient = rover->GetInterpOrient();
+	const vector3d target = rover->GetInterpPosition() + orient * EXTERNAL_TARGET;
+	vector3d pos = target + orient * (out * m_extDistance);
+
+	// kept above the terrain
+	const Frame *frame = Frame::GetFrame(rover->GetFrame());
+	if (frame && frame->GetBody() && frame->GetBody()->IsType(ObjectType::TERRAINBODY)) {
+		const vector3d up = pos.Normalized();
+		const double ground = static_cast<const TerrainBody *>(frame->GetBody())->GetDrawnTerrainHeight(up) + EXTERNAL_GROUND_CLEARANCE;
+		if (pos.Length() < ground)
+			pos = up * ground;
+	}
+
+	// looking at the rover, upright with the planet
+	const vector3d forward = (target - pos).Normalized();
+	const vector3d right = forward.Cross(pos.Normalized()).NormalizedSafe();
+	const vector3d up = right.Cross(forward);
+	m_camPos = pos;
+	m_camOrient = matrix3x3d::FromVectors(right, up, -forward);
+	camera->SetCameraPosition(m_camPos);
+	camera->SetCameraOrient(m_camOrient);
 }
 
 void SurfaceViewController::UpdateJetSound(const Walker *walker)

@@ -43,6 +43,9 @@ public:
 	void Render(Graphics::Renderer *renderer, const matrix4x4d &modelView, vector3d campos, const float radius, const std::vector<Camera::Shadow> &shadows) override;
 	void RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d &unitToLight, double radius, const Aabb &lightBox) override;
 
+	// the terrain mesh along p (GeoPatch::GetDrawnRadius)
+	bool GetDrawnRadius(const vector3d &p, double &radius) const override;
+
 	double GetTerrainHeight(const vector3d &p) const final
 	{
 		double h;

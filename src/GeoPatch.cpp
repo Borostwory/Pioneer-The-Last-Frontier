@@ -44,7 +44,45 @@ namespace PatchMaths{
 	{
 		return (v0 + x * (1.0 - y) * (v1 - v0) + x * y * (v2 - v0) + (1.0 - x) * y * (v3 - v0)).Normalized();
 	}
+
+	// The patch surface coords of the point along dir (unit): the inverse of
+	// GetSpherePoint, by Newton's method on the point's offset from dir seen
+	// from the centre (projected onto the plane square to dir). False if it
+	// fails (dir far off the patch).
+	inline bool GetPatchCoords(const vector3d &v0, const vector3d &v1, const vector3d &v2, const vector3d &v3, const vector3d &dir, double &x, double &y)
+	{
+		const vector3d a = (std::abs(dir.x) < 0.9 ? vector3d(1.0, 0.0, 0.0) : vector3d(0.0, 1.0, 0.0)).Cross(dir).Normalized();
+		const vector3d b = dir.Cross(a);
+		x = y = 0.5;
+		for (int i = 0; i < 16; i++) {
+			const vector3d q = v0 * ((1.0 - x) * (1.0 - y)) + v1 * (x * (1.0 - y)) + v2 * (x * y) + v3 * ((1.0 - x) * y);
+			const vector3d qx = (v1 - v0) * (1.0 - y) + (v2 - v3) * y;
+			const vector3d qy = (v3 - v0) * (1.0 - x) + (v2 - v1) * x;
+			const double d = q.Dot(dir);
+			if (d <= 0.0)
+				return false;
+			const double ra = q.Dot(a) / d;
+			const double rb = q.Dot(b) / d;
+			const double j00 = (qx.Dot(a) - ra * qx.Dot(dir)) / d;
+			const double j01 = (qy.Dot(a) - ra * qy.Dot(dir)) / d;
+			const double j10 = (qx.Dot(b) - rb * qx.Dot(dir)) / d;
+			const double j11 = (qy.Dot(b) - rb * qy.Dot(dir)) / d;
+			const double det = j00 * j11 - j01 * j10;
+			if (det == 0.0)
+				return false;
+			const double sx = (ra * j11 - rb * j01) / det;
+			const double sy = (rb * j00 - ra * j10) / det;
+			x -= sx;
+			y -= sy;
+			if (std::abs(sx) + std::abs(sy) < 1e-12)
+				break;
+		}
+		return true;
+	}
 }
+
+// dir is on a patch whose surface coords are within this of [0,1]
+static constexpr double DRAWN_COORDS_MARGIN = 1e-6;
 
 // tri edge lengths
 static constexpr double GEOPATCH_SUBDIVIDE_AT_CAMDIST = 5.0;
@@ -426,6 +464,69 @@ void GeoPatch::RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d
 double GeoPatch::GetVertexSpacing() const
 {
 	return m_edgeLength * m_ctx->GetFrac();
+}
+
+bool GeoPatch::GetDrawnRadius(const vector3d &dir, double &radius) const
+{
+	const vector3d &v0 = m_corners->m_v0;
+	const vector3d &v1 = m_corners->m_v1;
+	const vector3d &v2 = m_corners->m_v2;
+	const vector3d &v3 = m_corners->m_v3;
+	double x, y;
+	if (!PatchMaths::GetPatchCoords(v0, v1, v2, v3, dir, x, y))
+		return false;
+	const double lo = -DRAWN_COORDS_MARGIN;
+	const double hi = 1.0 + DRAWN_COORDS_MARGIN;
+	if (x < lo || x > hi || y < lo || y > hi)
+		return false;
+
+	// split, the children are drawn: the one with dir (corners v0, v1, v2
+	// and v3 at (0, 0), (1, 0), (1, 1), (0, 1)), else whichever has it
+	if (m_kids[0]) {
+		const int kid = x < 0.5 ? (y < 0.5 ? 0 : 3) : (y < 0.5 ? 1 : 2);
+		if (m_kids[kid]->GetDrawnRadius(dir, radius))
+			return true;
+		for (int i = 0; i < NUM_KIDS; i++) {
+			if (i != kid && m_kids[i]->GetDrawnRadius(dir, radius))
+				return true;
+		}
+	}
+	if (!HasHeightData())
+		return false;
+
+	// the mesh as UpdateVBOs builds it: the inner vertices at frac steps of
+	// the surface coords, raised by their heights
+	const int n = m_ctx->GetEdgeLen() - 2;
+	const double frac = m_ctx->GetFrac();
+	const double gx = Clamp(x, 0.0, 1.0) / frac;
+	const double gy = Clamp(y, 0.0, 1.0) / frac;
+	const int i = Clamp(int(gx), 0, n - 2);
+	const int j = Clamp(int(gy), 0, n - 2);
+	const double fx = gx - i;
+	const double fy = gy - j;
+	const double *heights = m_patchVBOData->m_heights.get();
+	auto vertex = [&](int vi, int vj) {
+		return PatchMaths::GetSpherePoint(v0, v1, v2, v3, vi * frac, vj * frac) * (1.0 + heights[vj * n + vi]);
+	};
+
+	// a cell's two triangles share its diagonal from (i + 1, j) to
+	// (i, j + 1) (GeoPatchContext's indices, offset by the skirt)
+	vector3d a, b, c;
+	if (fx + fy <= 1.0) {
+		a = vertex(i, j);
+		b = vertex(i + 1, j);
+		c = vertex(i, j + 1);
+	} else {
+		a = vertex(i + 1, j);
+		b = vertex(i + 1, j + 1);
+		c = vertex(i, j + 1);
+	}
+	const vector3d normal = (b - a).Cross(c - a);
+	const double along = normal.Dot(dir);
+	if (along == 0.0)
+		return false;
+	radius = normal.Dot(a) / along;
+	return true;
 }
 
 int GeoPatch::FindTile(vector3f &part) const

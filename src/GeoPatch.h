@@ -120,6 +120,11 @@ public:
 	void SetSurfaceSlot(int slot) { m_surfaceSlot = slot; }
 	// a corner (0..3) on the unit sphere
 	const vector3d &GetCorner(int i) const { return i == 0 ? m_corners->m_v0 : i == 1 ? m_corners->m_v1 : i == 2 ? m_corners->m_v2 : m_corners->m_v3; }
+	// The surface as drawn along dir (unit), in planet radii from the centre:
+	// on the triangle under it of the patch drawn there (its children once
+	// it has split, else its own mesh). False if dir is off this patch or the
+	// patch has no heights yet.
+	bool GetDrawnRadius(const vector3d &dir, double &radius) const;
 	// distance between vertices on the unit sphere
 	double GetVertexSpacing() const;
 

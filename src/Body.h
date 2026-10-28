@@ -41,7 +41,8 @@ enum class ObjectType { // <enum name=PhysicsObjectType scope='ObjectType' publi
 	PROJECTILE, // <enum skip>
 	MISSILE,
 	HYPERSPACECLOUD, // <enum skip>
-	WALKER // <enum skip>
+	WALKER, // <enum skip>
+	ROVER	// <enum skip>
 };
 
 enum class AltitudeType { // <enum name=AltitudeType scope='AltitudeType' public>

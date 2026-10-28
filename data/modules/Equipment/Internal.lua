@@ -597,3 +597,10 @@ Equipment.Register("misc.cargo_life_support", EquipType.New {
 	price=700, purchasable=true, tech_level=2,
 	mass=1, volume=2, capabilities={ cargo_life_support=1 },
 })
+
+-- driven out of the landed ship (Game.DeployRover)
+Equipment.Register("misc.surface_rover", EquipType.New {
+	l10n_key="SURFACE_ROVER",
+	price=18000, purchasable=true, tech_level=4,
+	mass=6, volume=20, capabilities={ surface_rover=1 },
+})

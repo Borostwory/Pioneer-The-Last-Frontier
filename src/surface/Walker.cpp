@@ -350,16 +350,18 @@ void Walker::UpdateInterpTransform(double alpha)
 	m_interpOrient = GetOrient();
 }
 
-double Walker::GroundRadius(const Frame *frame, const vector3d &pos, double above, double below, const Body **hitBody)
+double Walker::GroundRadius(const Frame *frame, const vector3d &pos, double above, double below, const Body **hitBody, const Geom *ignore)
 {
+	// the ground as drawn, not the terrain's exact height, which between the
+	// mesh's vertices can be metres above or below it
 	const vector3d up = pos.Normalized();
 	const TerrainBody *terrain = static_cast<const TerrainBody *>(frame->GetBody());
-	double ground = terrain->GetTerrainHeight(up);
+	double ground = terrain->GetDrawnTerrainHeight(up);
 	if (hitBody)
 		*hitBody = nullptr;
 
 	CollisionContact c;
-	frame->GetCollisionSpace()->TraceRay(pos + up * above, -up, above + below, &c);
+	frame->GetCollisionSpace()->TraceRay(pos + up * above, -up, above + below, &c, ignore);
 	if (c.userData1) {
 		const double hit = c.pos.Length();
 		if (hit > ground) {

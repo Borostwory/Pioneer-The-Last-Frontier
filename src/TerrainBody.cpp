@@ -151,6 +151,14 @@ void TerrainBody::SetFrame(FrameId fId)
 	}
 }
 
+double TerrainBody::GetDrawnTerrainHeight(const vector3d &pos) const
+{
+	double radius;
+	if (m_baseSphere && m_baseSphere->GetDrawnRadius(pos, radius))
+		return m_sbody->GetRadius() * radius;
+	return GetTerrainHeight(pos);
+}
+
 double TerrainBody::GetTerrainHeight(const vector3d &pos_) const
 {
 	double radius = m_sbody->GetRadius();

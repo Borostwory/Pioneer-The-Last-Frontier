@@ -179,6 +179,10 @@
     "description": "Descriptive name for the RightCamera action.",
     "message": "Switch to Right Camera"
   },
+  "BIND_ROVER_CYCLE_VIEW": {
+    "description": "Descriptive name for the action that cycles the views while driving the surface rover: from the cab, without the rover's model, from outside",
+    "message": "Cycle Rover View"
+  },
   "BIND_SECONDARY_FIRE": {
     "description": "Descriptive name for the SecondaryFire action.",
     "message": "Secondary Fire"

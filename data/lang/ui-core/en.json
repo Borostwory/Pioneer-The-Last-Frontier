@@ -971,6 +971,10 @@
     "description": "Tooltip: get out of the landed ship on foot",
     "message": "Disembark"
   },
+  "HUD_BUTTON_DEPLOY_ROVER": {
+    "description": "Tooltip: set the surface rover down beside the landed ship and drive it",
+    "message": "Drive the rover"
+  },
   "HUD_BUTTON_CRUISE_FORWARD": {
     "description": "Tooltip for button",
     "message": "Forward cruise mode"
@@ -2594,6 +2598,26 @@
   "SURFACE_BOARD_SHIP": {
     "description": "On-foot HUD prompt: the key and this board the ship",
     "message": "Board ship"
+  },
+  "SURFACE_ENTER_ROVER": {
+    "description": "On-foot HUD prompt: the key and this get into the surface rover",
+    "message": "Get in the rover"
+  },
+  "SURFACE_EXIT_ROVER": {
+    "description": "Rover HUD prompt: the key and this get out of the surface rover",
+    "message": "Get out"
+  },
+  "SURFACE_ROVER_SPEED": {
+    "description": "Rover HUD: the speed in kilometres per hour, e.g. '42 km/h'",
+    "message": "{speed} km/h"
+  },
+  "SURFACE_ROVER_VIEW": {
+    "description": "Rover HUD hint: the key and this change the view (from the cab, without the rover's model, from outside)",
+    "message": "Change view"
+  },
+  "SURFACE_YOUR_ROVER": {
+    "description": "On-foot HUD: label of the marker of the player's surface rover on the compass",
+    "message": "Rover"
   },
   "SURFACE_FREE_CURSOR": {
     "description": "On-foot HUD hint: hold Alt to free the mouse cursor",

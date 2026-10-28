@@ -29,6 +29,9 @@ public:
 	virtual void Render(Graphics::Renderer *renderer, const matrix4x4d &modelView, vector3d campos, const float radius, const std::vector<Camera::Shadow> &shadows) = 0;
 
 	virtual double GetTerrainHeight(const vector3d &p) const = 0;
+	// the surface as drawn along p (unit), in radii from the centre; false
+	// if it isn't drawn as a mesh, or not yet
+	virtual bool GetDrawnRadius(const vector3d &p, double &radius) const { return false; }
 
 	// Draws the surface depth-only into the current sun shadow map (see SceneShadows.h).
 	// unitToLight: from planet radii, centred on the body in its frame's orientation,
