@@ -790,6 +790,7 @@ theme.icons = {
 	ship_swap = 561,
 	bay_empty = 562,
 	mission_cargo = 563,
+	crew_lounge = 564,
 	lease_locked = 570,
 }
 

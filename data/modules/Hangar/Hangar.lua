@@ -37,6 +37,7 @@ Hangar.BAY_RENT = 40            -- cr per bay per month
 Hangar.TONNE_RENT = 4           -- cr per tonne of hull parked, per month
 Hangar.LATE_CHARGE = 0.1        -- added to each unpaid bill
 Hangar.DEBT_CAP_MONTHS = 6      -- unpaid months after which debt stops growing
+Hangar.LOUNGE_NIGHT = 3         -- cr per person per night in a crew lounge
 
 -- Discount for paying upfront, by number of months
 Hangar.PREPAY_DISCOUNTS = {
@@ -79,8 +80,22 @@ Hangar.PREPAY_DISCOUNTS = {
 ---@field unpaidMonths integer
 ---@field store EquipType[]        equipment kept in the hangar
 
+---@class Hangar.LoungeEntry
+---@field character Character
+---@field since number             game time they started waiting
+---@field paidTo number            game time their nights are paid to
+
+---@class Hangar.Lounge
+---@field key string
+---@field path SystemPath
+---@field station string
+---@field factor number
+---@field crew Hangar.LoungeEntry[]
+
 local hangars = {} ---@type table<string, Hangar.Lease>
 local ships = {} ---@type table<integer, Hangar.Record>
+local lounges = {} ---@type table<string, Hangar.Lounge>
+local loungeDebt = 0               -- unpaid lounge fees, paid from the next money
 local nextId = 1
 local nextBill = nil ---@type number?
 
@@ -490,10 +505,13 @@ local function billHangar(h, t)
 end
 
 local scheduleBilling
+local billLounges -- defined with the lounges below
 
 -- Bill every 1st that has passed, in order (time may have jumped months)
 local function runBilling()
 	while nextBill and nextBill <= Game.time do
+		-- wages are paid first by the game's own timers, then lounges, then rent
+		billLounges(nextBill)
 		for _, h in pairs(hangars) do
 			billHangar(h, nextBill)
 		end
@@ -622,6 +640,175 @@ function Hangar.EndLease(h)
 end
 
 --=============================================================================
+-- Crew lounges
+--
+-- Every station has one. Crew waiting there keep their contract at half wage
+-- (CrewContracts reads `character.waitingAt`), gain no skills, and cost
+-- LOUNGE_NIGHT per night, settled on the 1st and when they leave.
+--=============================================================================
+
+---@param station SpaceStation
+---@return Hangar.Lounge?
+function Hangar.GetLoungeAt(station)
+	return station and lounges[Hangar.StationKey(station)]
+end
+
+---@return Hangar.Lounge[]
+function Hangar.GetLounges()
+	local list = utils.build_array(pairs(lounges))
+	table.sort(list, function(a, b) return a.station < b.station end)
+	return list
+end
+
+-- Cost per person per night at a station
+function Hangar.LoungeRate(factor)
+	return Hangar.LOUNGE_NIGHT * factor
+end
+
+-- Everyone waiting in any lounge
+function Hangar.EachLoungeMember()
+	local list = {}
+	for _, lounge in pairs(lounges) do
+		for _, entry in ipairs(lounge.crew) do table.insert(list, entry.character) end
+	end
+	local i = 0
+	return function()
+		i = i + 1
+		return list[i]
+	end
+end
+
+-- The lounge and entry of someone waiting
+---@param character Character
+---@return Hangar.Lounge?, Hangar.LoungeEntry?, integer?
+function Hangar.FindInLounge(character)
+	local lounge = character.waitingAt and lounges[character.waitingAt]
+	for i, entry in ipairs(lounge and lounge.crew or {}) do
+		if entry.character == character then return lounge, entry, i end
+	end
+	return nil
+end
+
+function Hangar.LoungeDebt()
+	return loungeDebt
+end
+
+-- Charge lounge fees: what can't be paid joins the lounge debt
+local function chargeLounge(amount)
+	if amount <= 0 then return end
+	loungeDebt = loungeDebt + amount - takeMoney(amount)
+end
+
+-- Settle someone's nights up to time t
+---@param lounge Hangar.Lounge
+---@param entry Hangar.LoungeEntry
+local function settleEntry(lounge, entry, t)
+	if t > entry.paidTo then
+		chargeLounge(Hangar.LoungeRate(lounge.factor) * (t - entry.paidTo) / 86400)
+		entry.paidTo = t
+	end
+end
+
+-- On the 1st: settle every lounge, then pay what's owed from any money
+billLounges = function(t)
+	local before = loungeDebt
+	for _, lounge in pairs(lounges) do
+		for _, entry in ipairs(lounge.crew) do settleEntry(lounge, entry, t) end
+	end
+	if loungeDebt > 0.5 and loungeDebt > before then
+		Comms.ImportantMessage(string.interp(l.LOUNGE_UNPAID, { debt = Format.Money(round(loungeDebt), false) }))
+	end
+	loungeDebt = loungeDebt - takeMoney(loungeDebt)
+	if loungeDebt < 0.5 then loungeDebt = 0 end
+end
+
+function Hangar.PayLoungeDebt()
+	local debt = round(loungeDebt)
+	if PlayerState.GetMoney() < debt then return false, l.NOT_ENOUGH_MONEY end
+	PlayerState.AddMoney(-debt)
+	loungeDebt = 0
+	return true
+end
+
+-- Nobody new is put in a lounge while lounge fees are owed. Returns the
+-- reason, or nil.
+function Hangar.LoungeBlocked()
+	if loungeDebt > 0.5 then
+		return string.interp(l.LOUNGE_DEBT_BLOCKS, { debt = Format.Money(round(loungeDebt), false) })
+	end
+end
+
+-- Add someone to the lounge at `station` (they're on no ship's roster)
+local function addToLounge(station, character)
+	local key = Hangar.StationKey(station)
+	local lounge = lounges[key]
+	if not lounge then
+		lounge = { key = key, path = station.path, station = station.label,
+			factor = Hangar.StationFactor(station), crew = {} }
+		lounges[key] = lounge
+	end
+	table.insert(lounge.crew, { character = character, since = Game.time, paidTo = Game.time })
+	character.waitingAt = key
+end
+
+-- Take someone out of their lounge, their nights settled
+local function removeFromLounge(lounge, entry, index)
+	settleEntry(lounge, entry, Game.time)
+	table.remove(lounge.crew, index)
+	entry.character.waitingAt = nil
+	if #lounge.crew == 0 then lounges[lounge.key] = nil end
+end
+
+-- Put a crew member of the active ship into the lounge where it is docked
+---@param character Character
+function Hangar.SendToLounge(character)
+	local player = Game.player
+	local station = player:GetDockedWith()
+	local blocked = Hangar.LoungeBlocked()
+	if blocked then return false, blocked end
+	if not station or not player:SendCrewToLounge(character) then return false end
+	addToLounge(station, character)
+	return true
+end
+
+-- Someone hired at this station who waits in the lounge until they're
+-- needed aboard. The caller sets up their contract.
+---@param character Character
+function Hangar.HireIntoLounge(character)
+	local station = Game.player:GetDockedWith()
+	local blocked = Hangar.LoungeBlocked()
+	if blocked then return false, blocked end
+	if not station then return false end
+	character:CheckOut() -- as Ship:Enroll does: not offered for other jobs
+	addToLounge(station, character)
+	return true
+end
+
+-- Let go of someone waiting in the lounge where the player is docked. Only
+-- takes them out of the lounge: the caller ends their contract as for any
+-- dismissal.
+---@param character Character
+function Hangar.DismissFromLounge(character)
+	local station = Game.player:GetDockedWith()
+	local lounge, entry, index = Hangar.FindInLounge(character)
+	if not station or not lounge or lounge.key ~= Hangar.StationKey(station) then return false end
+	removeFromLounge(lounge, entry, index)
+	return true
+end
+
+-- Bring someone waiting in the lounge where the player is docked aboard
+---@param character Character
+function Hangar.TakeFromLounge(character)
+	local player = Game.player
+	local station = player:GetDockedWith()
+	local lounge, entry, index = Hangar.FindInLounge(character)
+	if not station or not lounge or lounge.key ~= Hangar.StationKey(station) then return false end
+	if not player:TakeCrewFromLounge(character) then return false, l.SHIP_FULL end
+	removeFromLounge(lounge, entry, index)
+	return true
+end
+
+--=============================================================================
 -- Ship records
 --=============================================================================
 
@@ -745,11 +932,23 @@ end
 -- Swapping
 --=============================================================================
 
+-- Who would be aboard after a swap: `aboard` is the set of characters picked
+-- to fly on (crew aboard and crew in the lounge here), nil for the crew
+-- aboard now
+local function crewAfter(aboard)
+	if not aboard then return Game.player:CrewNumber() end
+	local n = 0
+	for _ in pairs(aboard) do n = n + 1 end
+	return n
+end
+
 -- Reasons a swap can't happen (blockers) and things the player should know
--- (warnings). `take` is the cargo to take along: commodity name -> count.
+-- (warnings). `take` is the cargo to take along (see Cargo on a swap),
+-- `aboard` who flies on (see crewAfter).
 ---@param rec Hangar.Record
----@param take table<string, integer>
-function Hangar.CheckSwap(rec, take)
+---@param take table<string, table<any, integer>>
+---@param aboard table<Character, boolean>?
+function Hangar.CheckSwap(rec, take, aboard)
 	local player = Game.player
 	local blockers, warnings = {}, {}
 	local station = player:GetDockedWith()
@@ -778,9 +977,19 @@ function Hangar.CheckSwap(rec, take)
 		table.insert(blockers, l.PASSENGERS_ABOARD)
 	end
 
-	local crew = player:CrewNumber()
+	-- Leaving anyone in the lounge needs the lounge fees paid
+	if aboard and Hangar.LoungeBlocked() then
+		for member in player:EachCrewMember() do
+			if not member.player and not aboard[member] then
+				table.insert(blockers, Hangar.LoungeBlocked())
+				break
+			end
+		end
+	end
+
+	local crew = crewAfter(aboard)
 	if crew > def.maxCrew then
-		table.insert(blockers, string.interp(l.TOO_MANY_CREW, { ship = rec.name, max = def.maxCrew, crew = crew }))
+		table.insert(blockers, string.interp(l.TOO_MANY_CREW, { ship = rec.name, max = def.maxCrew, crew = crew, over = crew - def.maxCrew }))
 	elseif crew < def.minCrew then
 		table.insert(warnings, string.interp(l.TOO_FEW_CREW, { ship = rec.name, min = def.minCrew, crew = crew }))
 	end
@@ -813,8 +1022,9 @@ end
 -- Store the player's ship in its bay and take the stored ship `rec` out.
 ---@param rec Hangar.Record
 ---@param take table<string, table<any, integer>> cargo to take along, by lot (see Cargo on a swap)
-function Hangar.Swap(rec, take)
-	local blockers = Hangar.CheckSwap(rec, take)
+---@param aboard table<Character, boolean>? who flies on; the rest of the crew waits in the lounge here
+function Hangar.Swap(rec, take, aboard)
+	local blockers = Hangar.CheckSwap(rec, take, aboard)
 	if #blockers > 0 then return false, blockers[1] end
 
 	local player = Game.player
@@ -857,6 +1067,18 @@ function Hangar.Swap(rec, take)
 	if rec.pattern then player.model:SetPattern(rec.pattern) end
 	player:SetLabel(rec.label)
 	player:SetShipName(rec.name)
+
+	-- Crew never stays on a stored ship: who doesn't fly on waits here
+	if aboard then
+		local leaving = {}
+		for member in player:EachCrewMember() do
+			if not aboard[member] and not member.player then table.insert(leaving, member) end
+		end
+		for _, member in ipairs(leaving) do Hangar.SendToLounge(member) end
+		for member in pairs(aboard) do
+			if member.waitingAt then Hangar.TakeFromLounge(member) end
+		end
+	end
 
 	local failed = installEquipment(rec.equip)
 	for _, item in ipairs(failed) do table.insert(h.store, item) end
@@ -967,6 +1189,8 @@ Event.Register("onGameStart", function()
 		ships = loaded_data.ships or {}
 		nextId = loaded_data.nextId or 1
 		nextBill = loaded_data.nextBill
+		lounges = loaded_data.lounges or {}
+		loungeDebt = loaded_data.loungeDebt or 0
 		for _, h in pairs(hangars) do h.store = h.store or {} end
 		loaded_data = nil
 	end
@@ -989,13 +1213,15 @@ Event.Register("onMissionRemoved", releaseTag)
 Event.Register("onGameEnd", function()
 	hangars = {}
 	ships = {}
+	lounges = {}
+	loungeDebt = 0
 	nextId = 1
 	nextBill = nil
 	billingToken = billingToken + 1
 end)
 
 local serialize = function()
-	return { hangars = hangars, ships = ships, nextId = nextId, nextBill = nextBill }
+	return { hangars = hangars, ships = ships, nextId = nextId, nextBill = nextBill, lounges = lounges, loungeDebt = loungeDebt }
 end
 
 local unserialize = function(data)

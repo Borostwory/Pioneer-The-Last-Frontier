@@ -4,6 +4,8 @@
 -- The Last Frontier: the station's Hangar tab. Lease a hangar, see the ships
 -- stored here and swap the active ship for one of them.
 
+local Comms = require 'Comms'
+local Event = require 'Event'
 local Game = require 'Game'
 local Lang = require 'Lang'
 local Format = require 'Format'
@@ -48,7 +50,7 @@ local renameText = ""
 local showPrepay = false
 local prepay = { n = 6, unit = 0 } -- unit: 0 months, 1 years
 local lease = { bays = 1, n = 0, unit = 0 }
-local swap = nil                 -- { rec = Hangar.Record, take = { [name] = { [tag] = n } } }
+local swap = nil                 -- { rec = Hangar.Record, take = { [name] = { [tag] = n } }, aboard = { [Character] = true } }
 local swapModal                  -- the swap window, created below
 
 --=============================================================================
@@ -113,6 +115,30 @@ local function quoteLine(monthly, nMonths)
 	end
 	ui.text(text)
 	return cost
+end
+
+-- A crew member's best skill, e.g. "Piloting 38"
+local function bestSkill(c)
+	local best, name = -1, ""
+	for _, skill in ipairs({ { "engineering", lc.ENGINEERING }, { "piloting", lc.PILOTING },
+			{ "navigation", lc.NAVIGATION }, { "sensors", lc.SENSORS } }) do
+		if (c[skill[1]] or 0) > best then best, name = c[skill[1]] or 0, skill[2] end
+	end
+	return string.format("%s %d", name, best)
+end
+
+local function skillsTooltip(c)
+	if ui.isItemHovered() then
+		ui.setTooltip(string.format("%s %d\n%s %d\n%s %d\n%s %d",
+			lc.ENGINEERING, c.engineering or 0, lc.PILOTING, c.piloting or 0,
+			lc.NAVIGATION, c.navigation or 0, lc.SENSORS, c.sensors or 0))
+	end
+end
+
+local function crewAboard()
+	local list = {}
+	for member in Game.player:EachCrewMember() do table.insert(list, member) end
+	return list
 end
 
 --=============================================================================
@@ -497,7 +523,9 @@ local function drawDetails(h, view)
 		local locked = Hangar.IsLocked(h)
 		if button(l.FLY_THIS_SHIP, not locked, locked and l.HANGAR_LOCKED or nil) then
 			-- Default: everything that fits comes along, mission cargo first
-			swap = { rec = view.rec, take = Hangar.FitCargo(view.rec) }
+			local aboard = {}
+			for _, member in ipairs(crewAboard()) do aboard[member] = true end
+			swap = { rec = view.rec, take = Hangar.FitCargo(view.rec), aboard = aboard }
 			swapModal:open()
 		end
 		ui.sameLine()
@@ -583,10 +611,45 @@ swapModal = ModalWindow.New("HangarSwap", function(self)
 	end
 
 	ui.spacing()
+	-- Crew picker: ticked people fly on, the others wait in the lounge here
 	local def = ShipDef[rec.shipId]
-	ui.text(string.interp(l.CREW_LINE, { crew = player:CrewNumber(), ship = rec.name, min = def.minCrew, max = def.maxCrew }))
+	local ticked = 0
+	for _ in pairs(swap.aboard) do ticked = ticked + 1 end
+	ui.text(string.interp(l.CREW_FOR, { ship = rec.name, min = def.minCrew, max = def.maxCrew }))
+	ui.sameLine()
+	local countColor = ticked > def.maxCrew and colors.alertRed or ticked < def.minCrew and colors.alertYellow or colors.econProfit
+	ui.textColored(countColor, string.format("%d / %d", ticked, def.maxCrew))
 
-	local blockers, warnings = Hangar.CheckSwap(rec, swap.take)
+	local lounge = Hangar.GetLoungeAt(player:GetDockedWith())
+	local people = {}
+	for _, member in ipairs(crewAboard()) do table.insert(people, { member = member, waiting = false }) end
+	for _, entry in ipairs(lounge and lounge.crew or {}) do table.insert(people, { member = entry.character, waiting = true }) end
+
+	local inLoungeAfter = 0
+	for _, person in ipairs(people) do
+		local member = person.member
+		if member.player then
+			ui.text("     " .. l.YOU_COMMANDER)
+		else
+			local changed, value = ui.checkbox(member.name .. "##swapcrew" .. tostring(member), swap.aboard[member] == true)
+			if changed then swap.aboard[member] = value or nil end
+			skillsTooltip(member)
+			ui.sameLine()
+			ui.textColored(colors.fontDim, bestSkill(member) .. " · " .. (person.waiting and l.IN_LOUNGE or l.ABOARD))
+			if person.waiting == (swap.aboard[member] == true) then
+				ui.sameLine()
+				ui.textColored(colors.alertYellow, person.waiting and l.COMES_ABOARD or l.GOES_TO_LOUNGE)
+			end
+			if not swap.aboard[member] then inLoungeAfter = inLoungeAfter + 1 end
+		end
+	end
+	if inLoungeAfter > 0 then
+		local station = player:GetDockedWith()
+		local rate = Hangar.LoungeRate(Hangar.StationFactor(station))
+		ui.textColored(colors.fontDim, string.interp(l.LOUNGE_AFTER_SWAP, { count = inLoungeAfter, cost = money(rate * inLoungeAfter) }))
+	end
+
+	local blockers, warnings = Hangar.CheckSwap(rec, swap.take, swap.aboard)
 	if #blockers > 0 or #warnings > 0 then ui.spacing() end
 	for _, b in ipairs(blockers) do ui.textColored(colors.alertRed, b) end
 	for _, w in ipairs(warnings) do ui.textColored(colors.alertYellow, w) end
@@ -599,7 +662,7 @@ swapModal = ModalWindow.New("HangarSwap", function(self)
 	end
 	ui.sameLine()
 	if button(l.SWAP_SHIPS, #blockers == 0, blockers[1]) then
-		local ok, result = Hangar.Swap(rec, swap.take)
+		local ok, result = Hangar.Swap(rec, swap.take, swap.aboard)
 		swap = nil
 		if ok then
 			selected = ACTIVE
@@ -608,6 +671,164 @@ swapModal = ModalWindow.New("HangarSwap", function(self)
 		self:close()
 	end
 end)
+
+--=============================================================================
+-- Crew lounge sub-tab (works at every station, with or without a hangar)
+--=============================================================================
+
+-- Let go of someone waiting in the lounge, with the same consequences as
+-- dismissing them on the Crew tab
+local function dismissFromLounge(member)
+	if not Hangar.DismissFromLounge(member) then return end
+
+	local contract = member.contract
+	if contract then
+		if contract.outstanding > 0 then
+			Comms.Message(lc.IM_TIRED_OF_WORKING_FOR_NOTHING_DONT_YOU_KNOW_WHAT_A_CONTRACT_IS, member.name)
+			member.playerRelationship = member.playerRelationship - 5
+			if contract.outstanding > 5e2 then
+				PlayerState.AddCrime("CONTRACT_FRAUD", contract.outstanding * 1.1)
+			end
+		elseif member:TestRoll('playerRelationship') then
+			Comms.Message(lc.ITS_BEEN_GREAT_WORKING_FOR_YOU_IF_YOU_NEED_ME_AGAIN_ILL_BE_HERE_A_WHILE, member.name)
+		elseif not member:TestRoll('lawfulness') then
+			Comms.Message(lc.YOURE_GOING_TO_REGRET_SACKING_ME, member.name)
+			member.playerRelationship = member.playerRelationship - 1
+		else
+			Comms.Message(lc.GOOD_RIDDANCE_TO_YOU_TOO, member.name)
+			member.playerRelationship = member.playerRelationship - 1
+		end
+	end
+
+	-- CrewContracts ends the contract, as for anyone leaving the crew
+	Event.Queue('onLeaveCrew', Game.player, member)
+	member:Save() -- they can turn up on bulletin boards again
+end
+
+-- Dismissing asks first
+local dismissing = nil ---@type Character?
+
+local dismissModal = ModalWindow.New("LoungeDismiss", function(self)
+	local member = dismissing
+	if not member then self:close() return end
+
+	ui.withFont(orbiteer.heading, function()
+		ui.text(string.interp(l.DISMISS_TITLE, { name = member.name }))
+	end)
+	ui.text(string.interp(l.DISMISS_TEXT, { name = member.name }))
+	local owed = member.contract and member.contract.outstanding or 0
+	if owed > 0 then
+		ui.textColored(owed > 5e2 and colors.alertRed or colors.alertYellow,
+			string.interp(l.DISMISS_OWED, { owed = money(owed), limit = money(5e2) }))
+	end
+	ui.spacing()
+
+	if ui.button(lc.CANCEL) then
+		dismissing = nil
+		self:close()
+	end
+	ui.sameLine()
+	if ui.button(lc.DISMISS .. "##confirmDismiss") then
+		dismissFromLounge(member)
+		dismissing = nil
+		self:close()
+	end
+end)
+
+local function drawLounge(station)
+	local player = Game.player
+	local def = ShipDef[player.shipId]
+	local lounge = Hangar.GetLoungeAt(station)
+	local waiting = lounge and lounge.crew or {}
+	local crew = player:CrewNumber()
+	local rate = Hangar.LoungeRate(Hangar.StationFactor(station))
+
+	ui.withFont(orbiteer.heading, function()
+		ui.icon(icons.crew_lounge, Vector2(ui.getTextLineHeight()), colors.font)
+		ui.sameLine()
+		ui.text(string.interp(l.LOUNGE_AT, { station = station.label }))
+	end)
+
+	local debt = Hangar.LoungeDebt()
+	if debt > 0.5 then
+		ui.textColored(colors.alertRed, string.interp(l.LOUNGE_DEBT_BANNER, { debt = money(debt) }))
+		ui.sameLine()
+		local canPay = PlayerState.GetMoney() >= math.floor(debt + 0.5)
+		if button(string.interp(l.PAY_AMOUNT, { amount = money(debt) }) .. "##lounge", canPay, not canPay and l.NOT_ENOUGH_MONEY or nil) then
+			Hangar.PayLoungeDebt()
+		end
+	end
+	ui.spacing()
+
+	local footer = ui.getTextLineHeightWithSpacing() * 3.5
+	local size = ui.getContentRegion()
+	local half = (size.x - widgetSizes.itemSpacing.x) / 2
+
+	ui.child("loungeAboard", Vector2(half, size.y - footer), function()
+		ui.textColored(colors.fontDim, string.interp(l.ABOARD_SHIP, { ship = player.shipName }))
+		ui.text(string.interp(l.CREW_LIMITS, { crew = crew, min = def.minCrew, max = def.maxCrew }))
+		if crew < def.minCrew then
+			ui.textColored(colors.alertYellow, string.interp(l.CANT_LAUNCH_FEWER, { min = def.minCrew }))
+		end
+		ui.separator()
+		local blocked = Hangar.LoungeBlocked()
+		for _, member in ipairs(crewAboard()) do
+			if member.player then
+				ui.text(l.YOU_COMMANDER)
+			else
+				if button(ui.get_icon_glyph(icons.forward) .. "##tolounge" .. tostring(member), not blocked, blocked or l.SEND_TO_LOUNGE) then
+					Hangar.SendToLounge(member)
+				end
+				ui.sameLine()
+				ui.text(member.name)
+				skillsTooltip(member)
+				ui.sameLine()
+				local wage = member.contract and member.contract.wage or 0
+				ui.textColored(colors.fontDim, string.format("%s · %s", bestSkill(member), string.interp(l.WAGE_PER_WEEK, { wage = money(wage) })))
+			end
+		end
+	end)
+	ui.sameLine()
+	ui.child("loungeWaiting", Vector2(half, size.y - footer), function()
+		ui.textColored(colors.fontDim, l.IN_LOUNGE_HERE)
+		ui.text(string.interp(l.WAITING_COUNT, { count = #waiting }))
+		ui.separator()
+		if #waiting == 0 then
+			ui.textColored(colors.fontDim, l.NOBODY_WAITING)
+		end
+		local full = crew >= def.maxCrew
+		for _, entry in ipairs(waiting) do
+			local member = entry.character
+			local tooltip = full and string.interp(l.SHIP_FULL, { ship = player.shipName, max = def.maxCrew }) or l.BRING_ABOARD
+			if button(ui.get_icon_glyph(icons.backward) .. "##fromlounge" .. tostring(member), not full, tooltip) then
+				Hangar.TakeFromLounge(member)
+			end
+			ui.sameLine()
+			ui.text(member.name)
+			skillsTooltip(member)
+			ui.sameLine()
+			ui.textColored(colors.fontDim, string.format("%s · %s", bestSkill(member),
+				string.interp(l.WAITING_SINCE, { date = Format.DateOnly(entry.since) })))
+			ui.sameLine()
+			if ui.button(lc.DISMISS .. "##dismiss" .. tostring(member), Vector2(0, 0), ui.theme.buttonColors.dark) then
+				dismissing = member
+				dismissModal:open()
+			end
+		end
+	end)
+
+	ui.separator()
+	ui.textWrapped(string.interp(l.LOUNGE_RATE_LINE, { rate = money(rate), now = money(rate * #waiting) }))
+	local elsewhere = {}
+	for _, other in ipairs(Hangar.GetLounges()) do
+		if not lounge or other.key ~= lounge.key then
+			table.insert(elsewhere, string.interp(l.WAITING_AT, { count = #other.crew, station = other.station }))
+		end
+	end
+	if #elsewhere > 0 then
+		ui.textColored(colors.fontDim, l.ALSO_WAITING_ELSEWHERE .. " " .. table.concat(elsewhere, " · "))
+	end
+end
 
 --=============================================================================
 -- Tab
@@ -623,27 +844,34 @@ StationView:registerView({
 		if not station then return end
 		local h = Hangar.GetHangarAt(station)
 
+		local function drawShips()
+			if not h then
+				drawLeaseForm(station)
+				return
+			end
+
+			if not drawHeader(h) then return end
+			ui.spacing()
+			drawBays(h)
+			ui.separator()
+
+			local view = selectedView(h)
+			local previewWidth = ui.getContentRegion().x * PREVIEW_WIDTH
+			ui.child("hangarPreview", Vector2(previewWidth, 0), function()
+				drawPreview(view)
+			end)
+			ui.sameLine()
+			ui.child("hangarDetails", Vector2(0, 0), function()
+				drawDetails(h, view)
+			end)
+		end
+
 		ui.withFont(pionillium.body, function()
 			ui.withStyleVars({ ItemSpacing = widgetSizes.itemSpacing }, function()
-				if not h then
-					drawLeaseForm(station)
-					return
-				end
-
-				if not drawHeader(h) then return end
-				ui.spacing()
-				drawBays(h)
-				ui.separator()
-
-				local view = selectedView(h)
-				local previewWidth = ui.getContentRegion().x * PREVIEW_WIDTH
-				ui.child("hangarPreview", Vector2(previewWidth, 0), function()
-					drawPreview(view)
-				end)
-				ui.sameLine()
-				ui.child("hangarDetails", Vector2(0, 0), function()
-					drawDetails(h, view)
-				end)
+				ui.tabBar("hangarTabs", {
+					{ ui.get_icon_glyph(icons.hangar) .. " " .. l.SHIPS, drawShips },
+					{ ui.get_icon_glyph(icons.crew_lounge) .. " " .. l.CREW_LOUNGE, function() drawLounge(station) end },
+				})
 			end)
 		end)
 	end,

@@ -10,12 +10,16 @@ local PiGuiFace = require 'pigui.libs.face'
 local Commodities = require 'Commodities'
 local PlayerState = require 'PlayerState'
 local CargoManager = require 'CargoManager'
+local Hangar = require 'modules.Hangar.Hangar'
+local Format = require 'Format'
 
 local ui = require 'pigui'
 local textTable = require 'pigui.libs.text-table'
 
 local l = Lang.GetResource("ui-core")
 local lcrew = Lang.GetResource("module-crewcontracts")
+local lh = Lang.GetResource("module-hangar")
+local icons = ui.theme.icons
 local pionillium = ui.fonts.pionillium
 local orbiteer = ui.fonts.orbiteer
 local colors = ui.theme.colors
@@ -211,8 +215,64 @@ local function makeCrewList()
 	return t
 end
 
+-- Where a lounge is: the station, what it orbits or stands on, the system,
+-- and for another system how far it is, with a button to show it on the map
+local function loungePlace(lounge, c)
+	return function()
+		local path = lounge.path
+		local ok, body, system = pcall(function()
+			local sbody = path:GetSystemBody()
+			return sbody.parent and sbody.parent.name, path:GetStarSystem().name
+		end)
+		ui.text(lounge.station)
+		if ok then
+			ui.textColored(colors.fontDim, body and (body .. " · " .. system) or system)
+		end
+		if Game.system and not path:IsSameSystem(Game.system.path) then
+			ui.textColored(colors.fontDim, string.interp(lh.LIGHT_YEARS_AWAY, {
+				dist = string.format("%.2f", Game.system:DistanceTo(path)) }))
+			ui.sameLine()
+			-- one button per person: several can wait in the same lounge
+			if ui.inlineIconButton("##loungeMap" .. tostring(c), icons.sector_map, lh.SHOW_ON_MAP) then
+				Game.sectorView:SwitchToPath(path:SystemOnly())
+				Game.SetView("SectorView")
+			end
+		end
+	end
+end
+
+-- Crew waiting in station lounges (read-only; they're moved in the station's
+-- Hangar tab)
+local function drawLoungeCrew()
+	local rows = {
+		separated = true, headerOnly = true,
+		{ l.NAME_PERSON, l.POSITION, lh.STATION, l.WAGE, l.OWED, lh.SINCE, font = orbiteer.heading }
+	}
+	for _, lounge in ipairs(Hangar.GetLounges()) do
+		for _, entry in ipairs(lounge.crew) do
+			local c = entry.character
+			local wage = c.contract and math.floor(c.contract.wage / 2 + 0.5) or 0
+			table.insert(rows, {
+				c.name,
+				c.title or l.GENERAL_CREW,
+				loungePlace(lounge, c),
+				{ ui.Format.Money(wage), color = colors.econProfit },
+				{ ui.Format.Money(c.contract and c.contract.outstanding or 0), color = colors.econLoss },
+				Format.DateOnly(entry.since),
+			})
+		end
+	end
+	if #rows == 1 then return end
+
+	ui.newLine()
+	ui.withFont(orbiteer.heading, function() ui.text(lh.WAITING_IN_LOUNGES) end)
+	ui.textColored(colors.fontDim, lh.LOUNGE_WAGE_NOTE)
+	textTable.drawTable(6, nil, rows)
+end
+
 local function drawCrewList(crewList)
 	textTable.drawTable(6, nil, crewList)
+	drawLoungeCrew()
 
 	ui.newLine()
 	ui.withFont(orbiteer.heading, function() ui.text(l.GIVE_ORDERS_TO_CREW .. ":") end)

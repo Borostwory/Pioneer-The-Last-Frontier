@@ -567,6 +567,7 @@ function ui.tabBar(id, items)
 		if type(v) == "table" and v[1] and type(v[2]) == "function" then
 			if pigui.BeginTabItem(tostring(v[1]) .. "##" .. tostring(i)) then
 				v[2](v)
+				pigui.EndTabItem()
 			end
 		end
 	end

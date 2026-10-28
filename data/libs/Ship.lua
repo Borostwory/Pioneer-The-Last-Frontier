@@ -548,6 +548,50 @@ Ship.Dismiss = function (self,crewMember)
 end
 
 --
+-- Method: SendCrewToLounge
+--
+-- Take a crew member off the ship without ending their contract, to wait in
+-- a station's crew lounge (the hangar module keeps them). They don't return
+-- to the pool of characters, and their wages keep running.
+--
+-- > success = ship:SendCrewToLounge(crewMember)
+--
+-- Triggers <onCrewToLounge>.
+--
+Ship.SendCrewToLounge = function (self,crewMember)
+	if crewMember.player or not CrewRoster[self] then return false end
+	for key,existingCrewMember in pairs(CrewRoster[self]) do
+		if crewMember == existingCrewMember then
+			table.remove(CrewRoster[self],key)
+			Event.Queue('onCrewToLounge',self,crewMember)
+			return true
+		end
+	end
+	return false
+end
+
+--
+-- Method: TakeCrewFromLounge
+--
+-- Bring a crew member waiting in a lounge back aboard. Like Enroll, it
+-- refuses above the ship's maximum crew, but the contract and its wage timer
+-- carry on, so no <onJoinCrew> is sent.
+--
+-- > success = ship:TakeCrewFromLounge(crewMember)
+--
+-- Triggers <onCrewFromLounge>.
+--
+Ship.TakeCrewFromLounge = function (self,crewMember)
+	if not CrewRoster[self] then CrewRoster[self] = {} end
+	if #CrewRoster[self] >= ShipDef[self.shipId].maxCrew or not isNotAlreadyEnrolled(crewMember) then
+		return false
+	end
+	table.insert(CrewRoster[self],crewMember)
+	Event.Queue('onCrewFromLounge',self,crewMember)
+	return true
+end
+
+--
 -- Method: GenerateCrew
 --
 -- Generates a full crew complement for a ship that has no initialised crew list.

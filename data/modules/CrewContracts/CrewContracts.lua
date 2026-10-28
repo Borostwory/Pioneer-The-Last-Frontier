@@ -11,11 +11,13 @@ local Format = require 'Format'
 local Timer = require 'Timer'
 local utils = require 'utils'
 local PlayerState = require 'PlayerState'
+local Hangar = require 'modules.Hangar.Hangar'
 
 -- This module allows the player to hire crew members through BB adverts
 -- on stations, and handles periodic events such as their wages.
 
 local l = Lang.GetResource("module-crewcontracts")
+local lh = Lang.GetResource("module-hangar")
 local lui = Lang.GetResource("ui-core")
 
 local wage_period = 604800 -- a week of seconds
@@ -78,14 +80,19 @@ local scheduleWages = function (crewMember)
 		-- Check if crew member has been dismissed
 		if not contract then return end
 
-		if PlayerState.GetMoney() > contract.wage then
-			PlayerState.AddMoney(0 - contract.wage)
+		-- Waiting in a crew lounge (the hangar module sets waitingAt): half
+		-- wage as a retainer, and nothing learned
+		local waiting = crewMember.waitingAt ~= nil
+		local wage = waiting and math.floor(contract.wage / 2 + 0.5) or contract.wage
+
+		if PlayerState.GetMoney() > wage then
+			PlayerState.AddMoney(0 - wage)
 			-- Being paid can make awkward crew like you more
 			if not crewMember:TestRoll('playerRelationship') then
 				crewMember.playerRelationship = crewMember.playerRelationship + 1
 			end
 		else
-			contract.outstanding = contract.outstanding + contract.wage
+			contract.outstanding = contract.outstanding + wage
 			crewMember.playerRelationship = crewMember.playerRelationship - 1
 			Character.persistent.player.reputation = Character.persistent.player.reputation - 0.5
 		end
@@ -96,7 +103,7 @@ local scheduleWages = function (crewMember)
 		contract.outstanding = contract.outstanding - arrears
 
 		-- The crew gain experience each week, and might get better
-		boostCrewSkills(crewMember)
+		if not waiting then boostCrewSkills(crewMember) end
 
 		-- Schedule the next pay day, if there is one.
 		if contract.payday and not crewMember.dead then
@@ -110,8 +117,11 @@ end
 
 -- This gets run just after crew are restored from a saved game
 Event.Register('crewAvailable',function()
-	-- scheduleWages() for everybody
+	-- scheduleWages() for everybody, aboard and waiting in lounges
 	for crewMember in Game.player:EachCrewMember() do
+		scheduleWages(crewMember)
+	end
+	for crewMember in Hangar.EachLoungeMember() do
 		scheduleWages(crewMember)
 	end
 end)
@@ -250,6 +260,7 @@ local onChat = function (form,ref,option)
 			response = response,
 		}))
 		form:AddOption(l.MAKE_OFFER_OF_POSITION_ON_SHIP_FOR_STATED_AMOUNT,1)
+		form:AddOption(lh.OFFER_POSITION_IN_LOUNGE,8)
 
 		local i = 10
 		for n = 2, 5 do
@@ -300,6 +311,35 @@ local onChat = function (form,ref,option)
 				form:SetMessage(l.IM_SORRY_YOUR_OFFER_ISNT_ATTRACTIVE_TO_ME)
 				form:AddOption(l.GO_BACK, 0)
 			end
+			offer = nil
+			candidate = nil
+		end
+
+		if option == 8 then
+			-- Offer of employment, waiting in the crew lounge here (the ship
+			-- may be full, or the player wants them later)
+			form:Clear()
+			form:SetTitle(candidate.name)
+			local blocked = Hangar.LoungeBlocked()
+			if blocked then
+				form:SetMessage(blocked)
+			elseif candidate:TestRoll('playerRelationship',15) then
+				if Hangar.HireIntoLounge(candidate) then
+					candidate.contract = {
+						wage = offer,
+						payday = Game.time + wage_period,
+						outstanding = 0
+					}
+					scheduleWages(candidate)
+					form:SetMessage(lh.HIRED_INTO_LOUNGE)
+					for k,v in ipairs(nonPersistentCharactersForCrew[station]) do
+						if v == candidate then table.remove(nonPersistentCharactersForCrew[station],k) end
+					end
+				end
+			else
+				form:SetMessage(l.IM_SORRY_YOUR_OFFER_ISNT_ATTRACTIVE_TO_ME)
+			end
+			form:AddOption(l.GO_BACK, 0)
 			offer = nil
 			candidate = nil
 		end

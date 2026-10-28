@@ -15,6 +15,7 @@ local EquipSet = require 'EquipSet'
 local PlayerState = require 'PlayerState'
 local ModelSkin = require 'SceneGraph.ModelSkin'
 local Hangar = require 'modules.Hangar.Hangar'
+local Character = require 'Character'
 local utils = require 'utils'
 
 local ui = require 'pigui'
@@ -185,6 +186,21 @@ debugView.registerTab("debug-hangar", {
 			drawPassTime()
 		else
 			ui.text("Dock to pass time.")
+		end
+
+		ui.separator()
+		local waiting = 0
+		for _ in Hangar.EachLoungeMember() do waiting = waiting + 1 end
+		ui.text("Crew: {} aboard, {} in lounges, lounge debt {}" % { Game.player:CrewNumber(),
+			waiting, math.floor(Hangar.LoungeDebt() + 0.5) })
+		ui.sameLine()
+		if ui.button("Hire a test crew member") then
+			-- hired as from the bulletin board: the contract is set once aboard
+			local c = Character.New()
+			c:RollNew(true)
+			if Game.player:Enroll(c) then
+				c.contract = { wage = 50, payday = Game.time + 7 * 86400, outstanding = 0 }
+			end
 		end
 
 		ui.separator()

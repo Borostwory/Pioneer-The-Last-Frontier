@@ -1,4 +1,12 @@
 {
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "aboard"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "Aboard \"{ship}\""
+  },
   "ACTIVE": {
     "description": "Bay table: the row for the ship the player is flying",
     "message": "Flying"
@@ -19,6 +27,10 @@
     "description": "",
     "message": "You already lease a hangar here."
   },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Also waiting elsewhere:"
+  },
   "A_MISSION": {
     "description": "Fallback name for whatever holds some cargo",
     "message": "a mission"
@@ -30,6 +42,14 @@
   "BAYS_CAN_CHANGE": {
     "description": "",
     "message": "Bays can be added or removed later."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Bring aboard"
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "You can't launch with fewer than {min} crew."
   },
   "CARGO": {
     "description": "",
@@ -67,6 +87,10 @@
     "description": "Bay table column",
     "message": "Ship"
   },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "will come aboard"
+  },
   "CREDIT_LINE": {
     "description": "Under the bay table",
     "message": "Paid upfront: {credit} of credit left, shared by all bays. At today's rent it lasts until about {date}; after that, rent is taken from your account on the 1st of each month."
@@ -75,9 +99,29 @@
     "description": "",
     "message": "Crew"
   },
-  "CREW_LINE": {
-    "description": "Swap window: crew aboard against the stored ship's limits",
-    "message": "Crew: {crew} aboard. \"{ship}\" takes {min}–{max}."
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Crew for \"{ship}\" (takes {min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} crew (this ship takes {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Crew lounge"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "You owe them {owed} in wages. They won't take it well, and owing more than {limit} counts as contract fraud."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} is waiting in the lounge here. Their contract ends and they leave your crew."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Dismiss {name}?"
   },
   "EMPTY_BAY": {
     "description": "Bay table: an empty bay",
@@ -119,6 +163,10 @@
     "description": "",
     "message": "Fuel"
   },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "will wait in the lounge"
+  },
   "HANGAR": {
     "description": "Name of the station tab",
     "message": "Hangar"
@@ -131,6 +179,10 @@
     "description": "",
     "message": "This hangar is locked until the unpaid rent is paid."
   },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Thanks! I'll wait in the crew lounge here until you need me aboard."
+  },
   "HULL": {
     "description": "",
     "message": "Hull"
@@ -138,6 +190,14 @@
   "HYPERDRIVE": {
     "description": "",
     "message": "Hyperdrive"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "in the lounge"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "In the lounge here"
   },
   "ITEMS_IN_STORE": {
     "description": "Equipment that couldn't be refitted is kept in the hangar",
@@ -150,6 +210,38 @@
   "LEASE_HANGAR": {
     "description": "Button",
     "message": "Lease hangar"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} ly away"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "In the lounge here after the swap: {count}, {cost} a night, plus half wages."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Crew lounge at {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Lounge fees unpaid: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "You owe {debt} in lounge fees. Pay them before anyone else waits in a lounge."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Lounge: {rate} per person per night ({now} a night now), billed on the 1st. Crew waiting here are paid half wages as a retainer and learn nothing new."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Lounge fees couldn't be paid in full. You owe {debt}; it's taken from your money when you have it."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Paid half wages while they wait. Move them in a station's Hangar tab, Crew lounge."
   },
   "LOW_HULL_FUEL": {
     "description": "Swap warning",
@@ -182,6 +274,10 @@
   "NEXT_BILL_PART": {
     "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
     "message": "Next bill {date}: about {amount}, the rent for {from} – {to} (part of a month). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Nobody is waiting here."
   },
   "NONE": {
     "description": "",
@@ -222,6 +318,10 @@
   "NO_SHIPS_STORED": {
     "description": "",
     "message": "No ships are stored here yet."
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Make an offer of a position, waiting in the crew lounge here for now"
   },
   "OTHER_HANGAR": {
     "description": "One of the player's other hangars",
@@ -327,9 +427,33 @@
     "description": "",
     "message": "Select a stored ship in the table above to see it and fly it."
   },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Wait in the lounge here"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Ships"
+  },
   "SHIP_CELL": {
     "description": "Bay table: a ship",
     "message": "{name} ({type}) · hull {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "\"{ship}\" takes at most {max} crew."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Show on the sector map"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Since"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Station"
   },
   "STATUS_ACTIVE": {
     "description": "",
@@ -341,7 +465,7 @@
   },
   "SWAP_NOTE": {
     "description": "",
-    "message": "\"{ship}\" will be stored in this bay. Your crew comes along."
+    "message": "\"{ship}\" will be stored in this bay. Crew never stays on a stored ship: whoever isn't ticked below waits in the lounge here."
   },
   "SWAP_SHIPS": {
     "description": "Button",
@@ -369,11 +493,11 @@
   },
   "TOO_FEW_CREW": {
     "description": "Swap warning",
-    "message": "\"{ship}\" needs at least {min} crew; you have {crew}. You can't launch until you hire more."
+    "message": "\"{ship}\" needs at least {min} crew; {crew} are ticked. You can't launch until you hire more or take someone from the lounge."
   },
   "TOO_MANY_CREW": {
     "description": "Swap blocker",
-    "message": "\"{ship}\" takes at most {max} crew; you have {crew}."
+    "message": "\"{ship}\" takes at most {max} crew; {crew} are ticked. Untick {over} to leave them in the lounge."
   },
   "TOO_MUCH_CARGO": {
     "description": "Swap blocker",
@@ -383,6 +507,26 @@
     "description": "Bay table: total row",
     "message": "Total: {used} of {bays} bays in use"
   },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} a week"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} at {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} waiting"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Waiting in lounges"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "waiting since {date}"
+  },
   "YEARS": {
     "description": "Unit picker",
     "message": "years"
@@ -390,6 +534,10 @@
   "YOUR_OTHER_HANGARS": {
     "description": "",
     "message": "Your other hangars:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "You (commander)"
   },
   "YOU_HAVE_CREW": {
     "description": "",

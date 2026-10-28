@@ -42,8 +42,9 @@
     49 ship_swap           two ships with arrows turning round them (swap ships)
     50 bay_empty           dashed bay outline (empty bay)
     51 mission_cargo       crate with a diamond mark (cargo held for a mission)
-    52-57 free (planned: crew_lounge, equipment_store, ship_send, ship_receive,
-          in_transit, transfer_cancel)
+    52 crew_lounge         figure seated on a bench (crew waiting in a station lounge)
+    53-57 free (planned: equipment_store, ship_send, ship_receive, in_transit,
+          transfer_cancel)
     58 lease_locked        padlock in a bay (hangar locked by unpaid rent)
     59-63 free (planned: 59 fleet)
 
@@ -474,6 +475,24 @@
       <polygon
          style="fill:#ffffff"
          points="20,16.5 27,24 20,31.5 13,24" />
+    </g>
+
+    <!-- 52: crew_lounge -->
+    <g id="icon_crew_lounge" transform="translate(160,120)">
+      <!-- head -->
+      <circle style="fill:#ffffff" cx="14" cy="7.5" r="4.5" />
+      <!-- back, thigh and shin of the seated figure -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round"
+         d="M14,15 L15,24 H25 V33" />
+      <!-- arm resting forward -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M14.5,17 L21.5,20.5" />
+      <!-- bench -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M4,28.5 H36 M7.5,28.5 V36 M32.5,28.5 V36" />
     </g>
 
     <!-- 58: lease_locked -->
