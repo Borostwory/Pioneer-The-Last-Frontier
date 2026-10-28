@@ -8,6 +8,9 @@
 		},
 		{
 			"iconFile": "icons/icons.icondef"
+		},
+		{
+			"iconFile": "icons/icons_tlf.icondef"
 		}
 	]
 }

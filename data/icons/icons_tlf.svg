@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  The Last Frontier icon sheet.
+
+  Layout: 16 columns x 4 rows of 40x40 px cells (64 slots), described by icons_tlf.icondef.
+  Slot index = row * 16 + column. Cell origin = (column * 40, row * 40).
+  Draw white (#ffffff) on transparent; the game tints icons at runtime.
+  Keep artwork inside the cell, roughly 2 px from each edge.
+
+  Slots in use:
+    row 0 - ship and surface
+    0  eva_mode            astronaut in a spacesuit
+    1  rover_dispatch      rover lowered out of the ship's bay
+    2  rover               surface rover, side view (shop / market)
+    3  ship_lights         lamp throwing dipped beams at the ground (ship lights toggle)
+    4-15 free
+
+    row 1 - orbit / burn planner
+    16 burn_pending        dashed burn marker (planned burn)
+    17 burn_active         burn marker with rays (burn in progress)
+    18 burn_completed      burn marker with a tick (completed burn)
+    19 burn_add            burn marker with a plus (+ Add Burn)
+    20 auto_orientation    ship turning towards a burn marker (Auto Orientation, plan heading)
+    21 auto_burn           ship firing its main engine (Auto Burn)
+    22 warp_to_burn        fast-forward to a burn marker (warp to the burn)
+    23 burn_list           list of burns (show / hide the burn HUD)
+    24 orbit_view_3d       planet with an orbit passing in front of it (3D Orbit View)
+    25 circularize         dashed ellipse and a circular orbit
+    26 approach_intercept  1-burn transfer arriving at the target
+    27 approach_rendezvous 2 burns, joining the target's path alongside it
+    28 approach_flyby      path bent around a planet (flyby altitude)
+    29 approach_capture    incoming path captured into orbit (orbit altitude)
+    30 stand_off           ship holding a gap behind the target on its orbit
+    31 follow_plan         camera brackets on a ship flying the planned path
+
+    row 2 - map and view
+    32 zoom_to_ship        magnifier over a ship (zoom the map to your ship)
+    33-47 free
+
+    row 3 free (48-63)
+
+  To add a row, grow height and viewBox by 40 and bump "grid" in icons_tlf.icondef.
+  The "Slot guides" layer is hidden (display:none) so it never renders in game;
+  keep it hidden before saving.
+-->
+<svg
+   width="640"
+   height="160"
+   viewBox="0 0 640 160"
+   version="1.1"
+   id="icons_tlf"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd">
+  <sodipodi:namedview
+     id="namedview"
+     pagecolor="#3a3a3a"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="false"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="true">
+    <inkscape:grid
+       type="xygrid"
+       id="cellgrid"
+       originx="0"
+       originy="0"
+       spacingx="40"
+       spacingy="40"
+       empspacing="1"
+       units="px" />
+  </sodipodi:namedview>
+
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="Slot guides"
+     id="layer_guides"
+     style="display:none">
+    <path
+       id="guide_cells"
+       style="fill:none;stroke:#ff00ff;stroke-width:0.5;stroke-opacity:0.6"
+       d="M0,0 H640 V160 H0 Z M0,40 H640 M0,80 H640 M0,120 H640 M40,0 V160 M80,0 V160 M120,0 V160 M160,0 V160 M200,0 V160 M240,0 V160 M280,0 V160 M320,0 V160 M360,0 V160 M400,0 V160 M440,0 V160 M480,0 V160 M520,0 V160 M560,0 V160 M600,0 V160" />
+  </g>
+
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="Icons"
+     id="layer_icons">
+
+    <!-- 0: eva_mode -->
+    <g id="icon_eva_mode" transform="translate(0,0)">
+      <!-- helmet with visor cut out -->
+      <path
+         style="fill:#ffffff;fill-rule:evenodd"
+         d="M12.5,11 A7.5,7.5 0 1 0 27.5,11 A7.5,7.5 0 1 0 12.5,11 Z
+            M17.5,8 H22.5 A2.5,2.5 0 0 1 25,10.5 A2.5,2.5 0 0 1 22.5,13 H17.5 A2.5,2.5 0 0 1 15,10.5 A2.5,2.5 0 0 1 17.5,8 Z" />
+      <!-- backpack and torso with chest unit cut out -->
+      <path
+         style="fill:#ffffff;fill-rule:evenodd"
+         d="M14,19.5 H26 A2.5,2.5 0 0 1 28.5,22 V27 A2.5,2.5 0 0 1 26,29.5 H14 A2.5,2.5 0 0 1 11.5,27 V22 A2.5,2.5 0 0 1 14,19.5 Z
+            M17.5,22.5 H22.5 V25 H17.5 Z" />
+      <!-- arms and legs -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round"
+         d="M12.5,21.5 L7,27.5 M27.5,21.5 L33,27.5" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round"
+         d="M16.5,29 L15,36 M23.5,29 L25,36" />
+    </g>
+
+    <!-- 1: rover_dispatch -->
+    <g id="icon_rover_dispatch" transform="translate(40,0)">
+      <!-- open bay in the ship's belly -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"
+         d="M6,8 V3 H34 V8" />
+      <!-- down arrow -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2.5;stroke-linecap:round"
+         d="M20,6 V11" />
+      <path
+         style="fill:#ffffff"
+         d="M15.5,10.5 H24.5 L20,15.5 Z" />
+      <!-- rover, same artwork as slot 2 scaled down -->
+      <g transform="translate(6,12.65) scale(0.7)">
+        <path
+           style="fill:none;stroke:#ffffff;stroke-width:2;stroke-linecap:round"
+           d="M11,14 L9,8" />
+        <path
+           style="fill:#ffffff"
+           d="M9,8 m-1.8,0 a1.8,1.8 0 1 0 3.6,0 a1.8,1.8 0 1 0 -3.6,0 Z" />
+        <path
+           style="fill:#ffffff;fill-rule:evenodd"
+           d="M7,21 V16 Q7,14 9,14 H22 L26,10 H31 Q33,10 33.5,12 L35,21 Z
+              M27.5,12.5 H31.3 L32.2,16.5 H27.5 Z
+              M11,16.5 H15 V19 H11 Z
+              M17.5,16.5 H21.5 V19 H17.5 Z" />
+        <path
+           style="fill:#ffffff"
+           d="M5.5,21 H34.5 A1.5,1.5 0 0 1 36,22.5 V24 A1.5,1.5 0 0 1 34.5,25.5 H5.5 A1.5,1.5 0 0 1 4,24 V22.5 A1.5,1.5 0 0 1 5.5,21 Z" />
+        <path
+           style="fill:#ffffff;fill-rule:evenodd"
+           d="M4.5,31 a4.5,4.5 0 1 0 9,0 a4.5,4.5 0 1 0 -9,0 Z M7.5,31 a1.5,1.5 0 1 0 3,0 a1.5,1.5 0 1 0 -3,0 Z
+              M15.5,31 a4.5,4.5 0 1 0 9,0 a4.5,4.5 0 1 0 -9,0 Z M18.5,31 a1.5,1.5 0 1 0 3,0 a1.5,1.5 0 1 0 -3,0 Z
+              M26.5,31 a4.5,4.5 0 1 0 9,0 a4.5,4.5 0 1 0 -9,0 Z M29.5,31 a1.5,1.5 0 1 0 3,0 a1.5,1.5 0 1 0 -3,0 Z" />
+      </g>
+    </g>
+
+    <!-- 2: rover -->
+    <g id="icon_rover" transform="translate(80,0)">
+      <!-- antenna -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:1.5;stroke-linecap:round"
+         d="M11,14 L9,8" />
+      <path
+         style="fill:#ffffff"
+         d="M9,8 m-1.8,0 a1.8,1.8 0 1 0 3.6,0 a1.8,1.8 0 1 0 -3.6,0 Z" />
+      <!-- cabin with windscreen and side windows cut out -->
+      <path
+         style="fill:#ffffff;fill-rule:evenodd"
+         d="M7,21 V16 Q7,14 9,14 H22 L26,10 H31 Q33,10 33.5,12 L35,21 Z
+            M27.5,12.5 H31.3 L32.2,16.5 H27.5 Z
+            M11,16.5 H15 V19 H11 Z
+            M17.5,16.5 H21.5 V19 H17.5 Z" />
+      <!-- chassis -->
+      <path
+         style="fill:#ffffff"
+         d="M5.5,21 H34.5 A1.5,1.5 0 0 1 36,22.5 V24 A1.5,1.5 0 0 1 34.5,25.5 H5.5 A1.5,1.5 0 0 1 4,24 V22.5 A1.5,1.5 0 0 1 5.5,21 Z" />
+      <!-- wheels with hubs cut out -->
+      <path
+         style="fill:#ffffff;fill-rule:evenodd"
+         d="M4.5,31 a4.5,4.5 0 1 0 9,0 a4.5,4.5 0 1 0 -9,0 Z M7.5,31 a1.5,1.5 0 1 0 3,0 a1.5,1.5 0 1 0 -3,0 Z
+            M15.5,31 a4.5,4.5 0 1 0 9,0 a4.5,4.5 0 1 0 -9,0 Z M18.5,31 a1.5,1.5 0 1 0 3,0 a1.5,1.5 0 1 0 -3,0 Z
+            M26.5,31 a4.5,4.5 0 1 0 9,0 a4.5,4.5 0 1 0 -9,0 Z M29.5,31 a1.5,1.5 0 1 0 3,0 a1.5,1.5 0 1 0 -3,0 Z" />
+    </g>
+
+    <!-- 3: ship_lights -->
+    <g id="icon_ship_lights" transform="translate(120,0)">
+      <!-- lamp housing, lens facing right -->
+      <path
+         style="fill:#ffffff"
+         d="M17,9 V31 C8,31 4,26 4,20 C4,14 8,9 17,9 Z" />
+      <!-- dipped beams -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M21.5,11 L35.5,15 M21.5,17 L35.5,21 M21.5,23 L35.5,27 M21.5,29 L35.5,33" />
+    </g>
+
+    <!-- row 1: orbit / burn planner -->
+
+    <!-- 16: burn_pending -->
+    <g id="icon_burn_pending" transform="translate(0,40)">
+      <circle cx="20" cy="20" r="13"
+         style="fill:none;stroke:#ffffff;stroke-width:3.5;stroke-dasharray:6.2,4" />
+      <circle cx="20" cy="20" r="4" style="fill:#ffffff" />
+    </g>
+
+    <!-- 17: burn_active -->
+    <g id="icon_burn_active" transform="translate(40,40)">
+      <circle cx="20" cy="20" r="10"
+         style="fill:none;stroke:#ffffff;stroke-width:3.5" />
+      <circle cx="20" cy="20" r="3.5" style="fill:#ffffff" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M20,2.5 V6.5 M20,33.5 V37.5 M2.5,20 H6.5 M33.5,20 H37.5
+            M7.6,7.6 L10.5,10.5 M32.4,7.6 L29.5,10.5 M7.6,32.4 L10.5,29.5 M32.4,32.4 L29.5,29.5" />
+    </g>
+
+    <!-- 18: burn_completed -->
+    <g id="icon_burn_completed" transform="translate(80,40)">
+      <circle cx="20" cy="20" r="13"
+         style="fill:none;stroke:#ffffff;stroke-width:3.5" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round"
+         d="M13.5,20.5 L18,25 L26.5,15" />
+    </g>
+
+    <!-- 19: burn_add -->
+    <g id="icon_burn_add" transform="translate(120,40)">
+      <circle cx="16" cy="24" r="10"
+         style="fill:none;stroke:#ffffff;stroke-width:3.5" />
+      <circle cx="16" cy="24" r="3.5" style="fill:#ffffff" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3.5;stroke-linecap:round"
+         d="M31,3 V15 M25,9 H37" />
+    </g>
+
+    <!-- 20: auto_orientation -->
+    <g id="icon_auto_orientation" transform="translate(160,40)">
+      <!-- ship -->
+      <path
+         style="fill:#ffffff"
+         transform="translate(10,27)"
+         d="M0,-9 L6.5,8 L0,4.5 L-6.5,8 Z" />
+      <!-- turning arrow from the ship's nose to the burn marker -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2.5;stroke-linecap:round"
+         d="M10,13 Q19,1 28.5,13" />
+      <path
+         style="fill:#ffffff"
+         d="M31.4,17.2 L31.6,11.1 L26.4,14.9 Z" />
+      <!-- burn marker -->
+      <circle cx="31" cy="27" r="5.5"
+         style="fill:none;stroke:#ffffff;stroke-width:3" />
+      <circle cx="31" cy="27" r="2" style="fill:#ffffff" />
+    </g>
+
+    <!-- 21: auto_burn -->
+    <g id="icon_auto_burn" transform="translate(200,40)">
+      <path
+         style="fill:#ffffff"
+         transform="translate(20,12.5) scale(1.15)"
+         d="M0,-9 L6.5,8 L0,4.5 L-6.5,8 Z" />
+      <!-- main engine flame -->
+      <path
+         style="fill:#ffffff"
+         d="M14.5,24.5 H25.5 L23.5,33 L22,29.5 L20,38.5 L18,29.5 L16.5,33 Z" />
+    </g>
+
+    <!-- 22: warp_to_burn -->
+    <g id="icon_warp_to_burn" transform="translate(240,40)">
+      <path
+         style="fill:#ffffff"
+         d="M3,12 L11,20 L3,28 Z M12,12 L20,20 L12,28 Z" />
+      <circle cx="30" cy="20" r="6.5"
+         style="fill:none;stroke:#ffffff;stroke-width:3" />
+      <circle cx="30" cy="20" r="2.5" style="fill:#ffffff" />
+    </g>
+
+    <!-- 23: burn_list -->
+    <g id="icon_burn_list" transform="translate(280,40)">
+      <circle cx="7" cy="9" r="3.5"
+         style="fill:none;stroke:#ffffff;stroke-width:2.5" />
+      <circle cx="7" cy="20" r="4.75" style="fill:#ffffff" />
+      <circle cx="7" cy="31" r="3.5"
+         style="fill:none;stroke:#ffffff;stroke-width:2.5" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M15,9 H36 M15,20 H36 M15,31 H30" />
+    </g>
+
+    <!-- 24: orbit_view_3d -->
+    <g id="icon_orbit_view_3d" transform="translate(320,40) rotate(-20,20,20)">
+      <!-- planet, cut where the near side of the orbit passes in front of it -->
+      <path
+         style="fill:#ffffff"
+         d="M12.283,23.564 A8.5,8.5 0 1 1 27.717,23.564 A17,4 0 0 1 12.283,23.564 Z" />
+      <!-- orbit: far side dashed, near side solid -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2;stroke-dasharray:2.5,2.5"
+         d="M3,20 A17,6 0 0 1 37,20" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2.5"
+         d="M37,20 A17,6 0 0 1 3,20" />
+      <circle cx="33" cy="23.87" r="2.75" style="fill:#ffffff" />
+    </g>
+
+    <!-- 25: circularize -->
+    <g id="icon_circularize" transform="translate(360,40)">
+      <!-- old orbit, an ellipse touching the new one at the burn -->
+      <ellipse cx="24" cy="20" rx="12" ry="7"
+         style="fill:none;stroke:#ffffff;stroke-width:2;stroke-dasharray:3,2.5" />
+      <!-- new circular orbit -->
+      <circle cx="21" cy="20" r="15"
+         style="fill:none;stroke:#ffffff;stroke-width:3" />
+      <circle cx="21" cy="20" r="3" style="fill:#ffffff" />
+      <circle cx="36" cy="20" r="3.5" style="fill:#ffffff" />
+    </g>
+
+    <!-- 26: approach_intercept -->
+    <g id="icon_approach_intercept" transform="translate(400,40)">
+      <circle cx="6" cy="34" r="3" style="fill:#ffffff" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M6,34 Q6,12 22,12" />
+      <path
+         style="fill:#ffffff"
+         d="M27.5,12 L21.5,8 L21.5,16 Z" />
+      <!-- target -->
+      <circle cx="33" cy="12" r="4"
+         style="fill:none;stroke:#ffffff;stroke-width:2.5" />
+      <circle cx="33" cy="12" r="1.5" style="fill:#ffffff" />
+    </g>
+
+    <!-- 27: approach_rendezvous -->
+    <g id="icon_approach_rendezvous" transform="translate(440,40)">
+      <!-- target and its path -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2;stroke-dasharray:3,3"
+         d="M3,13 H37" />
+      <rect x="26" y="9" width="8" height="8" style="fill:#ffffff" />
+      <!-- ship path with its two burns -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M4,35 C13,35 14,24 24,24 H36" />
+      <circle cx="4" cy="35" r="3" style="fill:#ffffff" />
+      <circle cx="24" cy="24" r="3" style="fill:#ffffff" />
+    </g>
+
+    <!-- 28: approach_flyby -->
+    <g id="icon_approach_flyby" transform="translate(480,40)">
+      <circle cx="18" cy="25" r="8" style="fill:#ffffff" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M3,9 C24,8 33,14 33,24 C33,30 31,33 29,35" />
+      <path
+         style="fill:#ffffff"
+         d="M25,39 L26.5,32.5 L31.5,37.5 Z" />
+    </g>
+
+    <!-- 29: approach_capture -->
+    <g id="icon_approach_capture" transform="translate(520,40)">
+      <circle cx="20" cy="21" r="6.5" style="fill:#ffffff" />
+      <circle cx="20" cy="21" r="13"
+         style="fill:none;stroke:#ffffff;stroke-width:2.5" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M2,8 H17" />
+      <circle cx="20" cy="8" r="3.5" style="fill:#ffffff" />
+      <path
+         style="fill:#ffffff"
+         d="M33,26.5 L29,20.5 L37,20.5 Z" />
+    </g>
+
+    <!-- 30: stand_off -->
+    <g id="icon_stand_off" transform="translate(560,40)">
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2;stroke-dasharray:3,3"
+         d="M2,26 H38" />
+      <path style="fill:#ffffff" d="M6,21 L15,26 L6,31 Z" />
+      <rect x="27" y="22" width="8" height="8" style="fill:#ffffff" />
+      <!-- the gap -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2;stroke-linecap:round"
+         d="M15,13 H27 M15,9 V17 M27,9 V17" />
+      <path
+         style="fill:#ffffff"
+         d="M15.5,13 L19.5,10.5 L19.5,15.5 Z M26.5,13 L22.5,10.5 L22.5,15.5 Z" />
+    </g>
+
+    <!-- 31: follow_plan -->
+    <g id="icon_follow_plan" transform="translate(600,40)">
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:3.5,3"
+         d="M3,36 Q16,6 37,9" />
+      <path
+         style="fill:#ffffff"
+         transform="translate(18,14.25) rotate(51.5)"
+         d="M0,-8 L5.5,6 L0,3 L-5.5,6 Z" />
+      <!-- camera brackets -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"
+         d="M7,8 V3.5 H12 M24,3.5 H29 V8 M29,20.5 V25 H24 M12,25 H7 V20.5" />
+    </g>
+
+    <!-- row 2: map and view -->
+
+    <!-- 32: zoom_to_ship -->
+    <g id="icon_zoom_to_ship" transform="translate(0,80)">
+      <circle cx="16" cy="16" r="11"
+         style="fill:none;stroke:#ffffff;stroke-width:3.5" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:5;stroke-linecap:round"
+         d="M24.5,24.5 L35,35" />
+      <path
+         style="fill:#ffffff"
+         transform="translate(16,16.4) scale(0.75)"
+         d="M0,-9 L6.5,8 L0,4.5 L-6.5,8 Z" />
+    </g>
+
+  </g>
+</svg>

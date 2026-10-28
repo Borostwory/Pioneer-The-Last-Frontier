@@ -263,7 +263,7 @@ local function displayControlsToggle(min, max, systemView)
 	ui.setNextWindowPos(pos, "Always")
 
 	ui.window("OrbitViewHudToggle", toggleFlags, function()
-		if ui.mainMenuButton(icons.system_map, (visible and L.HIDE or L.SHOW) .. "##orbitViewHudToggle",
+		if ui.mainMenuButton(icons.orbit_view_3d, (visible and L.HIDE or L.SHOW) .. "##orbitViewHudToggle",
 			visible, styles.MainButtonSize) then
 			visible = not visible
 			Game.SetConfigBool("MultiBurnHud", "orbitViewVisible", visible)

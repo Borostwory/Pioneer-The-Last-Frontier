@@ -826,9 +826,9 @@ local BURN_STATUS_COMPLETED = 2
 -- ACTIVE is the planner's active burn (TransferPlannerGetActiveIndex), so the
 -- sidebar derives it from the index and never caches it
 local burn_status = {
-	[BURN_STATUS_PENDING] = {text = L.STATUS_PENDING, icon = icons.square_dashed, color = svColor.FONT},
-	[BURN_STATUS_ACTIVE] = {text = L.STATUS_ACTIVE, icon = icons.maneuver, color = svColor.PLANNER_BURN},
-	[BURN_STATUS_COMPLETED] = {text = L.STATUS_COMPLETED, icon = icons.map_checkmark, color = svColor.PLANNER_BURN_DONE},
+	[BURN_STATUS_PENDING] = {text = L.STATUS_PENDING, icon = icons.burn_pending, color = svColor.FONT},
+	[BURN_STATUS_ACTIVE] = {text = L.STATUS_ACTIVE, icon = icons.burn_active, color = svColor.PLANNER_BURN},
+	[BURN_STATUS_COMPLETED] = {text = L.STATUS_COMPLETED, icon = icons.burn_completed, color = svColor.PLANNER_BURN_DONE},
 }
 
 local function statusOf(status, isActive)
@@ -911,7 +911,7 @@ local function drawCircularizeButton(idx, width, completed)
 		tooltip = string.format(L.CIRCULARIZE_TIP, where, ui.Format.Speed(dv))
 	end
 	local variant = not dv and colorset.disabled or nil
-	if ui.button(L.CIRCULARIZE .. "##plannerCircularize" .. idx, Vector2(width, 0), variant, tooltip) and dv then
+	if ui.button(ui.get_icon_glyph(icons.circularize) .. " " .. L.CIRCULARIZE .. "##plannerCircularize" .. idx, Vector2(width, 0), variant, tooltip) and dv then
 		systemView:TransferPlannerCircularize(idx)
 	end
 end
@@ -1031,12 +1031,12 @@ local function drawApproachSection()
 	local width = ui.getContentRegion().x
 	local spacing = ui.getItemSpacing().x
 	local half = Vector2(math.floor((width - spacing) / 2), 0)
-	if ui.button(L.APPROACH_INTERCEPT .. "##plannerApproach1", half,
+	if ui.button(ui.get_icon_glyph(icons.approach_intercept) .. " " .. L.APPROACH_INTERCEPT .. "##plannerApproach1", half,
 		approachBurns == 1 and colorset.selected or nil, isBody and L.APPROACH_INTERCEPT_BODY_TIP or L.APPROACH_INTERCEPT_TIP) then
 		approachBurns = 1
 	end
 	ui.sameLine(0, spacing)
-	if ui.button(L.APPROACH_RENDEZVOUS .. "##plannerApproach2", half,
+	if ui.button(ui.get_icon_glyph(icons.approach_rendezvous) .. " " .. L.APPROACH_RENDEZVOUS .. "##plannerApproach2", half,
 		approachBurns == 2 and colorset.selected or nil, isBody and L.APPROACH_RENDEZVOUS_BODY_TIP or L.APPROACH_RENDEZVOUS_TIP) then
 		approachBurns = 2
 	end
@@ -1044,14 +1044,16 @@ local function drawApproachSection()
 	-- the stand-off behind a ship or station, or the flyby altitude over a
 	-- planet or moon, in kilometres
 	local label, tip, format = L.APPROACH_STAND_OFF, L.APPROACH_STAND_OFF_TIP, L.APPROACH_STAND_OFF_FORMAT
+	local icon = icons.stand_off
 	local value, maxValue, step = approachStandOff, STAND_OFF_MAX_M, 0.1
 	if isBody then
 		label, tip, format = L.APPROACH_FLYBY, L.APPROACH_FLYBY_TIP, L.APPROACH_FLYBY_FORMAT
-		if approachBurns == 2 then label, tip = L.APPROACH_ORBIT, L.APPROACH_ORBIT_TIP end
+		icon = icons.approach_flyby
+		if approachBurns == 2 then label, tip, icon = L.APPROACH_ORBIT, L.APPROACH_ORBIT_TIP, icons.approach_capture end
 		value, maxValue, step = approachFlybyAltitude, FLYBY_ALTITUDE_MAX_M, 1
 	end
 	ui.alignTextToFramePadding()
-	ui.text(label)
+	ui.text(ui.get_icon_glyph(icon) .. " " .. label)
 	ui.setItemTooltip(tip)
 	ui.sameLine()
 	ui.pushItemWidth(ui.getContentRegion().x)
@@ -1258,7 +1260,7 @@ local plannerView = {
 				-- height less the inline padding, which is not a size this window
 				-- rasterises its icon font at.
 				if row.completable then
-					if ui.inlineIconButton("##plannerBurnComplete" .. idx, icons.map_checkmark, L.COMPLETE) then
+					if ui.inlineIconButton("##plannerBurnComplete" .. idx, icons.burn_completed, L.COMPLETE) then
 						systemView:TransferPlannerCompleteBurn(idx)
 					end
 					ui.sameLine()
@@ -1276,7 +1278,7 @@ local plannerView = {
 		end
 
 		-- footer: insert a burn after the selected one, then select the new burn
-		if ui.button("+ Add Burn##plannerAddBurn") then
+		if ui.button(ui.get_icon_glyph(icons.burn_add) .. " Add Burn##plannerAddBurn") then
 			selectedBurn = systemView:TransferPlannerInsertBurn(selectedBurn)
 			clampSelectedBurn(systemView:TransferPlannerGetBurnCount())
 		end
@@ -1334,13 +1336,13 @@ function Windows.edgeButtons.Show()
 		systemView:SetZoomMode(ui.isItemActive())
 		-- the ship is on the map whenever it shows the system the player is
 		-- in, also when that system is reached through "selected system"
-		if isOrrery and systemView:IsViewingCurrentSystem() and ui.mainMenuButton(icons.bullseye, L.ZOOM_TO_SHIP) then
+		if isOrrery and systemView:IsViewingCurrentSystem() and ui.mainMenuButton(icons.zoom_to_ship, L.ZOOM_TO_SHIP) then
 			systemView:ViewPlayer()
 		end
 		-- follow where the plan puts the ship as the map time is scrubbed;
 		-- highlighted while it does
 		if isOrrery and systemView:IsViewingCurrentSystem() and systemView:TransferPlannerGetBurnCount() > 0 then
-			if ui.mainMenuButton(icons.follow_pos, L.FOLLOW_PLAN .. "##followPlannedShip", systemView:IsViewingPlannedShip()) then
+			if ui.mainMenuButton(icons.follow_plan, L.FOLLOW_PLAN .. "##followPlannedShip", systemView:IsViewingPlannedShip()) then
 				systemView:ViewPlannedShip()
 			end
 		end

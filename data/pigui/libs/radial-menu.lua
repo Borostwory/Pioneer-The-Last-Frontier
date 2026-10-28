@@ -208,7 +208,7 @@ function ui.radialMenu(id)
 	local colors = {}
 	for _,action in pairs(radialMenu.actions) do
 		local uv0, uv1 = ui.get_icon_tex_coords(action.icon)
-		table.insert(icons, { id = ui.get_icons_texture(radialMenu.iconSize), uv0 = uv0, uv1 = uv1 })
+		table.insert(icons, { id = ui.get_icons_texture(radialMenu.iconSize, action.icon), uv0 = uv0, uv1 = uv1 })
 		-- TODO: don't just assume that radialMenu.Target is a Body
 		table.insert(tooltips, string.interp(action.tooltip, { target = radialMenu.target and radialMenu.target.label or "UNKNOWN" }))
 		table.insert(colors, action.color or ui.theme.colors.white);

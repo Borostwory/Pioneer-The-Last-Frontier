@@ -594,7 +594,7 @@ local flightstate_info = {
 	CONTROL_FIXHEADING_KILLROT = { icon = icons.rotation_damping_on , tooltip = lui.HUD_BUTTON_KILL_ROTATION },
 	-- the transfer-planner orientation state (flight-ui/burn-hud.lua's Auto
 	-- Orientation toggle); the icon matches the panel's button icon
-	CONTROL_PLAN_HEADING = { icon = icons.prograde_thin, tooltip = L.PLAN_HEADING }
+	CONTROL_PLAN_HEADING = { icon = icons.auto_orientation, tooltip = L.PLAN_HEADING }
 }
 
 -- Defensive lookup: a control-state string outside the table must never abort

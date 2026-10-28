@@ -73,7 +73,7 @@ local function button_undock()
 		-- get out on foot (Game.Board gets back in)
 		if Game.CanDisembark() then
 			ui.sameLine()
-			if ui.mainMenuButton(icons.personal, lui.HUD_BUTTON_DISEMBARK) then
+			if ui.mainMenuButton(icons.eva_mode, lui.HUD_BUTTON_DISEMBARK) then
 				Game.Disembark()
 			end
 		end
@@ -81,14 +81,14 @@ local function button_undock()
 		-- out, where it was left
 		if Game.CanDeployRover() then
 			ui.sameLine()
-			if ui.mainMenuButton(icons.planet_grid, lui.HUD_BUTTON_DEPLOY_ROVER) then
+			if ui.mainMenuButton(icons.rover_dispatch, lui.HUD_BUTTON_DEPLOY_ROVER) then
 				Game.DeployRover()
 			end
 		else
 			local roverPlanet = Game.GetRoverPlanet()
 			if roverPlanet then
 				ui.sameLine()
-				ui.mainMenuButton(icons.planet_grid, string.interp(lui.HUD_BUTTON_ROVER_PARKED, {
+				ui.mainMenuButton(icons.rover, string.interp(lui.HUD_BUTTON_ROVER_PARKED, {
 					planet = roverPlanet:GetSystemBody().name,
 					system = roverPlanet:GetStarSystem().name
 				}), ui.theme.buttonColors.disabled)
@@ -111,7 +111,7 @@ local function button_eva()
 	if player:IsLanded() or player:IsDocked() or not Game.CanDisembark() then
 		return false
 	end
-	if ui.mainMenuButton(icons.personal, lui.HUD_BUTTON_EVA) then
+	if ui.mainMenuButton(icons.eva_mode, lui.HUD_BUTTON_EVA) then
 		Game.Disembark()
 	end
 	return true

@@ -603,4 +603,5 @@ Equipment.Register("misc.surface_rover", EquipType.New {
 	l10n_key="SURFACE_ROVER",
 	price=18000, purchasable=true, tech_level=4,
 	mass=6, volume=20, capabilities={ surface_rover=1 },
+	icon_name="rover"
 })

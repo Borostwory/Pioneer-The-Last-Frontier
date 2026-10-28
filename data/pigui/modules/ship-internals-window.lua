@@ -162,7 +162,7 @@ local function button_lights()
 	if level > 0 then
 		tooltip = string.interp(lui.HUD_BUTTON_LIGHTS_LEVEL, { level = level, max = maxLevel })
 	end
-	if ui.mainMenuButton(icons.sun, tooltip .. "##ship_lights", level > 0) then
+	if ui.mainMenuButton(icons.ship_lights, tooltip .. "##ship_lights", level > 0) then
 		player:CycleLights()
 	end
 end

@@ -524,9 +524,9 @@ local function formatCountdown(time)
 end
 
 local status_glyph = {
-	[BURN_STATUS_PENDING] = icons.square_dashed,
-	[BURN_STATUS_ACTIVE] = icons.maneuver,
-	[BURN_STATUS_COMPLETED] = icons.map_checkmark,
+	[BURN_STATUS_PENDING] = icons.burn_pending,
+	[BURN_STATUS_ACTIVE] = icons.burn_active,
+	[BURN_STATUS_COMPLETED] = icons.burn_completed,
 }
 
 local status_name = {
@@ -720,7 +720,7 @@ local function drawActions(row, systemView, slot)
 	-- completed row; the slot stays reserved so Warp keeps the same x
 	if row.completed then
 		ui.dummy(slot)
-	elseif ui.iconButton("##burnHudComplete" .. row.idx, icons.map_checkmark, L.COMPLETE,
+	elseif ui.iconButton("##burnHudComplete" .. row.idx, icons.burn_completed, L.COMPLETE,
 		actionVariant, slot, styles.InlineIconPadding) then
 		systemView:TransferPlannerCompleteBurn(row.idx)
 	end
@@ -732,7 +732,7 @@ local function drawActions(row, systemView, slot)
 	local warpTip = row.warppable and string.format(L.WARP, stopBeforeBurnS) or L.WARP_REACHED
 	local variant = row.warppable and actionVariant or disabledActionVariant
 	ui.withStyleColors({ Text = row.warppable and colors.font or colors.fontDim }, function()
-		if ui.iconButton("##burnHudWarp" .. row.idx, icons.time_accel_10000x, warpTip,
+		if ui.iconButton("##burnHudWarp" .. row.idx, icons.warp_to_burn, warpTip,
 			variant, slot, styles.InlineIconPadding) and row.warppable then
 			startWarp(row.idx)
 		end
@@ -891,7 +891,7 @@ local function drawAutopilotControls(player)
 
 	-- this control owns the orientation control state only
 	local orientationTip = L.AUTO_ORIENTATION .. "##burnHudAutoOrientation"
-	if ui.mainMenuButton(icons.prograde_thin, orientationTip, orientationVariant, styles.MainButtonSize) then
+	if ui.mainMenuButton(icons.auto_orientation, orientationTip, orientationVariant, styles.MainButtonSize) then
 		if available then
 			-- PLAN_HEADING -> MANUAL, any other state -> PLAN_HEADING; never
 			-- touches the engine flag.
@@ -905,7 +905,7 @@ local function drawAutopilotControls(player)
 	ui.sameLine()
 
 	local burnTip = L.AUTO_BURN .. "##burnHudAutoBurn"
-	if ui.mainMenuButton(icons.forward, burnTip, burnVariant, styles.MainButtonSize) then
+	if ui.mainMenuButton(icons.auto_burn, burnTip, burnVariant, styles.MainButtonSize) then
 		if available then
 			-- the engine enable-flag only: never a SetFlightControlState call,
 			-- so this control cannot change the ship's orientation
@@ -1154,7 +1154,7 @@ local function displayVisibilityToggle(min, max)
 	ui.setNextWindowPos(pos, "Always")
 
 	ui.window("BurnHudToggle", toggleFlags, function()
-		if ui.mainMenuButton(icons.hud, (visible and L.HIDE or L.SHOW) .. "##burnHudToggle",
+		if ui.mainMenuButton(icons.burn_list, (visible and L.HIDE or L.SHOW) .. "##burnHudToggle",
 			visible, styles.MainButtonSize) then
 			visible = not visible
 			Game.SetConfigBool("MultiBurnHud", "visible", visible)

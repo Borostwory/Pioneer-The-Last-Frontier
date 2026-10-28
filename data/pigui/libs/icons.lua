@@ -23,6 +23,25 @@ local icons_texture_small = pigui:LoadTextureFromSVG(pigui.DataDirPath({"icons",
 local icons_texture_med = pigui:LoadTextureFromSVG(pigui.DataDirPath({"icons", "icons.svg"}), iconsX * 32, iconsY * 32)
 local icons_texture_large = pigui:LoadTextureFromSVG(pigui.DataDirPath({"icons", "icons.svg"}), iconsX * 64, iconsY * 64)
 
+-- The Last Frontier sheet (icons/icons_tlf.svg). Its icons are numbered from
+-- TLF_ICONS_BASE in ui.theme.icons, so their glyphs land at 0xF000 + 512, the
+-- rangeBase of icons/icons_tlf.icondef the fonts load it with.
+local TLF_ICONS_BASE = 512
+local tlfX = 16
+local tlfY = 4
+
+local tlf_texture_small = pigui:LoadTextureFromSVG(pigui.DataDirPath({"icons", "icons_tlf.svg"}), tlfX * 24, tlfY * 24)
+local tlf_texture_med = pigui:LoadTextureFromSVG(pigui.DataDirPath({"icons", "icons_tlf.svg"}), tlfX * 32, tlfY * 32)
+local tlf_texture_large = pigui:LoadTextureFromSVG(pigui.DataDirPath({"icons", "icons_tlf.svg"}), tlfX * 64, tlfY * 64)
+
+-- the icon's index within its sheet, and that sheet's grid
+local function icon_sheet(icon)
+	if icon >= TLF_ICONS_BASE then
+		return icon - TLF_ICONS_BASE, tlfX, tlfY
+	end
+	return icon, iconsX, iconsY
+end
+
 local function get_wide_icon_tex_coords(icon)
 	assert(icon, "no icon given")
 	local rem = math.floor(icon % iconsX)
@@ -36,18 +55,21 @@ end
 
 function ui.get_icon_tex_coords(icon)
 	assert(icon, "no icon given")
-	local rem = math.floor(icon % iconsX)
-	local quot = math.floor(icon / iconsX)
-	return Vector2(rem / iconsX, quot/iconsY), Vector2((rem+1) / iconsX, (quot+1)/iconsY)
+	local index, gridX, gridY = icon_sheet(icon)
+	local rem = math.floor(index % gridX)
+	local quot = math.floor(index / gridX)
+	return Vector2(rem / gridX, quot/gridY), Vector2((rem+1) / gridX, (quot+1)/gridY)
 end
 
-function ui.get_icons_texture(size)
+-- icon picks the sheet; without it, the stock icons.svg
+function ui.get_icons_texture(size, icon)
+	local tlf = icon and icon >= TLF_ICONS_BASE
 	if size.x > 32.0 or size.y > 32.0 then
-		return icons_texture_large
+		return tlf and tlf_texture_large or icons_texture_large
 	elseif size.x <= 24.0 or size.y <= 24.0 then
-		return icons_texture_small
+		return tlf and tlf_texture_small or icons_texture_small
 	else
-		return icons_texture_med
+		return tlf and tlf_texture_med or icons_texture_med
 	end
 end
 
@@ -94,9 +116,9 @@ function ui.addIcon(position, icon, color, size, anchor_horizontal, anchor_verti
 		local up_right = up_left:right()
 		local down_left = up_left:left()
 		local down_right = -up_left
-		pigui.AddImageQuad(ui.get_icons_texture(size), center + up_left, center + up_right, center + down_right, center + down_left, uv0, Vector2(uv1.x, uv0.y), uv1, Vector2(uv0.x, uv1.y), color)
+		pigui.AddImageQuad(ui.get_icons_texture(size, icon), center + up_left, center + up_right, center + down_right, center + down_left, uv0, Vector2(uv1.x, uv0.y), uv1, Vector2(uv0.x, uv1.y), color)
 	else
-		pigui.AddImage(ui.get_icons_texture(size), pos, pos + size, uv0, uv1, color)
+		pigui.AddImage(ui.get_icons_texture(size, icon), pos, pos + size, uv0, uv1, color)
 	end
 	if tooltip and (ui.isMouseHoveringWindow() or not ui.isAnyWindowHovered()) and tooltip ~= "" then
 		if pigui.IsMouseHoveringRect(pos, pos + size, true) then
@@ -181,7 +203,7 @@ end
 --
 function ui.addIconSimple(pos, icon, size, color, tooltip)
 	local uv0, uv1 = ui.get_icon_tex_coords(icon)
-	pigui.AddImage(ui.get_icons_texture(size), pos, pos + size, uv0, uv1, color)
+	pigui.AddImage(ui.get_icons_texture(size, icon), pos, pos + size, uv0, uv1, color)
 
 	if tooltip and (ui.isMouseHoveringWindow() or not ui.isAnyWindowHovered()) then
 		if pigui.IsMouseHoveringRect(pos, pos + size, true) then
@@ -215,7 +237,7 @@ end
 --
 function ui.icon(icon, size, color, tooltip)
 	local uv0, uv1 = ui.get_icon_tex_coords(icon)
-	pigui.Image(ui.get_icons_texture(size), size, uv0, uv1, color)
+	pigui.Image(ui.get_icons_texture(size, icon), size, uv0, uv1, color)
 	if tooltip and ui.isItemHovered() then
 		ui.setTooltip(tooltip)
 	end

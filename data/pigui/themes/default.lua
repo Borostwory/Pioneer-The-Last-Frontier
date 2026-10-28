@@ -759,6 +759,32 @@ theme.icons = {
 	-- TODO: manual / autopilot
 	-- dummy, until actually defined correctly
 	mouse_move_direction = 14,
+
+	-- The Last Frontier sheet (icons/icons_tlf.svg): numbered from 512, slot + 512
+	-- ship and surface
+	eva_mode = 512,
+	rover_dispatch = 513,
+	rover = 514,
+	ship_lights = 515,
+	-- orbit / burn planner
+	burn_pending = 528,
+	burn_active = 529,
+	burn_completed = 530,
+	burn_add = 531,
+	auto_orientation = 532,
+	auto_burn = 533,
+	warp_to_burn = 534,
+	burn_list = 535,
+	orbit_view_3d = 536,
+	circularize = 537,
+	approach_intercept = 538,
+	approach_rendezvous = 539,
+	approach_flyby = 540,
+	approach_capture = 541,
+	stand_off = 542,
+	follow_plan = 543,
+	-- map and view
+	zoom_to_ship = 544,
 }
 
 return theme

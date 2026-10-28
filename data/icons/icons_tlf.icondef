@@ -1,0 +1,5 @@
+{
+	"svgFile": "icons/icons_tlf.svg",
+	"rangeBase": "0xF200",
+	"grid": [ 16, 4 ]
+}
