@@ -127,6 +127,34 @@ local function displayRover()
 	end
 end
 
+-- the rover's lamps, as the ship's lights button (ship-internals-window.lua):
+-- one click steps through off, each level brighter, and off again
+local function button_rover_lights(level, maxLevel)
+	local tooltip = lui.HUD_BUTTON_LIGHTS_ARE_OFF
+	if level > 0 then
+		tooltip = string.interp(lui.HUD_BUTTON_LIGHTS_LEVEL, { level = level, max = maxLevel })
+	end
+	if ui.mainMenuButton(ui.theme.icons.ship_lights, tooltip .. "##rover_lights", level > 0) then
+		Game.CycleRoverLights()
+	end
+end
+
+-- driving: the rover's buttons where the ship's are, left of the reticule
+local roverWindowFlags = ui.WindowFlags {"NoTitleBar", "NoResize", "NoFocusOnAppearing", "NoBringToFrontOnFocus", "NoSavedSettings", "AlwaysAutoResize"}
+local function displayRoverFunctionWindow()
+	if ui.optionsWindow.isOpen or Game.CurrentView() ~= "WorldView" then return end
+	local _, _, level, maxLevel = Game.GetRoverState()
+	if not level then return end
+
+	local buttonSize = ui.theme.styles.MainButtonSize
+	local window_width = ui.getWindowPadding().x * 2 + buttonSize.x
+	local window_height = buttonSize.y + ui.getWindowPadding().y * 2
+	ui.setNextWindowPos(Vector2(ui.screenWidth / 2 - ui.reticuleCircleRadius - window_width, ui.screenHeight - window_height), "Always")
+	ui.window("RoverFunctions", roverWindowFlags, function()
+		button_rover_lights(level, maxLevel)
+	end)
+end
+
 -- in space: how far the ship is and how fast it is coming or going
 local function displayEvaShip()
 	local colors = ui.theme.colors
@@ -170,6 +198,15 @@ gameView.registerModule("surface-hud", {
 	draw = function(self, dT)
 		displaySurfaceHud()
 	end,
+	debugReload = function()
+		package.reimport()
+	end
+})
+
+ui.registerModule("world-view", {
+	id = "rover-functions-window",
+	draw = displayRoverFunctionWindow,
+	showOffShip = true,
 	debugReload = function()
 		package.reimport()
 	end

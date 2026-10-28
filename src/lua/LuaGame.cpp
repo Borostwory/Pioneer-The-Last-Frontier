@@ -652,13 +652,15 @@ static int l_game_get_excursion_nav_info(lua_State *l)
  *
  * The rover the player is driving, for the HUD.
  *
- * > speed, onGround = Game.GetRoverState()
+ * > speed, onGround, lightsLevel, maxLightsLevel = Game.GetRoverState()
  *
  * Return:
  *
  *   speed - m/s along its heading, negative in reverse, or nil when the
  *           player is not driving
  *   onGround - false while it flies off a bump
+ *   lightsLevel - its lamps: 0 off, else brighter at each level
+ *   maxLightsLevel - the brightest
  *
  * Status:
  *
@@ -671,7 +673,29 @@ static int l_game_get_rover_state(lua_State *l)
 		return 0;
 	lua_pushnumber(l, excursion->GetRover()->GetSpeed());
 	lua_pushboolean(l, excursion->GetRover()->IsOnGround());
-	return 2;
+	lua_pushinteger(l, excursion->GetRover()->GetLightsLevel());
+	lua_pushinteger(l, Rover::MAX_LIGHTS_LEVEL);
+	return 4;
+}
+
+/*
+ * Function: CycleRoverLights
+ *
+ * Steps the lamps of the rover the player is driving through off, each
+ * brightness level and off again, as the ship's lights button does.
+ *
+ * > Game.CycleRoverLights()
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_cycle_rover_lights(lua_State *l)
+{
+	Excursion *excursion = Pi::game ? Pi::game->GetExcursion() : nullptr;
+	if (excursion && excursion->GetMode() == Excursion::Mode::ROVER && excursion->GetRover())
+		excursion->GetRover()->CycleLights();
+	return 0;
 }
 
 /*
@@ -1039,6 +1063,7 @@ void LuaGame::Register()
 		{ "GetExcursionAction", l_game_get_excursion_action },
 		{ "GetExcursionNavInfo", l_game_get_excursion_nav_info },
 		{ "GetRoverState", l_game_get_rover_state },
+		{ "CycleRoverLights", l_game_cycle_rover_lights },
 		{ "GetRover", l_game_get_rover },
 		{ "GetRoverPlanet", l_game_get_rover_planet },
 		{ "GetJetpackState", l_game_get_jetpack_state },

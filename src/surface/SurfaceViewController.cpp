@@ -139,6 +139,8 @@ REGISTER_INPUT_BINDING(SurfaceViewController)
 	input->AddActionBinding("BindInteract", interaction, Action({ SDLK_e }));
 	// as the ship's camera mode key: the rover's views in turn
 	input->AddActionBinding("BindRoverCycleView", interaction, Action({ SDLK_F1 }));
+	// the rover's lamps: off, each level brighter, off again
+	input->AddActionBinding("BindRoverLights", interaction, Action({ SDLK_l }));
 }
 
 void SurfaceViewController::InputBinding::RegisterBindings()
@@ -152,6 +154,7 @@ void SurfaceViewController::InputBinding::RegisterBindings()
 	jump = AddAction("BindWalkJump");
 	interact = AddAction("BindInteract");
 	roverView = AddAction("BindRoverCycleView");
+	roverLights = AddAction("BindRoverLights");
 }
 
 SurfaceViewController::SurfaceViewController(WorldView *v) :
@@ -169,6 +172,7 @@ SurfaceViewController::SurfaceViewController(WorldView *v) :
 	m_onJumpCon = InputBindings.jump->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnJump));
 	m_onInteractCon = InputBindings.interact->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnInteract));
 	m_onRoverViewCon = InputBindings.roverView->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnRoverView));
+	m_onRoverLightsCon = InputBindings.roverLights->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnRoverLights));
 }
 
 SurfaceViewController::~SurfaceViewController()
@@ -234,6 +238,13 @@ void SurfaceViewController::OnRoverView()
 	case RoverView::NO_MODEL: m_roverView = RoverView::EXTERNAL; break;
 	case RoverView::EXTERNAL: m_roverView = RoverView::CAB; break;
 	}
+}
+
+void SurfaceViewController::OnRoverLights()
+{
+	Excursion *excursion = Pi::game->GetExcursion();
+	if (excursion->GetMode() == Excursion::Mode::ROVER && excursion->GetRover())
+		excursion->GetRover()->CycleLights();
 }
 
 void SurfaceViewController::OnMouseWheel(bool up)

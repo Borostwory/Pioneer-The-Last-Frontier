@@ -128,7 +128,11 @@ function Game.GetExcursionAction() end
 function Game.GetExcursionNavInfo() end
 ---@return number? speed
 ---@return boolean? onGround
+---@return integer? lightsLevel 0 off
+---@return integer? maxLightsLevel
 function Game.GetRoverState() end
+-- the driven rover's lamps: off, each level brighter, off again
+function Game.CycleRoverLights() end
 ---@return Body? rover out of the ship in this system, driven or parked
 function Game.GetRover() end
 ---@return SystemPath? planet the rover is out on, here or in another system

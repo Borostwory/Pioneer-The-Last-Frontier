@@ -131,6 +131,8 @@ namespace SceneGraph {
 
 		//materials used in the nodes should be accessible from here for convenience
 		RefCountedPtr<Graphics::Material> GetMaterialByIndex(const int) const;
+		// the name the .model file gives it
+		const std::string &GetMaterialNameByIndex(const int) const;
 		unsigned int GetNumMaterials() const { return static_cast<Uint32>(m_materials.size()); }
 
 		// Utilities for iterating the array of model tags

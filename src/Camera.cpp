@@ -17,6 +17,7 @@
 #include "Ship.h"
 #include "Space.h"
 #include "SpaceStation.h"
+#include "surface/Rover.h"
 
 #include "galaxy/StarSystem.h"
 #include "graphics/TextureBuilder.h"
@@ -67,6 +68,9 @@ static const float SHIP_LIGHT_INNER_ANGLE = 15.0f;
 static const float SHIP_LIGHT_OUTER_ANGLE = 25.0f;
 static const double SHIP_LIGHTS_DISTANCE = 5000.0;
 static const double SHIP_LIGHTS_DAYLIGHT = 0.1;
+// the surface rover's lamps, on its batteries rather than a ship's reactor:
+// this share of a ship's at the same level
+static const double ROVER_LIGHTS_STRENGTH = 0.6;
 
 CameraContext::CameraContext(float width, float height, float fovAng, float zNear, float zFar) :
 	m_width(width),
@@ -603,28 +607,43 @@ static void SetVec4(float *out, const vector3f &v, float w)
 	out[3] = w;
 }
 
-// Hands the renderer the lamps of the ships near the camera that have their
-// lights on, nearest ship first, as many as the shaders take. Over a planet
-// they dim in daylight, as the city lights do; ships drawn in the starlight
-// elsewhere dim them on their sunlit sides (multi.frag).
+// Hands the renderer the lamps of the ships (and the surface rover) near the
+// camera that have their lights on, nearest first, as many as the shaders
+// take. Over a planet they dim in daylight, as the city lights do; ships
+// drawn in the starlight elsewhere dim them on their sunlit sides (multi.frag).
 void Camera::SetShipLights() const
 {
+	static_assert(Rover::MAX_LIGHTS_LEVEL == Ship::MAX_LIGHTS_LEVEL, "the rover's lamps take the ships' levels");
 	const FrameId camFrame = m_context->GetTempFrame();
 
 	struct LitShip {
+		// one of the two
 		const Ship *ship;
+		const Rover *rover;
+		int level;
 		matrix4x4d modelToView;
 		double distance;
 		float strength;
 	};
 	std::vector<LitShip> ships;
 	for (const Body *b : Pi::game->GetSpace()->GetBodies()) {
-		if (!b->IsType(ObjectType::SHIP))
+		const Ship *ship = nullptr;
+		const Rover *rover = nullptr;
+		int level = 0;
+		if (b->IsType(ObjectType::SHIP)) {
+			// (the player's ship too when the camera is inside it)
+			ship = static_cast<const Ship *>(b);
+			if (!ship->GetLightsOn() || ship->GetLightMounts().empty() || !ship->IsInSpace())
+				continue;
+			level = ship->GetLightsLevel();
+		} else if (b->IsType(ObjectType::ROVER)) {
+			rover = static_cast<const Rover *>(b);
+			level = rover->GetLightsLevel();
+			if (level == 0 || rover->GetLightMounts().empty())
+				continue;
+		} else {
 			continue;
-		// (the player's ship too when the camera is inside it)
-		const Ship *ship = static_cast<const Ship *>(b);
-		if (!ship->GetLightsOn() || ship->GetLightMounts().empty() || !ship->IsInSpace())
-			continue;
+		}
 
 		const Frame *f = Frame::GetFrame(b->GetFrame());
 		const matrix4x4d frameToView(f->GetInterpOrientRelTo(camFrame), f->GetInterpPositionRelTo(camFrame));
@@ -633,13 +652,13 @@ void Camera::SetShipLights() const
 		if (distance > SHIP_LIGHTS_DISTANCE)
 			continue;
 
-		double strength = 1.0;
+		double strength = rover ? ROVER_LIGHTS_STRENGTH : 1.0;
 		const Body *planet = f->GetBody();
 		if (planet && planet->IsType(ObjectType::PLANET)) {
 			const vector3d up = frameToView.ApplyRotationOnly(b->GetInterpPosition().NormalizedSafe());
-			strength = SHIP_LIGHTS_DAYLIGHT + (1.0 - SHIP_LIGHTS_DAYLIGHT) * CityDarkness(b, up);
+			strength *= SHIP_LIGHTS_DAYLIGHT + (1.0 - SHIP_LIGHTS_DAYLIGHT) * CityDarkness(b, up);
 		}
-		ships.push_back({ ship, modelToView, distance, float(strength) });
+		ships.push_back({ ship, rover, level, modelToView, distance, float(strength) });
 	}
 	if (ships.empty())
 		return;
@@ -650,19 +669,24 @@ void Camera::SetShipLights() const
 	Graphics::ShipLightDataBlock data = {};
 	int count = 0;
 	for (const LitShip &lit : ships) {
-		const int level = lit.ship->GetLightsLevel();
-		const vector3f colour = SHIP_LIGHT_COLOUR * (SHIP_LIGHT_INTENSITY * SHIP_LIGHT_LEVELS[level] * lit.strength);
-		const float range = SHIP_LIGHT_RANGES[level];
-		for (const Ship::LightMount &mount : lit.ship->GetLightMounts()) {
-			if (count == Graphics::ShipLightDataBlock::MAX_LIGHTS)
-				break;
-			const vector3f pos(lit.modelToView * vector3d(mount.position));
-			const vector3f dir(lit.modelToView.ApplyRotationOnly(vector3d(mount.direction)).NormalizedSafe());
-			SetVec4(data.position[count], pos, range);
-			SetVec4(data.direction[count], dir, cosOuter);
-			SetVec4(data.colour[count], colour, cosInner);
-			count++;
-		}
+		const vector3f colour = SHIP_LIGHT_COLOUR * (SHIP_LIGHT_INTENSITY * SHIP_LIGHT_LEVELS[lit.level] * lit.strength);
+		const float range = SHIP_LIGHT_RANGES[lit.level];
+		auto addLamps = [&](const auto &mounts) {
+			for (const auto &mount : mounts) {
+				if (count == Graphics::ShipLightDataBlock::MAX_LIGHTS)
+					break;
+				const vector3f pos(lit.modelToView * vector3d(mount.position));
+				const vector3f dir(lit.modelToView.ApplyRotationOnly(vector3d(mount.direction)).NormalizedSafe());
+				SetVec4(data.position[count], pos, range);
+				SetVec4(data.direction[count], dir, cosOuter);
+				SetVec4(data.colour[count], colour, cosInner);
+				count++;
+			}
+		};
+		if (lit.ship)
+			addLamps(lit.ship->GetLightMounts());
+		else
+			addLamps(lit.rover->GetLightMounts());
 	}
 	data.state[0] = float(count);
 	m_renderer->SetShipLightData(&data);

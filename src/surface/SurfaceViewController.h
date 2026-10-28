@@ -50,6 +50,7 @@ public:
 		Action *jump;
 		Action *interact;
 		Action *roverView;
+		Action *roverLights;
 
 		void RegisterBindings() override;
 	} InputBindings;
@@ -59,6 +60,8 @@ private:
 	void OnInteract() { m_interactRequested = true; }
 	// the rover's views in turn: the cab, without the rover, from outside
 	void OnRoverView();
+	// driving: the rover's lamps off, each level brighter, off again
+	void OnRoverLights();
 	void OnMouseWheel(bool up);
 	// the rover's model is drawn unless the driver has hidden it
 	void ShowRoverModel(bool show);
@@ -128,5 +131,6 @@ private:
 	ConnectionTicket m_onJumpCon;
 	ConnectionTicket m_onInteractCon;
 	ConnectionTicket m_onRoverViewCon;
+	ConnectionTicket m_onRoverLightsCon;
 	ConnectionTicket m_onMouseWheelCon;
 };

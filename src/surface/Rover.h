@@ -4,12 +4,17 @@
 #ifndef _ROVER_H
 #define _ROVER_H
 
+#include "Color.h"
 #include "ModelBody.h"
 #include "matrix4x4.h"
 
 #include <vector>
 
 class Frame;
+
+namespace Graphics {
+	class Material;
+}
 
 namespace SceneGraph {
 	class MatrixTransform;
@@ -26,7 +31,10 @@ namespace SceneGraph {
 // The model (MODEL_NAME) is driven by node name: for each corner C in fl, fr,
 // rl and rr, susp_C moves the wheel up and down, steer_C turns it and wheel_C
 // spins it about the axle. Its tags: tag_seat_driver (the driver's eyes),
-// tag_exit_l and tag_exit_r (where the player stands after getting out).
+// tag_exit_l and tag_exit_r (where the player stands after getting out),
+// tag_light_* (the lamps, shining along the tag's +z; without them, those
+// of tlf_rover). Its materials with "lamp" in their name glow with their
+// emissive colour while the lamps are on, and not at all while they are off.
 //
 // Saved with the game as any other body, driven or parked (Excursion keeps
 // which one it is, and whether it is driven). Parked in a system the player
@@ -79,6 +87,19 @@ public:
 	// (with the throttle, down without it, stopped by the brake)
 	double GetWheelSpeed() const { return m_wheelSpeed; }
 
+	// the lamps, as the ship's (Ship::SetLightsLevel, Camera::SetShipLights):
+	// off (0) or brighter at each level; they stay as they are when parked
+	struct LightMount {
+		vector3f position;	// model space
+		vector3f direction; // model space, along the beam
+	};
+	static constexpr int MAX_LIGHTS_LEVEL = 3;
+	int GetLightsLevel() const { return m_lightsLevel; }
+	void SetLightsLevel(int level);
+	// off, then each level brighter, then off again
+	void CycleLights() { SetLightsLevel((m_lightsLevel + 1) % (MAX_LIGHTS_LEVEL + 1)); }
+	const std::vector<LightMount> &GetLightMounts() const { return m_lightMounts; }
+
 	// points of the model, in its model space (from its tags)
 	vector3d GetDriverEye() const;
 	// side: 0 left, 1 right
@@ -107,6 +128,7 @@ private:
 	};
 
 	void FindRig();
+	void InitLightMounts();
 	// the previous step and the drawn pose as they are now (just placed or loaded)
 	void ResetInterp();
 	// the distance from the planet centre of the ground under each wheel, for
@@ -150,6 +172,9 @@ private:
 
 	vector3d m_oldPos;
 	matrix3x3d m_oldOrient;
+
+	int m_lightsLevel = 0;
+	std::vector<LightMount> m_lightMounts;
 };
 
 #endif /* _ROVER_H */

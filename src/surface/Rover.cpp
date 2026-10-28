@@ -16,6 +16,7 @@
 #include "collider/CollisionContact.h"
 #include "collider/CollisionSpace.h"
 #include "gameconsts.h"
+#include "graphics/Material.h"
 #include "scenegraph/FindNodeVisitor.h"
 #include "scenegraph/MatrixTransform.h"
 #include "scenegraph/Model.h"
@@ -81,10 +82,29 @@ namespace {
 		{ -1.4, 0.7, -1.6 }, { 1.4, 0.7, -1.6 }, { -1.4, 0.7, 1.6 }, { 1.4, 0.7, 1.6 }
 	};
 
+	// without tag_light_* in the model: the lamps of tlf_rover, the pair at
+	// the front corners of the cab and the pair of spotlights on its roof,
+	// shining ahead (along -z) and a little down
+	const Rover::LightMount DEFAULT_LAMPS[] = {
+		{ vector3f(-0.85f, 1.76f, -3.6f), vector3f(0.0f, -0.08f, -1.0f).Normalized() },
+		{ vector3f(0.85f, 1.76f, -3.6f), vector3f(0.0f, -0.08f, -1.0f).Normalized() },
+		{ vector3f(-0.85f, 3.01f, -2.32f), vector3f(0.0f, -0.2f, -1.0f).Normalized() },
+		{ vector3f(0.85f, 3.01f, -2.32f), vector3f(0.0f, -0.2f, -1.0f).Normalized() },
+	};
+
+	// a material of the model glowing while the lamps are on, in this colour
+	struct LampMaterial {
+		Graphics::Material *material;
+		Color on;
+	};
+
 	struct ModelInfo {
 		bool checked = false;
 		bool available = false;
 		Aabb aabb;
+		// (the materials are shared by every instance of the model; their
+		// colours taken before any rover changes them)
+		std::vector<LampMaterial> lamps;
 	};
 
 	// looked up once: a missing model is reported once, not every frame
@@ -97,6 +117,12 @@ namespace {
 			if (model && model->GetCollisionMesh()) {
 				info.available = true;
 				info.aabb = model->GetCollisionMesh()->GetAabb();
+				for (unsigned i = 0; i < model->GetNumMaterials(); i++) {
+					if (model->GetMaterialNameByIndex(i).find("lamp") == std::string::npos)
+						continue;
+					Graphics::Material *mat = model->GetMaterialByIndex(i).Get();
+					info.lamps.push_back({ mat, mat->emissive });
+				}
 			}
 		}
 		return info;
@@ -162,6 +188,7 @@ Rover::Rover() :
 	SetLabel(Lang::SURFACE_ROVER);
 	SetClipRadius(GetModel()->GetDrawClipRadius());
 	FindRig();
+	InitLightMounts();
 }
 
 Rover::Rover(const Json &jsonObj, Space *space) :
@@ -177,6 +204,7 @@ Rover::Rover(const Json &jsonObj, Space *space) :
 {
 	SetLabel(Lang::SURFACE_ROVER);
 	FindRig();
+	InitLightMounts();
 
 	try {
 		const Json &roverObj = jsonObj["rover"];
@@ -194,6 +222,7 @@ Rover::Rover(const Json &jsonObj, Space *space) :
 			m_wheels[i].contact = wheels[i]["contact"];
 			m_wheels[i].offset = wheels[i]["offset"];
 		}
+		SetLightsLevel(roverObj.value("lights_level", 0));
 	} catch (Json::type_error &) {
 		throw SavedGameCorruptException();
 	}
@@ -216,6 +245,7 @@ void Rover::SaveToJson(Json &jsonObj, Space *space)
 	roverObj["steer"] = m_steer;
 	roverObj["spin"] = m_spin;
 	roverObj["wheel_speed"] = m_wheelSpeed;
+	roverObj["lights_level"] = m_lightsLevel;
 	Json wheels = Json::array();
 	for (const Wheel &w : m_wheels) {
 		Json wheelObj = Json::object();
@@ -225,6 +255,24 @@ void Rover::SaveToJson(Json &jsonObj, Space *space)
 	}
 	roverObj["wheels"] = wheels;
 	jsonObj["rover"] = roverObj;
+}
+
+void Rover::SetLightsLevel(int level)
+{
+	m_lightsLevel = Clamp(level, 0, MAX_LIGHTS_LEVEL);
+}
+
+void Rover::InitLightMounts()
+{
+	m_lightMounts.clear();
+	std::vector<SceneGraph::Tag *> tags;
+	GetModel()->FindTagsByStartOfName("tag_light_", tags);
+	for (const SceneGraph::Tag *tag : tags) {
+		const matrix4x4f &m = tag->GetGlobalTransform();
+		m_lightMounts.push_back({ m.GetTranslate(), m.ApplyRotationOnly(vector3f(0.f, 0.f, 1.f)).NormalizedSafe() });
+	}
+	if (m_lightMounts.empty())
+		m_lightMounts.assign(std::begin(DEFAULT_LAMPS), std::end(DEFAULT_LAMPS));
 }
 
 void Rover::ResetInterp()
@@ -284,6 +332,9 @@ void Rover::FindRig()
 
 void Rover::Render(Graphics::Renderer *r, const Camera *camera, const vector3d &viewCoords, const matrix4x4d &viewTransform)
 {
+	// the lamps' glass lit or dark, as this rover's lamps are
+	for (const LampMaterial &lamp : GetModelInfo().lamps)
+		lamp.material->emissive = m_lightsLevel > 0 ? lamp.on : Color::BLACK;
 	RenderModel(r, camera, viewCoords, viewTransform);
 }
 

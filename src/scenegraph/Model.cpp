@@ -273,6 +273,11 @@ namespace SceneGraph {
 		return m_materials.at(Clamp(i, 0, int(m_materials.size()) - 1)).second;
 	}
 
+	const std::string &Model::GetMaterialNameByIndex(const int i) const
+	{
+		return m_materials.at(Clamp(i, 0, int(m_materials.size()) - 1)).first;
+	}
+
 	Tag *Model::GetTagByIndex(size_t i) const
 	{
 		if (m_tags.empty() || m_tags.size() <= i)
