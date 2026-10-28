@@ -24,6 +24,8 @@
 #include "SpaceStation.h"
 #include "WorldView.h"
 #include "collider/CollisionContact.h"
+#include "collider/CollisionSpace.h"
+#include "collider/GeomTree.h"
 #include "graphics/RenderState.h"
 #include "graphics/Renderer.h"
 #include "graphics/TextureBuilder.h"
@@ -42,6 +44,7 @@
 #include "ship/GunManager.h"
 #include "ship/PlayerShipController.h"
 #include "surface/Excursion.h"
+#include "surface/Walker.h"
 
 #include <algorithm>
 #include <cmath>
@@ -49,6 +52,23 @@
 #include <vector>
 
 static const float TONS_HULL_PER_SHIELD = 10.f;
+// A landed ship eases onto the drawn ground no faster than this (m/s) and
+// turns to its slope no faster than this (radians per second), leaning no
+// more than LANDED_MAX_TILT. Its contacts are the collision mesh's vertices
+// within LANDED_CONTACT_BAND of its bottom, the farthest one in each of
+// LANDED_CONTACT_SECTORS directions round the footprint.
+static const double LANDED_SETTLE_SPEED = 2.0;
+static const double LANDED_TURN_SPEED = 0.5;
+static const double LANDED_MAX_TILT = 0.35; // 20 degrees
+static const double LANDED_CONTACT_BAND = 0.3;
+static const int LANDED_CONTACT_SECTORS = 8;
+// the ground under a contact is looked for from this far above it (m), down
+// to this far below
+static const double LANDED_PROBE_ABOVE = 2.0;
+static const double LANDED_PROBE_BELOW = 10.0;
+// it lands only with the ground or a structure this close under its bottom
+// (m): not on touching a wall in flight
+static const double LANDED_STRUCTURE_GAP = 2.0;
 const float Ship::DEFAULT_SHIELD_COOLDOWN_TIME = 1.0f;
 const double Ship::DEFAULT_LIFT_TO_DRAG_RATIO = 0.001;
 
@@ -342,6 +362,7 @@ void Ship::Init()
 
 	m_landingGearAnimation = GetModel()->FindAnimation("gear_down");
 	m_forceWheelUpdate = true;
+	m_groundContacts.clear(); // found again for the new model
 
 	// If we've got the tag_landing set then use it for an offset
 	// otherwise use zero so that it will dock but look clearly incorrect
@@ -649,6 +670,13 @@ bool Ship::OnCollision(Body *b, Uint32 flags, double relVel)
 	// need to return a "true" value in order to trigger
 	// a bounce in Space::OnCollision
 	if (b->IsType(ObjectType::SPACESTATION) && (flags & (SceneGraph::CollisionGeometry::DOCKING | SceneGraph::CollisionGeometry::ENTRANCE))) {
+		// a surface starport's pad: nothing stops a ship without clearance
+		// touching down there, and it lands as on the ground; with clearance
+		// the starport docks it (or bounces it off to try again)
+		const SpaceStation *station = static_cast<SpaceStation *>(b);
+		if ((flags & SceneGraph::CollisionGeometry::DOCKING) && station->IsGroundStation() && station->GetMyDockingPort(this) < 0 &&
+			m_flightState == FLYING && GetVelocity().Length() < MAX_LANDING_SPEED)
+			m_testLanded = true;
 		return true;
 	}
 
@@ -676,6 +704,13 @@ bool Ship::OnCollision(Body *b, Uint32 flags, double relVel)
 			}
 		}
 	}
+
+	// a surface starport's other surfaces (its docking ones are handled
+	// above): it can land there as on the ground (TestLanded checks the
+	// structure is under it), then bounces off as usual
+	if (b->IsType(ObjectType::SPACESTATION) && m_flightState == FLYING && GetVelocity().Length() < MAX_LANDING_SPEED &&
+		static_cast<SpaceStation *>(b)->IsGroundStation())
+		m_testLanded = true;
 
 	if (b->IsType(ObjectType::SHIP) ||
 		b->IsType(ObjectType::PLAYER) ||
@@ -994,14 +1029,23 @@ void Ship::Blastoff()
 			Log::Warning("It wasn't the player's ship that tried to take off without an autopilot!");
 			return;
 		}
+		// level again before lifting off itself (landed, it leans with the slope)
+		const vector3d right = up.Cross(GetOrient().VectorZ()).NormalizedSafe();
+		SetOrient(matrix3x3d::FromVectors(right, up));
 		auto p = static_cast<Player*>(this);
 		p->DoFixspeedTakeoff();
 	} else {
-		const double planetRadius = 2.0 + static_cast<Planet *>(f->GetBody())->GetTerrainHeight(up);
+		// level again (landed, it leans with the slope: SettleOnDrawnGround),
+		// and 2 m up from where it rests (on the ground or a structure), and
+		// no lower than that over the exact terrain
+		const Planet *planet = static_cast<Planet *>(f->GetBody());
+		const double planetRadius = 2.0 + std::max(GetPosition().Length() + GetAabb().min.y, planet->GetTerrainHeight(up));
 		SetVelocity(vector3d::Zero);
 		SetAngVelocity(vector3d::Zero);
 		SetFlightState(FLYING);
 
+		const vector3d right = up.Cross(GetOrient().VectorZ()).NormalizedSafe();
+		SetOrient(matrix3x3d::FromVectors(right, up));
 		SetPosition(up * planetRadius - GetAabb().min.y * up);
 		SetThrusterState(1, 1.0); // thrust upwards
 	}
@@ -1013,6 +1057,7 @@ void Ship::TestLanded()
 {
 	PROFILE_SCOPED()
 	m_testLanded = false;
+	if (m_flightState != FLYING) return; // docking, say
 	if (m_launchLockTimeout > 0.0f) return;
 	if (m_wheelState < 1.0f) return;
 
@@ -1021,7 +1066,17 @@ void Ship::TestLanded()
 	if (f->GetBody()->IsType(ObjectType::PLANET)) {
 		double speed = GetVelocity().Length();
 		vector3d up = GetPosition().Normalized();
-		const double planetRadius = static_cast<Planet *>(f->GetBody())->GetTerrainHeight(up);
+
+		// what it rests on: the drawn terrain, or a structure (a starport's
+		// apron, a city building, its roads) just under its bottom, not one
+		// it brushed in flight (SettleOnDrawnGround takes over from here)
+		const double bottom = GetPosition().Length() + GetAabb().min.y;
+		const Body *structure = nullptr;
+		const double ground = Walker::GroundRadius(f, up * bottom, -GetAabb().min.y, LANDED_PROBE_BELOW, &structure, GetGeom());
+		const double terrain = static_cast<Planet *>(f->GetBody())->GetTerrainHeight(up);
+		if (bottom - (structure ? ground : std::min(ground, terrain)) > LANDED_STRUCTURE_GAP)
+			return;
+		const double planetRadius = structure ? ground : terrain;
 
 		if (speed < MAX_LANDING_SPEED) {
 			// check player is sortof sensibly oriented for landing
@@ -1043,6 +1098,129 @@ void Ship::TestLanded()
 			}
 		}
 	}
+}
+
+// A landed ship rests on the ground as drawn, as the walker and the rover do:
+// the terrain mesh's vertices are tens of metres apart, and between them it
+// lies metres above or below the exact height the ship touched down at
+// (flight collision keeps the exact height), and on landing pads, roads and
+// other structures under it. It finds the ground under each contact of its
+// collision mesh, leans with the plane through them (up to LANDED_MAX_TILT)
+// with none of them in the ground, and eases there; it keeps following the
+// mesh as it is refined around the camera.
+void Ship::SettleOnDrawnGround(const float timeStep)
+{
+	Frame *f = Frame::GetFrame(GetFrame());
+	if (!f || !f->GetBody() || !f->GetBody()->IsType(ObjectType::PLANET))
+		return;
+
+	if (m_groundContacts.empty()) {
+		// the bottom of the collision mesh, the farthest point round it in each direction
+		const Aabb &box = GetAabb();
+		const vector3d centre = (box.min + box.max) * 0.5;
+		std::vector<std::pair<double, vector3d>> farthest(LANDED_CONTACT_SECTORS, { -1.0, vector3d(0.0) });
+		if (GetCollMesh() && GetCollMesh()->GetGeomTree()) {
+			for (const vector3f &v : GetCollMesh()->GetGeomTree()->GetVertices()) {
+				if (v.y > box.min.y + LANDED_CONTACT_BAND)
+					continue;
+				const double dx = v.x - centre.x;
+				const double dz = v.z - centre.z;
+				const int sector = int(std::floor((std::atan2(dz, dx) + M_PI) / (2.0 * M_PI) * LANDED_CONTACT_SECTORS)) % LANDED_CONTACT_SECTORS;
+				const double distSqr = dx * dx + dz * dz;
+				if (distSqr > farthest[sector].first)
+					farthest[sector] = { distSqr, vector3d(v.x, box.min.y, v.z) };
+			}
+		}
+		for (const auto &entry : farthest) {
+			if (entry.first >= 0.0)
+				m_groundContacts.push_back(entry.second);
+		}
+		// too few to lean on: the middle of the footprint's sides
+		if (m_groundContacts.size() < 3) {
+			m_groundContacts.clear();
+			const vector3d quarter = (box.max - box.min) * 0.25;
+			for (const double x : { -quarter.x, quarter.x })
+				for (const double z : { -quarter.z, quarter.z })
+					m_groundContacts.push_back(vector3d(centre.x + x, box.min.y, centre.z + z));
+		}
+	}
+
+	// the ground under each contact, in a frame along the planet's surface at
+	// the ship: (east, north) across it, height above the ship's radius
+	const vector3d pos = GetPosition();
+	const double radius = pos.Length();
+	const vector3d up = pos / radius;
+	const vector3d axis = std::abs(up.y) < 0.9 ? vector3d(0.0, 1.0, 0.0) : vector3d(1.0, 0.0, 0.0);
+	const vector3d across = (axis - up * up.Dot(axis)).Normalized();
+	const vector3d along = up.Cross(across);
+	const size_t n = m_groundContacts.size();
+	std::vector<double> u(n), v(n), h(n);
+	for (size_t i = 0; i < n; i++) {
+		const vector3d c = GetOrient() * m_groundContacts[i];
+		u[i] = c.Dot(across);
+		v[i] = c.Dot(along);
+		// from a little above where the contact is now, ignoring its own hull
+		const vector3d at = pos + c;
+		const double from = at.Length() + LANDED_PROBE_ABOVE;
+		const double ground = Walker::GroundRadius(f, at.Normalized() * from, 0.0, LANDED_PROBE_ABOVE + LANDED_PROBE_BELOW, nullptr, GetGeom());
+		h[i] = ground - radius;
+	}
+
+	// least-squares plane h = a + b u + c v through them
+	double su = 0.0, sv = 0.0, sh = 0.0, suu = 0.0, svv = 0.0, suv = 0.0, suh = 0.0, svh = 0.0;
+	for (size_t i = 0; i < n; i++) {
+		su += u[i];
+		sv += v[i];
+		sh += h[i];
+		suu += u[i] * u[i];
+		svv += v[i] * v[i];
+		suv += u[i] * v[i];
+		suh += u[i] * h[i];
+		svh += v[i] * h[i];
+	}
+	const double cuu = suu - su * su / n, cvv = svv - sv * sv / n, cuv = suv - su * sv / n;
+	const double cuh = suh - su * sh / n, cvh = svh - sv * sh / n;
+	const double det = cuu * cvv - cuv * cuv;
+	double b = 0.0, c = 0.0;
+	if (std::abs(det) > 1e-9) {
+		b = (cuh * cvv - cvh * cuv) / det;
+		c = (cvh * cuu - cuh * cuv) / det;
+	}
+
+	// it leans with the plane, no more than LANDED_MAX_TILT, keeping its heading
+	vector3d wantUp = (up - across * b - along * c).Normalized();
+	if (wantUp.Dot(up) < std::cos(LANDED_MAX_TILT)) {
+		const vector3d lean = (wantUp - up * wantUp.Dot(up)).Normalized();
+		wantUp = up * std::cos(LANDED_MAX_TILT) + lean * std::sin(LANDED_MAX_TILT);
+	}
+	const vector3d oldUp = GetOrient().VectorY();
+	const double angle = std::acos(Clamp(oldUp.Dot(wantUp), -1.0, 1.0));
+	const double turn = std::min(angle, LANDED_TURN_SPEED * timeStep);
+	vector3d newUp = oldUp;
+	if (angle > 1e-6) {
+		const vector3d axisOfTurn = oldUp.Cross(wantUp).NormalizedSafe();
+		newUp = (oldUp * std::cos(turn) + axisOfTurn.Cross(oldUp) * std::sin(turn)).Normalized();
+	}
+	const vector3d back = GetOrient().VectorZ();
+	const vector3d newRight = newUp.Cross(back).NormalizedSafe();
+	const matrix3x3d newOrient = matrix3x3d::FromVectors(newRight, newUp);
+
+	// high enough that no contact is in the ground
+	double lift = -std::numeric_limits<double>::max();
+	for (size_t i = 0; i < n; i++) {
+		const vector3d contact = pos + newOrient * m_groundContacts[i];
+		lift = std::max(lift, (radius + h[i]) - contact.Length());
+	}
+	const double step = LANDED_SETTLE_SPEED * timeStep;
+	const double rise = Clamp(lift, -step, step);
+	if (std::abs(rise) < 0.001 && turn < 1e-5)
+		return;
+
+	SetOrient(newOrient);
+	SetPosition(up * (radius + rise));
+	// its geom is static while landed: re-indexed where it has moved to
+	if (IsStatic())
+		f->GetCollisionSpace()->FlagRebuildObjectTrees();
 }
 
 void Ship::SetLandedOn(Planet *p, float latitude, float longitude)
@@ -1104,6 +1282,8 @@ void Ship::TimeStepUpdate(const float timeStep)
 
 	m_dragCoeff = DynamicBody::DEFAULT_DRAG_COEFF * (1.0 + 0.25 * m_wheelState);
 	DynamicBody::TimeStepUpdate(timeStep);
+	if (m_flightState == LANDED)
+		SettleOnDrawnGround(timeStep);
 
 	// fuel use decreases mass, so do this as the last thing in the frame
 	UpdateFuel(timeStep);

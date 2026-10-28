@@ -6,6 +6,7 @@
 
 #include <unordered_map>
 #include <deque>
+#include <vector>
 
 #include "DynamicBody.h"
 #include "ShipType.h"
@@ -319,6 +320,8 @@ private:
 	void DoThrusterSounds() const;
 	void Init();
 	void TestLanded();
+	// landed: eases onto the terrain as drawn (see Ship.cpp)
+	void SettleOnDrawnGround(float timeStep);
 	void UpdateAlertState();
 	void UpdateFuel(float timeStep);
 	void SetShipId(const ShipType::Id &shipId);
@@ -372,6 +375,9 @@ private:
 	AICommand *m_curAICmd;
 
 	double m_landingMinOffset; // offset from the centre of the ship used during docking
+	// where it touches the ground when landed: the bottom of its collision
+	// mesh, a few points round its footprint (model space; SettleOnDrawnGround)
+	std::vector<vector3d> m_groundContacts;
 
 	int m_dockedWithIndex; // deserialisation
 

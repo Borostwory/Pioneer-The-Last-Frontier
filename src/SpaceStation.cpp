@@ -421,6 +421,11 @@ bool SpaceStation::OnCollision(Body *b, Uint32 flags, double relVel)
 
 	bool bayUnavailable = bay == -1 || IsPortLocked(bay) || m_shipDocking[bay].stage == DockStage::NONE;
 	if (bayUnavailable) {
+		// touching down on a pad without clearance: it lands there as on the
+		// ground (Ship::OnCollision), unhurt below the landing speed
+		if (bay == -1 && IsGroundStation() && (flags & SceneGraph::CollisionGeometry::DOCKING) &&
+			s->GetFlightState() == Ship::FLYING && s->GetVelocity().Length() < MAX_LANDING_SPEED)
+			return true;
 		return DoShipDamage(s, flags, relVel);
 	}
 

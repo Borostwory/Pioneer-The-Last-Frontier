@@ -118,6 +118,11 @@ void CollisionSpace::TraceRay(const vector3d &start, const vector3d &dir, double
 	vector3d invDir(1.0 / dir.x, 1.0 / dir.y, 1.0 / dir.z);
 	c->distance = len;
 
+	// static geoms added, removed or moved since the last collision pass:
+	// index them now, so rays don't miss them until then
+	if (m_needStaticGeomRebuild && !m_duringCollision)
+		RebuildStaticTree();
+
 	std::vector<uint32_t> isect_result;
 	isect_result.reserve(8);
 
@@ -224,13 +229,8 @@ void CollisionSpace::RebuildObjectTrees()
 {
 	PROFILE_SCOPED()
 
-	if (m_needStaticGeomRebuild) {
-		std::vector<AABBd> staticAabbs;
-
-		m_enabledStaticGeoms = SortEnabledGeoms(m_staticGeoms);
-		RebuildBVHTree(m_staticObjectTree.get(), m_enabledStaticGeoms, m_staticGeoms, staticAabbs);
-		m_needStaticGeomRebuild = false;
-	}
+	if (m_needStaticGeomRebuild)
+		RebuildStaticTree();
 
 	// NOTE: we store AABBs in m_geomAabbs for fast O(1) lookup during Collide()
 	// This doubles the memory cost but allows SingleBVHTree to store leaf nodes
@@ -238,6 +238,15 @@ void CollisionSpace::RebuildObjectTrees()
 	m_enabledDynGeoms = SortEnabledGeoms(m_geoms);
 	RebuildBVHTree(m_dynamicObjectTree.get(), m_enabledDynGeoms, m_geoms, m_geomAabbs);
 	m_dynamicGeomsInvalid = false;
+}
+
+void CollisionSpace::RebuildStaticTree()
+{
+	PROFILE_SCOPED()
+	std::vector<AABBd> staticAabbs;
+	m_enabledStaticGeoms = SortEnabledGeoms(m_staticGeoms);
+	RebuildBVHTree(m_staticObjectTree.get(), m_enabledStaticGeoms, m_staticGeoms, staticAabbs);
+	m_needStaticGeomRebuild = false;
 }
 
 uint32_t CollisionSpace::SortEnabledGeoms(std::vector<Geom *> &geoms)

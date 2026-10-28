@@ -41,6 +41,7 @@ public:
 		sphere.radius = radius;
 		sphere.userData = user_data;
 	}
+	// the static geoms have moved: their tree is rebuilt before it is next used
 	void FlagRebuildObjectTrees() { m_needStaticGeomRebuild = true; }
 	void RebuildObjectTrees();
 
@@ -62,6 +63,7 @@ private:
 
 	void CollideRaySphere(const vector3d &start, const vector3d &dir, isect_t *isect);
 	uint32_t SortEnabledGeoms(std::vector<Geom *> &geoms);
+	void RebuildStaticTree();
 	void RebuildBVHTree(SingleBVHTree *tree, uint32_t numEnabled, const std::vector<Geom *> &geoms, std::vector<AABBd> &aabbs);
 
 	void CollideGeom(Geom *a, Geom *b, void (*callback)(CollisionContact *));
