@@ -18,6 +18,10 @@
 	"cargo": 960,
 
 	"equipment_slots": {
+		"vehicle_bay": {
+			"type": "vehicle_bay",
+			"size": 1
+		},
 		"turret_s2_1": {
 			"type": "turret",
 			"size": 2,

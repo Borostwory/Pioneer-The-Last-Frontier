@@ -18,6 +18,10 @@
 	"cargo": 2080,
 
 	"equipment_slots": {
+		"vehicle_bay": {
+			"type": "vehicle_bay",
+			"size": 1
+		},
 		"cabin_s4_1": {
 			"type": "cabin",
 			"size": 4

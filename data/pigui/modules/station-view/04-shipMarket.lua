@@ -507,6 +507,7 @@ local tradeMenu = function()
 						shipFormatAndCompare:draw_equip_slot_cell( l.MISSILE_MOUNTS, "missile" )
 						shipFormatAndCompare:draw_berths_slot_cell( l.PASSENGER_CABIN_CAPACITY )
 						shipFormatAndCompare:draw_equip_slot_cell( l.SCOOP_MOUNTS, "scoop" )
+						shipFormatAndCompare:draw_yes_no_equip_slot_cell( l.ROVER_BAY, "vehicle_bay" )
 
 						ui.endTable()
 

@@ -18,6 +18,10 @@
 	"cargo": 360,
 
 	"equipment_slots": {
+		"vehicle_bay": {
+			"type": "vehicle_bay",
+			"size": 1
+		},
 		"utility_s4_1": {
 			"type": "utility",
 			"size": 4,

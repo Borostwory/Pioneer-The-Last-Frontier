@@ -303,6 +303,10 @@
     "description": "Name for a generic utility hardpoint",
     "message": "Utility"
   },
+  "HARDPOINT_VEHICLE_BAY": {
+    "description": "Name for a hardpoint: a bay in the hull for a vehicle carried aboard (a shuttle or the surface rover)",
+    "message": "Vehicle bay"
+  },
   "HARDPOINT_WEAPON": {
     "description": "Name for a generic weapon hardpoint",
     "message": "Weapon"
@@ -354,6 +358,10 @@
   "HULL_MOUNTS": {
     "description": "Category name for hull-mounted equipment",
     "message": "Hull Mounts"
+  },
+  "VEHICLES": {
+    "description": "Category name for the equipment slots of vehicles carried aboard (the surface rover)",
+    "message": "Vehicles"
   },
   "HYPERCLOUD_ANALYZER": {
     "description": "",
@@ -795,6 +803,10 @@
     "description": "Name for an equipment slot that augments or modifies the ship hull",
     "message": "Hull"
   },
+  "SLOT_VEHICLE_BAY": {
+    "description": "Name for an equipment slot: a bay in the hold big enough for the surface rover",
+    "message": "Vehicle bay"
+  },
   "SLOT_HYPERDRIVE": {
     "description": "Name for a ship's singular hyperdrive equipment slot",
     "message": "Hyperdrive"
@@ -881,7 +893,7 @@
   },
   "SURFACE_ROVER_DESCRIPTION": {
     "description": "",
-    "message": "A pressurised four-wheeled rover for two, carried in the hold. Land, set it down beside the ship and drive out to explore the surface."
+    "message": "A pressurised four-wheeled rover for two, carried in a vehicle bay, which only the larger ships have (Rover bay, in the shipyard). Land, set it down beside the ship and drive out to explore the surface."
   },
   "SURFACE_SCANNER": {
     "description": "A ship equipment that records data of terrain, for cartography mapping/geological survey. Note: Scout Mission module reference and distinguishes between 'orbital' and 'surface' scanner types, the former scans planet from orbit, the latter from low altitude. Model manufacturer name is meant to sound like a cheap brand.",

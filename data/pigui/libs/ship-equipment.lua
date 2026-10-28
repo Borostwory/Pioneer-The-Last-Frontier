@@ -45,6 +45,7 @@ EquipmentWidget.Sections = {
 	{ name = le.COMPUTER_MODULES, type = "computer", },
 	{ name = le.HABITAT, types = { "cabin" } },
 	{ name = le.HULL_MOUNTS, types = { "hull", "utility", "fuel_scoop", "structure" } },
+	{ name = le.VEHICLES, type = "vehicle_bay" },
 }
 
 --

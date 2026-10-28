@@ -18,6 +18,10 @@
 	"cargo": 198,
 
 	"equipment_slots": {
+		"vehicle_bay": {
+			"type": "vehicle_bay",
+			"size": 1
+		},
 		"shield_s3": {
 			"type": "shield",
 			"size": 3,

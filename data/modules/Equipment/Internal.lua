@@ -602,6 +602,8 @@ Equipment.Register("misc.cargo_life_support", EquipType.New {
 Equipment.Register("misc.surface_rover", EquipType.New {
 	l10n_key="SURFACE_ROVER",
 	price=18000, purchasable=true, tech_level=4,
+	-- only the ships with a vehicle bay (the larger ones) can carry it
+	slot = { type="vehicle_bay", size=1 },
 	mass=6, volume=20, capabilities={ surface_rover=1 },
 	icon_name="rover"
 })

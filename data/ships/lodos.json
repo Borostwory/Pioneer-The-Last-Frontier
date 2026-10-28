@@ -18,6 +18,10 @@
 	"cargo": 2560,
 
 	"equipment_slots": {
+		"vehicle_bay": {
+			"type": "vehicle_bay",
+			"size": 1
+		},
 		"weapon_front_s3_1": {
 			"type": "weapon",
 			"size": 3,
