@@ -71,6 +71,8 @@ struct HyperdriveSoundsTable {
 	std::string jump_sound;
 	std::string warmup_sound;
 	std::string abort_sound;
+	std::string travel_sound;
+	std::string exit_sound;
 };
 
 class Ship : public DynamicBody {

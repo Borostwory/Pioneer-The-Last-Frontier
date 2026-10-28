@@ -218,12 +218,16 @@ local HYPERDRIVE_SOUNDS_NORMAL = {
 	warmup = "Hyperdrive_Charge",
 	abort = "Hyperdrive_Abort",
 	jump = "Hyperdrive_Jump",
+	travel = "Hyperspace_Travel",
+	exit = "Hyperspace_Exit",
 }
 
 local HYPERDRIVE_SOUNDS_MILITARY = {
-	warmup = "Hyperdrive_Charge_Military",
+	warmup = "Hyperdrive_Charge",
 	abort = "Hyperdrive_Abort_Military",
-	jump = "Hyperdrive_Jump_Military",
+	jump = "Hyperdrive_Jump",
+	travel = "Hyperspace_Travel",
+	exit = "Hyperspace_Exit",
 }
 
 -- Function: HyperjumpTo

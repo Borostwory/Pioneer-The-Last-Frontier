@@ -652,6 +652,8 @@ static int l_ship_get_duration_for_distance(lua_State *l)
  *                warmup = "Hyperdrive_Charge",
  *                abort = "Hyperdrive_Abort",
  *                jump = "Hyperdrive_Jump",
+ *                travel = "Hyperspace_Travel",
+ *                exit = "Hyperspace_Exit",
  *            }
  *            The values refer to sound-effects under the data/sounds/ directory.
  *
@@ -676,6 +678,8 @@ static int l_ship_initiate_hyperjump_to(lua_State *l)
 		sounds.warmup_sound = t.Get("warmup", "Hyperdrive_Charge");
 		sounds.abort_sound = t.Get("abort", "Hyperdrive_Abort");
 		sounds.jump_sound = t.Get("jump", "Hyperdrive_Jump");
+		sounds.travel_sound = t.Get("travel", "Hyperspace_Travel");
+		sounds.exit_sound = t.Get("exit", "Hyperspace_Exit");
 	} else {
 		return luaL_error(l, "Ship:InitiateHyperjumpTo() requires a sound table in argument 5.");
 	}

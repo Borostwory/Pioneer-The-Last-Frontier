@@ -583,7 +583,8 @@ void Game::SwitchToHyperspace()
 	m_hyperspaceProgress = 0;
 	m_hyperspaceDuration = m_player->GetHyperspaceDuration();
 	m_hyperspaceEndTime = Pi::game->GetTime() + m_hyperspaceDuration;
-	// the transit lasts as long as the jump sound (Hyperdrive_Jump.ogg), whatever the length of the jump
+	// the transit lasts a fixed real time, whatever the length of the jump
+	// (the Hyperspace_Travel.ogg drone loops under it until Hyperspace_Exit.ogg plays)
 	constexpr double HYPERSPACE_REAL_DURATION = 15.5;
 	m_hyperspaceTimeAccelRate = float(std::max(1.0, m_hyperspaceDuration / HYPERSPACE_REAL_DURATION));
 

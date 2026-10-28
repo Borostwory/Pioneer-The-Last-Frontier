@@ -28,6 +28,7 @@
 //Some player specific sounds
 static Sound::Event s_soundUndercarriage;
 static Sound::Event s_soundHyperdrive;
+static Sound::Event s_soundHyperspaceTravel;
 
 Player::Player(const ShipType::Id &shipId) :
 	Ship(shipId)
@@ -222,6 +223,9 @@ void Player::OnBeforeEnterHyperspace()
 void Player::OnEnterHyperspace()
 {
 	s_soundHyperdrive.Play(m_hyperspace.sounds.jump_sound.c_str());
+	// the travel drone fades in under the tail of the jump sound and loops until we exit
+	s_soundHyperspaceTravel.Play(m_hyperspace.sounds.travel_sound.c_str(), 0.f, 0.f, Sound::OP_REPEAT);
+	s_soundHyperspaceTravel.VolumeAnimate(1.f, 1.f, 0.3f, 0.3f);
 	SetNavTarget(0);
 	SetCombatTarget(0);
 	SetFollowTarget(0);
@@ -233,6 +237,8 @@ void Player::OnEnterHyperspace()
 
 void Player::OnEnterSystem()
 {
+	s_soundHyperspaceTravel.FadeOut(0.5f);
+	s_soundHyperdrive.Play(m_hyperspace.sounds.exit_sound.c_str());
 	m_controller->SetFlightControlState(CONTROL_MANUAL);
 }
 

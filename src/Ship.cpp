@@ -278,6 +278,8 @@ Ship::Ship(const Json &jsonObj, Space *space) :
 		m_hyperspace.sounds.warmup_sound = shipObj.value("hyperspace_warmup_sound", "");
 		m_hyperspace.sounds.abort_sound = shipObj.value("hyperspace_abort_sound", "");
 		m_hyperspace.sounds.jump_sound = shipObj.value("hyperspace_jump_sound", "");
+		m_hyperspace.sounds.travel_sound = shipObj.value("hyperspace_travel_sound", "Hyperspace_Travel");
+		m_hyperspace.sounds.exit_sound = shipObj.value("hyperspace_exit_sound", "Hyperspace_Exit");
 
 		m_ecmRecharge = shipObj["ecm_recharge"];
 		SetShipId(shipObj["ship_type_id"]); // XXX handle missing thirdparty ship
@@ -447,6 +449,8 @@ void Ship::SaveToJson(Json &jsonObj, Space *space)
 	shipObj["hyperspace_warmup_sound"] = m_hyperspace.sounds.warmup_sound;
 	shipObj["hyperspace_abort_sound"] = m_hyperspace.sounds.abort_sound;
 	shipObj["hyperspace_jump_sound"] = m_hyperspace.sounds.jump_sound;
+	shipObj["hyperspace_travel_sound"] = m_hyperspace.sounds.travel_sound;
+	shipObj["hyperspace_exit_sound"] = m_hyperspace.sounds.exit_sound;
 
 	shipObj["ecm_recharge"] = m_ecmRecharge;
 	shipObj["ship_type_id"] = m_type->id;
