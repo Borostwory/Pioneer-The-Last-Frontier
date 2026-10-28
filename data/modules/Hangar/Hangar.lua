@@ -260,9 +260,12 @@ end
 -- with the ship you arrive in), then ordinary cargo
 ---@param rec Hangar.Record
 function Hangar.FitCargo(rec)
+	return Hangar.FitCargoInto(Hangar.RecordFreeSpace(rec), Hangar.RecordLifeSupport(rec))
+end
+
+-- Take as much as fits in `room` tons with `lifeSupport`, mission cargo first
+function Hangar.FitCargoInto(room, lifeSupport)
 	local take = {}
-	local room = Hangar.RecordFreeSpace(rec)
-	local lifeSupport = Hangar.RecordLifeSupport(rec)
 	local lots = Hangar.CargoLots()
 	table.sort(lots, function(a, b)
 		local am, bm = a.tag ~= ORDINARY, b.tag ~= ORDINARY
@@ -1243,6 +1246,113 @@ local function crewAfter(aboard)
 	return n
 end
 
+-- Checks shared by swapping and by buying a ship while storing the current
+-- one: being aboard, the rover, passengers, crew for ship `def` named `name`,
+-- and the cargo taken along into `room` tons with `lifeSupport`
+local function checkBoarding(blockers, warnings, def, name, take, aboard, room, lifeSupport)
+	local player = Game.player
+
+	if Game.GetExcursionMode and Game.GetExcursionMode() ~= "ship" then
+		table.insert(blockers, l.NOT_ABOARD)
+	end
+
+	local roverPlanet = Game.GetRoverPlanet and Game.GetRoverPlanet()
+	if roverPlanet then
+		local body = roverPlanet:GetSystemBody()
+		table.insert(blockers, string.interp(l.ROVER_OUT, { planet = body and body.name or "?" }))
+	end
+
+	if Passengers.CountOccupiedBerths(player) > 0 then
+		table.insert(blockers, l.PASSENGERS_ABOARD)
+	end
+
+	Hangar.CheckCrew(blockers, warnings, def, name, aboard)
+
+	local taken = Hangar.TakeTotal(take)
+	if taken > room then
+		table.insert(blockers, string.interp(l.TOO_MUCH_CARGO, { ship = name, room = room, over = taken - room }))
+	end
+
+	for cname, parts in pairs(take) do
+		local commodity = Commodities[cname]
+		local n = 0
+		for _, c in pairs(parts) do n = n + c end
+		if n > 0 and commodity and (commodity.life_support or 0) > lifeSupport then
+			table.insert(blockers, string.interp(l.NEEDS_LIFE_SUPPORT, { commodity = commodity:GetName() }))
+		end
+	end
+end
+
+-- Crew checks for flying ship `def` (named `name`) with `aboard`: the
+-- maximum blocks, the minimum warns, and leaving anyone in the lounge needs
+-- the lounge fees paid
+function Hangar.CheckCrew(blockers, warnings, def, name, aboard)
+	if aboard and Hangar.LoungeBlocked() then
+		for member in Game.player:EachCrewMember() do
+			if not member.player and not aboard[member] then
+				table.insert(blockers, Hangar.LoungeBlocked())
+				break
+			end
+		end
+	end
+
+	local crew = crewAfter(aboard)
+	if crew > def.maxCrew then
+		table.insert(blockers, string.interp(l.TOO_MANY_CREW, { ship = name, max = def.maxCrew, crew = crew, over = crew - def.maxCrew }))
+	elseif crew < def.minCrew then
+		table.insert(warnings, string.interp(l.TOO_FEW_CREW, { ship = name, min = def.minCrew, crew = crew }))
+	end
+end
+
+-- Crew never stays on a stored ship: who isn't in `aboard` waits in the
+-- lounge here, and lounge crew in `aboard` come aboard. Call after the
+-- player's ship has its new type, so its crew limit applies.
+function Hangar.MoveCrew(aboard)
+	if not aboard then return end
+	local player = Game.player
+	local leaving = {}
+	for member in player:EachCrewMember() do
+		if not aboard[member] and not member.player then table.insert(leaving, member) end
+	end
+	for _, member in ipairs(leaving) do Hangar.SendToLounge(member) end
+	for member in pairs(aboard) do
+		if member.waitingAt then Hangar.TakeFromLounge(member) end
+	end
+end
+
+-- Take the player's ship as a record, leaving aboard only the cargo in
+-- `take`: the rest stays with the record. Changes the player's cargo.
+local function storePlayer(take)
+	local cargoMgr = Game.player:GetComponent('CargoManager')
+
+	local leave, leaveTags, leaveOrdinary = {}, {}, {}
+	for _, lot in ipairs(Hangar.CargoLots()) do
+		local taken = take[lot.name] and take[lot.name][lot.tag] or 0
+		local n = lot.count - math.clamp(taken, 0, lot.count)
+		if n > 0 then
+			leave[lot.name] = (leave[lot.name] or 0) + n
+			if lot.tag == ORDINARY then
+				leaveOrdinary[lot.name] = n
+			else
+				leaveTags[lot.name] = leaveTags[lot.name] or {}
+				leaveTags[lot.name][lot.tag] = n
+			end
+		end
+	end
+
+	local out = snapshotPlayer(leave, leaveTags)
+
+	for name, n in pairs(leaveOrdinary) do
+		cargoMgr:RemoveCommodity(Commodities[name], n, ORDINARY)
+	end
+	for name, tags in pairs(leaveTags) do
+		for tag, n in pairs(tags) do
+			cargoMgr:RemoveCommodity(Commodities[name], n, tag)
+		end
+	end
+	return out
+end
+
 -- Reasons a swap can't happen (blockers) and things the player should know
 -- (warnings). `take` is the cargo to take along (see Cargo on a swap),
 -- `aboard` who flies on (see crewAfter).
@@ -1264,52 +1374,8 @@ function Hangar.CheckSwap(rec, take, aboard)
 		table.insert(blockers, l.HANGAR_LOCKED)
 	end
 
-	if Game.GetExcursionMode and Game.GetExcursionMode() ~= "ship" then
-		table.insert(blockers, l.NOT_ABOARD)
-	end
-
-	local roverPlanet = Game.GetRoverPlanet and Game.GetRoverPlanet()
-	if roverPlanet then
-		local body = roverPlanet:GetSystemBody()
-		table.insert(blockers, string.interp(l.ROVER_OUT, { planet = body and body.name or "?" }))
-	end
-
-	if Passengers.CountOccupiedBerths(player) > 0 then
-		table.insert(blockers, l.PASSENGERS_ABOARD)
-	end
-
-	-- Leaving anyone in the lounge needs the lounge fees paid
-	if aboard and Hangar.LoungeBlocked() then
-		for member in player:EachCrewMember() do
-			if not member.player and not aboard[member] then
-				table.insert(blockers, Hangar.LoungeBlocked())
-				break
-			end
-		end
-	end
-
-	local crew = crewAfter(aboard)
-	if crew > def.maxCrew then
-		table.insert(blockers, string.interp(l.TOO_MANY_CREW, { ship = rec.name, max = def.maxCrew, crew = crew, over = crew - def.maxCrew }))
-	elseif crew < def.minCrew then
-		table.insert(warnings, string.interp(l.TOO_FEW_CREW, { ship = rec.name, min = def.minCrew, crew = crew }))
-	end
-
-	local room = Hangar.RecordFreeSpace(rec)
-	local taken = Hangar.TakeTotal(take)
-	if taken > room then
-		table.insert(blockers, string.interp(l.TOO_MUCH_CARGO, { ship = rec.name, room = room, over = taken - room }))
-	end
-
-	local lifeSupport = Hangar.RecordLifeSupport(rec)
-	for name, parts in pairs(take) do
-		local commodity = Commodities[name]
-		local n = 0
-		for _, c in pairs(parts) do n = n + c end
-		if n > 0 and commodity and (commodity.life_support or 0) > lifeSupport then
-			table.insert(blockers, string.interp(l.NEEDS_LIFE_SUPPORT, { commodity = commodity:GetName() }))
-		end
-	end
+	checkBoarding(blockers, warnings, def, rec.name, take, aboard,
+		Hangar.RecordFreeSpace(rec), Hangar.RecordLifeSupport(rec))
 
 	if rec.hull < 70 or rec.fuel < 50 then
 		table.insert(warnings, string.interp(l.LOW_HULL_FUEL, {
@@ -1332,34 +1398,8 @@ function Hangar.Swap(rec, take, aboard)
 	local h = assert(hangars[rec.hangar])
 	local cargoMgr = player:GetComponent('CargoManager')
 
-	-- Cargo that stays with the ship being stored, lot by lot
-	local leave, leaveTags, leaveOrdinary = {}, {}, {}
-	for _, lot in ipairs(Hangar.CargoLots()) do
-		local taken = take[lot.name] and take[lot.name][lot.tag] or 0
-		local n = lot.count - math.clamp(taken, 0, lot.count)
-		if n > 0 then
-			leave[lot.name] = (leave[lot.name] or 0) + n
-			if lot.tag == ORDINARY then
-				leaveOrdinary[lot.name] = n
-			else
-				leaveTags[lot.name] = leaveTags[lot.name] or {}
-				leaveTags[lot.name][lot.tag] = n
-			end
-		end
-	end
-
-	local out = snapshotPlayer(leave, leaveTags)
-
 	accrue(h, Game.time)
-
-	for name, n in pairs(leaveOrdinary) do
-		cargoMgr:RemoveCommodity(Commodities[name], n, ORDINARY)
-	end
-	for name, tags in pairs(leaveTags) do
-		for tag, n in pairs(tags) do
-			cargoMgr:RemoveCommodity(Commodities[name], n, tag)
-		end
-	end
+	local out = storePlayer(take)
 
 	-- Rebuild the player's ship from the record. SetShipType removes all
 	-- equipment (the stored ship keeps the item instances) and keeps cargo.
@@ -1369,17 +1409,7 @@ function Hangar.Swap(rec, take, aboard)
 	player:SetLabel(rec.label)
 	player:SetShipName(rec.name)
 
-	-- Crew never stays on a stored ship: who doesn't fly on waits here
-	if aboard then
-		local leaving = {}
-		for member in player:EachCrewMember() do
-			if not aboard[member] and not member.player then table.insert(leaving, member) end
-		end
-		for _, member in ipairs(leaving) do Hangar.SendToLounge(member) end
-		for member in pairs(aboard) do
-			if member.waitingAt then Hangar.TakeFromLounge(member) end
-		end
-	end
+	Hangar.MoveCrew(aboard)
 
 	local failed = installEquipment(rec.equip)
 	for _, item in ipairs(failed) do table.insert(h.store, item) end
@@ -1426,6 +1456,69 @@ function Hangar.Swap(rec, take, aboard)
 	end
 
 	return true, out
+end
+
+--=============================================================================
+-- Buying a ship (Ship Market)
+--=============================================================================
+
+-- Cargo space and life support of a new ship with `equip` fitted ({ slot id,
+-- item } pairs, as the Ship Market lists its default equipment)
+function Hangar.NewShipCargo(def, equip)
+	local room, lifeSupport = def.cargo, 0
+	for _, pair in ipairs(equip) do
+		local caps = pair[2].capabilities or {}
+		room = room + (caps.cargo or 0)
+		lifeSupport = lifeSupport + (caps.cargo_life_support or 0)
+	end
+	return room, lifeSupport
+end
+
+-- Reasons ship `def` can't be bought here now. With `store`, the current
+-- ship goes into the hangar here and `take` is the cargo moved across;
+-- otherwise it is traded in and all cargo has to fit. `aboard` is who flies
+-- the new ship (nil: the crew aboard now).
+function Hangar.CheckBuy(def, equip, store, take, aboard)
+	local blockers, warnings = {}, {}
+	local name = def.name
+	local room, lifeSupport = Hangar.NewShipCargo(def, equip)
+
+	if store then
+		local h = Hangar.GetHangarAt(Game.player:GetDockedWith())
+		if not h then
+			table.insert(blockers, l.STORE_NEEDS_HANGAR)
+		elseif Hangar.IsLocked(h) then
+			table.insert(blockers, l.HANGAR_LOCKED)
+		elseif Hangar.FreeBays(h) < 1 then
+			table.insert(blockers, l.STORE_NEEDS_BAY)
+		end
+		checkBoarding(blockers, warnings, def, name, take or {}, aboard, room, lifeSupport)
+	else
+		Hangar.CheckCrew(blockers, warnings, def, name, aboard)
+		local used = Game.player:GetComponent('CargoManager'):GetUsedSpace()
+		if used > room then
+			table.insert(blockers, string.interp(l.TRADE_IN_CARGO, {
+				ship = name, room = room, used = used, over = used - room, current = Game.player.shipName }))
+		end
+	end
+	return blockers, warnings
+end
+
+-- Put the player's current ship into a free bay of the hangar here, keeping
+-- aboard only the cargo in `take`. The caller then makes the player's ship
+-- the new one and calls Hangar.MoveCrew.
+function Hangar.StoreCurrentShip(take)
+	local h = Hangar.GetHangarAt(Game.player:GetDockedWith())
+	if not h or Hangar.FreeBays(h) < 1 or Hangar.IsLocked(h) then return false end
+	accrue(h, Game.time)
+	local rec = storePlayer(take or {})
+	rec.id = nextId
+	nextId = nextId + 1
+	rec.hangar = h.key
+	rec.storedAt = Game.time
+	rec.order = rec.id
+	ships[rec.id] = rec
+	return true, rec
 end
 
 ---@param rec Hangar.Record

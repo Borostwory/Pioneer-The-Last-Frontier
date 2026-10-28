@@ -43,9 +43,25 @@
     "description": "",
     "message": "Bays can be added or removed later."
   },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "\"{ship}\" is stored in your hangar here."
+  },
   "BRING_ABOARD": {
     "description": "Tooltip: button bringing a crew member aboard",
     "message": "Bring aboard"
+  },
+  "BUY_STORE_NOTE": {
+    "description": "",
+    "message": "\"{ship}\" goes into your hangar here, with the cargo you don't take along. Crew never stays on a stored ship: whoever isn't ticked below waits in the lounge here."
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Buy a {ship}?"
+  },
+  "BUY_TRADE_IN_NOTE": {
+    "description": "",
+    "message": "\"{ship}\" is traded in and all cargo moves to the new ship. Whoever isn't ticked below waits in the lounge here."
   },
   "CABIN_OCCUPIED": {
     "description": "",
@@ -202,6 +218,10 @@
   "GOES_TO_LOUNGE": {
     "description": "Swap window",
     "message": "will wait in the lounge"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Hangar tab"
   },
   "HANGAR": {
     "description": "Name of the station tab",
@@ -563,6 +583,22 @@
     "description": "",
     "message": "Unfit items into the store, then fit them to the ship picked on the left, or sell them to this station. Equipment Market rules and prices, no fee for fitting. Pick an empty slot first to fit an item into that slot."
   },
+  "STORE_INSTEAD": {
+    "description": "Ship Market checkbox",
+    "message": "Store \"{ship}\" in your hangar here instead of trading it in (you pay the full price)"
+  },
+  "STORE_INSTEAD_UNAVAILABLE": {
+    "description": "Ship Market, when the current ship can't be stored",
+    "message": "Storing \"{ship}\" instead of trading it in: {reason}"
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "your hangar here has no free bay."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "you have no hangar here."
+  },
   "SWAP_NOTE": {
     "description": "",
     "message": "\"{ship}\" will be stored in this bay. Crew never stays on a stored ship: whoever isn't ticked below waits in the lounge here."
@@ -606,6 +642,10 @@
   "TOTAL_ROW": {
     "description": "Bay table: total row",
     "message": "Total: {used} of {bays} bays in use"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "A {ship} holds {room} t, and you have {used} t aboard. When trading in, all cargo moves to the new ship: sell or unload {over} t first, or store \"{current}\" in your hangar here and choose what comes along."
   },
   "UNFIT_ALL": {
     "description": "Button",
@@ -662,5 +702,9 @@
   "YOU_HAVE_CREW": {
     "description": "",
     "message": "(you have {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "You pay: {cost}"
   }
 }

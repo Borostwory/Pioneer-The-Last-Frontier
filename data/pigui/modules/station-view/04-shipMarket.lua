@@ -14,6 +14,9 @@ local EquipSet = require 'EquipSet'
 local HullConfig = require 'HullConfig'
 local PlayerState= require 'PlayerState'
 local Passengers = require 'Passengers'
+local ModalWindow = require 'pigui.libs.modal-win'
+local Hangar = require 'modules.Hangar.Hangar'
+local Pickers = require 'pigui.libs.hangar-pickers'
 
 local ui = require 'pigui'
 
@@ -23,6 +26,7 @@ local pionillium = ui.fonts.pionillium
 local orbiteer = ui.fonts.orbiteer
 local l = Lang.GetResource("ui-core")
 local ls = Lang.GetResource("ships")
+local lh = Lang.GetResource("module-hangar")
 local Vector2 = _G.Vector2
 
 local vZero = Vector2(0,0)
@@ -47,6 +51,12 @@ local equipSellPriceReduction = 0.8
 local modelSpinner = ModelSpinner()
 local cachedShip = nil
 local cachedPattern = nil
+
+-- The Last Frontier: store the current ship in the hangar here instead of
+-- trading it in, and pick the cargo and crew for the new ship
+local storeCurrent = false
+local purchase = nil ---@type { sos: table, store: boolean, take: table, aboard: table }?
+local purchaseModal -- created below
 
 local shipClassString = {
 	light_cargo_shuttle        = l.LIGHT_CARGO_SHUTTLE,
@@ -160,14 +170,33 @@ local tradeInValue = function(ship)
 	return math.ceil(value)
 end
 
-local function buyShip (mkt, sos)
+-- What the player pays: the full price when storing the current ship
+local function purchaseCost(sos, store)
+	local price = advertDataCache[sos].price
+	return store and price or price - tradeInValue(Game.player)
+end
+
+-- Can the current ship go into the hangar here instead of being traded in?
+-- Returns the reason when it can't.
+local function storeBlocked()
+	local h = Hangar.GetHangarAt(Game.player:GetDockedWith())
+	if not h then return lh.STORE_NEEDS_HANGAR end
+	if Hangar.IsLocked(h) then return lh.HANGAR_LOCKED end
+	if Hangar.FreeBays(h) < 1 then return lh.STORE_NEEDS_BAY end
+	return nil
+end
+
+-- Buy ship `sos`. With `store`, the current ship goes into the hangar here
+-- with the cargo not in `take`; otherwise it is traded in. `aboard` is who
+-- flies the new ship (nil: everyone aboard now).
+local function completePurchase (mkt, sos, store, take, aboard)
 	local player = Game.player
 	local station = assert(player:GetDockedWith())
 	local def = sos.def
 
 	local shipData = advertDataCache[sos]
 
-	local cost = shipData.price - tradeInValue(Game.player)
+	local cost = purchaseCost(sos, store)
 	if math.floor(cost) ~= cost then
 		error("Ship price non-integer value.")
 	end
@@ -177,32 +206,35 @@ local function buyShip (mkt, sos)
 		return
 	end
 
-	if player:CrewNumber() > def.maxCrew then
-		mkt.popup.msg = l.TOO_SMALL_FOR_CURRENT_CREW
-		mkt.popup:open()
-		return
-	end
-
-	-- Not enough room to put all of the player's current cargo
-	if def.cargo < player.usedCargo then
-		mkt.popup.msg = l.TOO_SMALL_TO_TRANSSHIP
+	local blockers = Hangar.CheckBuy(def, shipData.equip, store, take, aboard)
+	if #blockers > 0 then
+		mkt.popup.msg = blockers[1]
 		mkt.popup:open()
 		return
 	end
 
 	PlayerState.AddMoney(-cost)
 
-	station:ReplaceShipOnSale(sos, {
-		def     = ShipDef[player.shipId],
-		skin    = player:GetSkin(),
-		pattern = player.model.pattern,
-		label   = player.label,
-	})
+	local storedName = player.shipName
+	if store then
+		assert(Hangar.StoreCurrentShip(take))
+		station:RemoveShipOnSale(sos)
+	else
+		station:ReplaceShipOnSale(sos, {
+			def     = ShipDef[player.shipId],
+			skin    = player:GetSkin(),
+			pattern = player.model.pattern,
+			label   = player.label,
+		})
+	end
 
 	player:SetShipType(def.id)
 	player:SetSkin(sos.skin)
 	if sos.pattern then player.model:SetPattern(sos.pattern) end
 	player:SetLabel(sos.label)
+	-- the stored ship keeps its name; the new one is named after its type
+	-- until the player renames it
+	if store then player:SetShipName(ls[def.i18n_key]) end
 
 	-- TODO: ship ads should support an explicit list of (pre-owned) equipment as well as / instead of factory-default items
 	-- At current we just build a list from the HullConfig's default items
@@ -235,11 +267,90 @@ local function buyShip (mkt, sos)
 	end
 
 	player:SetFuelPercent(100)
+
+	-- crew that doesn't fly the new ship waits in the lounge here
+	Hangar.MoveCrew(aboard)
+
 	refreshShipMarket();
 
-	mkt.popup.msg = l.THANKS_AND_REMEMBER_TO_BUY_FUEL
+	mkt.popup.msg = store
+		and string.interp(lh.BOUGHT_AND_STORED, { ship = storedName }) .. "\n" .. l.THANKS_AND_REMEMBER_TO_BUY_FUEL
+		or l.THANKS_AND_REMEMBER_TO_BUY_FUEL
 	mkt.popup:open()
 end
+
+-- The Buy ship button: straight to the purchase when trading in and the crew
+-- fits; otherwise a window to pick the cargo (when storing) and the crew
+local function buyShip (mkt, sos)
+	local player = Game.player
+	local def = sos.def
+	local store = storeCurrent and storeBlocked() == nil
+
+	if PlayerState.GetMoney() < purchaseCost(sos, store) then
+		mkt.popup.msg = l.YOU_NOT_ENOUGH_MONEY
+		mkt.popup:open()
+		return
+	end
+
+	if not store and player:CrewNumber() <= def.maxCrew then
+		-- completePurchase says why when the cargo doesn't fit (counting the
+		-- new ship's default cargo racks)
+		completePurchase(mkt, sos, false, nil, nil)
+		return
+	end
+
+	local room, lifeSupport = Hangar.NewShipCargo(def, advertDataCache[sos].equip)
+	purchase = {
+		sos = sos,
+		store = store,
+		take = store and Hangar.FitCargoInto(room, lifeSupport) or {},
+		aboard = Pickers.everyoneAboard(),
+	}
+	purchaseModal:open()
+end
+
+purchaseModal = ModalWindow.New("ShipMarketPurchase", function(self)
+	if not purchase then self:close() return end
+	local player = Game.player
+	local sos = purchase.sos
+	local def = sos.def
+	local shipName = ls[def.i18n_key]
+	local equip = advertDataCache[sos] and advertDataCache[sos].equip or {}
+
+	ui.withFont(orbiteer.heading, function()
+		ui.text(string.interp(lh.BUY_TITLE, { ship = shipName }))
+	end)
+	local cost = purchaseCost(sos, purchase.store)
+	ui.text(string.interp(lh.YOU_PAY, { cost = Format.Money(cost, false) }))
+	ui.textColored(ui.theme.colors.fontDim, string.interp(purchase.store and lh.BUY_STORE_NOTE or lh.BUY_TRADE_IN_NOTE, { ship = player.shipName }))
+	ui.spacing()
+
+	if purchase.store then
+		local room, lifeSupport = Hangar.NewShipCargo(def, equip)
+		Pickers.drawCargo(purchase, room, lifeSupport, player.shipName)
+		ui.spacing()
+	end
+	Pickers.drawCrew(purchase, def, shipName)
+
+	local blockers, warnings = Hangar.CheckBuy(def, equip, purchase.store, purchase.take, purchase.aboard)
+	if PlayerState.GetMoney() < cost then table.insert(blockers, 1, l.YOU_NOT_ENOUGH_MONEY) end
+	Pickers.drawProblems(blockers, warnings)
+
+	ui.spacing()
+	if ui.button(l.CANCEL) then
+		purchase = nil
+		self:close()
+		return
+	end
+	ui.sameLine()
+	local enabled = #blockers == 0
+	if ui.button(l.BUY_SHIP .. "##confirmPurchase", Vector2(0, 0), not enabled and ui.theme.buttonColors.disabled or nil, blockers[1]) and enabled then
+		local p = purchase
+		purchase = nil
+		self:close()
+		completePurchase(shipMarket, p.sos, p.store, p.take, p.aboard)
+	end
+end)
 
 local FormatAndCompareShips = utils.class("ui.ShipMarket.FormatAndCompareShips")
 
@@ -461,8 +572,24 @@ local tradeMenu = function()
 				ui.withFont(pionillium.heading, function()
 					ui.text(l.PRICE..": "..Format.Money(cost, false))
 					ui.sameLine()
-					ui.text(l.AFTER_TRADE_IN..": "..Format.Money(cost - tradeInValue(Game.player), false))
+					if storeCurrent then
+						ui.text(string.interp(lh.YOU_PAY, { cost = Format.Money(cost, false) }))
+					else
+						ui.text(l.AFTER_TRADE_IN..": "..Format.Money(cost - tradeInValue(Game.player), false))
+					end
 				end)
+
+				-- trade in the current ship, or store it in the hangar here
+				local blocked = storeBlocked()
+				if blocked then
+					storeCurrent = false
+					ui.textColored(ui.theme.colors.fontDim, string.interp(lh.STORE_INSTEAD_UNAVAILABLE, { ship = Game.player.shipName, reason = blocked }))
+					ui.sameLine()
+					if ui.button(lh.GO_TO_HANGAR) then StationView:SwitchTo("hangarView") end
+				else
+					local changed, value = ui.checkbox(string.interp(lh.STORE_INSTEAD, { ship = Game.player.shipName }) .. "##storeCurrent", storeCurrent)
+					if changed then storeCurrent = value end
+				end
 
 				ui.nextColumn()
 				ui.dummy(widgetSizes.iconSpacer)
@@ -596,6 +723,8 @@ StationView:registerView({
 	refresh = function()
 		refreshShipMarket()
 		shipMarket.scrollReset = true
+		storeCurrent = false
+		purchase = nil
 	end,
 	debugReload = function()
 		package.reimport()

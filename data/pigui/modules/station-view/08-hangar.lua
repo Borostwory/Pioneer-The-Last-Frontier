@@ -17,6 +17,7 @@ local ModalWindow = require 'pigui.libs.modal-win'
 local ModelSpinner = require 'PiGui.Modules.ModelSpinner'
 local Hangar = require 'modules.Hangar.Hangar'
 local CargoManager = require 'CargoManager'
+local Pickers = require 'pigui.libs.hangar-pickers'
 
 local ui = require 'pigui'
 
@@ -120,29 +121,9 @@ local function quoteLine(monthly, nMonths)
 	return cost
 end
 
--- A crew member's best skill, e.g. "Piloting 38"
-local function bestSkill(c)
-	local best, name = -1, ""
-	for _, skill in ipairs({ { "engineering", lc.ENGINEERING }, { "piloting", lc.PILOTING },
-			{ "navigation", lc.NAVIGATION }, { "sensors", lc.SENSORS } }) do
-		if (c[skill[1]] or 0) > best then best, name = c[skill[1]] or 0, skill[2] end
-	end
-	return string.format("%s %d", name, best)
-end
-
-local function skillsTooltip(c)
-	if ui.isItemHovered() then
-		ui.setTooltip(string.format("%s %d\n%s %d\n%s %d\n%s %d",
-			lc.ENGINEERING, c.engineering or 0, lc.PILOTING, c.piloting or 0,
-			lc.NAVIGATION, c.navigation or 0, lc.SENSORS, c.sensors or 0))
-	end
-end
-
-local function crewAboard()
-	local list = {}
-	for member in Game.player:EachCrewMember() do table.insert(list, member) end
-	return list
-end
+local bestSkill = Pickers.bestSkill
+local skillsTooltip = Pickers.skillsTooltip
+local crewAboard = Pickers.crewAboard
 
 --=============================================================================
 -- Lease form (no hangar here)
@@ -526,9 +507,7 @@ local function drawDetails(h, view)
 		local locked = Hangar.IsLocked(h)
 		if button(l.FLY_THIS_SHIP, not locked, locked and l.HANGAR_LOCKED or nil) then
 			-- Default: everything that fits comes along, mission cargo first
-			local aboard = {}
-			for _, member in ipairs(crewAboard()) do aboard[member] = true end
-			swap = { rec = view.rec, take = Hangar.FitCargo(view.rec), aboard = aboard }
+			swap = { rec = view.rec, take = Hangar.FitCargo(view.rec), aboard = Pickers.everyoneAboard() }
 			swapModal:open()
 		end
 		ui.sameLine()
@@ -556,106 +535,16 @@ swapModal = ModalWindow.New("HangarSwap", function(self)
 	ui.textColored(colors.fontDim, string.interp(l.SWAP_NOTE, { ship = player.shipName }))
 	ui.spacing()
 
-	-- Cargo picker: one row per lot, mission cargo marked and named
-	local room = Hangar.RecordFreeSpace(rec)
-	local taken = Hangar.TakeTotal(swap.take)
-
-	ui.text(l.CARGO)
-	ui.sameLine()
-	ui.textColored(taken > room and colors.alertRed or colors.econProfit, string.format("%d / %d t", taken, room))
 	if next(rec.cargo) then
 		ui.textColored(colors.fontDim, string.interp(l.ALREADY_ABOARD, { ship = rec.name, cargo = cargoText(rec.cargo, Hangar.RecordHeldCargo(rec)) }))
 	end
-
-	local lifeSupport = Hangar.RecordLifeSupport(rec)
-	local lots = Hangar.CargoLots()
-	for _, lot in ipairs(lots) do
-		local c = Commodities[lot.name]
-		local held = lot.tag ~= CargoManager.ORDINARY
-		swap.take[lot.name] = swap.take[lot.name] or {}
-		local parts = swap.take[lot.name]
-
-		local name = string.format("%s (%d t)", c:GetName(), lot.count)
-		if held then name = ui.get_icon_glyph(icons.mission_cargo) .. " " .. name end
-		ui.text(name)
-		if held and ui.isItemHovered() then ui.setTooltip(lot.label) end
-		ui.sameLine(widgetSizes.sliderWidth * 1.3)
-		if (c.life_support or 0) > lifeSupport then
-			ui.textColored(colors.fontDim, l.NEEDS_CARGO_LIFE_SUPPORT)
-			parts[lot.tag] = 0
-		else
-			ui.pushItemWidth(widgetSizes.sliderWidth)
-			parts[lot.tag] = ui.sliderInt("##take" .. lot.name .. tostring(lot.tag), parts[lot.tag] or 0, 0, lot.count, l.TAKE_FORMAT)
-			ui.popItemWidth()
-		end
-		if held then
-			ui.sameLine()
-			ui.textColored(colors.fontDim, lot.label)
-		end
-	end
-	if #lots == 0 then
-		ui.textColored(colors.fontDim, l.NO_CARGO_ABOARD)
-	else
-		if ui.button(l.ALL_THAT_FITS) then
-			swap.take = Hangar.FitCargo(rec)
-		end
-		ui.sameLine()
-		if ui.button(l.TAKE_NONE) then
-			swap.take = {}
-		end
-		ui.textColored(colors.fontDim, string.interp(l.REST_STAYS, { ship = player.shipName }))
-		for _, lot in ipairs(lots) do
-			local parts = swap.take[lot.name]
-			if lot.tag ~= CargoManager.ORDINARY and (parts and parts[lot.tag] or 0) < lot.count then
-				ui.textColored(colors.alertYellow, l.MISSION_CARGO_STAYS)
-				break
-			end
-		end
-	end
+	Pickers.drawCargo(swap, Hangar.RecordFreeSpace(rec), Hangar.RecordLifeSupport(rec), player.shipName)
 
 	ui.spacing()
-	-- Crew picker: ticked people fly on, the others wait in the lounge here
-	local def = ShipDef[rec.shipId]
-	local ticked = 0
-	for _ in pairs(swap.aboard) do ticked = ticked + 1 end
-	ui.text(string.interp(l.CREW_FOR, { ship = rec.name, min = def.minCrew, max = def.maxCrew }))
-	ui.sameLine()
-	local countColor = ticked > def.maxCrew and colors.alertRed or ticked < def.minCrew and colors.alertYellow or colors.econProfit
-	ui.textColored(countColor, string.format("%d / %d", ticked, def.maxCrew))
-
-	local lounge = Hangar.GetLoungeAt(player:GetDockedWith())
-	local people = {}
-	for _, member in ipairs(crewAboard()) do table.insert(people, { member = member, waiting = false }) end
-	for _, entry in ipairs(lounge and lounge.crew or {}) do table.insert(people, { member = entry.character, waiting = true }) end
-
-	local inLoungeAfter = 0
-	for _, person in ipairs(people) do
-		local member = person.member
-		if member.player then
-			ui.text("     " .. l.YOU_COMMANDER)
-		else
-			local changed, value = ui.checkbox(member.name .. "##swapcrew" .. tostring(member), swap.aboard[member] == true)
-			if changed then swap.aboard[member] = value or nil end
-			skillsTooltip(member)
-			ui.sameLine()
-			ui.textColored(colors.fontDim, bestSkill(member) .. " · " .. (person.waiting and l.IN_LOUNGE or l.ABOARD))
-			if person.waiting == (swap.aboard[member] == true) then
-				ui.sameLine()
-				ui.textColored(colors.alertYellow, person.waiting and l.COMES_ABOARD or l.GOES_TO_LOUNGE)
-			end
-			if not swap.aboard[member] then inLoungeAfter = inLoungeAfter + 1 end
-		end
-	end
-	if inLoungeAfter > 0 then
-		local station = player:GetDockedWith()
-		local rate = Hangar.LoungeRate(Hangar.StationFactor(station))
-		ui.textColored(colors.fontDim, string.interp(l.LOUNGE_AFTER_SWAP, { count = inLoungeAfter, cost = money(rate * inLoungeAfter) }))
-	end
+	Pickers.drawCrew(swap, ShipDef[rec.shipId], rec.name)
 
 	local blockers, warnings = Hangar.CheckSwap(rec, swap.take, swap.aboard)
-	if #blockers > 0 or #warnings > 0 then ui.spacing() end
-	for _, b in ipairs(blockers) do ui.textColored(colors.alertRed, b) end
-	for _, w in ipairs(warnings) do ui.textColored(colors.alertYellow, w) end
+	Pickers.drawProblems(blockers, warnings)
 
 	ui.spacing()
 	if ui.button(lc.CANCEL) then
