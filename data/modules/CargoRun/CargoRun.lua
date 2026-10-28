@@ -8,6 +8,7 @@ local Space = require 'Space'
 local Comms = require 'Comms'
 local Event = require 'Event'
 local Mission = require 'Mission'
+local CargoManager = require 'CargoManager'
 local Format = require 'Format'
 local Serializer = require 'Serializer'
 local Character = require 'Character'
@@ -213,13 +214,7 @@ onChat = function (form, ref, option)
 			end
 		end
 
-		local cargo_picked_up
-		if not ad.pickup then
-			cargoMgr:AddCommodity(ad.cargotype, ad.negotiated_amount)
-			cargo_picked_up = true
-		else
-			cargo_picked_up = false
-		end
+		local cargo_picked_up = not ad.pickup
 
 		form:RemoveAdvertOnClose()
 		ads[ref] = nil
@@ -246,6 +241,11 @@ onChat = function (form, ref, option)
 		mission = Mission.New(mission)
 		table.insert(missions, mission)
 		MissionUtils.SetupOverdueTimer(mission)
+
+		-- The goods are loaded now, held for the mission
+		if cargo_picked_up then
+			cargoMgr:AddCommodity(ad.cargotype, ad.negotiated_amount, mission)
+		end
 
 		if ad.amount ~= ad.negotiated_amount then
 			-- recreate advert with the rest of the cargo
@@ -663,7 +663,7 @@ local tryLoadPickupCargo = function(mission, player)
 	if cargoMgr:GetFreeSpace() < mission.amount then
 		Comms.ImportantMessage(l.YOU_DO_NOT_HAVE_ENOUGH_EMPTY_CARGO_SPACE, mission.client.name)
 	else
-		cargoMgr:AddCommodity(mission.cargotype, mission.amount);
+		cargoMgr:AddCommodity(mission.cargotype, mission.amount, mission)
 		mission.cargo_picked_up = true
 		Comms.ImportantMessage(l.WE_HAVE_LOADED_UP_THE_CARGO_ON_YOUR_SHIP, mission.client.name)
 		mission.status = "ACTIVE"
@@ -686,7 +686,11 @@ local onPlayerDocked = function (player, station)
 
 			---@type CargoManager
 			local cargoMgr = player:GetComponent('CargoManager')
-			local amount = cargoMgr:RemoveCommodity(mission.cargotype, mission.amount)
+			local amount = cargoMgr:RemoveCommodity(mission.cargotype, mission.amount, mission)
+			if amount < mission.amount then
+				-- Tons that lost their mark (jettisoned and scooped back) still count
+				amount = amount + cargoMgr:RemoveCommodity(mission.cargotype, mission.amount - amount, CargoManager.ORDINARY)
+			end
 
 			if Game.time <= mission.due and amount == mission.amount then
 				local n = MissionUtils.getNumberOfFlavours(l, "SUCCESSMSG_" .. mission.branch)
@@ -774,6 +778,18 @@ local onGameStart = function ()
 
 		for _, mission in pairs(missions) do
 			MissionUtils.SetupOverdueTimer(mission)
+		end
+
+		-- Saves from before tagged cargo: hold the goods already aboard for
+		-- their deliveries
+		local cargoMgr = Game.player:GetComponent('CargoManager')
+		for _, mission in pairs(missions) do
+			if mission.cargo_picked_up then
+				local missing = mission.amount - cargoMgr:CountCommodity(mission.cargotype, mission)
+				if missing > 0 then
+					cargoMgr:Tag(mission.cargotype, missing, mission)
+				end
+			end
 		end
 
 		custom_cargo = loaded_data.custom_cargo

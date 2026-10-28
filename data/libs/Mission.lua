@@ -2,12 +2,15 @@
 -- Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 local Game = require 'Game'
+local Event = require 'Event'
+local Format = require 'Format'
 local Serializer = require 'Serializer'
 local Character = require 'Character'
 local Lang = require 'Lang'
 local Engine = require 'Engine'
 
 local l = Lang.GetResource("ui-core")
+local lm = Lang.GetResource("mission-cargo")
 
 --
 -- Class: Mission
@@ -210,6 +213,44 @@ Mission = {
 				table.remove(Character.persistent.player.missions,k)
 			end
 		end
+		-- Cargo still held for the mission becomes ordinary cargo
+		if Game.player then
+			Game.player:GetComponent('CargoManager'):UntagAll(self)
+		end
+		Event.Queue("onMissionRemoved", self)
+	end,
+
+--
+-- Method: IsActive
+--
+-- True while the mission is in the player's mission list
+--
+	IsActive = function (self)
+		for _, v in pairs(Character.persistent.player.missions) do
+			if v == self then return true end
+		end
+		return false
+	end,
+
+--
+-- Method: GetCargoLabel
+--
+-- Describe the mission where cargo held for it is listed, e.g.
+-- "Delivery: Diso Port, due 20 Apr 3201". Modules may override it.
+--
+	GetCargoLabel = function (self)
+		local place = self.destination
+		if type(place) ~= "string" then
+			local ok, name = pcall(function()
+				return place.bodyIndex and place:GetSystemBody().name or place:GetStarSystem().name
+			end)
+			place = ok and name or ""
+		end
+		return string.interp(lm.CARGO_LABEL, {
+			mission = self:GetTypeDescription() or "",
+			place = place,
+			date = self.due and Format.DateOnly(self.due) or "",
+		})
 	end,
 
 --
@@ -268,5 +309,17 @@ Mission.meta = {
 }
 
 Serializer:RegisterClass("Mission", Mission)
+
+-- A save can hold cargo tagged for a mission that ended before the tag was
+-- released; make it ordinary
+Event.Register("onGameStart", function ()
+	local cargoMgr = Game.player and Game.player:GetComponent('CargoManager')
+	if not cargoMgr then return end
+	for tag in pairs(cargoMgr:AllTags()) do
+		if getmetatable(tag) == Mission.meta and not tag:IsActive() then
+			cargoMgr:UntagAll(tag)
+		end
+	end
+end)
 
 return Mission

@@ -11,6 +11,7 @@ local Timer = require 'Timer'
 local Engine = require 'Engine'
 local Format = require 'Format'
 local Mission = require 'Mission'
+local CargoManager = require 'CargoManager'
 local Character = require 'Character'
 local Serializer = require 'Serializer'
 local PlayerState= require 'PlayerState'
@@ -37,6 +38,17 @@ local max_dist = 20 * AU
 
 local ads = {}
 local missions = {}
+
+-- When the player last scooped each commodity. Scooping queues
+-- onShipScoopCargo just before the container's onCargoDestroyed.
+local justScooped = {}
+
+-- Unload a ton of mission cargo: one held for the mission, or else an
+-- ordinary one (scooped before tagged cargo, or jettisoned and scooped back)
+local unloadMissionCargo = function (cargoMgr, mission, cargo)
+	if cargoMgr:RemoveCommodity(cargo, 1, mission) == 1 then return true end
+	return cargoMgr:RemoveCommodity(cargo, 1, CargoManager.ORDINARY) == 1
+end
 
 local rescue_capsule = CommodityType.RegisterCommodity("rescue_capsule", {
 	l10n_key = "RESCUE_CAPSULE",
@@ -319,7 +331,7 @@ local transferCargo = function (mission, ref)
 			-- unload mission cargo
 			for i, e in pairs(mission.debris) do
 				if e.body == nil then
-					if cargoMgr:RemoveCommodity(e.cargo, 1) == 1 then
+					if unloadMissionCargo(cargoMgr, mission, e.cargo) then
 						clientCargo:AddCommodity(e.cargo, 1)
 						mission.debris[i] = nil
 						mission.amount = mission.amount - 1
@@ -588,11 +600,22 @@ end
 
 -- The attacker could be a ship or the planet
 -- If scooped or destroyed by self-destruction, attacker is nil
+local onShipScoopCargo = function (ship, success, cargo)
+	if success and ship:IsPlayer() then
+		justScooped[cargo] = Game.time
+	end
+end
+
 local onCargoDestroyed = function (body, attacker)
 	for ref, mission in pairs(missions) do
 		for i, e in pairs(mission.debris) do
 			if body == e.body then
 				e.body = nil
+				-- Scooped by the player: the ton is held for the mission
+				if not attacker and justScooped[e.cargo] and Game.time - justScooped[e.cargo] < 2 then
+					justScooped[e.cargo] = nil
+					Game.player:GetComponent('CargoManager'):Tag(e.cargo, 1, mission)
+				end
 				if body == mission.location then
 					-- remove NavButton
 					mission.location = nil
@@ -700,7 +723,7 @@ local onPlayerDocked = function (player, station)
 			-- unload mission cargo
 			for i, e in pairs(mission.debris) do
 				if e.body == nil then
-					if cargoMgr:RemoveCommodity(e.cargo, 1) == 1 then
+					if unloadMissionCargo(cargoMgr, mission, e.cargo) then
 						mission.debris[i] = nil
 						mission.amount = mission.amount - 1
 					end
@@ -855,6 +878,7 @@ end
 
 local onGameEnd = function ()
 	planets = nil
+	justScooped = {}
 	flavours[LEGAL].cargo_type = nil
 	flavours[ILLEGAL].cargo_type = nil
 end
@@ -875,6 +899,7 @@ Event.Register("onShipHit", onShipHit)
 Event.Register("onShipDestroyed", onShipDestroyed)
 Event.Register("onJettison", onJettison)
 Event.Register("onCargoDestroyed", onCargoDestroyed)
+Event.Register("onShipScoopCargo", onShipScoopCargo)
 Event.Register("onEnterSystem", onEnterSystem)
 Event.Register("onLeaveSystem", onLeaveSystem)
 Event.Register("onGameStart", onGameStart)

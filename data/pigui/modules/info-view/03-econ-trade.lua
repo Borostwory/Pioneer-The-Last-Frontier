@@ -11,8 +11,11 @@ local Passengers = require 'Passengers'
 local Commodities = require 'Commodities'
 local CommodityType = require 'CommodityType'
 local PlayerState   = require 'PlayerState'
+local CargoManager  = require 'CargoManager'
+local ModalWindow   = require 'pigui.libs.modal-win'
 
 local l = Lang.GetResource("ui-core")
+local lm = Lang.GetResource("mission-cargo")
 
 local colors = ui.theme.colors
 local icons = ui.theme.icons
@@ -24,6 +27,37 @@ local Vector2 = _G.Vector2
 -- Need a style-var query system for best effect
 local itemSpacing = ui.rescaleUI(Vector2(6, 12), Vector2(1600, 900))
 
+-- What a tag (usually a mission) holding cargo is called in the UI
+local function tagLabel(tag)
+	return type(tag) == "table" and tag.GetCargoLabel and tag:GetCargoLabel() or lm.A_MISSION
+end
+
+-- Jettisoning a ton held for a mission asks first
+local confirmJettison = nil ---@type { item: CommodityType, tag: any }?
+
+local confirmModal = ModalWindow.New("JettisonMissionCargo", function(self)
+	if not confirmJettison then self:close() return end
+	local item, tag = confirmJettison.item, confirmJettison.tag
+
+	ui.withFont(orbiteer.heading, function()
+		ui.text(string.interp(lm.JETTISON_TITLE, { commodity = item:GetName() }))
+	end)
+	ui.text(string.interp(lm.JETTISON_HELD, { commodity = item:GetName(), mission = tagLabel(tag) }))
+	ui.text(lm.JETTISON_MISSION_FAILS)
+	ui.spacing()
+
+	if ui.button(l.CANCEL) then
+		confirmJettison = nil
+		self:close()
+	end
+	ui.sameLine()
+	if ui.button(lm.JETTISON_ANYWAY) then
+		Game.player:Jettison(item, 1, 1800, tag)
+		confirmJettison = nil
+		self:close()
+	end
+end)
+
 local jettison = function (item)
 	local enabled = Game.player.flightState == "FLYING"
 	local variant = enabled and ui.theme.buttonColors.default or ui.theme.buttonColors.disabled
@@ -31,36 +65,47 @@ local jettison = function (item)
 	local button = ui.iconButton("Jettison " .. item:GetName(), icons.cargo_crate_illegal, l.JETTISON, variant)
 
 	if button and enabled then
-		Game.player:Jettison(item, 1, 1800)
+		-- Ordinary tons go first; the last ones may be held for a mission
+		local cargoMgr = Game.player:GetComponent('CargoManager')
+		if cargoMgr:CountCommodity(item, CargoManager.ORDINARY) > 0 then
+			Game.player:Jettison(item, 1, 1800, CargoManager.ORDINARY)
+		else
+			confirmJettison = { item = item, tag = next(cargoMgr:GetTags(item)) }
+			confirmModal:open()
+		end
 	end
 
 	return button
 end
 
--- Memoize the contents of the player's cargo hold to avoid recalculating them every frame
----@type { commodity: CommodityType, count: number }[]?
-local cachedCargoList = nil
-
-local function rebuildCargoList()
+-- The contents of the player's cargo hold. Rebuilt every frame: missions can
+-- claim or release tons without changing the totals.
+---@return { commodity: CommodityType, count: number, held: { tag: any, count: integer, label: string }[] }[]
+local function buildCargoList()
 	local count = {}
 
 	---@type CargoManager
 	local cargoMgr = Game.player:GetComponent('CargoManager')
 	for name, info in pairs(cargoMgr.commodities) do
+		local held = {}
+		for tag, n in pairs(info.tagged or {}) do
+			table.insert(held, { tag = tag, count = n, label = tagLabel(tag) })
+		end
+		table.sort(held, function(a, b) return a.label < b.label end)
 		table.insert(count, {
 			commodity = CommodityType.GetCommodity(name),
-			count = info.count
+			count = info.count,
+			held = held,
 		})
 	end
 
 	table.sort(count, function(a, b) return a.count > b.count end)
 
-	cachedCargoList = count
 	return count
 end
 
 local function cargolist ()
-	local count = cachedCargoList or rebuildCargoList()
+	local count = buildCargoList()
 
 	if not ui.beginTable("cargoTable", 3, { "SizingFixedFit" }) then return end
 
@@ -76,10 +121,24 @@ local function cargolist ()
 		ui.alignTextToButtonPadding()
 		ui.text(entry.count .. "t")
 
-		-- name
+		-- name, and the missions holding some of it
 		ui.tableNextColumn()
 		ui.alignTextToButtonPadding()
-		ui.text(entry.commodity:GetProperName())
+		local heldTotal = 0
+		for _, h in ipairs(entry.held) do heldTotal = heldTotal + h.count end
+		if heldTotal >= entry.count and #entry.held == 1 then
+			-- all of it is one mission's: mark the row
+			ui.text(ui.get_icon_glyph(icons.mission_cargo) .. " " .. entry.commodity:GetProperName())
+			ui.sameLine()
+			ui.textColored(colors.fontDim, entry.held[1].label)
+		else
+			ui.text(entry.commodity:GetProperName())
+			for _, h in ipairs(entry.held) do
+				ui.textColored(colors.fontDim, string.interp(lm.OF_WHICH_HELD, {
+					icon = ui.get_icon_glyph(icons.mission_cargo), amount = h.count, mission = h.label
+				}))
+			end
+		end
 
 		-- jettison button
 		ui.tableNextColumn()
@@ -200,7 +259,7 @@ end
 ---@param hyperdrive Equipment.HyperdriveType
 local function transfer_hyperfuel_mil(hyperdrive, amt)
 	local cargoMgr = Game.player:GetComponent('CargoManager')
-	local availableFuel = cargoMgr:CountCommodity(hyperdrive.fuel)
+	local availableFuel = cargoMgr:CountCommodity(hyperdrive.fuel, CargoManager.ORDINARY)
 	local availableCargo = cargoMgr:GetFreeSpace()
 
 	-- Ensure we're not transferring more than the hyperdrive holds
@@ -213,7 +272,7 @@ local function transfer_hyperfuel_mil(hyperdrive, amt)
 	delta = math.modf(delta)
 
 	if delta > 0 then
-		cargoMgr:RemoveCommodity(hyperdrive.fuel, delta)
+		cargoMgr:RemoveCommodity(hyperdrive.fuel, delta, CargoManager.ORDINARY)
 		hyperdrive:SetFuel(Game.player, hyperdrive.storedFuel + delta)
 	elseif delta < 0 then
 		cargoMgr:AddCommodity(hyperdrive.fuel, math.abs(delta))
@@ -384,10 +443,7 @@ InfoView:registerView({
 	end,
 
 	refresh = function()
-		cachedCargoList = nil
-		Game.player:GetComponent('CargoManager'):AddListener('econ-trade', function (type, count)
-			if type:Class() == CommodityType then cachedCargoList = nil end
-		end)
+		confirmJettison = nil
 	end,
 
 	debugReload = function()

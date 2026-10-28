@@ -7,6 +7,7 @@ local Format = require 'Format'
 local Commodities = require 'Commodities'
 local Economy     = require 'Economy'
 local PlayerState = require 'PlayerState'
+local CargoManager = require 'CargoManager'
 
 local ui = require 'pigui'
 local pionillium = ui.fonts.pionillium
@@ -18,6 +19,7 @@ local TableWidget = require 'pigui.libs.table'
 local EconView = require 'pigui.modules.system-econ-view'
 
 local l = Lang.GetResource("ui-core")
+local lm = Lang.GetResource("mission-cargo")
 
 local Vector2 = _G.Vector2
 local Color = _G.Color
@@ -128,8 +130,17 @@ function CommodityMarketWidget.New(id, title, config)
 			ui.dummy(vZero)
 			config.columnText(config.getStock(self, item), "RIGHT")
 			ui.dummy(vZero)
-			local n = self.cargoMgr:CountCommodity(item)
-			config.columnText(n > 0 and n or '', "RIGHT")
+			-- tons held for missions aren't for sale: shown apart, in brackets
+			local n = self.cargoMgr:CountCommodity(item, CargoManager.ORDINARY)
+			local held = self.cargoMgr:CountCommodity(item) - n
+			local text = n > 0 and tostring(n) or ''
+			if held > 0 then
+				text = string.format("%s (+%d %s)", n > 0 and text or '0', held, ui.get_icon_glyph(ui.theme.icons.mission_cargo))
+			end
+			config.columnText(text, "RIGHT")
+			if held > 0 and ui.isItemHovered() then
+				ui.setTooltip(string.interp(lm.HELD_NOT_FOR_SALE, { amount = held }))
+			end
 		end)
 	end
 
@@ -254,7 +265,7 @@ function CommodityMarketWidget:ChangeTradeAmount(delta)
 		end
 	else
 		price = self.funcs.getSellPrice(self, self.selectedItem)
-		stock = self.cargoMgr:CountCommodity(self.selectedItem)
+		stock = self.cargoMgr:CountCommodity(self.selectedItem, CargoManager.ORDINARY)
 	end
 
 	--we cant trade more units than we have in stock
@@ -359,14 +370,14 @@ function CommodityMarketWidget:DoSell()
 		return
 	end
 
-	assert(self.cargoMgr:RemoveCommodity(self.selectedItem, self.tradeAmount) == self.tradeAmount)
+	assert(self.cargoMgr:RemoveCommodity(self.selectedItem, self.tradeAmount, CargoManager.ORDINARY) == self.tradeAmount)
 	PlayerState.AddMoney(orderamount) --grab the money
 
 	self.funcs.sold(self, self.selectedItem, self.tradeAmount)
 	self:ChangeTradeAmount(-self.tradeAmount) --reset the trade amount
 
 	--if player sold all of this cargo, switch to buy panel
-	if self.cargoMgr:CountCommodity(self.selectedItem) == 0 then self.tradeModeBuy = true end
+	if self.cargoMgr:CountCommodity(self.selectedItem, CargoManager.ORDINARY) == 0 then self.tradeModeBuy = true end
 
 	--update market rows
 	self.tradeAmount = 0;

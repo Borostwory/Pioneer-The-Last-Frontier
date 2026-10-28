@@ -16,6 +16,36 @@ local utils = require 'utils'
 ---@class CargoManager
 local CargoManager = utils.class('CargoManager')
 
+--
+-- Tagged cargo
+--
+-- Tons of a commodity can be tagged as held for an owner, usually a Mission
+-- object. Totals don't change: `commodities[name].count` is still everything
+-- aboard, and `tagged = { [tag] = n }` says how much of it each owner holds.
+-- The rest are ordinary tons.
+--
+-- A tag may implement GetCargoLabel() to describe itself in the UI.
+--
+-- Constant: ORDINARY
+--
+-- Pass instead of a tag to count or remove only the tons no one holds.
+CargoManager.ORDINARY = setmetatable({}, { __tostring = function() return "ORDINARY" end })
+
+local ORDINARY = CargoManager.ORDINARY
+
+local function taggedTotal(storage)
+	local n = 0
+	for _, c in pairs(storage.tagged or {}) do n = n + c end
+	return n
+end
+
+local function changeTag(storage, tag, delta)
+	storage.tagged = storage.tagged or {}
+	local n = (storage.tagged[tag] or 0) + delta
+	storage.tagged[tag] = n > 0 and n or nil
+	if not next(storage.tagged) then storage.tagged = nil end
+end
+
 -- Constructor
 --
 -- Creates and initializes a CargoManager object for the given ship
@@ -41,7 +71,7 @@ function CargoManager:Constructor(ship)
 
 	-- Commodity storage is implemented as simple hashtable of name -> { count=n } values
 	-- to ease initial implementation
-	---@type table<string, { count: number, life_support: number? }>
+	---@type table<string, { count: number, life_support: number?, tagged: table<any, integer>? }>
 	self.commodities = {}
 
 	-- Event listeners for changes to commodities stored in this manager
@@ -89,13 +119,15 @@ end
 -- Parameters:
 --   type - CommodityType object of the commodity to add
 --   count - number of commodities
+--   tag - optional owner the added tons are held for (see Tagged cargo)
 --
 -- Returns:
 --   success - boolean indicating whether there was enough space on the vessel
 --             to store the commodity
 ---@param type CommodityType
 ---@param count integer
-function CargoManager:AddCommodity(type, count)
+---@param tag any?
+function CargoManager:AddCommodity(type, count, tag)
 	count = count or 1
 
 	-- Adding nothing always fits; don't leave an empty 0t entry behind
@@ -124,12 +156,16 @@ function CargoManager:AddCommodity(type, count)
 	end
 
 	storage.count = storage.count + count
+	if tag == ORDINARY then tag = nil end
+	if tag then
+		changeTag(storage, tag, count)
+	end
 
 	self.ship:UpdateEquipStats()
 
 	-- Notify listeners that the cargo contents have changed
 	for _, fn in pairs(self.listeners) do
-		fn(type, count)
+		fn(type, count, tag)
 	end
 
 	return true
@@ -144,13 +180,17 @@ end
 -- Parameters:
 --   type - CommodityType object of the commodity to remove
 --   count - maximum number of commodity items to remove
+--   tag - optional: remove only the tons held for this tag, or only ordinary
+--         tons with CargoManager.ORDINARY. Without it, ordinary tons go
+--         first, then tagged ones.
 --
 -- Returns:
 --   numRemoved - total number of commodity items removed, or 0 if no items
 --                were removed from the cargo
 ---@param type CommodityType
 ---@param count integer
-function CargoManager:RemoveCommodity(type, count)
+---@param tag any?
+function CargoManager:RemoveCommodity(type, count, tag)
 	local storage = self.commodities[type.name]
 
 	if not storage then
@@ -162,7 +202,37 @@ function CargoManager:RemoveCommodity(type, count)
 		return 0
 	end
 
-	local removed = math.min(storage.count, (count or 1))
+	count = count or 1
+
+	-- How much comes out of the ordinary tons and out of each tag
+	local ordinary = storage.count - taggedTotal(storage)
+	local parts = {} ---@type { tag: any?, n: integer }[]
+	if tag == ORDINARY then
+		table.insert(parts, { n = math.min(count, ordinary) })
+	elseif tag then
+		table.insert(parts, { tag = tag, n = math.min(count, storage.tagged and storage.tagged[tag] or 0) })
+	else
+		local left = count
+		local n = math.min(left, ordinary)
+		table.insert(parts, { n = n })
+		left = left - n
+		for t, c in pairs(storage.tagged or {}) do
+			if left <= 0 then break end
+			n = math.min(left, c)
+			table.insert(parts, { tag = t, n = n })
+			left = left - n
+		end
+	end
+
+	local removed = 0
+	for _, part in ipairs(parts) do
+		if part.tag then changeTag(storage, part.tag, -part.n) end
+		removed = removed + part.n
+	end
+
+	if removed == 0 then
+		return 0
+	end
 
 	storage.count = storage.count - removed
 
@@ -181,9 +251,13 @@ function CargoManager:RemoveCommodity(type, count)
 
 	self.ship:UpdateEquipStats()
 
-	-- Notify listeners that the cargo contents have changed
-	for _, fn in pairs(self.listeners) do
-		fn(type, -removed)
+	-- Notify listeners that the cargo contents have changed, once per owner
+	for _, part in ipairs(parts) do
+		if part.n > 0 then
+			for _, fn in pairs(self.listeners) do
+				fn(type, -part.n, part.tag)
+			end
+		end
 	end
 
 	return removed
@@ -195,13 +269,103 @@ end
 --
 -- Parameters:
 --   type - CommodityType object of the commodity to query
+--   tag - optional: count only the tons held for this tag, or only ordinary
+--         tons with CargoManager.ORDINARY
 ---@param type CommodityType
-function CargoManager:CountCommodity(type)
-	if not self.commodities[type.name] then
+---@param tag any?
+function CargoManager:CountCommodity(type, tag)
+	local storage = self.commodities[type.name]
+	if not storage then
 		return 0
 	end
 
-	return self.commodities[type.name].count
+	if tag == ORDINARY then
+		return storage.count - taggedTotal(storage)
+	elseif tag then
+		return storage.tagged and storage.tagged[tag] or 0
+	end
+
+	return storage.count
+end
+
+-- Method: Tag
+--
+-- Hold up to `count` ordinary tons already aboard for `tag`, e.g. goods a
+-- mission needs that the player bought. Returns how many were tagged.
+---@param type CommodityType
+---@param count integer
+---@param tag any
+function CargoManager:Tag(type, count, tag)
+	local storage = self.commodities[type.name]
+	if not storage or not tag or tag == ORDINARY then return 0 end
+	local n = math.min(count, storage.count - taggedTotal(storage))
+	if n <= 0 then return 0 end
+	changeTag(storage, tag, n)
+	return n
+end
+
+-- Method: Untag
+--
+-- Make up to `count` tons held for `tag` ordinary again. Returns how many.
+---@param type CommodityType
+---@param count integer
+---@param tag any
+function CargoManager:Untag(type, count, tag)
+	local storage = self.commodities[type.name]
+	local n = math.min(count, storage and storage.tagged and storage.tagged[tag] or 0)
+	if n <= 0 then return 0 end
+	changeTag(storage, tag, -n)
+	return n
+end
+
+-- Method: UntagAll
+--
+-- Make everything held for `tag` ordinary again (its mission ended).
+function CargoManager:UntagAll(tag)
+	for _, storage in pairs(self.commodities) do
+		if storage.tagged and storage.tagged[tag] then
+			changeTag(storage, tag, -storage.tagged[tag])
+		end
+	end
+end
+
+-- Method: GetTags
+--
+-- Return { [tag] = count } for a commodity (empty when nothing is held).
+-- Don't change the table.
+---@param type CommodityType
+---@return table<any, integer>
+function CargoManager:GetTags(type)
+	local storage = self.commodities[type.name]
+	return storage and storage.tagged or {}
+end
+
+-- Method: TaggedCommodities
+--
+-- Return an iterator over { name, count } of the cargo held for `tag`.
+function CargoManager:TaggedCommodities(tag)
+	local list = {}
+	for name, storage in pairs(self.commodities) do
+		local n = storage.tagged and storage.tagged[tag]
+		if n then table.insert(list, { name, n }) end
+	end
+	local i = 0
+	return function()
+		i = i + 1
+		if list[i] then return list[i][1], list[i][2] end
+	end
+end
+
+-- Method: AllTags
+--
+-- Return a set of every tag holding cargo here.
+---@return table<any, boolean>
+function CargoManager:AllTags()
+	local tags = {}
+	for _, storage in pairs(self.commodities) do
+		for tag in pairs(storage.tagged or {}) do tags[tag] = true end
+	end
+	return tags
 end
 
 -- Method: Commodities
@@ -239,10 +403,11 @@ end
 -- The provided key will be used to uniquely identify the callback function and can be used to
 -- later remove the event listener.
 --
--- The callback function receives two arguments:
+-- The callback function receives three arguments:
 --
 --   cargoType - an object describing the type of cargo that was added or removed. Usually a CommodityType.
 --   count     - a number specifying how many items were added (positive) or removed (negative).
+--   tag       - the owner of the tons added or removed, or nil for ordinary tons.
 --
 -- Parameters:
 --   key - a unique value identifying the listener function being added.

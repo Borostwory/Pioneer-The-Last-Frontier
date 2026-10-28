@@ -328,9 +328,10 @@ function Ship:Refuel(fuelType, amount)
 
 	local fuelTankMass = ShipDef[self.shipId].fuelTankMass
 	local needed = math.clamp(math.floor(fuelTankMass - self.fuelMassLeft), 0, amount)
-	needed = math.min(needed, cargoMgr:CountCommodity(fuelType))
+	-- fuel held for a mission isn't burnt
+	needed = math.min(needed, cargoMgr:CountCommodity(fuelType, CargoManager.ORDINARY))
 
-	local removed = cargoMgr:RemoveCommodity(fuelType, needed)
+	local removed = cargoMgr:RemoveCommodity(fuelType, needed, CargoManager.ORDINARY)
 	self:SetFuelPercent(math.clamp(self.fuel + removed * 100 / fuelTankMass, 0, 100))
 	return removed
 end
@@ -354,6 +355,9 @@ end
 --
 --   lifetime - how long should the jettisoned item live before exploding
 --
+--   tag - optional: jettison only tons held for this tag, or only ordinary
+--         tons with CargoManager.ORDINARY (see CargoManager:RemoveCommodity)
+--
 -- Result:
 --
 --   success - true if the item was jettisoned, false if the ship has no items
@@ -362,7 +366,8 @@ end
 ---@param cargoType CommodityType
 ---@param quantity integer
 ---@param lifetime float
-function Ship:Jettison(cargoType, quantity, lifetime)
+---@param tag any?
+function Ship:Jettison(cargoType, quantity, lifetime, tag)
 	-- basic sanity checking
 	if cargoType == nil or quantity == nil or lifetime == nil then
 		return false
@@ -374,9 +379,10 @@ function Ship:Jettison(cargoType, quantity, lifetime)
 
 	---@type CargoManager
 	local cargoMgr = self:GetComponent('CargoManager')
-	if cargoMgr:RemoveCommodity(cargoType, quantity) < quantity then
+	if cargoMgr:CountCommodity(cargoType, tag) < quantity then
 		return false
 	end
+	cargoMgr:RemoveCommodity(cargoType, quantity, tag)
 
 	if self.flightState == "FLYING" then
 		self:SpawnCargo(cargoType, lifetime, quantity)

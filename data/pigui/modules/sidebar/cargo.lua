@@ -2,11 +2,13 @@
 -- Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 local Commodities = require 'Commodities'
+local CargoManager = require 'CargoManager'
 local Game = require 'Game'
 local Vector2 = _G.Vector2
 
 local Lang = require 'Lang'
 local lui = Lang.GetResource("ui-core");
+local lm = Lang.GetResource("mission-cargo")
 
 local ui = require 'pigui'
 
@@ -91,14 +93,16 @@ table.insert(module.transferModes, {
 		for k, v in pairs(manifest) do
 			local commodity = Commodities[k]
 			-- fill cargo bodies with N items
+			-- only ordinary tons: mission cargo is jettisoned from the cargo screen,
+			-- which asks first
 			local deci = math.floor(v / 10)
 			for i = 1, deci do
-				ship:Jettison(commodity, 10, 1800)
+				ship:Jettison(commodity, 10, 1800, CargoManager.ORDINARY)
 			end
 			-- fill a cargo body with any remaining entries
 			local remaining = v % 10
 			if remaining > 0 then
-				ship:Jettison(commodity, remaining, 1800)
+				ship:Jettison(commodity, remaining, 1800, CargoManager.ORDINARY)
 			end
 		end
 	end,
@@ -194,9 +198,16 @@ function module:drawCargoRow(v, rowWidth, totalSpace)
 
 	ui.tableNextRow()
 
-	-- Draw name
+	-- Draw name, marked when some of it is held for missions
 	ui.tableNextColumn()
-	ui.text(commodity:GetProperName())
+	if v.held > 0 then
+		ui.text(ui.get_icon_glyph(icons.mission_cargo) .. " " .. commodity:GetProperName())
+		if ui.isItemHovered() then
+			ui.setTooltip(string.interp(lm.HELD_FOR_MISSIONS, { amount = v.held }))
+		end
+	else
+		ui.text(commodity:GetProperName())
+	end
 
 	-- Draw contained amount or transferred amount
 	ui.tableNextColumn()
@@ -232,7 +243,7 @@ function module:drawCargoRow(v, rowWidth, totalSpace)
 	ui.tableNextColumn()
 	if self.transferMode then
 		ui.withID(commodity.name, function()
-			local max = self.transferMode and v.count or 0
+			local max = self.transferMode and v.count - v.held or 0
 			self.transfer[v.name] = transfer_buttons(transferAmt, 0, max, lui.DECREASE, lui.INCREASE)
 		end)
 	end
@@ -244,7 +255,8 @@ function module:drawBody()
 	local sortTable = {}
 
 	for k, v in pairs(cargoMgr.commodities) do
-		table.insert(sortTable, { name = k, comm = Commodities[k], count = v.count })
+		local held = v.count - cargoMgr:CountCommodity(Commodities[k], CargoManager.ORDINARY)
+		table.insert(sortTable, { name = k, comm = Commodities[k], count = v.count, held = held })
 	end
 
 	table.sort(sortTable, function(a, b)

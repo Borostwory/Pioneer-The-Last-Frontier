@@ -19,6 +19,10 @@
     "description": "",
     "message": "You already lease a hangar here."
   },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "a mission"
+  },
   "BAYS": {
     "description": "Label: number of bays in a hangar",
     "message": "Bays"
@@ -154,6 +158,10 @@
   "MAX_BAYS_REACHED": {
     "description": "",
     "message": "A hangar has at most 4 bays."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Mission cargo left behind has to be delivered with the ship that carries it."
   },
   "MONTHS": {
     "description": "Unit picker",

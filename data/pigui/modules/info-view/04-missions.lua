@@ -2,9 +2,11 @@
 -- Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 local Character	= require 'Character'
+local Commodities	= require 'Commodities'
 local Game		= require 'Game'
 local Lang		= require 'Lang'
 local Space		= require 'Space'
+local Hangar	= require 'modules.Hangar.Hangar'
 
 local ui		= require 'pigui'
 local textTable	= require 'pigui.libs.text-table'
@@ -14,6 +16,9 @@ local InfoView	= require 'pigui.views.info-view'
 local pionillium = ui.fonts.pionillium
 local orbiteer = ui.fonts.orbiteer
 local l = Lang.GetResource("ui-core")
+local lm = Lang.GetResource("mission-cargo")
+local colors = ui.theme.colors
+local icons = ui.theme.icons
 
 local columnPadding = ui.rescaleUI(Vector2(18, 18), Vector2(1600, 900))
 local itemSpacing = ui.rescaleUI(Vector2(6, 12), Vector2(1600, 900))
@@ -49,6 +54,50 @@ local function shouldShowCustomAction(action)
 	return action.enabled
 end
 
+-- Where the cargo held for a mission is: aboard, on a stored ship, or missing
+local function drawMissionCargo(mission)
+	if not mission then return end
+
+	local lines = {} ---@type { icon: integer, color: Color, text: string }[]
+	local found = {} -- commodity name -> tons found
+	local function commodityName(name)
+		return Commodities[name] and Commodities[name]:GetName() or name
+	end
+
+	for name, n in Game.player:GetComponent('CargoManager'):TaggedCommodities(mission) do
+		found[name] = (found[name] or 0) + n
+		table.insert(lines, { icon = icons.map_checkmark, color = colors.econProfit,
+			text = string.interp(lm.HELD_ABOARD, { amount = n, commodity = commodityName(name), ship = Game.player.shipName }) })
+	end
+	for _, entry in ipairs(Hangar.FindHeldCargo(mission)) do
+		found[entry.name] = (found[entry.name] or 0) + entry.count
+		table.insert(lines, { icon = icons.alert_generic, color = colors.alertYellow,
+			text = string.interp(lm.HELD_ON_STORED_SHIP, {
+				amount = entry.count, commodity = commodityName(entry.name), ship = entry.rec.name,
+				station = entry.hangar and entry.hangar.station or "?" }) })
+	end
+
+	-- Deliveries know how much they carry: say if some of it is gone
+	if mission.cargo_picked_up and mission.cargotype and mission.amount then
+		local missing = mission.amount - (found[mission.cargotype.name] or 0)
+		if missing > 0 then
+			table.insert(lines, { icon = icons.alert_generic, color = colors.alertYellow,
+				text = string.interp(lm.HELD_MISSING, { amount = missing, commodity = mission.cargotype:GetName() }) })
+		end
+	end
+
+	if #lines == 0 then return end
+
+	ui.text(lm.MISSION_CARGO)
+	local size = Vector2(ui.getTextLineHeight())
+	for _, line in ipairs(lines) do
+		ui.icon(line.icon, size, line.color)
+		ui.sameLine()
+		ui.textColored(line.color, line.text)
+	end
+	ui.newLine()
+end
+
 local function drawMissionDescription(missionDesc)
 	local contentRegion = ui.getContentRegion()
 	local leftColWidth = contentRegion.x / 1.618 - columnPadding.x / 2
@@ -65,6 +114,8 @@ local function drawMissionDescription(missionDesc)
 			textTable.draw(missionDesc.details)
 		end)
 		ui.newLine()
+
+		drawMissionCargo(missionDesc._mission)
 
 		if missionDesc.customDetails then
 			missionDesc:customDetails()

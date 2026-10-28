@@ -10,6 +10,7 @@ local Character = require 'Character'
 local Format = require 'Format'
 local Commodities = require 'Commodities'
 local PlayerState = require 'PlayerState'
+local CargoManager = require 'CargoManager'
 
 local l = Lang.GetResource("module-soldout")
 
@@ -22,7 +23,7 @@ local onChat = function (form, ref, option)
 	local cargoMgr = Game.player:GetComponent('CargoManager')
 
 	-- Maximum amount the player can sell:
-	local max = cargoMgr:CountCommodity(ad.commodity)
+	local max = cargoMgr:CountCommodity(ad.commodity, CargoManager.ORDINARY)
 	max = ad.amount < max and ad.amount or max
 
 	form:Clear()
@@ -38,7 +39,7 @@ local onChat = function (form, ref, option)
 		if max < 1 then
 			form:SetMessage(string.interp(l.NOT_IN_STOCK, {commodity = ad.commodity:GetName()}))
 		else
-			cargoMgr:RemoveCommodity(ad.commodity, max)
+			cargoMgr:RemoveCommodity(ad.commodity, max, CargoManager.ORDINARY)
 			PlayerState.AddMoney(ad.price * max)
 			ad.amount = ad.amount - max
 			form:SetMessage(ad.message .. "\n\n" .. string.interp(l.AMOUNT, {amount = ad.amount}))
@@ -47,7 +48,7 @@ local onChat = function (form, ref, option)
 		if max < option then
 			form:SetMessage(string.interp(l.NOT_IN_STOCK, {commodity = ad.commodity:GetName()}))
 		else
-			cargoMgr:RemoveCommodity(ad.commodity, option)
+			cargoMgr:RemoveCommodity(ad.commodity, option, CargoManager.ORDINARY)
 			PlayerState.AddMoney(ad.price * option)
 			ad.amount = ad.amount - option
 			form:SetMessage(ad.message .. "\n\n" .. string.interp(l.AMOUNT, {amount = ad.amount}))

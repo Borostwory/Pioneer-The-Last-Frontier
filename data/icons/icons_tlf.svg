@@ -41,8 +41,9 @@
     48 hangar              ship under an arched hangar roof (station Hangar tab)
     49 ship_swap           two ships with arrows turning round them (swap ships)
     50 bay_empty           dashed bay outline (empty bay)
-    51-57 free (planned: mission_cargo, crew_lounge, equipment_store, ship_send,
-          ship_receive, in_transit, transfer_cancel)
+    51 mission_cargo       crate with a diamond mark (cargo held for a mission)
+    52-57 free (planned: crew_lounge, equipment_store, ship_send, ship_receive,
+          in_transit, transfer_cancel)
     58 lease_locked        padlock in a bay (hangar locked by unpaid rent)
     59-63 free (planned: 59 fleet)
 
@@ -461,6 +462,18 @@
       <path
          style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
          d="M2.5,35.5 H37.5" />
+    </g>
+
+    <!-- 51: mission_cargo -->
+    <g id="icon_mission_cargo" transform="translate(120,120)">
+      <!-- crate with its lid -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"
+         d="M5,13 H35 V35 H5 Z M3.5,13 L8,5.5 H32 L36.5,13" />
+      <!-- the mission's mark -->
+      <polygon
+         style="fill:#ffffff"
+         points="20,16.5 27,24 20,31.5 13,24" />
     </g>
 
     <!-- 58: lease_locked -->

@@ -35,6 +35,7 @@ local Comms = require 'Comms'
 local Event = require 'Event'
 local HullConfig = require 'HullConfig'
 local Mission = require 'Mission'
+local CargoManager = require 'CargoManager'
 local Format = require 'Format'
 local Serializer = require 'Serializer'
 local Character = require 'Character'
@@ -237,7 +238,9 @@ end
 
 local addMission = function (mission)
 	-- Add the supplied mission to the player, generate a unique ID and store this mission within the script.
-	table.insert(missions, Mission.New(mission))
+	local newMission = Mission.New(mission)
+	table.insert(missions, newMission)
+	return newMission
 end
 
 local removeMission = function (mission)
@@ -395,6 +398,40 @@ end
 local removeCargo = function (ship, item)
 	-- Remove a ton of the supplied cargo item from the ship.
 	ship:GetComponent('CargoManager'):RemoveCommodity(item, 1)
+end
+
+-- The player's cargo a mission can use: the tons held for it and ordinary
+-- tons, never tons held for another mission
+
+local missionCargoPresent = function (mission, item)
+	local cargoMgr = Game.player:GetComponent('CargoManager')
+	return cargoMgr:CountCommodity(item, mission) + cargoMgr:CountCommodity(item, CargoManager.ORDINARY) > 0
+end
+
+local removeMissionCargo = function (mission, item)
+	-- Remove a ton held for the mission, or else an ordinary ton.
+	local cargoMgr = Game.player:GetComponent('CargoManager')
+	if cargoMgr:RemoveCommodity(item, 1, mission) == 0 then
+		cargoMgr:RemoveCommodity(item, 1, CargoManager.ORDINARY)
+	end
+end
+
+local claimCargo = function (mission)
+	-- Hold ordinary tons of the goods to deliver for the mission, up to what
+	-- it still needs, so they aren't sold or used up by mistake.
+	local cargoMgr = Game.player:GetComponent('CargoManager')
+	for item, n in pairs(mission.deliver_comm) do
+		local want = n - cargoMgr:CountCommodity(item, mission)
+		if want > 0 then cargoMgr:Tag(item, want, mission) end
+	end
+end
+
+local onPlayerCargoChanged = function (item, count, tag)
+	-- Goods bought or scooped later are claimed too.
+	if count <= 0 or tag then return end
+	for _, mission in pairs(missions) do
+		if mission.deliver_comm[item] then claimCargo(mission) end
+	end
 end
 
 local isQualifiedFor = function(ad)
@@ -876,7 +913,7 @@ local onChat = function (form, ref, option)
 		end
 
 		form:SetMessage(l.THANK_YOU_ACCEPTANCE_TXT)
-		addMission(mission)
+		claimCargo(addMission(mission))
 
 		-- setup navbutton target (ships in other system don't exist yet!)
 		local navbutton_target
@@ -1437,7 +1474,7 @@ local closeMission = function (mission)
 
 	for commodity,_ in pairs(mission.cargo_comm) do
 		for _ = 1, mission.cargo_comm[commodity] do
-			removeCargo(Game.player, commodity)
+			removeMissionCargo(mission, commodity)
 		end
 	end
 end
@@ -1558,7 +1595,7 @@ local pickupCommodity = function (mission, commodity)
 	-- pickup 1 ton of commodity
 	else
 		removeCargo(mission.target, commodity)
-		addCargo(Game.player, commodity)
+		Game.player:GetComponent('CargoManager'):AddCommodity(commodity, 1, mission)
 		if mission.cargo_comm[commodity] == nil then
 			mission.cargo_comm[commodity] = 1
 		else
@@ -1660,7 +1697,7 @@ local deliverCommodity = function (mission, commodity)
 	local max_progress_messages = 10
 
 	-- error messages if parameters not met
-	if not cargoPresent(Game.player, commodity) then
+	if not missionCargoPresent(mission, commodity) then
 		mission.deliver_comm_check[commodity] = "PARTIAL"
 		mission.deliver_comm_msg_shown = mission.deliver_comm_msg_shown or {}
 		if not mission.deliver_comm_msg_shown[commodity] then
@@ -1680,7 +1717,7 @@ local deliverCommodity = function (mission, commodity)
 
 	-- transfer 1 ton of commodity
 	else
-		removeCargo(Game.player, commodity)
+		removeMissionCargo(mission, commodity)
 		addCargo(mission.target, commodity)
 
 		-- if commodity was fuel and the mission was local refuel the ship with it
@@ -2054,6 +2091,8 @@ local onGameStart = function ()
 	ads = {}
 	missions = {}
 
+	Game.player:GetComponent('CargoManager'):AddListener('search-rescue', onPlayerCargoChanged)
+
 	if not loaded_data or not loaded_data.ads then return end
 
 	-- fill the global containers with previously saved data if this is a reload
@@ -2068,6 +2107,11 @@ local onGameStart = function ()
 	-- reset searching status for all missions
 	for _,mission in pairs(missions) do
 		mission.searching = false
+	end
+
+	-- saves from before tagged cargo: claim the goods to deliver
+	for _,mission in pairs(missions) do
+		claimCargo(mission)
 	end
 
 	-- check if player is within frame of any mission targets to resume search

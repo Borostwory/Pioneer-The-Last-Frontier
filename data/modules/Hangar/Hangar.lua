@@ -13,6 +13,7 @@
 -- Unpaid rent becomes debt (with a late charge, up to a cap) and locks the
 -- hangar until it is paid.
 
+local CargoManager = require 'CargoManager'
 local Comms = require 'Comms'
 local Commodities = require 'Commodities'
 local Event = require 'Event'
@@ -57,7 +58,8 @@ Hangar.PREPAY_DISCOUNTS = {
 ---@field hull number
 ---@field fuel number
 ---@field equip table<string|integer, EquipType>
----@field cargo table<string, integer>
+---@field cargo table<string, integer>   commodity name -> tons aboard (all of them)
+---@field cargoTags table<string, table<any, integer>>? commodity name -> { [tag] = tons held for it }
 ---@field state table<string, any> per-ship module state (Hangar.RegisterShipState)
 ---@field check table<string, number> ship properties when stored, compared when taken out
 
@@ -86,6 +88,8 @@ local shipStates = {} ---@type table<string, { get: fun(): any, set: fun(data: a
 
 local loaded_data
 local billingToken = 0
+
+local ORDINARY = CargoManager.ORDINARY
 
 --=============================================================================
 -- Helpers
@@ -178,6 +182,123 @@ local function cargoTotal(cargo)
 	local total = 0
 	for _, n in pairs(cargo) do total = total + n end
 	return total
+end
+
+--=============================================================================
+-- Cargo on a swap
+--
+-- The player's cargo is split in lots: the ordinary tons of a commodity, and
+-- the tons each mission holds. `take` says how much of each lot comes along:
+-- take[name] = { [CargoManager.ORDINARY] = n, [mission] = n }.
+--=============================================================================
+
+---@class Hangar.CargoLot
+---@field name string
+---@field tag any        CargoManager.ORDINARY or the owner of the tons
+---@field count integer
+
+-- What a tag (usually a mission) holding cargo is called in the UI
+function Hangar.TagLabel(tag)
+	return type(tag) == "table" and tag.GetCargoLabel and tag:GetCargoLabel() or l.A_MISSION
+end
+
+-- The player's cargo by lot: per commodity, mission tons first
+---@return Hangar.CargoLot[]
+function Hangar.CargoLots()
+	local cargoMgr = Game.player:GetComponent('CargoManager')
+	local lots = {}
+	for name in cargoMgr:Commodities() do
+		local commodity = Commodities[name]
+		local held = {}
+		for tag, n in pairs(cargoMgr:GetTags(commodity)) do
+			table.insert(held, { name = name, tag = tag, count = n, label = Hangar.TagLabel(tag) })
+		end
+		table.sort(held, function(a, b) return a.label < b.label end)
+		for _, lot in ipairs(held) do table.insert(lots, lot) end
+		local ordinary = cargoMgr:CountCommodity(commodity, ORDINARY)
+		if ordinary > 0 then table.insert(lots, { name = name, tag = ORDINARY, count = ordinary }) end
+	end
+	table.sort(lots, function(a, b)
+		if a.name ~= b.name then return a.name < b.name end
+		return a.tag ~= ORDINARY and b.tag == ORDINARY
+	end)
+	return lots
+end
+
+function Hangar.TakeTotal(take)
+	local total = 0
+	for _, parts in pairs(take) do
+		for _, n in pairs(parts) do total = total + n end
+	end
+	return total
+end
+
+-- Free cargo space on a stored ship
+---@param rec Hangar.Record
+function Hangar.RecordFreeSpace(rec)
+	return Hangar.RecordCargoCapacity(rec) - cargoTotal(rec.cargo)
+end
+
+-- Take as much as fits on `rec`: mission cargo first (the delivery is made
+-- with the ship you arrive in), then ordinary cargo
+---@param rec Hangar.Record
+function Hangar.FitCargo(rec)
+	local take = {}
+	local room = Hangar.RecordFreeSpace(rec)
+	local lifeSupport = Hangar.RecordLifeSupport(rec)
+	local lots = Hangar.CargoLots()
+	table.sort(lots, function(a, b)
+		local am, bm = a.tag ~= ORDINARY, b.tag ~= ORDINARY
+		if am ~= bm then return am end
+		return a.name < b.name
+	end)
+	for _, lot in ipairs(lots) do
+		local commodity = Commodities[lot.name]
+		local n = 0
+		if (commodity.life_support or 0) <= lifeSupport then
+			n = math.max(0, math.min(lot.count, room))
+		end
+		take[lot.name] = take[lot.name] or {}
+		take[lot.name][lot.tag] = n
+		room = room - n
+	end
+	return take
+end
+
+-- Where the cargo held for `tag` is on stored ships
+---@return { rec: Hangar.Record, hangar: Hangar.Lease?, name: string, count: integer }[]
+function Hangar.FindHeldCargo(tag)
+	local found = {}
+	for _, rec in pairs(ships) do
+		for name, tags in pairs(rec.cargoTags or {}) do
+			if tags[tag] then
+				table.insert(found, { rec = rec, hangar = hangars[rec.hangar], name = name, count = tags[tag] })
+			end
+		end
+	end
+	table.sort(found, function(a, b) return a.rec.id < b.rec.id end)
+	return found
+end
+
+-- Tons of each commodity on a stored ship held for missions
+---@param rec Hangar.Record
+---@return table<string, integer>
+function Hangar.RecordHeldCargo(rec)
+	local held = {}
+	for name, tags in pairs(rec.cargoTags or {}) do
+		for _, n in pairs(tags) do held[name] = (held[name] or 0) + n end
+	end
+	return held
+end
+
+-- A mission ended: what a stored ship held for it becomes ordinary cargo
+local function releaseTag(tag)
+	for _, rec in pairs(ships) do
+		for name, tags in pairs(rec.cargoTags or {}) do
+			tags[tag] = nil
+			if not next(tags) then rec.cargoTags[name] = nil end
+		end
+	end
 end
 
 -- Properties compared between storing a ship and taking it out again.
@@ -523,11 +644,16 @@ function Hangar.RecordHasHyperdrive(rec)
 end
 
 -- Snapshot the player's ship into a new record. Doesn't change the ship.
----@param leave table<string, integer> cargo that stays with the stored ship
-local function snapshotPlayer(leave)
+---@param cargo table<string, integer> cargo that stays with the stored ship
+---@param cargoTags table<string, table<any, integer>> how much of it missions hold
+local function snapshotPlayer(cargo, cargoTags)
 	local player = Game.player
+	local equipSet = player:GetComponent('EquipSet')
 	local equip = {}
-	for k, item in pairs(player:GetComponent('EquipSet'):GetInstalledEquipment()) do
+	for k, item in pairs(equipSet:GetInstalledEquipment()) do
+		-- Items without a slot are listed by position, but the slots they
+		-- provide are named after their cache index: keep them under that
+		if type(k) == "number" then k = equipSet.cache[item] end
 		equip[k] = item
 	end
 
@@ -545,7 +671,8 @@ local function snapshotPlayer(leave)
 		hull = player.hullPercent,
 		fuel = player.fuel,
 		equip = equip,
-		cargo = table.copy(leave),
+		cargo = cargo,
+		cargoTags = cargoTags,
 		state = state,
 		check = checkProps(player),
 	}
@@ -658,15 +785,17 @@ function Hangar.CheckSwap(rec, take)
 		table.insert(warnings, string.interp(l.TOO_FEW_CREW, { ship = rec.name, min = def.minCrew, crew = crew }))
 	end
 
-	local room = Hangar.RecordCargoCapacity(rec) - cargoTotal(rec.cargo)
-	local taken = cargoTotal(take)
+	local room = Hangar.RecordFreeSpace(rec)
+	local taken = Hangar.TakeTotal(take)
 	if taken > room then
 		table.insert(blockers, string.interp(l.TOO_MUCH_CARGO, { ship = rec.name, room = room, over = taken - room }))
 	end
 
 	local lifeSupport = Hangar.RecordLifeSupport(rec)
-	for name, n in pairs(take) do
+	for name, parts in pairs(take) do
 		local commodity = Commodities[name]
+		local n = 0
+		for _, c in pairs(parts) do n = n + c end
 		if n > 0 and commodity and (commodity.life_support or 0) > lifeSupport then
 			table.insert(blockers, string.interp(l.NEEDS_LIFE_SUPPORT, { commodity = commodity:GetName() }))
 		end
@@ -683,7 +812,7 @@ end
 
 -- Store the player's ship in its bay and take the stored ship `rec` out.
 ---@param rec Hangar.Record
----@param take table<string, integer> cargo to take along: commodity name -> count
+---@param take table<string, table<any, integer>> cargo to take along, by lot (see Cargo on a swap)
 function Hangar.Swap(rec, take)
 	local blockers = Hangar.CheckSwap(rec, take)
 	if #blockers > 0 then return false, blockers[1] end
@@ -692,19 +821,33 @@ function Hangar.Swap(rec, take)
 	local h = assert(hangars[rec.hangar])
 	local cargoMgr = player:GetComponent('CargoManager')
 
-	-- Cargo that stays with the ship being stored
-	local leave = {}
-	for name, count in cargoMgr:Commodities() do
-		local n = count - math.clamp(take[name] or 0, 0, count)
-		if n > 0 then leave[name] = n end
+	-- Cargo that stays with the ship being stored, lot by lot
+	local leave, leaveTags, leaveOrdinary = {}, {}, {}
+	for _, lot in ipairs(Hangar.CargoLots()) do
+		local taken = take[lot.name] and take[lot.name][lot.tag] or 0
+		local n = lot.count - math.clamp(taken, 0, lot.count)
+		if n > 0 then
+			leave[lot.name] = (leave[lot.name] or 0) + n
+			if lot.tag == ORDINARY then
+				leaveOrdinary[lot.name] = n
+			else
+				leaveTags[lot.name] = leaveTags[lot.name] or {}
+				leaveTags[lot.name][lot.tag] = n
+			end
+		end
 	end
 
-	local out = snapshotPlayer(leave)
+	local out = snapshotPlayer(leave, leaveTags)
 
 	accrue(h, Game.time)
 
-	for name, n in pairs(leave) do
-		cargoMgr:RemoveCommodity(Commodities[name], n)
+	for name, n in pairs(leaveOrdinary) do
+		cargoMgr:RemoveCommodity(Commodities[name], n, ORDINARY)
+	end
+	for name, tags in pairs(leaveTags) do
+		for tag, n in pairs(tags) do
+			cargoMgr:RemoveCommodity(Commodities[name], n, tag)
+		end
 	end
 
 	-- Rebuild the player's ship from the record. SetShipType removes all
@@ -721,12 +864,24 @@ function Hangar.Swap(rec, take)
 	player:SetHullPercent(math.clamp(rec.hull, 0, 100))
 	player:SetFuelPercent(math.clamp(rec.fuel, 0, 100))
 
-	for name, n in pairs(rec.cargo) do
-		if not cargoMgr:AddCommodity(Commodities[name], n) then
-			-- CheckSwap made room for it; keep it rather than lose it
-			logWarning("Hangar: no room for {} t {} from '{}'" % { n, name, rec.name })
-			out.cargo[name] = (out.cargo[name] or 0) + n
+	-- The stored ship's cargo comes aboard with its tags
+	local function keep(name, n, tag)
+		-- CheckSwap made room for it; keep it rather than lose it
+		logWarning("Hangar: no room for {} t {} from '{}'" % { n, name, rec.name })
+		out.cargo[name] = (out.cargo[name] or 0) + n
+		if tag then
+			out.cargoTags[name] = out.cargoTags[name] or {}
+			out.cargoTags[name][tag] = (out.cargoTags[name][tag] or 0) + n
 		end
+	end
+	for name, total in pairs(rec.cargo) do
+		local commodity = Commodities[name]
+		local ordinary = total
+		for tag, n in pairs(rec.cargoTags and rec.cargoTags[name] or {}) do
+			ordinary = ordinary - n
+			if not cargoMgr:AddCommodity(commodity, n, tag) then keep(name, n, tag) end
+		end
+		if ordinary > 0 and not cargoMgr:AddCommodity(commodity, ordinary) then keep(name, ordinary) end
 	end
 
 	compareChecks(rec)
@@ -781,7 +936,6 @@ function Hangar.AddRecord(h, rec)
 	return true, rec
 end
 
--- Debug: bill every hangar now, as if it were the 1st (the schedule is kept)
 -- Debug: bill a hangar now as if a whole month had passed at today's rent
 ---@param h Hangar.Lease
 function Hangar.DebugBillMonth(h)
@@ -816,8 +970,21 @@ Event.Register("onGameStart", function()
 		for _, h in pairs(hangars) do h.store = h.store or {} end
 		loaded_data = nil
 	end
+
+	-- Missions that ended while the save held their cargo on a stored ship
+	for _, rec in pairs(ships) do
+		for _, tags in pairs(rec.cargoTags or {}) do
+			for tag in pairs(tags) do
+				local meta = getmetatable(tag)
+				if meta and meta.class == "Mission" and not tag:IsActive() then releaseTag(tag) end
+			end
+		end
+	end
+
 	runBilling()
 end)
+
+Event.Register("onMissionRemoved", releaseTag)
 
 Event.Register("onGameEnd", function()
 	hangars = {}

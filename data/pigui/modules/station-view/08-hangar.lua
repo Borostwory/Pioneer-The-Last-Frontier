@@ -14,6 +14,7 @@ local StationView = require 'pigui.views.station-view'
 local ModalWindow = require 'pigui.libs.modal-win'
 local ModelSpinner = require 'PiGui.Modules.ModelSpinner'
 local Hangar = require 'modules.Hangar.Hangar'
+local CargoManager = require 'CargoManager'
 
 local ui = require 'pigui'
 
@@ -47,7 +48,7 @@ local renameText = ""
 local showPrepay = false
 local prepay = { n = 6, unit = 0 } -- unit: 0 months, 1 years
 local lease = { bays = 1, n = 0, unit = 0 }
-local swap = nil                 -- { rec = Hangar.Record, take = { [name] = n } }
+local swap = nil                 -- { rec = Hangar.Record, take = { [name] = { [tag] = n } } }
 local swapModal                  -- the swap window, created below
 
 --=============================================================================
@@ -240,14 +241,19 @@ local function activeView()
 	local p = Game.player
 	local equip = {}
 	for _, item in pairs(p:GetComponent('EquipSet'):GetInstalledEquipment()) do table.insert(equip, item) end
-	local cargo = {}
-	for name, n in p:GetComponent('CargoManager'):Commodities() do cargo[name] = n end
+	local cargoMgr = p:GetComponent('CargoManager')
+	local cargo, held = {}, {}
+	for name, n in cargoMgr:Commodities() do
+		cargo[name] = n
+		local ordinary = cargoMgr:CountCommodity(Commodities[name], CargoManager.ORDINARY)
+		if ordinary < n then held[name] = n - ordinary end
+	end
 	return {
 		active = true,
 		shipId = p.shipId, name = p.shipName, label = p.label,
 		skin = p:GetSkin(), pattern = p.model.pattern,
 		hull = p.hullPercent, fuel = p.fuel,
-		items = equip, cargo = cargo,
+		items = equip, cargo = cargo, held = held,
 		cargoCap = p.cargo_cap,
 		hyperdrive = p:GetInstalledHyperdrive(),
 	}
@@ -264,17 +270,22 @@ local function recordView(rec)
 		shipId = rec.shipId, name = rec.name, label = rec.label,
 		skin = rec.skin, pattern = rec.pattern,
 		hull = rec.hull, fuel = rec.fuel,
-		items = items, cargo = rec.cargo,
+		items = items, cargo = rec.cargo, held = Hangar.RecordHeldCargo(rec),
 		cargoCap = Hangar.RecordCargoCapacity(rec),
 		hyperdrive = hyperdrive,
 	}
 end
 
-local function cargoText(cargo)
+-- "10 t diamonds (<mission mark> 10 t), 4 t grain"
+local function cargoText(cargo, held)
 	local parts = {}
 	for name, n in pairs(cargo) do
 		local c = Commodities[name]
-		table.insert(parts, string.format("%d t %s", n, c and c:GetName() or name))
+		local text = string.format("%d t %s", n, c and c:GetName() or name)
+		if held and held[name] then
+			text = text .. string.format(" (%s %d t)", ui.get_icon_glyph(icons.mission_cargo), held[name])
+		end
+		table.insert(parts, text)
 	end
 	table.sort(parts)
 	return #parts > 0 and table.concat(parts, ", ") or l.EMPTY_HOLD
@@ -468,7 +479,7 @@ local function drawDetails(h, view)
 				ui.text(text)
 			end
 		end)
-		row(l.CARGO_ABOARD, function() ui.textWrapped(cargoText(view.cargo)) end)
+		row(l.CARGO_ABOARD, function() ui.textWrapped(cargoText(view.cargo, view.held)) end)
 		row(l.EQUIPMENT, function()
 			local names = {}
 			for _, item in ipairs(view.items) do table.insert(names, item:GetName()) end
@@ -485,21 +496,8 @@ local function drawDetails(h, view)
 	else
 		local locked = Hangar.IsLocked(h)
 		if button(l.FLY_THIS_SHIP, not locked, locked and l.HANGAR_LOCKED or nil) then
-			local take = {}
-			swap = { rec = view.rec, take = take }
-			-- Default: everything that fits comes along
-			local room = Hangar.RecordCargoCapacity(view.rec)
-			for _, n in pairs(view.rec.cargo) do room = room - n end
-			local lifeSupport = Hangar.RecordLifeSupport(view.rec)
-			for name, n in Game.player:GetComponent('CargoManager'):Commodities() do
-				local c = Commodities[name]
-				if (c.life_support or 0) <= lifeSupport then
-					take[name] = math.max(0, math.min(n, room))
-					room = room - take[name]
-				else
-					take[name] = 0
-				end
-			end
+			-- Default: everything that fits comes along, mission cargo first
+			swap = { rec = view.rec, take = Hangar.FitCargo(view.rec) }
 			swapModal:open()
 		end
 		ui.sameLine()
@@ -518,7 +516,6 @@ swapModal = ModalWindow.New("HangarSwap", function(self)
 	if not swap then self:close() return end
 	local rec = swap.rec
 	local player = Game.player
-	local cargoMgr = player:GetComponent('CargoManager')
 
 	ui.withFont(orbiteer.heading, function()
 		ui.icon(icons.ship_swap, Vector2(ui.getTextLineHeight()), colors.font)
@@ -528,52 +525,61 @@ swapModal = ModalWindow.New("HangarSwap", function(self)
 	ui.textColored(colors.fontDim, string.interp(l.SWAP_NOTE, { ship = player.shipName }))
 	ui.spacing()
 
-	-- Cargo picker
-	local room = Hangar.RecordCargoCapacity(rec)
-	for _, n in pairs(rec.cargo) do room = room - n end
-	local taken = 0
-	for _, n in pairs(swap.take) do taken = taken + n end
+	-- Cargo picker: one row per lot, mission cargo marked and named
+	local room = Hangar.RecordFreeSpace(rec)
+	local taken = Hangar.TakeTotal(swap.take)
 
 	ui.text(l.CARGO)
 	ui.sameLine()
 	ui.textColored(taken > room and colors.alertRed or colors.econProfit, string.format("%d / %d t", taken, room))
 	if next(rec.cargo) then
-		ui.textColored(colors.fontDim, string.interp(l.ALREADY_ABOARD, { ship = rec.name, cargo = cargoText(rec.cargo) }))
+		ui.textColored(colors.fontDim, string.interp(l.ALREADY_ABOARD, { ship = rec.name, cargo = cargoText(rec.cargo, Hangar.RecordHeldCargo(rec)) }))
 	end
 
 	local lifeSupport = Hangar.RecordLifeSupport(rec)
-	local any = false
-	for name, n in cargoMgr:Commodities() do
-		any = true
-		local c = Commodities[name]
-		ui.text(string.format("%s (%d t)", c:GetName(), n))
+	local lots = Hangar.CargoLots()
+	for _, lot in ipairs(lots) do
+		local c = Commodities[lot.name]
+		local held = lot.tag ~= CargoManager.ORDINARY
+		swap.take[lot.name] = swap.take[lot.name] or {}
+		local parts = swap.take[lot.name]
+
+		local name = string.format("%s (%d t)", c:GetName(), lot.count)
+		if held then name = ui.get_icon_glyph(icons.mission_cargo) .. " " .. name end
+		ui.text(name)
+		if held and ui.isItemHovered() then ui.setTooltip(lot.label) end
 		ui.sameLine(widgetSizes.sliderWidth * 1.3)
 		if (c.life_support or 0) > lifeSupport then
 			ui.textColored(colors.fontDim, l.NEEDS_CARGO_LIFE_SUPPORT)
-			swap.take[name] = 0
+			parts[lot.tag] = 0
 		else
 			ui.pushItemWidth(widgetSizes.sliderWidth)
-			swap.take[name] = ui.sliderInt("##take" .. name, swap.take[name] or 0, 0, n, l.TAKE_FORMAT)
+			parts[lot.tag] = ui.sliderInt("##take" .. lot.name .. tostring(lot.tag), parts[lot.tag] or 0, 0, lot.count, l.TAKE_FORMAT)
 			ui.popItemWidth()
 		end
+		if held then
+			ui.sameLine()
+			ui.textColored(colors.fontDim, lot.label)
+		end
 	end
-	if not any then
+	if #lots == 0 then
 		ui.textColored(colors.fontDim, l.NO_CARGO_ABOARD)
 	else
 		if ui.button(l.ALL_THAT_FITS) then
-			local left = room
-			for name, n in cargoMgr:Commodities() do
-				local c = Commodities[name]
-				local v = (c.life_support or 0) <= lifeSupport and math.max(0, math.min(n, left)) or 0
-				swap.take[name] = v
-				left = left - v
-			end
+			swap.take = Hangar.FitCargo(rec)
 		end
 		ui.sameLine()
 		if ui.button(l.TAKE_NONE) then
-			for name in pairs(swap.take) do swap.take[name] = 0 end
+			swap.take = {}
 		end
 		ui.textColored(colors.fontDim, string.interp(l.REST_STAYS, { ship = player.shipName }))
+		for _, lot in ipairs(lots) do
+			local parts = swap.take[lot.name]
+			if lot.tag ~= CargoManager.ORDINARY and (parts and parts[lot.tag] or 0) < lot.count then
+				ui.textColored(colors.alertYellow, l.MISSION_CARGO_STAYS)
+				break
+			end
+		end
 	end
 
 	ui.spacing()
