@@ -44,7 +44,10 @@
     51 mission_cargo       crate with a diamond mark (cargo held for a mission)
     52 crew_lounge         figure seated on a bench (crew waiting in a station lounge)
     53 equipment_store     shelf rack holding a module (hangar equipment store)
-    54-57 free (planned: ship_send, ship_receive, in_transit, transfer_cancel)
+    54 ship_send           ship leaving along an arrow (Send to...)
+    55 ship_receive        arrow entering a bay outline (Transfer from...)
+    56 in_transit          ship with a dashed trail behind it (on its way)
+    57 transfer_cancel     dashed path ending in a U-turn arrow (cancel a delivery)
     58 lease_locked        padlock in a bay (hangar locked by unpaid rent)
     59-63 free (planned: 59 fleet)
 
@@ -507,6 +510,51 @@
          d="M10,7 H24 V18 H10 Z M13.5,10.5 V14.5 H20.5 V10.5 Z" />
       <!-- a smaller one below -->
       <rect style="fill:#ffffff" x="20" y="25" width="11" height="8" />
+    </g>
+
+    <!-- 54: ship_send -->
+    <g id="icon_ship_send" transform="translate(240,120)">
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M4,20 H16 M6,13 H13 M6,27 H13" />
+      <path
+         style="fill:#ffffff"
+         transform="translate(27,20) rotate(90) scale(1.15)"
+         d="M0,-9 L6.5,8 L0,4.5 L-6.5,8 Z" />
+    </g>
+
+    <!-- 55: ship_receive -->
+    <g id="icon_ship_receive" transform="translate(280,120)">
+      <!-- bay outline, open towards the arrow -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"
+         d="M18,6 H35 V34 H18" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M3,20 H22" />
+      <polygon style="fill:#ffffff" points="30,20 20,13 20,27" />
+    </g>
+
+    <!-- 56: in_transit -->
+    <g id="icon_in_transit" transform="translate(320,120)">
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round;stroke-dasharray:3,4"
+         d="M3,20 H19" />
+      <path
+         style="fill:#ffffff"
+         transform="translate(28,20) rotate(90) scale(1.15)"
+         d="M0,-9 L6.5,8 L0,4.5 L-6.5,8 Z" />
+    </g>
+
+    <!-- 57: transfer_cancel -->
+    <g id="icon_transfer_cancel" transform="translate(360,120)">
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round;stroke-dasharray:3,4"
+         d="M3,30 H19" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M21,30 H25 A8,8 0 0 0 25,14 H16" />
+      <polygon style="fill:#ffffff" points="8,14 17,7.5 17,20.5" />
     </g>
 
     <!-- 58: lease_locked -->

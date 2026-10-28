@@ -25,6 +25,7 @@ local Lang = require 'Lang'
 local Passengers = require 'Passengers'
 local PlayerState = require 'PlayerState'
 local Serializer = require 'Serializer'
+local Space = require 'Space'
 local ShipDef = require 'ShipDef'
 local Timer = require 'Timer'
 local Format = require 'Format'
@@ -65,6 +66,7 @@ Hangar.PREPAY_DISCOUNTS = {
 ---@field cargoTags table<string, table<any, integer>>? commodity name -> { [tag] = tons held for it }
 ---@field state table<string, any> per-ship module state (Hangar.RegisterShipState)
 ---@field check table<string, number> ship properties when stored, compared when taken out
+---@field transit integer?         id of the delivery it is on (see Transfers)
 
 ---@class Hangar.Lease
 ---@field key string
@@ -100,6 +102,9 @@ local hangars = {} ---@type table<string, Hangar.Lease>
 local ships = {} ---@type table<integer, Hangar.Record>
 local lounges = {} ---@type table<string, Hangar.Lounge>
 local loungeDebt = 0               -- unpaid lounge fees, paid from the next money
+local transfers = {} ---@type table<integer, Hangar.Transfer>
+local nextTransferId = 1
+local transferToken = 0
 local nextId = 1
 local nextBill = nil ---@type number?
 
@@ -395,7 +400,8 @@ end
 function Hangar.MonthlyRent(h)
 	local tonnes = 0
 	for _, rec in ipairs(Hangar.StoredShips(h)) do
-		tonnes = tonnes + hullMass(rec.shipId)
+		-- a ship on its way holds its bay; parking counts from arrival
+		if not rec.transit then tonnes = tonnes + hullMass(rec.shipId) end
 	end
 	return (Hangar.BAY_RENT * h.bays + Hangar.TONNE_RENT * tonnes) * h.factor
 end
@@ -406,7 +412,7 @@ end
 ---@param rec Hangar.Record?
 function Hangar.BayRent(h, rec)
 	local bay = Hangar.BAY_RENT * h.factor
-	local parking = rec and Hangar.TONNE_RENT * hullMass(rec.shipId) * h.factor or 0
+	local parking = rec and not rec.transit and Hangar.TONNE_RENT * hullMass(rec.shipId) * h.factor or 0
 	return bay, parking
 end
 
@@ -640,7 +646,11 @@ end
 
 ---@param h Hangar.Lease
 function Hangar.CanEndLease(h)
-	return #Hangar.StoredShips(h) == 0 and #h.store == 0 and h.debt <= 0
+	if #Hangar.StoredShips(h) > 0 or #h.store > 0 or Hangar.StoreCargoTotal(h) > 0 or h.debt > 0 then return false end
+	for _, t in pairs(transfers) do
+		if t.from.key == h.key or t.to.key == h.key then return false end
+	end
+	return true
 end
 
 -- End a lease: rent so far is settled, unused credit is refunded at the price
@@ -687,6 +697,12 @@ function Hangar.EachLoungeMember()
 	local list = {}
 	for _, lounge in pairs(lounges) do
 		for _, entry in ipairs(lounge.crew) do table.insert(list, entry.character) end
+	end
+	-- and crew travelling between lounges (paid as if waiting)
+	for _, t in pairs(transfers) do
+		if t.kind == "crew" then
+			for _, c in ipairs(t.crew) do table.insert(list, c) end
+		end
 	end
 	local i = 0
 	return function()
@@ -757,11 +773,29 @@ end
 
 -- Add someone to the lounge at `station` (they're on no ship's roster)
 local function addToLounge(station, character)
-	local key = Hangar.StationKey(station)
+	return Hangar.AddToLoungeAt(Hangar.PlaceOf(station), character)
+end
+
+-- A station as transfers and lounges keep it
+---@class Hangar.Place
+---@field key string
+---@field path SystemPath
+---@field station string   its name
+---@field factor number
+
+---@param station SpaceStation
+---@return Hangar.Place
+function Hangar.PlaceOf(station)
+	return { key = Hangar.StationKey(station), path = station.path, station = station.label,
+		factor = Hangar.StationFactor(station) }
+end
+
+---@param place Hangar.Place
+function Hangar.AddToLoungeAt(place, character)
+	local key = place.key
 	local lounge = lounges[key]
 	if not lounge then
-		lounge = { key = key, path = station.path, station = station.label,
-			factor = Hangar.StationFactor(station), crew = {} }
+		lounge = { key = key, path = place.path, station = place.station, factor = place.factor, crew = {} }
 		lounges[key] = lounge
 	end
 	table.insert(lounge.crew, { character = character, since = Game.time, paidTo = Game.time })
@@ -992,6 +1026,7 @@ end
 ---@param h Hangar.Lease
 function Hangar.CanUnfit(h, target, item)
 	if Hangar.IsLocked(h) then return false, l.HANGAR_LOCKED end
+	if target ~= Hangar.ACTIVE and target.transit then return false, l.ALREADY_IN_TRANSIT end
 	local key = keyOf(target, item)
 	if key == nil then return false end
 	local blocker = unfitBlocker(target, key, item)
@@ -1041,6 +1076,7 @@ end
 ---@param h Hangar.Lease
 function Hangar.FitPlace(h, target, item, slotId)
 	if Hangar.IsLocked(h) then return nil, l.HANGAR_LOCKED end
+	if target ~= Hangar.ACTIVE and target.transit then return nil, l.ALREADY_IN_TRANSIT end
 	local slots, items, used, capacity, shipId = targetState(target)
 	local free = capacity - used
 	local volume = volumeOn(item, shipId)
@@ -1216,6 +1252,297 @@ function Hangar.SellFromStore(h, item)
 	station:AddEquipmentStock(item:GetPrototype(), 1)
 	utils.remove_elem(h.store, item)
 	return true
+end
+
+--=============================================================================
+-- Transfers: the delivery service for ships, equipment and crew
+--
+-- Paid when booked; the time and price grow with the distance. A ship on its
+-- way holds its bay at the destination (its record's hangar is already the
+-- destination, with `transit` set). Cancelling refunds half and sends it back,
+-- taking as long as it has travelled so far.
+--=============================================================================
+
+---@class Hangar.Transfer
+---@field id integer
+---@field kind "ship"|"equipment"|"crew"
+---@field rec Hangar.Record?
+---@field items EquipType[]?
+---@field crew Character[]?
+---@field from Hangar.Place
+---@field to Hangar.Place
+---@field departed number
+---@field arrives number
+---@field cost number
+---@field returning boolean?
+
+local DAY = 86400
+
+local function placeOfHangar(h)
+	return { key = h.key, path = h.path, station = h.station, factor = h.factor }
+end
+
+local function lightYears(a, b)
+	if a:IsSameSystem(b) then return 0 end
+	return a:DistanceTo(b)
+end
+
+-- Price, travel time in seconds and light years for delivering a ship
+function Hangar.ShipDeliveryQuote(shipId, fromPath, toPath)
+	local ly = lightYears(fromPath, toPath)
+	local mass = hullMass(shipId)
+	local cost = ly == 0 and 50 + 0.2 * mass or 40 + 60 * ly + 0.3 * mass * ly
+	return round(cost), (1 + 0.5 * ly) * DAY, ly
+end
+
+-- ... for equipment (one booking carries several items)
+function Hangar.EquipmentDeliveryQuote(items, fromPath, toPath)
+	local ly = lightYears(fromPath, toPath)
+	local mass = 0
+	for _, item in ipairs(items) do mass = mass + (item.mass or 0) end
+	local cost = ly == 0 and 20 or 30 + 0.5 * mass * ly
+	return round(cost), (1 + 0.5 * ly) * DAY, ly
+end
+
+-- ... for crew (one ticket each)
+function Hangar.CrewTicketQuote(count, fromPath, toPath)
+	local ly = lightYears(fromPath, toPath)
+	local cost = count * (ly == 0 and 15 or 20 + 30 * ly)
+	return round(cost), (1 + 0.4 * ly) * DAY, ly
+end
+
+-- Surface starports only take ships that can land: ones with a hull slot
+-- for atmospheric shielding, as their Ship Markets sell
+local function canLandAt(shipId, h)
+	local body = h.path:GetSystemBody()
+	if not body or body.type ~= "STARPORT_SURFACE" then return true end
+	for _, slot in pairs(HullConfig.GetHullConfig(shipId).slots) do
+		if slot.type:match("^hull") then return true end
+	end
+	return false
+end
+
+---@return Hangar.Transfer[]
+function Hangar.GetTransfers()
+	local list = utils.build_array(pairs(transfers))
+	table.sort(list, function(a, b) return a.arrives < b.arrives end)
+	return list
+end
+
+-- Transfers of `kind` going to the place with `key`
+function Hangar.TransfersTo(key, kind)
+	local list = {}
+	for _, t in ipairs(Hangar.GetTransfers()) do
+		if t.to.key == key and (not kind or t.kind == kind) then table.insert(list, t) end
+	end
+	return list
+end
+
+---@param rec Hangar.Record
+function Hangar.TransferOf(rec)
+	return rec.transit and transfers[rec.transit]
+end
+
+local scheduleArrivals
+
+local function book(t)
+	t.id = nextTransferId
+	nextTransferId = nextTransferId + 1
+	transfers[t.id] = t
+	PlayerState.AddMoney(-t.cost)
+	scheduleArrivals()
+	return t
+end
+
+-- Why ship `rec` can't be sent to hangar `to` now, or nil
+function Hangar.SendShipBlocked(rec, to)
+	local from = hangars[rec.hangar]
+	if rec.transit then return l.ALREADY_IN_TRANSIT end
+	if not from or not to or from == to then return l.NO_DESTINATION end
+	if Hangar.IsLocked(from) or Hangar.IsLocked(to) then return l.HANGAR_LOCKED end
+	if Hangar.FreeBays(to) < 1 then return string.interp(l.NO_FREE_BAY_AT, { station = to.station }) end
+	if not canLandAt(rec.shipId, to) then return string.interp(l.CANT_LAND_AT, { station = to.station }) end
+	local cost = Hangar.ShipDeliveryQuote(rec.shipId, from.path, to.path)
+	if PlayerState.GetMoney() < cost then return l.NOT_ENOUGH_MONEY end
+	return nil
+end
+
+-- Book the delivery of a stored ship to another of your hangars
+function Hangar.SendShip(rec, to)
+	local blocked = Hangar.SendShipBlocked(rec, to)
+	if blocked then return false, blocked end
+	local from = hangars[rec.hangar]
+	local cost, time = Hangar.ShipDeliveryQuote(rec.shipId, from.path, to.path)
+	accrue(from, Game.time) -- its parking ends here
+	accrue(to, Game.time)
+	local t = book({ kind = "ship", rec = rec, from = placeOfHangar(from), to = placeOfHangar(to),
+		departed = Game.time, arrives = Game.time + time, cost = cost })
+	rec.transit = t.id
+	rec.hangar = to.key
+	rec.order = nextId
+	nextId = nextId + 1
+	return true, t
+end
+
+-- Why equipment can't be sent from hangar `from` to `to` now, or nil
+function Hangar.SendEquipmentBlocked(from, to, items)
+	if not from or not to or from == to then return l.NO_DESTINATION end
+	if #items == 0 then return l.NOTHING_PICKED end
+	if Hangar.IsLocked(from) or Hangar.IsLocked(to) then return l.HANGAR_LOCKED end
+	for _, item in ipairs(items) do
+		if not utils.contains(from.store, item) then return l.NO_DESTINATION end
+	end
+	local cost = Hangar.EquipmentDeliveryQuote(items, from.path, to.path)
+	if PlayerState.GetMoney() < cost then return l.NOT_ENOUGH_MONEY end
+	return nil
+end
+
+-- Book a delivery of items from one hangar's store to another's
+function Hangar.SendEquipment(from, to, items)
+	local blocked = Hangar.SendEquipmentBlocked(from, to, items)
+	if blocked then return false, blocked end
+	local cost, time = Hangar.EquipmentDeliveryQuote(items, from.path, to.path)
+	for _, item in ipairs(items) do utils.remove_elem(from.store, item) end
+	return true, book({ kind = "equipment", items = utils.build_array(ipairs(items)), from = placeOfHangar(from),
+		to = placeOfHangar(to), departed = Game.time, arrives = Game.time + time, cost = cost })
+end
+
+-- Places crew can be sent to: your hangars' stations, lounges in use, and
+-- the stations of the current system. `exceptKey` is left out.
+---@return Hangar.Place[]
+function Hangar.CrewDestinations(exceptKey)
+	local seen, list = {}, {}
+	local function add(place)
+		if place.key ~= exceptKey and not seen[place.key] then
+			seen[place.key] = true
+			table.insert(list, place)
+		end
+	end
+	for _, h in ipairs(Hangar.GetHangars()) do add(placeOfHangar(h)) end
+	for _, lounge in ipairs(Hangar.GetLounges()) do
+		add({ key = lounge.key, path = lounge.path, station = lounge.station, factor = lounge.factor })
+	end
+	if Game.system then
+		local here = {}
+		for _, station in ipairs(Space.GetBodies("SpaceStation")) do table.insert(here, Hangar.PlaceOf(station)) end
+		table.sort(here, function(a, b) return a.station < b.station end)
+		for _, place in ipairs(here) do add(place) end
+	end
+	return list
+end
+
+-- Why people waiting in the lounge `fromKey` can't be sent to `to`, or nil
+function Hangar.SendCrewBlocked(fromKey, to, people)
+	local lounge = lounges[fromKey]
+	if not lounge or not to or to.key == fromKey then return l.NO_DESTINATION end
+	if #people == 0 then return l.NOTHING_PICKED end
+	local blocked = Hangar.LoungeBlocked()
+	if blocked then return blocked end
+	for _, c in ipairs(people) do
+		if c.waitingAt ~= fromKey then return l.NO_DESTINATION end
+	end
+	local cost = Hangar.CrewTicketQuote(#people, lounge.path, to.path)
+	if PlayerState.GetMoney() < cost then return l.NOT_ENOUGH_MONEY end
+	return nil
+end
+
+-- Book passage for people waiting in a lounge to the lounge at `to`
+---@param to Hangar.Place
+function Hangar.SendCrew(fromKey, to, people)
+	local blocked = Hangar.SendCrewBlocked(fromKey, to, people)
+	if blocked then return false, blocked end
+	local lounge = lounges[fromKey]
+	local from = { key = lounge.key, path = lounge.path, station = lounge.station, factor = lounge.factor }
+	local cost, time = Hangar.CrewTicketQuote(#people, from.path, to.path)
+	for _, c in ipairs(people) do
+		local l2, entry, index = Hangar.FindInLounge(c)
+		removeFromLounge(l2, entry, index)
+	end
+	local t = book({ kind = "crew", crew = utils.build_array(ipairs(people)), from = from, to = to,
+		departed = Game.time, arrives = Game.time + time, cost = cost })
+	for _, c in ipairs(people) do c.inTransit = t.id end
+	return true, t
+end
+
+-- Why a transfer can't be cancelled now, or nil
+function Hangar.CancelBlocked(t)
+	if t.returning then return l.ALREADY_RETURNING end
+	if t.kind == "ship" then
+		local origin = hangars[t.from.key]
+		if not origin then return l.ORIGIN_GONE end
+		if Hangar.FreeBays(origin) < 1 then return string.interp(l.NO_BAY_TO_RETURN, { station = origin.station }) end
+	elseif t.kind == "equipment" and not hangars[t.from.key] then
+		return l.ORIGIN_GONE
+	end
+	return nil
+end
+
+-- When a cancelled transfer would be back
+function Hangar.ReturnTime(t)
+	return Game.time + (Game.time - t.departed)
+end
+
+-- Cancel: half the price back, and it goes back where it came from
+function Hangar.CancelTransfer(t)
+	local blocked = Hangar.CancelBlocked(t)
+	if blocked then return false, blocked end
+	PlayerState.AddMoney(round(t.cost * 0.5))
+	t.arrives = Hangar.ReturnTime(t)
+	t.departed = Game.time
+	t.from, t.to = t.to, t.from
+	t.returning = true
+	if t.kind == "ship" then
+		t.rec.hangar = t.to.key -- its bay at the destination is free again
+	end
+	scheduleArrivals()
+	return true
+end
+
+local function arrive(t)
+	transfers[t.id] = nil
+	if t.kind == "ship" then
+		local h = hangars[t.to.key]
+		if h then accrue(h, Game.time) end
+		t.rec.transit = nil
+		t.rec.storedAt = Game.time
+		Comms.ImportantMessage(string.interp(t.returning and l.SHIP_RETURNED or l.SHIP_ARRIVED,
+			{ ship = t.rec.name, station = t.to.station }), l.DELIVERY_SERVICE)
+	elseif t.kind == "equipment" then
+		local h = hangars[t.to.key]
+		if h then
+			for _, item in ipairs(t.items) do table.insert(h.store, item) end
+		end
+		Comms.ImportantMessage(string.interp(l.EQUIPMENT_ARRIVED,
+			{ count = #t.items, station = t.to.station }), l.DELIVERY_SERVICE)
+	elseif t.kind == "crew" then
+		for _, c in ipairs(t.crew) do
+			c.inTransit = nil
+			Hangar.AddToLoungeAt(t.to, c)
+			Comms.ImportantMessage(string.interp(l.CREW_ARRIVED, { name = c.name, station = t.to.station }), l.DELIVERY_SERVICE)
+		end
+	end
+end
+
+-- Complete every transfer due by now, in order, then wait for the next
+local function processArrivals()
+	for _, t in ipairs(Hangar.GetTransfers()) do
+		if t.arrives <= Game.time then arrive(t) end
+	end
+	scheduleArrivals()
+end
+
+scheduleArrivals = function()
+	transferToken = transferToken + 1
+	local token = transferToken
+	local next = nil
+	for _, t in pairs(transfers) do
+		if not next or t.arrives < next then next = t.arrives end
+	end
+	if next then
+		Timer:CallAt(math.max(next, Game.time + 1), function()
+			if token == transferToken then processArrivals() end
+		end)
+	end
 end
 
 --=============================================================================
@@ -1479,6 +1806,9 @@ function Hangar.CheckSwap(rec, take, aboard)
 	if h and Hangar.IsLocked(h) then
 		table.insert(blockers, l.HANGAR_LOCKED)
 	end
+	if rec.transit then
+		table.insert(blockers, l.ALREADY_IN_TRANSIT)
+	end
 
 	checkBoarding(blockers, warnings, def, rec.name, take, aboard,
 		Hangar.RecordFreeSpace(rec), Hangar.RecordLifeSupport(rec))
@@ -1730,6 +2060,8 @@ Event.Register("onGameStart", function()
 		nextBill = loaded_data.nextBill
 		lounges = loaded_data.lounges or {}
 		loungeDebt = loaded_data.loungeDebt or 0
+		transfers = loaded_data.transfers or {}
+		nextTransferId = loaded_data.nextTransferId or 1
 		for _, h in pairs(hangars) do h.store = h.store or {} end
 		loaded_data = nil
 	end
@@ -1748,6 +2080,7 @@ Event.Register("onGameStart", function()
 	end
 
 	runBilling()
+	processArrivals()
 end)
 
 Event.Register("onMissionRemoved", releaseTag)
@@ -1757,13 +2090,17 @@ Event.Register("onGameEnd", function()
 	ships = {}
 	lounges = {}
 	loungeDebt = 0
+	transfers = {}
+	nextTransferId = 1
+	transferToken = transferToken + 1
 	nextId = 1
 	nextBill = nil
 	billingToken = billingToken + 1
 end)
 
 local serialize = function()
-	return { hangars = hangars, ships = ships, nextId = nextId, nextBill = nextBill, lounges = lounges, loungeDebt = loungeDebt }
+	return { hangars = hangars, ships = ships, nextId = nextId, nextBill = nextBill, lounges = lounges, loungeDebt = loungeDebt,
+		transfers = transfers, nextTransferId = nextTransferId }
 end
 
 local unserialize = function(data)

@@ -262,6 +262,21 @@ local function drawLoungeCrew()
 			})
 		end
 	end
+	for _, t in ipairs(Hangar.GetTransfers()) do
+		if t.kind == "crew" then
+			for _, c in ipairs(t.crew) do
+				local wage = c.contract and math.floor(c.contract.wage / 2 + 0.5) or 0
+				table.insert(rows, {
+					c.name,
+					c.title or l.GENERAL_CREW,
+					string.interp(lh.TRAVELLING_TO, { station = t.to.station, date = Format.DateOnly(t.arrives) }),
+					{ ui.Format.Money(wage), color = colors.econProfit },
+					{ ui.Format.Money(c.contract and c.contract.outstanding or 0), color = colors.econLoss },
+					Format.DateOnly(t.departed),
+				})
+			end
+		end
+	end
 	if #rows == 1 then return end
 
 	ui.newLine()

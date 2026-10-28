@@ -792,6 +792,10 @@ theme.icons = {
 	mission_cargo = 563,
 	crew_lounge = 564,
 	equipment_store = 565,
+	ship_send = 566,
+	ship_receive = 567,
+	in_transit = 568,
+	transfer_cancel = 569,
 	lease_locked = 570,
 }
 

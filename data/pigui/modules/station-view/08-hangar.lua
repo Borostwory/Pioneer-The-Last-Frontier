@@ -18,6 +18,7 @@ local ModelSpinner = require 'PiGui.Modules.ModelSpinner'
 local Hangar = require 'modules.Hangar.Hangar'
 local CargoManager = require 'CargoManager'
 local Pickers = require 'pigui.libs.hangar-pickers'
+local Transfers = require 'pigui.libs.hangar-transfers'
 
 local ui = require 'pigui'
 
@@ -210,6 +211,12 @@ local function drawHeader(h)
 		Hangar.EndLease(h)
 		return false
 	end
+	ui.sameLine()
+	local canBring = Hangar.FreeBays(h) > 0 and not Hangar.IsLocked(h)
+	if button(Transfers.glyph(icons.ship_receive, l.TRANSFER_FROM) .. "##shipFrom", canBring,
+			canBring and l.TRANSFER_SHIP_TOOLTIP or Hangar.IsLocked(h) and l.HANGAR_LOCKED or l.NO_FREE_BAY_HERE) then
+		Transfers.ShipFrom(h)
+	end
 
 	if showPrepay then
 		ui.spacing()
@@ -352,7 +359,13 @@ local function drawBays(h)
 				if rec then
 					selectRow(tostring(i), rec.id)
 					ui.tableNextColumn()
-					ui.text(shipCell(rec.name, rec.shipId, rec.hull))
+					local t = Hangar.TransferOf(rec)
+					if t then
+						ui.textColored(colors.fontDim, ui.get_icon_glyph(icons.in_transit) .. " " .. shipCell(rec.name, rec.shipId, rec.hull)
+							.. " · " .. Transfers.StatusText(t))
+					else
+						ui.text(shipCell(rec.name, rec.shipId, rec.hull))
+					end
 				else
 					dim(tostring(i))
 					ui.tableNextColumn()
@@ -460,7 +473,10 @@ local function drawDetails(h, view)
 		ui.withFont(orbiteer.heading, function() ui.text(view.name) end)
 	end
 
-	local status = view.active and l.STATUS_ACTIVE or string.interp(l.STATUS_STORED, { date = Format.DateOnly(view.rec.storedAt) })
+	local transfer = view.rec and Hangar.TransferOf(view.rec)
+	local status = view.active and l.STATUS_ACTIVE
+		or transfer and Transfers.StatusText(transfer)
+		or string.interp(l.STATUS_STORED, { date = Format.DateOnly(view.rec.storedAt) })
 	ui.textColored(colors.fontDim, string.format("%s · %s · %s", shipTypeName(view.shipId), view.label, status))
 	ui.spacing()
 
@@ -503,12 +519,21 @@ local function drawDetails(h, view)
 	if view.active then
 		ui.textColored(colors.fontDim, l.THIS_IS_YOUR_SHIP)
 		ui.textColored(colors.fontDim, #Hangar.StoredShips(h) > 0 and l.SELECT_A_SHIP or l.NO_SHIPS_STORED)
+	elseif transfer then
+		ui.textColored(colors.fontDim, ui.get_icon_glyph(icons.in_transit) .. " " .. l.SHIP_ON_ITS_WAY)
+		if ui.button(Transfers.glyph(icons.transfer_cancel, l.CANCEL_DELIVERY)) then
+			Transfers.Cancel(transfer)
+		end
 	else
 		local locked = Hangar.IsLocked(h)
 		if button(l.FLY_THIS_SHIP, not locked, locked and l.HANGAR_LOCKED or nil) then
 			-- Default: everything that fits comes along, mission cargo first
 			swap = { rec = view.rec, take = Hangar.FitCargo(view.rec), aboard = Pickers.everyoneAboard() }
 			swapModal:open()
+		end
+		ui.sameLine()
+		if button(Transfers.glyph(icons.ship_send, l.SEND_TO), not locked, locked and l.HANGAR_LOCKED or l.SEND_SHIP_TOOLTIP) then
+			Transfers.SendShip(view.rec)
 		end
 		ui.sameLine()
 		if renaming ~= view.rec.id and ui.button(l.RENAME) then
@@ -627,9 +652,11 @@ local function drawEquipment(station, h)
 	local target, targetName = Hangar.ACTIVE, Game.player.shipName
 	local names, ids = { string.interp(l.SHIP_ACTIVE_OPTION, { name = Game.player.shipName }) }, { ACTIVE }
 	for _, rec in ipairs(stored) do
-		table.insert(names, string.interp(l.SHIP_STORED_OPTION, { name = rec.name }))
-		table.insert(ids, rec.id)
-		if rec.id == equipShip then target, targetName = rec, rec.name end
+		if not rec.transit then
+			table.insert(names, string.interp(l.SHIP_STORED_OPTION, { name = rec.name }))
+			table.insert(ids, rec.id)
+			if rec.id == equipShip then target, targetName = rec, rec.name end
+		end
 	end
 	if target == Hangar.ACTIVE then equipShip = ACTIVE end
 
@@ -698,7 +725,22 @@ local function drawEquipment(station, h)
 		for _, item in ipairs(h.store) do volume = volume + item.volume end
 		ui.text(string.interp(l.STORE_AT, { station = h.station }))
 		ui.textColored(colors.fontDim, string.interp(l.STORE_CONTENTS, { count = #h.store, volume = ui.Format.Number(volume, 1) }))
+		local locked = Hangar.IsLocked(h)
+		if button(Transfers.glyph(icons.ship_send, l.SEND_TO) .. "##sendEquip", not locked and #h.store > 0,
+				locked and l.HANGAR_LOCKED or l.SEND_EQUIPMENT_TOOLTIP) then
+			Transfers.SendEquipment(h)
+		end
+		ui.sameLine()
+		if button(Transfers.glyph(icons.ship_receive, l.TRANSFER_FROM) .. "##equipFrom", not locked,
+				locked and l.HANGAR_LOCKED or l.TRANSFER_EQUIPMENT_TOOLTIP) then
+			Transfers.EquipmentFrom(h)
+		end
 		ui.separator()
+		for _, t in ipairs(Hangar.TransfersTo(h.key, "equipment")) do
+			local names = {}
+			for _, item in ipairs(t.items) do table.insert(names, item:GetName()) end
+			Transfers.DrawIncoming(t, table.concat(names, ", "))
+		end
 		if #h.store == 0 then
 			ui.textColored(colors.fontDim, l.STORE_EMPTY)
 		end
@@ -958,10 +1000,22 @@ local function drawLounge(station)
 			ui.textColored(colors.fontDim, string.format("%s · %s", bestSkill(member),
 				string.interp(l.WAITING_SINCE, { date = Format.DateOnly(entry.since) })))
 			ui.sameLine()
+			if ui.button(ui.get_icon_glyph(icons.ship_send) .. "##sendcrew" .. tostring(member), Vector2(0, 0),
+					ui.theme.buttonColors.dark, l.SEND_CREW_TOOLTIP) then
+				Transfers.SendCrew(Hangar.PlaceOf(station), member)
+			end
+			ui.sameLine()
 			if ui.button(lc.DISMISS .. "##dismiss" .. tostring(member), Vector2(0, 0), ui.theme.buttonColors.dark) then
 				dismissing = member
 				dismissModal:open()
 			end
+		end
+		for _, t in ipairs(Hangar.TransfersTo(Hangar.StationKey(station), "crew")) do
+			Transfers.DrawIncoming(t, Transfers.WhatText(t))
+		end
+		ui.spacing()
+		if ui.button(Transfers.glyph(icons.ship_receive, l.TRANSFER_FROM) .. "##crewFrom", Vector2(0, 0), nil, l.TRANSFER_CREW_TOOLTIP) then
+			Transfers.CrewFrom(Hangar.PlaceOf(station))
 		end
 	end)
 

@@ -80,9 +80,9 @@ local scheduleWages = function (crewMember)
 		-- Check if crew member has been dismissed
 		if not contract then return end
 
-		-- Waiting in a crew lounge (the hangar module sets waitingAt): half
-		-- wage as a retainer, and nothing learned
-		local waiting = crewMember.waitingAt ~= nil
+		-- Waiting in a crew lounge or travelling to one (the hangar module
+		-- sets waitingAt / inTransit): half wage as a retainer, nothing learned
+		local waiting = crewMember.waitingAt ~= nil or crewMember.inTransit ~= nil
 		local wage = waiting and math.floor(contract.wage / 2 + 0.5) or contract.wage
 
 		if PlayerState.GetMoney() > wage then

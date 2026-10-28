@@ -27,9 +27,17 @@
     "description": "Cargo already on the stored ship",
     "message": "Already aboard \"{ship}\": {cargo}"
   },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "It's on its way to another station."
+  },
   "ALREADY_LEASED": {
     "description": "",
     "message": "You already lease a hangar here."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "It's already on its way back."
   },
   "ALSO_WAITING_ELSEWHERE": {
     "description": "",
@@ -46,6 +54,14 @@
   "BAYS_CAN_CHANGE": {
     "description": "",
     "message": "Bays can be added or removed later."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Book delivery"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Book passage"
   },
   "BOUGHT_AND_STORED": {
     "description": "Ship Market, after buying",
@@ -91,9 +107,25 @@
     "description": "",
     "message": "passengers aboard"
   },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Cancel delivery"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "{refund} (half the price) is refunded, and it goes back to {station}, arriving {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Cancel the delivery of {what}?"
+  },
   "CANT_BE_REMOVED": {
     "description": "",
     "message": "can't be removed now"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} is a surface starport, and this ship has no atmospheric shielding slot."
   },
   "CANT_LAUNCH_FEWER": {
     "description": "",
@@ -171,6 +203,10 @@
     "description": "",
     "message": "Crew"
   },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} has arrived at the crew lounge at {station}."
+  },
   "CREW_FOR": {
     "description": "Swap window: crew section",
     "message": "Crew for \"{ship}\" (takes {min}–{max}):"
@@ -191,9 +227,21 @@
     "description": "",
     "message": "Whoever isn't ticked waits in the lounge here."
   },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Half wages are paid on the way, and no lounge fee. On arrival they wait in the lounge there."
+  },
   "CURRENT_SHIP_CHOICE": {
     "description": "Purchase window: heading over the choices",
     "message": "What happens to \"{ship}\"? Choose one:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Delivery service"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Deliver \"{ship}\""
   },
   "DISMISS_OWED": {
     "description": "",
@@ -229,11 +277,15 @@
   },
   "END_LEASE_NEEDS_EMPTY": {
     "description": "Tooltip on a disabled End lease button",
-    "message": "Only an empty hangar with no unpaid rent can be given up."
+    "message": "Only an empty hangar can be given up: no ships, equipment or goods, nothing on its way, and no unpaid rent."
   },
   "EQUIPMENT": {
     "description": "",
     "message": "Equipment"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} item(s) have arrived at your hangar store at {station}."
   },
   "EQUIPMENT_TAB": {
     "description": "Hangar sub-tab",
@@ -267,6 +319,14 @@
     "description": "Where the next bill is paid from",
     "message": "Paid from your credit, the rest from your account."
   },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "From:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "From: {station}"
+  },
   "FUEL": {
     "description": "",
     "message": "Fuel"
@@ -290,6 +350,10 @@
   "HANGAR_LOCKED": {
     "description": "",
     "message": "This hangar is locked until the unpaid rent is paid."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} free bay(s))"
   },
   "HIRED_INTO_LOUNGE": {
     "description": "Bulletin board, crew for hire",
@@ -315,6 +379,10 @@
     "description": "",
     "message": "Hyperdrive"
   },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "Into a free bay here ({free} free)"
+  },
   "IN_LOUNGE": {
     "description": "Swap window: where a crew member is now",
     "message": "in the lounge"
@@ -330,6 +398,10 @@
   "ITEMS_MOVED_TO_STORE": {
     "description": "Message after a swap",
     "message": "{count} equipment item(s) didn't fit back on the ship and are kept in the hangar's store."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} item(s) picked"
   },
   "LEASE_HANGAR": {
     "description": "Button",
@@ -411,9 +483,17 @@
     "description": "",
     "message": "Nobody is waiting here."
   },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Nobody is waiting at another station."
+  },
   "NONE": {
     "description": "",
     "message": "none"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Tick what to send."
   },
   "NOT_ABOARD": {
     "description": "Swap blocker: the player is out of the ship",
@@ -431,6 +511,10 @@
     "description": "Bay table, Paid until column, when nothing is paid upfront",
     "message": "not prepaid"
   },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "No free bay at {station} to return to."
+  },
   "NO_CARGO_ABOARD": {
     "description": "",
     "message": "No cargo aboard."
@@ -439,9 +523,21 @@
     "description": "Under the bay table",
     "message": "Nothing paid upfront: rent is taken from your account on the 1st of each month."
   },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Pick where it goes."
+  },
   "NO_EQUIP_VOLUME": {
     "description": "Why an item can't be fitted",
     "message": "not enough equipment volume"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "No free bay at {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "No free bay here. Add a bay first."
   },
   "NO_HANGAR_HERE": {
     "description": "",
@@ -451,6 +547,14 @@
     "description": "",
     "message": "none, it can't leave its system"
   },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "You have no other hangar."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "No ship is stored at your other hangars."
+  },
   "NO_SHIPS_STORED": {
     "description": "",
     "message": "No ships are stored here yet."
@@ -459,9 +563,21 @@
     "description": "",
     "message": "no slot for it on this ship"
   },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} item(s)"
+  },
   "OFFER_POSITION_IN_LOUNGE": {
     "description": "Bulletin board, crew for hire",
     "message": "Make an offer of a position, waiting in the crew lounge here for now"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "on its way from {from}, arrives {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "The hangar it came from is no longer yours."
   },
   "OTHER_HANGAR": {
     "description": "One of the player's other hangars",
@@ -499,9 +615,17 @@
     "description": "Button: show the upfront payment controls",
     "message": "Pay upfront…"
   },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Pick a ship."
+  },
   "PRICE_WITH_DISCOUNT": {
     "description": "",
     "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, arrives {date} · {cost}"
   },
   "Q_1M": {
     "description": "Quick pick: 1 month",
@@ -555,6 +679,10 @@
     "description": "",
     "message": "The rest stays aboard \"{ship}\"."
   },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "returning to {to}, arrives {date}"
+  },
   "ROVER_IS_OUT": {
     "description": "",
     "message": "the rover is parked out on a planet"
@@ -562,6 +690,10 @@
   "ROVER_OUT": {
     "description": "Swap blocker",
     "message": "Your rover is parked on {planet}. Stow it first."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "same system"
   },
   "SAVE_NAME": {
     "description": "Button",
@@ -587,6 +719,30 @@
     "description": "",
     "message": "Sell to this station for {price}"
   },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Send crew from the lounge at {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Send to the lounge at another station"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Send equipment from {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Send items from this store to another of your hangars"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Have the delivery service take this ship to another of your hangars"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Send to…"
+  },
   "SEND_TO_LOUNGE": {
     "description": "Tooltip: button sending a crew member to the lounge",
     "message": "Wait in the lounge here"
@@ -595,25 +751,49 @@
     "description": "Hangar sub-tab",
     "message": "Ships"
   },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Ships on their way, and ships in hangars locked by unpaid rent, aren't listed."
+  },
   "SHIP_ACTIVE_OPTION": {
     "description": "Ship picker entry for the ship being flown",
     "message": "\"{name}\" (active)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "\"{ship}\" has arrived at your hangar at {station}."
   },
   "SHIP_CELL": {
     "description": "Bay table: a ship",
     "message": "{name} ({type}) · hull {hull}%"
   },
+  "SHIP_ELSEWHERE_ROW": {
+    "description": "A ship stored at another hangar",
+    "message": "\"{ship}\" ({type}) at {station}"
+  },
   "SHIP_FULL": {
     "description": "Tooltip on a disabled bring-aboard button",
     "message": "\"{ship}\" takes at most {max} crew."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "On its way: it can't be flown, sent or refitted until it arrives."
   },
   "SHIP_PRICE": {
     "description": "Ship Market purchase window",
     "message": "Price: {price}"
   },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "\"{ship}\" is back at your hangar at {station}."
+  },
   "SHIP_STORED_OPTION": {
     "description": "Ship picker entry for a stored ship",
     "message": "\"{name}\" (stored here)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "The ship travels with its cargo and equipment and holds its bay at the destination. It can't be flown or refitted on the way. Parking is charged from its arrival."
   },
   "SHOW_ON_MAP": {
     "description": "Tooltip: button selecting a system on the sector map",
@@ -711,6 +891,10 @@
     "description": "Bay table: total row",
     "message": "Total: {used} of {bays} bays in use"
   },
+  "TO_LABEL": {
+    "description": "",
+    "message": "To:"
+  },
   "TRADE_IN_CARGO": {
     "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
     "message": "A {ship} holds {room} t, and you have {used} t aboard. When trading in, all cargo moves to the new ship: sell or unload {over} t first, or choose another option."
@@ -718,6 +902,38 @@
   "TRADE_IN_CARGO_SHORT": {
     "description": "Purchase window: on the trade-in card",
     "message": "You have {used} t of cargo and a {ship} holds {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Bring crew to the lounge at {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Have crew waiting at another station brought to this lounge"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Transfer equipment to {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Have items from another hangar's store delivered here"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Transfer from…"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Transfer a ship to {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Have a ship stored at another of your hangars delivered here"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "travelling to {station}, arrives {date}"
   },
   "UNFIT_ALL": {
     "description": "Button",

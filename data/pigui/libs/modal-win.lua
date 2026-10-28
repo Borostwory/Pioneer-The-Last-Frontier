@@ -101,6 +101,11 @@ local function drawModals(idx)
 					ui.closeCurrentPopup()
 				end
 				ui.endPopup()
+			else
+				-- ImGui closed the popup itself (e.g. a Selectable clicked
+				-- inside it): drop it from the stack, or every modal opened
+				-- after it (the Esc menu too) would never be drawn
+				win:close()
 			end
 		end)
 
