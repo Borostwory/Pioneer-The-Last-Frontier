@@ -74,6 +74,9 @@ private:
 	// how far through its stride the walker is, and how much the head bobs
 	void UpdateHeadBob(const Walker *walker);
 	void SilenceWalker();
+	// the motor while driving, from the throttle and brake given to the rover
+	void UpdateRoverSound(const Rover *rover, double throttle, bool brake);
+	void SilenceRover();
 	// the line to the ship on EVA, after the camera is placed
 	void UpdateTether(const Walker *walker);
 
@@ -110,6 +113,17 @@ private:
 
 	Sound::Event m_jetSound;
 	Sound::Event m_footsteps;
+	// the rover's motor: pulling away from standing and slowing to a stop
+	// (played once), and the loop at speed; how far through each one-shot it
+	// is (seconds of the recording), < 0 while it isn't playing
+	Sound::Event m_roverAccel;
+	Sound::Event m_roverCruise;
+	Sound::Event m_roverDecel;
+	// the tyres on the ground, a loop
+	Sound::Event m_roverRolling;
+	double m_roverAccelTime = -1.0;
+	double m_roverDecelTime = -1.0;
+	bool m_roverPushed = false;
 
 	ConnectionTicket m_onJumpCon;
 	ConnectionTicket m_onInteractCon;

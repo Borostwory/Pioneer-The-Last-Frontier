@@ -62,6 +62,62 @@ namespace {
 	constexpr double BOB_FADE = 8.0;
 	// where the line is clipped on: the walker's belt, below and ahead of the eyes
 	const vector3d TETHER_BELT(0.15, -0.6, -0.2);
+
+	// the rover's motor, recorded from an electric car: pulling away from
+	// standing and slowing to a stop (played once, from their start), and a
+	// loop at the car's top speed. The car's speed through each one-shot, as a
+	// fraction of that, every ACCEL_STEP or DECEL_STEP (s) of the recording.
+	// The motor turns with the wheels, so its speed is theirs (a fraction of
+	// Rover::MAX_SPEED; in the air they spin up with the throttle, down
+	// without it and stop with the brake). Each one-shot plays pitched by that
+	// over the car's speed at that point, so the motor's tone follows the
+	// wheels and the one-shot runs faster or slower with them; the loop,
+	// pitched by the speed, takes over (faded) when the driver stops doing
+	// what the one-shot recorded, the wheels outrun it beyond the pitch
+	// range, or it ends. The one-shots begin and end as the loop does, and at
+	// its pitch.
+	constexpr double ACCEL_SPEEDS[] = { 0.0, 0.20, 0.255, 0.295, 0.375, 0.435, 0.496, 0.556, 0.615, 0.668,
+		0.717, 0.763, 0.811, 0.853, 0.891, 0.922, 0.948, 0.975, 0.996, 1.0 };
+	constexpr double ACCEL_STEP = 1.0;
+	constexpr double ACCEL_LENGTH = 18.3; // s
+	constexpr double DECEL_SPEEDS[] = { 1.0, 0.98, 0.93, 0.89, 0.86, 0.82, 0.76, 0.73, 0.66, 0.60, 0.52,
+		0.46, 0.38, 0.30, 0.22, 0.15, 0.08, 0.03, 0.0 };
+	constexpr double DECEL_STEP = 0.5;
+	constexpr double DECEL_LENGTH = 10.8;
+	// pulling away from below this speed plays the acceleration; letting go
+	// above this one the slowing down; at the top speed, the loop
+	constexpr double ACCEL_FROM = 0.15;
+	constexpr double DECEL_FROM = 0.7;
+	constexpr double TOP_SPEED = 0.97;
+	// near standing the one-shots play as recorded
+	constexpr double MOTOR_SLOWEST = 0.15;
+	// the pitch range the sound backend plays (all OpenAL guarantees)
+	constexpr double MOTOR_MIN_PITCH = 0.5;
+	constexpr double MOTOR_MAX_PITCH = 2.0;
+	// the loop is quieter slow, at full volume from this speed
+	constexpr double CRUISE_FULL_SPEED = 0.3;
+	// a one-shot hands over to the loop this long before its end (s)
+	constexpr double HANDOVER = 0.3;
+	constexpr float MOTOR_VOLUME = 0.6f;
+	// coasting or braking, the motor this much as loud as at full throttle
+	constexpr float MOTOR_COAST_VOLUME = 0.75f;
+	constexpr float MOTOR_FADE = 1.5f; // volume per second: a crossfade of 0.4 s
+	constexpr float MOTOR_FADE_IN = 6.0f;
+	// the tyres rolling on the ground, recorded at about this speed (a
+	// fraction of the top speed): pitched by the speed over it, louder up to
+	// it, and with the wheels on the ground (silent in the air)
+	constexpr double ROLL_RECORDED_SPEED = 0.75;
+	constexpr float ROLL_VOLUME = 1.0f;
+	constexpr float ROLL_FADE = 10.0f;
+
+	// the car's speed a time into a one-shot, from its table
+	template <size_t N>
+	double RecordedSpeed(const double (&speeds)[N], double step, double time)
+	{
+		const double i = Clamp(time / step, 0.0, double(N - 1));
+		const size_t a = std::min(size_t(i), N - 2);
+		return speeds[a] + (speeds[a + 1] - speeds[a]) * (i - double(a));
+	}
 } // namespace
 
 REGISTER_INPUT_BINDING(SurfaceViewController)
@@ -119,6 +175,10 @@ SurfaceViewController::~SurfaceViewController()
 {
 	m_jetSound.Stop();
 	m_footsteps.Stop();
+	m_roverAccel.Stop();
+	m_roverCruise.Stop();
+	m_roverDecel.Stop();
+	m_roverRolling.Stop();
 	SetMouseCaptured(false);
 	Pi::input->RemoveInputFrame(&InputBindings);
 }
@@ -139,6 +199,12 @@ void SurfaceViewController::Deactivated()
 	SetMouseCaptured(false);
 	m_jetSound.Stop();
 	m_footsteps.Stop();
+	m_roverAccel.Stop();
+	m_roverCruise.Stop();
+	m_roverDecel.Stop();
+	m_roverRolling.Stop();
+	m_roverAccelTime = m_roverDecelTime = -1.0;
+	m_roverPushed = false;
 	m_tether->Clear();
 	if (Walker *walker = Pi::game->GetExcursion()->GetWalker())
 		walker->SetMoveInput(0.0, 0.0, 0.0, false);
@@ -210,6 +276,8 @@ void SurfaceViewController::Update()
 		return;
 
 	UpdateMouseCapture();
+	double throttle = 0.0;
+	bool brake = true;
 
 	if (InputBindings.active) {
 		const double frameTime = Pi::GetFrameTime();
@@ -235,8 +303,9 @@ void SurfaceViewController::Update()
 				m_roverYaw = Clamp(m_roverYaw + yaw, -MAX_ROVER_YAW, MAX_ROVER_YAW);
 				m_pitch = Clamp(m_pitch + pitch, -MAX_ROVER_PITCH, MAX_ROVER_PITCH);
 			}
-			rover->SetDriveInput(InputBindings.moveForward->GetValue(), InputBindings.moveRight->GetValue(),
-				InputBindings.jump->IsActive());
+			throttle = InputBindings.moveForward->GetValue();
+			brake = InputBindings.jump->IsActive();
+			rover->SetDriveInput(throttle, InputBindings.moveRight->GetValue(), brake);
 		} else if (walker->IsEva()) {
 			// floating free: turn about its own axes
 			walker->LookEva(yaw, pitch);
@@ -276,6 +345,7 @@ void SurfaceViewController::Update()
 
 	if (rover) {
 		SilenceWalker();
+		UpdateRoverSound(rover, throttle, brake);
 		m_tether->Clear();
 		if (m_roverView == RoverView::EXTERNAL)
 			PlaceRoverExternalCamera(rover);
@@ -284,6 +354,7 @@ void SurfaceViewController::Update()
 		return;
 	}
 
+	SilenceRover();
 	UpdateJetSound(walker);
 	UpdateFootsteps(walker);
 	UpdateHeadBob(walker);
@@ -298,6 +369,75 @@ void SurfaceViewController::SilenceWalker()
 {
 	m_jetSound.VolumeAnimate(0.0f, 0.0f, JET_SOUND_FADE, JET_SOUND_FADE);
 	m_footsteps.VolumeAnimate(0.0f, 0.0f, STEPS_FADE, STEPS_FADE);
+}
+
+void SurfaceViewController::UpdateRoverSound(const Rover *rover, double throttle, bool brake)
+{
+	const double dt = Pi::game->IsPaused() ? 0.0 : Pi::GetFrameTime();
+	const double v = rover->GetWheelSpeed();
+	const double speed = std::abs(v) / Rover::MAX_SPEED;
+	// the throttle on the way the wheels turn, or away from standing
+	const bool pushing = !brake && std::abs(throttle) > 0.1 && (std::abs(v) < 0.5 || throttle * v > 0.0);
+	// louder with the throttle
+	const float load = pushing ? MOTOR_COAST_VOLUME + (1.0f - MOTOR_COAST_VOLUME) * float(std::min(std::abs(throttle), 1.0)) : MOTOR_COAST_VOLUME;
+
+	if (pushing && !m_roverPushed && speed < ACCEL_FROM && m_roverAccelTime < 0.0) {
+		m_roverAccel.Play("rover_accel", 0.0f, 0.0f, 0);
+		m_roverAccelTime = 0.0;
+	}
+	if (!pushing && m_roverPushed && speed > DECEL_FROM && m_roverDecelTime < 0.0) {
+		m_roverDecel.Play("rover_decel", 0.0f, 0.0f, 0);
+		m_roverDecelTime = 0.0;
+	}
+	m_roverPushed = pushing;
+
+	// a one-shot on, at the pitch that turns the car's tone there into the
+	// rover's; false once it has handed over to the loop
+	auto playOneShot = [&](Sound::Event &sound, double &time, double recorded, double length, bool wanted, float volume) {
+		if (time < 0.0)
+			return false;
+		const double pitch = std::max(speed, MOTOR_SLOWEST) / std::max(recorded, MOTOR_SLOWEST);
+		if (!wanted || pitch < MOTOR_MIN_PITCH || pitch > MOTOR_MAX_PITCH || time > length - HANDOVER || !sound.IsPlaying()) {
+			sound.FadeOut(MOTOR_FADE);
+			time = -1.0;
+			return false;
+		}
+		sound.VolumeAnimate(volume, volume, MOTOR_FADE_IN, MOTOR_FADE_IN);
+		sound.SetPitch(float(pitch));
+		time += dt * pitch;
+		return true;
+	};
+	const bool accel = playOneShot(m_roverAccel, m_roverAccelTime,
+		RecordedSpeed(ACCEL_SPEEDS, ACCEL_STEP, m_roverAccelTime), ACCEL_LENGTH, pushing && speed < TOP_SPEED, MOTOR_VOLUME * load);
+	const bool decel = playOneShot(m_roverDecel, m_roverDecelTime,
+		RecordedSpeed(DECEL_SPEEDS, DECEL_STEP, m_roverDecelTime), DECEL_LENGTH, !pushing, MOTOR_VOLUME * MOTOR_COAST_VOLUME);
+
+	// the loop otherwise, silent with the wheels still
+	const float volume = accel || decel ? 0.0f : MOTOR_VOLUME * load * float(std::min(speed / CRUISE_FULL_SPEED, 1.0));
+	if (!m_roverCruise.VolumeAnimate(volume, volume, MOTOR_FADE, MOTOR_FADE) && volume > 0.0f) {
+		m_roverCruise.Play("rover_cruise", 0.0f, 0.0f, Sound::OP_REPEAT);
+		m_roverCruise.VolumeAnimate(volume, volume, MOTOR_FADE, MOTOR_FADE);
+	}
+	m_roverCruise.SetPitch(float(Clamp(speed, MOTOR_MIN_PITCH, MOTOR_MAX_PITCH)));
+
+	// and the tyres on the ground, at its speed, whatever the motor does
+	const double roll = std::abs(rover->GetSpeed()) / Rover::MAX_SPEED / ROLL_RECORDED_SPEED;
+	const float rollVolume = ROLL_VOLUME * float(std::min(roll, 1.0)) * float(rover->GetWheelsOnGround()) / 4.0f;
+	if (!m_roverRolling.VolumeAnimate(rollVolume, rollVolume, ROLL_FADE, ROLL_FADE) && rollVolume > 0.0f) {
+		m_roverRolling.Play("rover_rolling", 0.0f, 0.0f, Sound::OP_REPEAT);
+		m_roverRolling.VolumeAnimate(rollVolume, rollVolume, ROLL_FADE, ROLL_FADE);
+	}
+	m_roverRolling.SetPitch(float(Clamp(roll, MOTOR_MIN_PITCH, MOTOR_MAX_PITCH)));
+}
+
+void SurfaceViewController::SilenceRover()
+{
+	m_roverAccel.FadeOut(MOTOR_FADE);
+	m_roverDecel.FadeOut(MOTOR_FADE);
+	m_roverCruise.VolumeAnimate(0.0f, 0.0f, MOTOR_FADE, MOTOR_FADE);
+	m_roverRolling.VolumeAnimate(0.0f, 0.0f, ROLL_FADE, ROLL_FADE);
+	m_roverAccelTime = m_roverDecelTime = -1.0;
+	m_roverPushed = false;
 }
 
 void SurfaceViewController::PlaceRoverCamera(const Rover *rover)

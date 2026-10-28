@@ -27,8 +27,7 @@
 #include <string>
 
 namespace {
-	constexpr double MAX_SPEED = 20.0; // m/s, 72 km/h
-	constexpr double MAX_REVERSE = 6.0;
+	constexpr double MAX_REVERSE = 6.0; // m/s
 	constexpr double ENGINE_ACCEL = 4.0; // m/s²
 	constexpr double BRAKE_DECEL = 8.0;
 	constexpr double ROLL_DECEL = 0.4;
@@ -69,8 +68,12 @@ namespace {
 	constexpr double RAY_HEIGHTS[] = { 0.05, 0.4, 0.75 };
 	constexpr double WALL_MARGIN = 0.15;
 	constexpr double BOUNCE = 0.2;
-	// in the air the wheels spin down at this rate (1/s)
+	// in the air the wheels spin free: up to the throttle's speed at this
+	// rate (m/s², nothing to push), else down at WHEEL_SPIN_DOWN (1/s)
+	constexpr double WHEEL_FREE_ACCEL = 12.0;
 	constexpr double WHEEL_SPIN_DOWN = 0.5;
+	// a wheel is on the ground with it this far inside its travel (m)
+	constexpr double WHEEL_TOUCH_MARGIN = 0.05;
 
 	const char *const CORNERS[4] = { "fl", "fr", "rl", "rr" };
 	// without the rig in the model: the hubs of tlf_rover
@@ -194,6 +197,7 @@ Rover::Rover(const Json &jsonObj, Space *space) :
 	} catch (Json::type_error &) {
 		throw SavedGameCorruptException();
 	}
+	m_wheelsOnGround = m_onGround ? 4 : 0;
 
 	ResetInterp();
 }
@@ -414,6 +418,7 @@ void Rover::PlaceOnGround(const vector3d &pos, const vector3d &forward)
 	m_oldSpin = m_spin;
 	m_steer = m_oldSteer = 0.0;
 	m_onGround = true;
+	m_wheelsOnGround = 4;
 	m_up = pos.Normalized();
 	m_forward = AlongGround(forward, m_up);
 
@@ -608,18 +613,27 @@ void Rover::TimeStepUpdate(const float timeStep)
 
 	// the wheels: down to the ground within their travel, spinning as it rolls
 	const double follow = 1.0 - std::exp(-SUSP_RATE * dt);
+	m_wheelsOnGround = 0;
 	for (int i = 0; i < 4; i++) {
 		Wheel &w = m_wheels[i];
 		const double atRest = (newPos + newOrient * vector3d(w.hub.x, 0.0, w.hub.z)).Length();
 		const double want = m_onGround ? Clamp(contacts[i] - atRest, -SUSP_DOWN, SUSP_UP) : -SUSP_DOWN;
 		w.offset += (want - w.offset) * follow;
 		w.contact = contacts[i];
+		if (m_onGround && contacts[i] - atRest > WHEEL_TOUCH_MARGIN - SUSP_DOWN)
+			m_wheelsOnGround++;
 	}
 	m_speed = vFlat.Dot(AlongGround(m_forward, nextUp));
-	if (m_onGround)
+	if (m_onGround) {
 		m_wheelSpeed = brake && std::abs(m_speed) < HOLD_SPEED ? 0.0 : m_speed;
-	else
-		m_wheelSpeed *= brake ? 0.0 : 1.0 - WHEEL_SPIN_DOWN * dt;
+	} else if (brake) {
+		m_wheelSpeed = 0.0;
+	} else if (throttle != 0.0) {
+		const double top = throttle * (throttle > 0.0 ? MAX_SPEED : MAX_REVERSE);
+		m_wheelSpeed = Toward(m_wheelSpeed, top, WHEEL_FREE_ACCEL * dt);
+	} else {
+		m_wheelSpeed *= 1.0 - WHEEL_SPIN_DOWN * dt;
+	}
 	m_spin += m_wheelSpeed * dt / m_wheelRadius;
 	if (std::abs(m_spin) > 2.0 * M_PI) {
 		const double turns = 2.0 * M_PI * std::floor(m_spin / (2.0 * M_PI));

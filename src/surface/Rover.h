@@ -37,6 +37,7 @@ public:
 
 	static constexpr const char *MODEL_NAME = "tlf_rover";
 	static constexpr double MASS = 8000.0;
+	static constexpr double MAX_SPEED = 20.0; // m/s ahead, 72 km/h
 
 	// the model loads, and its collision box in model space
 	static bool IsModelAvailable();
@@ -72,6 +73,11 @@ public:
 	// unit vector it faces, in its frame
 	const vector3d &GetForward() const { return m_forward; }
 	bool IsOnGround() const { return m_onGround; }
+	// of the four, with the ground within their travel
+	int GetWheelsOnGround() const { return m_wheelsOnGround; }
+	// m/s at the tyres: the speed on the ground, spinning free in the air
+	// (with the throttle, down without it, stopped by the brake)
+	double GetWheelSpeed() const { return m_wheelSpeed; }
 
 	// points of the model, in its model space (from its tags)
 	vector3d GetDriverEye() const;
@@ -128,6 +134,7 @@ private:
 	double m_vUp = 0.0;
 	double m_speed = 0.0;
 	bool m_onGround = false;
+	int m_wheelsOnGround = 0;
 
 	double m_throttle = 0.0;
 	double m_steerInput = 0.0;
