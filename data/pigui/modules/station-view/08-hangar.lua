@@ -697,6 +697,32 @@ local function itemNote(item)
 	return table.concat(parts, " · ")
 end
 
+-- Selling an item from the store asks first
+local selling = nil ---@type { h: Hangar.Lease, item: EquipType }?
+
+local sellModal = ModalWindow.New("HangarSellItem", function(self)
+	local sale = selling
+	local station = Game.player:GetDockedWith()
+	if not sale or not station then self:close() return end
+
+	ui.withFont(orbiteer.heading, function()
+		ui.text(string.interp(l.SELL_TITLE, { item = sale.item:GetName() }))
+	end)
+	ui.text(string.interp(l.SELL_TEXT, { item = sale.item:GetName(), price = money(Hangar.SellPrice(station, sale.item)), station = station.label }))
+	ui.spacing()
+
+	if ui.button(lc.CANCEL) then
+		selling = nil
+		self:close()
+	end
+	ui.sameLine()
+	if ui.button(l.SELL .. "##confirmSell") then
+		Hangar.SellFromStore(sale.h, sale.item)
+		selling = nil
+		self:close()
+	end
+end)
+
 local function drawEquipment(station, h)
 	ui.withFont(orbiteer.heading, function()
 		ui.icon(icons.hangar, Vector2(ui.getTextLineHeight()), colors.font)
@@ -794,6 +820,13 @@ local function drawEquipment(station, h)
 			if button(ui.get_icon_glyph(icons.backward) .. "##fit" .. tostring(item), place ~= nil, tooltip) then
 				Hangar.Fit(h, target, item, equipSlot)
 				equipSlot = nil
+			end
+			ui.sameLine()
+			local locked = Hangar.IsLocked(h)
+			if button(l.SELL .. "##sell" .. tostring(item), not locked, locked and l.HANGAR_LOCKED
+					or string.interp(l.SELL_TOOLTIP, { price = money(Hangar.SellPrice(station, item)) })) then
+				selling = { h = h, item = item }
+				sellModal:open()
 			end
 			ui.sameLine()
 			ui.text(item:GetName())

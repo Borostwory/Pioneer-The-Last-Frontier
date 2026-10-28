@@ -17,6 +17,7 @@ local CargoManager = require 'CargoManager'
 local Comms = require 'Comms'
 local Commodities = require 'Commodities'
 local EquipSet = require 'EquipSet'
+local Economy = require 'Economy'
 local Event = require 'Event'
 local Game = require 'Game'
 local HullConfig = require 'HullConfig'
@@ -1084,6 +1085,26 @@ function Hangar.Fit(h, target, item, slotId)
 		target.equip[key] = item
 		target.check = nil
 	end
+	utils.remove_elem(h.store, item)
+	return true
+end
+
+-- What the station here pays for an item from the store: the Equipment
+-- Market's resale price
+---@param station SpaceStation
+function Hangar.SellPrice(station, item)
+	return (rawget(item, "price") or station:GetEquipmentPrice(item:GetPrototype())) * Economy.BaseResellPriceModifier
+end
+
+-- Sell an item from the store to the station the hangar is at
+---@param h Hangar.Lease
+function Hangar.SellFromStore(h, item)
+	local station = Game.player:GetDockedWith()
+	if not station or Hangar.StationKey(station) ~= h.key then return false end
+	if Hangar.IsLocked(h) then return false, l.HANGAR_LOCKED end
+	if not utils.contains(h.store, item) then return false end
+	PlayerState.AddMoney(Hangar.SellPrice(station, item))
+	station:AddEquipmentStock(item:GetPrototype(), 1)
 	utils.remove_elem(h.store, item)
 	return true
 end

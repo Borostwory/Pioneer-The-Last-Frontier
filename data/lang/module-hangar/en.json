@@ -479,6 +479,22 @@
     "description": "",
     "message": "Select a stored ship in the table above to see it and fly it."
   },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Sell"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} pays {price} for the {item}, as the Equipment Market would."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Sell {item}?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Sell to this station for {price}"
+  },
   "SEND_TO_LOUNGE": {
     "description": "Tooltip: button sending a crew member to the lounge",
     "message": "Wait in the lounge here"
@@ -545,7 +561,7 @@
   },
   "STORE_HELP": {
     "description": "",
-    "message": "Unfit items into the store, then fit them to the ship picked on the left. Equipment Market rules, no fee. Pick an empty slot first to fit an item into that slot."
+    "message": "Unfit items into the store, then fit them to the ship picked on the left, or sell them to this station. Equipment Market rules and prices, no fee for fitting. Pick an empty slot first to fit an item into that slot."
   },
   "SWAP_NOTE": {
     "description": "",
