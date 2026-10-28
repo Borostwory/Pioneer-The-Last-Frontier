@@ -109,6 +109,7 @@ namespace {
 		case TYPE_SMOKE:
 			return Clamp(SizeToPixels(screenHeight, pos, (inst.m_speed * inst.m_age)), 0.1f, 50.0f);
 		case TYPE_EXHAUST:
+		case TYPE_DUST:
 			return 0.f; // billboards use explicit vertex quads in RenderAll
 		default:
 			return 0.f;
@@ -189,7 +190,10 @@ Sfx::Sfx(const vector3d &pos, const vector3d &vel, const float speed, const SFX_
 	m_dragScale(1.0f),
 	m_windVel(vector3f::Zero),
 	m_exhaustMaxSpread(SfxParams::EXHAUST_MAX_SPREAD),
-	m_exhaustNoiseStrength(0.f)
+	m_exhaustNoiseStrength(0.f),
+	m_dustStartSize(0.f),
+	m_dustGravity(0.f),
+	m_dustStreak(0.f)
 {
 }
 
@@ -219,6 +223,9 @@ Sfx::Sfx(const Json &jsonObj)
 		m_exhaustDustTint = sfxObj.value("exhaustDustTint", Color(0, 0, 0, 0));
 		m_exhaustMaxSpread = sfxObj.value("exhaustMaxSpread", SfxParams::EXHAUST_MAX_SPREAD);
 		m_exhaustNoiseStrength = sfxObj.value("exhaustNoiseStrength", 0.f);
+		m_dustStartSize = 0.f;
+		m_dustGravity = 0.f;
+		m_dustStreak = 0.f;
 	} catch (Json::type_error &) {
 		throw SavedGameCorruptException();
 	}
@@ -266,7 +273,7 @@ void Sfx::TimeStepUpdate(const float timeStep)
 {
 	PROFILE_SCOPED()
 	m_age += timeStep;
-	if (m_type != TYPE_EXHAUST)
+	if (m_type != TYPE_EXHAUST && m_type != TYPE_DUST)
 		m_pos += m_vel * double(timeStep);
 
 	switch (m_type) {
@@ -295,6 +302,22 @@ void Sfx::TimeStepUpdate(const float timeStep)
 		}
 		if (m_age > m_lifetime) m_type = TYPE_NONE;
 		break;
+	case TYPE_DUST: {
+		m_posAtStepStart = m_pos;
+		const vector3d up = m_pos.NormalizedSafe();
+		const double drag = Clamp(double(m_dragScale) * double(timeStep), 0.0, 0.85);
+		m_vel += (vector3d(m_windVel) - m_vel) * drag;
+		m_vel -= up * (double(m_dustGravity) * double(timeStep));
+		m_pos += m_vel * double(timeStep);
+		// back on the ground it lies there, sliding to a stop, as it fades
+		if (m_pos.LengthSqr() < m_exhaustGroundRadius * m_exhaustGroundRadius) {
+			m_pos = up * m_exhaustGroundRadius;
+			m_vel -= up * std::min(m_vel.Dot(up), 0.0);
+			m_vel *= std::max(0.0, 1.0 - 4.0 * double(timeStep));
+		}
+		if (m_age > m_lifetime) m_type = TYPE_NONE;
+		break;
+	}
 	case TYPE_NONE: break;
 	}
 }
@@ -305,7 +328,8 @@ float Sfx::AgeBlend() const
 	case TYPE_EXPLOSION: return (3.2 - m_age) / 3.2;
 	case TYPE_DAMAGE: return (2.0 - m_age) / 2.0;
 	case TYPE_SMOKE: return (8.0 - m_age) / 8.0;
-	case TYPE_EXHAUST: return (m_lifetime - m_age) / std::max(m_lifetime, 0.001f);
+	case TYPE_EXHAUST:
+	case TYPE_DUST: return (m_lifetime - m_age) / std::max(m_lifetime, 0.001f);
 	case TYPE_NONE: return 0.0f;
 	}
 	return 0.0f;
@@ -327,7 +351,8 @@ void SfxManager::ToJson(Json &jsonObj, const FrameId fId, const Space *space)
 		for (size_t t = TYPE_EXPLOSION; t < TYPE_NONE; t++) {
 			for (size_t i = 0; i < f->m_sfx->GetNumberInstances(SFX_TYPE(t)); i++) {
 				Sfx &inst(f->m_sfx->GetInstanceByIndex(SFX_TYPE(t), i));
-				if (inst.m_type != TYPE_NONE) {
+				// (the rover's dust is gone in a few seconds anyway)
+				if (inst.m_type != TYPE_NONE && inst.m_type != TYPE_DUST) {
 					Json sfxArrayEl({}); // Create JSON object to contain sfx element.
 					inst.SaveToJson(sfxArrayEl, space);
 					sfxArray.push_back(sfxArrayEl); // Append sfx object to array.
@@ -460,13 +485,29 @@ void SfxManager::Cleanup()
 		if (!numInstances)
 			continue;
 
-		for (Sint64 i = Sint64(numInstances - 1); i >= 0; i--) {
-			Sfx &inst(GetInstanceByIndex(SFX_TYPE(t), i));
-			if (inst.m_type == TYPE_NONE) {
-				m_instances[t].erase(m_instances[t].begin() + i);
-			}
-		}
+		// in one pass, keeping the order (the exhaust's streams rely on it): the
+		// rover's and the ships' dust can lose a thousand puffs a second
+		auto &list = m_instances[t];
+		list.erase(std::remove_if(list.begin(), list.end(), [](const Sfx &inst) { return inst.m_type == TYPE_NONE; }), list.end());
 	}
+}
+
+void SfxManager::AddDust(FrameId fId, const vector3d &pos, const vector3d &vel, float startSize, float endSize, float lifetime, const Color &color, float drag, const vector3f &windVel, float gravity, double groundRadius, float streak)
+{
+	SfxManager *sfxman = AllocSfxInFrame(fId);
+	if (!sfxman) return;
+
+	Sfx sfx(pos, vel, endSize, TYPE_DUST);
+	sfx.m_lifetime = lifetime;
+	sfx.m_dustStartSize = startSize;
+	sfx.m_exhaustDustTint = color;
+	sfx.m_dragScale = drag;
+	sfx.m_windVel = windVel;
+	sfx.m_dustGravity = gravity;
+	sfx.m_exhaustGroundRadius = groundRadius;
+	sfx.m_exhaustNoiseStrength = 1.0f;
+	sfx.m_dustStreak = streak;
+	sfxman->AddInstance(sfx);
 }
 
 void SfxManager::RenderAll(Renderer *renderer, FrameId fId, FrameId camFrameId, float illuminationFactor)
@@ -502,6 +543,7 @@ void SfxManager::RenderAll(Renderer *renderer, FrameId fId, FrameId camFrameId, 
 				material = smokeParticle.get();
 				break;
 			case TYPE_EXHAUST:
+			case TYPE_DUST:
 				material = exhaustParticle.get();
 				break;
 			}
@@ -509,7 +551,38 @@ void SfxManager::RenderAll(Renderer *renderer, FrameId fId, FrameId camFrameId, 
 			const double timeStep = Pi::game ? double(Pi::game->GetTimeStep()) : 0.0;
 			const double alpha = Pi::game ? Pi::GetGameTickAlpha() : 1.0;
 
-			if (t == TYPE_EXHAUST) {
+			if (t == TYPE_DUST) {
+				// soft puffs, growing and fading as they age, streaked along the way
+				// they fly, lit as the exhaust's dust is
+				const matrix3x3f frameRot(forient);
+				std::vector<ExhaustInstanceData> dustInstances;
+				dustInstances.reserve(numInstances);
+				for (size_t i = 0; i < numInstances; ++i) {
+					const Sfx &inst(f->m_sfx->GetInstanceByIndex(TYPE_DUST, i));
+					const vector3d interpPos = inst.m_posAtStepStart * (1.0 - alpha) + inst.m_pos * alpha;
+					const vector3f pos(ftran * interpPos);
+					const float ageNorm = Clamp(inst.m_age / std::max(inst.m_lifetime, 0.001f), 0.0f, 1.0f);
+					const float size = inst.m_dustStartSize + (inst.m_speed - inst.m_dustStartSize) * std::sqrt(ageNorm);
+					Color colour = inst.m_exhaustDustTint;
+					colour.a = Uint8(float(colour.a) * powf(1.0f - ageNorm, 0.8f));
+					colour.r = Uint8(Clamp(int(float(colour.r) * illuminationFactor), 0, 255));
+					colour.g = Uint8(Clamp(int(float(colour.g) * illuminationFactor), 0, 255));
+					colour.b = Uint8(Clamp(int(float(colour.b) * illuminationFactor), 0, 255));
+					const vector3f streak = frameRot * vector3f(inst.m_vel * double(inst.m_dustStreak));
+					dustInstances.push_back({ pos, size, streak, pos.z, inst.m_dustStreak > 0.f ? 1.f : 0.f, inst.m_exhaustNoiseStrength, colour });
+				}
+				const uint32_t numDrawn = uint32_t(dustInstances.size());
+				Graphics::BufferBinding<Graphics::VertexBuffer> instanceBinding =
+					renderer->CreateTempVertexBuffer(numDrawn, sizeof(ExhaustInstanceData));
+				ExhaustInstanceData *instanceData =
+					instanceBinding.buffer->MapRange<ExhaustInstanceData>(instanceBinding, Graphics::BUFFER_MAP_WRITE);
+				if (instanceData) {
+					std::memcpy(instanceData, dustInstances.data(), numDrawn * sizeof(ExhaustInstanceData));
+					instanceBinding.buffer->UnmapRange(false);
+				}
+				renderer->SetTransform(matrix4x4f::Identity);
+				renderer->Draw({ instanceBinding }, {}, material, 4, numDrawn);
+			} else if (t == TYPE_EXHAUST) {
 				const matrix3x3f frameRot(forient);
 
 				// We need to draw the particles in order, so that we can have streaks in the exhaust jet - each particle

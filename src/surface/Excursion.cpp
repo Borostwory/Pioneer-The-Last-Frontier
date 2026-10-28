@@ -8,14 +8,18 @@
 #include "GameSaveError.h"
 #include "JsonUtils.h"
 #include "MathUtil.h"
+#include "Pi.h"
+#include "Planet.h"
 #include "Player.h"
 #include "Rover.h"
+#include "Sfx.h"
 #include "Space.h"
 #include "SurfaceTracks.h"
 #include "SurfaceViewController.h"
 #include "TerrainBody.h"
 #include "Walker.h"
 #include "WorldView.h"
+#include "gameconsts.h"
 #include "galaxy/StarSystem.h"
 #include "galaxy/SystemBody.h"
 #include "lua/LuaEvent.h"
@@ -75,6 +79,7 @@ namespace {
 		const vector3d axis = std::abs(up.y) < 0.9 ? vector3d(0.0, 1.0, 0.0) : vector3d(1.0, 0.0, 0.0);
 		return (axis - up * up.Dot(axis)).Normalized();
 	}
+
 
 	// how far p (in body's frame) is from body's collision box, 0 inside
 	double DistanceToBox(const ModelBody *body, const vector3d &p)
@@ -594,6 +599,7 @@ void Excursion::OnShipMoved()
 			(me->GetFrame() == m_rover->GetFrame() && me->GetPositionRelTo(m_rover).LengthSqr() < ROVER_WAKE_DISTANCE * ROVER_WAKE_DISTANCE);
 		m_rover->SetAsleep(!near);
 		PressTracks();
+		RaiseDust();
 	}
 	if (m_mode == Mode::ON_FOOT && m_walker)
 		PressFootprints();
@@ -672,6 +678,77 @@ void Excursion::PressTracks()
 			m_tracks->Press(m_rover->GetFrame(), m_wheelTracks[i], ground, m_rover->GetTyreHalfWidth());
 		m_wheelTracks[i] = ground;
 		m_wheelTracked[i] = true;
+	}
+}
+
+void Excursion::RaiseDust()
+{
+	// puffs of it for each metre a wheel rolls on the terrain, from this speed
+	// (m/s): without air many smaller ones thrown up in arcs, falling straight
+	// back and lying where they fall, in air fewer, billowing and drifting,
+	// settling slowly
+	constexpr double DUST_MIN_SPEED = 1.5;
+	constexpr double VACUUM_PUFFS_PER_METRE = 2.5;
+	constexpr double AIR_PUFFS_PER_METRE = 1.5;
+	// the wind in air as thick as Earth's (m/s)
+	constexpr double DUST_WIND = 3.0;
+
+	const Frame *frame = Frame::GetFrame(m_rover->GetFrame());
+	if (!frame || !frame->GetBody() || !frame->GetBody()->IsType(ObjectType::PLANET))
+		return;
+	const Planet *planet = static_cast<const Planet *>(frame->GetBody());
+	const vector3d roverPos = m_rover->GetPosition();
+	const vector3d up = roverPos.Normalized();
+	const vector3d vel = m_rover->GetVelocity();
+	const vector3d flat = vel - up * up.Dot(vel);
+	const double speed = flat.Length();
+	const double dustiness = planet->GetSystemBody() ? planet->GetSystemBody()->CalcSurfaceDustiness() : 0.0;
+	if (dustiness <= 0.0 || speed < DUST_MIN_SPEED) {
+		for (double &accum : m_dustAccum)
+			accum = 0.0;
+		return;
+	}
+
+	// how much air: none, thin as Mars' (about a third), as Earth's (1)
+	double pressure, density;
+	planet->GetAtmosphericState(roverPos.Length(), &pressure, &density);
+	const double air = Clamp(std::cbrt(density / 1.225) * 1.2, 0.0, 1.0);
+	const double g = G * planet->GetMass() / roverPos.LengthSqr();
+	const auto mix = [air](double vacuum, double inAir) { return vacuum + (inAir - vacuum) * air; };
+
+	// the ground's dust, as the ships' exhaust raises it
+	Color tint = planet->GetDustColor(up);
+	tint.a = Uint8(255.0 * mix(0.9, 0.75) * std::min(dustiness, 1.0));
+
+	const vector3d along = flat / speed;
+	const vector3d right = along.Cross(up);
+	vector3d windDir = vector3d(0.0, 1.0, 0.0).Cross(up);
+	windDir = windDir.LengthSqr() > 1e-12 ? windDir.Normalized() : vector3d(1.0, 0.0, 0.0);
+	const vector3f wind(windDir * (DUST_WIND * air));
+	const double sizeUp = std::min(speed / Rover::MAX_SPEED, 1.0);
+	const double perMetre = mix(VACUUM_PUFFS_PER_METRE, AIR_PUFFS_PER_METRE) * dustiness;
+	const double dt = m_game->GetTimeStep();
+
+	for (int i = 0; i < 4; i++) {
+		vector3d contact;
+		if (!m_rover->GetWheelOnTerrain(i, contact))
+			continue;
+		m_dustAccum[i] += perMetre * speed * dt;
+		for (; m_dustAccum[i] >= 1.0; m_dustAccum[i] -= 1.0) {
+			// behind the tyre, thrown up and back off it: without air in
+			// arcs as high as it goes fast, in air a little way and dragged along
+			const vector3d pos = contact + up * 0.15 - along * 0.3 + right * Pi::rng.Double(-0.25, 0.25);
+			const vector3d thrownVacuum = vel * 0.6 + up * (Pi::rng.Double(0.1, 0.3) * speed) -
+				along * (Pi::rng.Double(0.0, 0.15) * speed) + right * (Pi::rng.Double(-0.1, 0.1) * speed);
+			const vector3d thrownAir = vel * 0.3 + up * Pi::rng.Double(0.3, 1.2) -
+				along * (Pi::rng.Double(0.0, 0.1) * speed) + right * Pi::rng.Double(-0.6, 0.6);
+			const vector3d thrown = thrownVacuum * (1.0 - air) + thrownAir * air;
+			const float startSize = float(mix(0.35, 0.6));
+			const float endSize = float(mix(1.0 + 1.0 * sizeUp, 2.0 + 6.0 * sizeUp) * Pi::rng.Double(0.8, 1.2));
+			const float life = float(mix(4.0, 12.0) * Pi::rng.Double(0.8, 1.2));
+			SfxManager::AddDust(m_rover->GetFrame(), pos, thrown, startSize, endSize, life, tint,
+				float(2.0 * air), wind, float(g * (1.0 - 0.95 * air)), contact.Length(), float(0.08 * (1.0 - air)));
+		}
 	}
 }
 

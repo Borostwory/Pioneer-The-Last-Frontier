@@ -163,6 +163,8 @@ private:
 	void BringBackRover(Space *space);
 	// the wheels' tracks from where they last pressed them to where they are
 	void PressTracks();
+	// the dust the wheels throw up rolling on dry ground (SfxManager::AddDust)
+	void RaiseDust();
 	// on foot, a boot's print at each step
 	void PressFootprints();
 	// the ship's flight controls take no input while the player is outside
@@ -185,6 +187,8 @@ private:
 	const Rover *m_trackRover = nullptr;
 	vector3d m_wheelTracks[4];
 	bool m_wheelTracked[4] = {};
+	// puffs of dust owed by each wheel, the next at 1
+	double m_dustAccum[4] = {};
 	// the walker's last position, how far it has gone since its last
 	// print, and which foot that was, for this walker
 	const Walker *m_trackWalker = nullptr;

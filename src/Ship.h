@@ -398,6 +398,10 @@ private:
 
 	ThrusterExhaustSpawner m_exhaustSpawner;
 	void SpawnThrusterExhaustParticles(float timeStep);
+	// the dust the jets blow up off the ground under a ship flying low on its
+	// thrusters, in air as thick as density, on ground groundRadius from the centre
+	void SpawnGroundDust(float timeStep, const Planet *planet, double density, double groundRadius);
+	double m_groundDustAccum = 0.0; // puffs owed, the next at 1
 
 	std::deque<CargoBody *> m_cargoSpawnQueue;
 

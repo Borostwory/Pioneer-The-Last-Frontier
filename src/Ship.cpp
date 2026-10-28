@@ -26,6 +26,7 @@
 #include "collider/CollisionContact.h"
 #include "collider/CollisionSpace.h"
 #include "collider/GeomTree.h"
+#include "gameconsts.h"
 #include "graphics/RenderState.h"
 #include "graphics/Renderer.h"
 #include "graphics/TextureBuilder.h"
@@ -1710,8 +1711,8 @@ void Ship::SpawnThrusterExhaustParticles(float timeStep)
 	const double altitudeM = sbody ? (dist - sbody->GetRadius()) : 0.0;
 	const double plumeAltitudeCapM = sbody ? std::max(sbody->GetAtmRadius(), 1000.0) : 0.0;
 	double groundRadiusAtShip = landableNaturalWorld ? p->GetTerrainHeight(GetPosition().NormalizedSafe()) : 0.0;
-	Color dustTint = landableNaturalWorld ? sbody->CalcSurfaceDustColor() : Color(128, 128, 128, 255);
-	(void)TryGetLandingPadDustOverride(this, &groundRadiusAtShip, &dustTint);
+	Color dustTint = landableNaturalWorld ? p->GetDustColor(GetPosition().NormalizedSafe()) : Color(128, 128, 128, 255);
+	const bool overPad = TryGetLandingPadDustOverride(this, &groundRadiusAtShip, &dustTint);
 
 	// Slight per-spawn dust colour variation so dust clouds are less uniform.
 	const float shade = float(Pi::rng.Double(0.95, 1.05));
@@ -1747,6 +1748,101 @@ void Ship::SpawnThrusterExhaustParticles(float timeStep)
 	env.dustTint = dustTint;
 
 	m_exhaustSpawner.Spawn(this, m_propulsion, timeStep, env, SfxParams::EXHAUST_PARTICLES_PER_SHIP_PER_SEC);
+
+	// (paving gives up no dust)
+	if (!overPad)
+		SpawnGroundDust(timeStep, p, density, groundRadiusAtShip);
+}
+
+// Downwash: the jets holding a ship up near the ground blow the dust off it
+// under the ship, out in a ring and up into a billowing cloud in air (as a
+// helicopter's rotor does), or in fast low sheets without it. As much as the
+// ship's thrust upwards against its weight, fading out by a few times its own
+// size above the ground, and as the ground is dusty
+// (SystemBody::CalcSurfaceDustiness). Puffs: SfxManager::AddDust.
+void Ship::SpawnGroundDust(float timeStep, const Planet *planet, double density, double groundRadius)
+{
+	// puffs a second at full strength (fewer, larger and longer lived in air);
+	// the reach above the ground: this many times the ship's size, and more
+	constexpr double VACUUM_PUFFS = 1200.0;
+	constexpr double AIR_PUFFS = 250.0;
+	constexpr double REACH_SIZES = 10.0;
+	constexpr double REACH_EXTRA = 60.0; // m
+	// how fast the dust is blown out along the ground (m/s) at full strength
+	constexpr double VACUUM_BLAST = 80.0;
+	constexpr double AIR_BLAST = 40.0;
+	// the wind in air as thick as Earth's (m/s)
+	constexpr double DUST_WIND = 3.0;
+	// without air the dust flies out in sheets: each puff streaked back along
+	// as far as it goes in this long (s)
+	constexpr double VACUUM_STREAK = 0.2;
+
+	const SystemBody *sb = planet->GetSystemBody();
+	const double dustiness = sb ? sb->CalcSurfaceDustiness() : 0.0;
+	if (dustiness <= 0.0 || groundRadius <= 0.0) {
+		m_groundDustAccum = 0.0;
+		return;
+	}
+
+	// how hard the jets push up, against the ship's weight, and how near the ground they are
+	const vector3d pos = GetPosition();
+	const vector3d up = pos.NormalizedSafe();
+	const double g = G * planet->GetMass() / (groundRadius * groundRadius);
+	const double lift = (GetOrient() * m_propulsion->GetActualLinThrust()).Dot(up);
+	const double weight = std::max(GetMass() * g, 1.0);
+	const double size = GetAabb().radius;
+	const double height = pos.Length() - groundRadius;
+	const double reach = REACH_SIZES * size + REACH_EXTRA;
+	const double nearness = Clamp(1.0 - height / reach, 0.0, 1.0);
+	// (full blast from about half the ship's weight held up by the jets)
+	const double strength = Clamp(std::sqrt(std::max(lift, 0.0) / weight) * 1.4, 0.0, 1.5) * nearness;
+	if (strength <= 0.01) {
+		m_groundDustAccum = 0.0;
+		return;
+	}
+
+	const double air = Clamp(std::cbrt(density / 1.225) * 1.2, 0.0, 1.0);
+	const auto mix = [air](double vacuum, double inAir) { return vacuum + (inAir - vacuum) * air; };
+
+	// the ground's dust, as the exhaust's own
+	Color dust = planet->GetDustColor(up);
+	dust.a = Uint8(255.0 * std::min(dustiness * 1.5, 1.0));
+
+	// the ground's axes under the ship
+	const vector3d ref = std::abs(up.y) < 0.9 ? vector3d(0.0, 1.0, 0.0) : vector3d(1.0, 0.0, 0.0);
+	const vector3d east = ref.Cross(up).Normalized();
+	const vector3d north = up.Cross(east);
+	vector3d windDir = vector3d(0.0, 1.0, 0.0).Cross(up);
+	windDir = windDir.LengthSqr() > 1e-12 ? windDir.Normalized() : east;
+	const vector3f wind(windDir * (DUST_WIND * air));
+	const vector3d centre = up * groundRadius;
+
+	// (time accelerated: no more than the stream of a tenth of a second)
+	m_groundDustAccum += mix(VACUUM_PUFFS, AIR_PUFFS) * strength * dustiness * std::min(double(timeStep), 0.1);
+	for (; m_groundDustAccum >= 1.0; m_groundDustAccum -= 1.0) {
+		// from a ring under the ship, out along the ground
+		const double angle = Pi::rng.Double(0.0, 2.0 * M_PI);
+		const vector3d out = east * std::cos(angle) + north * std::sin(angle);
+		const double from = size * Pi::rng.Double(0.3, 1.5);
+		const vector3d at = centre + out * from + up * Pi::rng.Double(0.5, 0.2 * size + 1.0);
+		// (most of it slow, so it is thickest under the ship, thinning out)
+		const double fast = Pi::rng.Double(0.15, 1.0);
+		const double blast = mix(VACUUM_BLAST, AIR_BLAST) * std::sqrt(strength) * fast * fast;
+		const vector3d thrown = GetVelocity() * 0.2 + out * blast +
+			up * (mix(Pi::rng.Double(0.02, 0.15) * blast, Pi::rng.Double(2.0, 10.0)));
+		// (in air a wall of it: the puffs as big as the ship and more)
+		const float startSize = float(mix(1.5 + 0.05 * size, 0.4 * size + 3.0));
+		const float endSize = float(mix(3.0 + 0.25 * size, 1.5 * size + 15.0) * Pi::rng.Double(0.7, 1.3));
+		const float life = float(mix(4.0, 18.0) * Pi::rng.Double(0.8, 1.2));
+		// (a little lighter or darker puff by puff)
+		Color tint = dust;
+		const double shade = Pi::rng.Double(0.9, 1.1);
+		tint.r = Uint8(Clamp(tint.r * shade, 0.0, 255.0));
+		tint.g = Uint8(Clamp(tint.g * shade, 0.0, 255.0));
+		tint.b = Uint8(Clamp(tint.b * shade, 0.0, 255.0));
+		SfxManager::AddDust(GetFrame(), at, thrown, startSize, endSize, life, tint,
+			float(mix(0.0, 1.2)), wind, float(g * (1.0 - 0.97 * air)), groundRadius, float(VACUUM_STREAK * (1.0 - air)));
+	}
 }
 
 void Ship::NotifyRemoved(const Body *const removedBody)

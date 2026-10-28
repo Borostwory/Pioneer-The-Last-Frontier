@@ -320,6 +320,10 @@ public:
 
 	bool IsScoopable() const;
 	Color CalcSurfaceDustColor() const;
+	// how much dust the ground gives up to wheels and jets (0..1): the dry
+	// dust and sand of airless and desert worlds; little from wet or living
+	// ground, or ice; none off rocky planets and moons
+	double CalcSurfaceDustiness() const;
 
 	void Dump(FILE *file, const char *indent = "") const;
 

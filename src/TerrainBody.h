@@ -5,6 +5,7 @@
 #define _TERRAINBODY_H
 
 #include "Body.h"
+#include "Color.h"
 #include "JsonFwd.h"
 #include "matrix4x4.h"
 
@@ -46,6 +47,11 @@ public:
 	void GetTerrainHeights(const vector3d *dirs, double *heightsOut, size_t count, double minFeature = 0.0) const;
 	// whether its low ground is sea (the terrain is level at the radius under it)
 	bool HasSea() const;
+	// the dust blown or thrown off the ground along pos (unit): the terrain's
+	// own colour there (as its mesh is coloured, taking the ground as level),
+	// paler as fine dust is, warmed a little towards the planet's dust colour
+	// (SystemBody::CalcSurfaceDustColor); opaque
+	Color GetDustColor(const vector3d &pos) const;
 	const SystemBody *GetSystemBody() const override { return m_sbody; }
 
 	// returns value in metres

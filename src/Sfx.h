@@ -26,6 +26,7 @@ enum SFX_TYPE {
 	TYPE_DAMAGE,
 	TYPE_SMOKE,
 	TYPE_EXHAUST,
+	TYPE_DUST, // thrown up by the surface rover's wheels (not saved)
 	TYPE_NONE
 };
 
@@ -114,6 +115,15 @@ struct Sfx {
 	float m_exhaustMaxSpread; // per emitter, constant for all jets on a spawn tick
 	float m_exhaustNoiseStrength; // per emitter; scales procedural fragment noise with atmosphere density
 
+	// --- TYPE_DUST: drawn as exhaust dust, growing from m_dustStartSize to m_speed (m) over its
+	// life, coloured m_exhaustDustTint (its alpha the opacity), slowed towards m_windVel at
+	// m_dragScale (1/s), falling at m_dustGravity (m/s²) and lying on the ground at
+	// m_exhaustGroundRadius; drawn streaked back along the way it flies, as far as it
+	// goes in m_dustStreak (s)
+	float m_dustStartSize;
+	float m_dustGravity;
+	float m_dustStreak;
+
 	static constexpr Uint32 INVALID_EXHAUST_SAVED_BODY_IDX = Uint32(0xffffffffu);
 };
 
@@ -125,6 +135,9 @@ public:
 	static void AddExplosion(Body *);
 	static void AddThrustSmoke(const Body *b, float speed, const vector3d &adjustpos);
 	static void AddExhaust(const Body *b, Uint16 exhaustJetIndex, bool exhaustSuppressStreakElongation, const vector3d &startPos, const vector3d &backboneVel, const vector3f &plumeOffset, const vector3f &plumeOffsetVel, float intensity, float dragScale, float opacityScale, const vector3f &windVel, double groundRadius, const Color &dustTint, float baseLifetime = SfxParams::EXHAUST_LIFETIME, float maxSpread = SfxParams::EXHAUST_MAX_SPREAD, float noiseStrength = 0.f);
+	// a puff of dust in frame f at pos (on the ground at groundRadius from the
+	// planet's centre), see TYPE_DUST
+	static void AddDust(FrameId f, const vector3d &pos, const vector3d &vel, float startSize, float endSize, float lifetime, const Color &color, float drag, const vector3f &windVel, float gravity, double groundRadius, float streak = 0.f);
 	static void TimeStepAll(const float timeStep, FrameId f);
 	static void RenderAll(Graphics::Renderer *r, FrameId f, FrameId camFrame, float illuminationFactor = 1.f);
 	static void ToJson(Json &jsonObj, const FrameId f, const Space *space);

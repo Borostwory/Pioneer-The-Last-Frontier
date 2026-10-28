@@ -8,6 +8,7 @@
 #include "GasGiant.h"
 #include "GeoSphere.h"
 #include "Json.h"
+#include "MathUtil.h"
 #include "Space.h"
 #include "galaxy/SystemBody.h"
 #include "terrain/Terrain.h"
@@ -217,6 +218,19 @@ const char *TerrainBody::GetHeightFractalName() const
 		return terrain->GetHeightFractalName();
 	}
 	return nullptr;
+}
+
+Color TerrainBody::GetDustColor(const vector3d &pos) const
+{
+	const Color planetDust = m_sbody->CalcSurfaceDustColor();
+	const Terrain *terrain = m_baseSphere ? m_baseSphere->GetTerrain() : nullptr;
+	if (!terrain)
+		return planetDust;
+	const vector3d ground = terrain->GetColor(pos, m_baseSphere->GetTerrainHeight(pos), pos);
+	const auto channel = [](double g, Uint8 dust) {
+		return Uint8(Clamp((0.8 * (0.85 * g + 0.15) + 0.2 * (dust / 255.0)) * 255.0, 0.0, 255.0));
+	};
+	return Color(channel(ground.x, planetDust.r), channel(ground.y, planetDust.g), channel(ground.z, planetDust.b), 255);
 }
 
 const char* TerrainBody::GetColorFractalName() const

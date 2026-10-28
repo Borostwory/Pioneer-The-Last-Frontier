@@ -430,6 +430,15 @@ Color SystemBody::CalcSurfaceDustColor() const
 	return Color(Uint8(rf * 255.f), Uint8(gf * 255.f), Uint8(bf * 255.f), 255);
 }
 
+double SystemBody::CalcSurfaceDustiness() const
+{
+	if (GetSuperType() != SUPERTYPE_ROCKY_PLANET)
+		return 0.0;
+	return (1.0 - 0.8 * Clamp(GetVolatileLiquid(), 0.0, 1.0)) *
+		(1.0 - 0.6 * Clamp(GetLife(), 0.0, 1.0)) *
+		(1.0 - 0.5 * Clamp(GetVolatileIces(), 0.0, 1.0));
+}
+
 // this is a reduced version of original Rayleigh scattering function used to compute density once per planet
 // (at least it meant not to be once per frame) given:
 // planet radius, height of atmosphere (not its radius), length of perpendicular between ray and planet center, lapse rate at which density fades out by rate of e
