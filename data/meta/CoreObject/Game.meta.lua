@@ -137,6 +137,10 @@ function Game.CycleRoverLights() end
 function Game.GetRover() end
 ---@return SystemPath? planet the rover is out on, here or in another system
 function Game.GetRoverPlanet() end
+-- debug: jump the clock forward while docked; nothing is simulated in between
+---@param seconds number
+---@return boolean ok
+function Game.DebugAdvanceTime(seconds) end
 ---@return number? fuel
 ---@return number? thrust
 ---@return boolean? burntOut

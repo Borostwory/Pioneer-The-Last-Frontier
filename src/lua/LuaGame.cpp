@@ -726,6 +726,33 @@ static int l_game_get_rover(lua_State *l)
 }
 
 /*
+ * Function: DebugAdvanceTime
+ *
+ * Jump the game clock forward, for testing. Only while the player is docked.
+ * Nothing is simulated in between: timers that fall due fire on the next
+ * update, all at once.
+ *
+ * > ok = Game.DebugAdvanceTime(seconds)
+ *
+ * Return:
+ *
+ *   ok - true if the clock was moved
+ *
+ * Status:
+ *
+ *   debug
+ */
+static int l_game_debug_advance_time(lua_State *l)
+{
+	const double seconds = luaL_checknumber(l, 1);
+	const bool ok = Pi::game && seconds > 0.0 && Pi::player->GetFlightState() == Ship::DOCKED;
+	if (ok)
+		Pi::game->AdvanceTime(seconds);
+	LuaPush(l, ok);
+	return 1;
+}
+
+/*
  * Function: GetRoverPlanet
  *
  * Where the player's surface rover is while it is out of the ship, in this
@@ -1066,6 +1093,7 @@ void LuaGame::Register()
 		{ "CycleRoverLights", l_game_cycle_rover_lights },
 		{ "GetRover", l_game_get_rover },
 		{ "GetRoverPlanet", l_game_get_rover_planet },
+		{ "DebugAdvanceTime", l_game_debug_advance_time },
 		{ "GetJetpackState", l_game_get_jetpack_state },
 		{ "GetControlledBody", l_game_get_controlled_body },
 		{ "SaveGameStats", l_game_savegame_stats },

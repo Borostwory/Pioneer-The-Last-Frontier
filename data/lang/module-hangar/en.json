@@ -1,0 +1,390 @@
+{
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "Flying"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Add bay"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "All that fits"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Already aboard \"{ship}\": {cargo}"
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "You already lease a hangar here."
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Bays"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Bays can be added or removed later."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Cargo"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Cargo aboard"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Cargo hold"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Bay"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Bay fee"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Paid until"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Parking fee"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Per month"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Ship"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Paid upfront: {credit} of credit left, shared by all bays. At today's rent it lasts until about {date}; after that, rent is taken from your account on the 1st of each month."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Crew"
+  },
+  "CREW_LINE": {
+    "description": "Swap window: crew aboard against the stored ship's limits",
+    "message": "Crew: {crew} aboard. \"{ship}\" takes {min}–{max}."
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "empty"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "empty"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "End lease"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Only an empty hangar with no unpaid rent can be given up."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Equipment"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Fly this ship"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Taken from your account."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Paid from your credit."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Paid from your credit, the rest from your account."
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Fuel"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangar"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Hangar at {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "This hangar is locked until the unpaid rent is paid."
+  },
+  "HULL": {
+    "description": "",
+    "message": "Hull"
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hyperdrive"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "{count} equipment item(s) are kept in this hangar's store."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "{count} equipment item(s) didn't fit back on the ship and are kept in the hangar's store."
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Lease hangar"
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "\"{ship}\" is at {hull}% hull and {fuel}% fuel. Repairs and refuelling are available here."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "A hangar has at most 4 bays."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "months"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "needs cargo life support"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} needs cargo life support, which the stored ship doesn't have."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Next bill {date}: about {amount}, the rent for {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Next bill {date}: about {amount}, the rent for {from} – {to} (part of a month). {source}"
+  },
+  "NONE": {
+    "description": "",
+    "message": "none"
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "You need to be aboard your ship."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "That ship is stored at another station."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "You don't have enough money."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "not prepaid"
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "No cargo aboard."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Nothing paid upfront: rent is taken from your account on the 1st of each month."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "You have no hangar at {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "none, it can't leave its system"
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "No ships are stored here yet."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} bays)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "paid until about {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Passengers aboard: finish your passenger contracts first."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Pay"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Pay {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Nothing now: rent is billed on the 1st of each month."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Pay upfront"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Pay upfront…"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 m"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 y"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 y"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 m"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 m"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Remove bay"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Only an empty bay can be removed, and a hangar keeps at least one."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Rename"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Empty: {empty} per month. With \"{ship}\" ({tonnes} t) parked: {rent} per month."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Rent per month: {bay} per bay, plus {tonne} per tonne of hull parked."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Rent for your hangar at {station} couldn't be paid. You owe {debt}; ships there are locked until it's paid."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Rent unpaid: {debt} ({months} month(s), with a 10% late charge). Ships here are locked until it's paid."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "The rest stays aboard \"{ship}\"."
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Your rover is parked on {planet}. Stow it first."
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Save"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Select a stored ship in the table above to see it and fly it."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · hull {hull}%"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "the ship you're flying"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "stored since {date}"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "\"{ship}\" will be stored in this bay. Your crew comes along."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Swap ships"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Swap to \"{ship}\"?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "None"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "After that, {rent} for each whole month, billed on the 1st."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "This is the ship you're flying."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "\"{ship}\" needs at least {min} crew; you have {crew}. You can't launch until you hire more."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "\"{ship}\" takes at most {max} crew; you have {crew}."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "\"{ship}\" has room for {room} t. Take {over} t less."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Total: {used} of {bays} bays in use"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "years"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Your other hangars:"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(you have {crew})"
+  }
+}

@@ -3,6 +3,7 @@
 
 local Game = require 'Game'
 local Event = require 'Event'
+local Comms = require 'Comms'
 local bindManager = require 'bind-manager'
 local AutoSave    = require 'modules.AutoSave.AutoSave'
 
@@ -97,9 +98,14 @@ local function button_undock()
 		return true
 	elseif player:IsDocked() then
 		if ui.mainMenuButton(icons.autopilot_undock, lui.HUD_BUTTON_UNDOCK) or (ui.noModifierHeld() and ui.isKeyReleased(ui.keys.f5)) then
-			Game.SetTimeAcceleration("1x")
-			AutoSave.Save()
-			player:Undock()
+			-- Same rule as the station lobby's Launch button
+			if not player:HasCorrectCrew() then
+				Comms.ImportantMessage(lui.LAUNCH_PERMISSION_DENIED_CREW, player:GetDockedWith().label)
+			else
+				Game.SetTimeAcceleration("1x")
+				AutoSave.Save()
+				player:Undock()
+			end
 		end
 		return true
 	end

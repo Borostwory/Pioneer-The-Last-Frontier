@@ -1,0 +1,653 @@
+-- Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+-- Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+-- The Last Frontier: the station's Hangar tab. Lease a hangar, see the ships
+-- stored here and swap the active ship for one of them.
+
+local Game = require 'Game'
+local Lang = require 'Lang'
+local Format = require 'Format'
+local ShipDef = require 'ShipDef'
+local Commodities = require 'Commodities'
+local PlayerState = require 'PlayerState'
+local StationView = require 'pigui.views.station-view'
+local ModalWindow = require 'pigui.libs.modal-win'
+local ModelSpinner = require 'PiGui.Modules.ModelSpinner'
+local Hangar = require 'modules.Hangar.Hangar'
+
+local ui = require 'pigui'
+
+local l = Lang.GetResource("module-hangar")
+local lc = Lang.GetResource("ui-core")
+local ls = Lang.GetResource("ships")
+
+local colors = ui.theme.colors
+local icons = ui.theme.icons
+local pionillium = ui.fonts.pionillium
+local orbiteer = ui.fonts.orbiteer
+
+local Vector2 = _G.Vector2
+
+local widgetSizes = ui.rescaleUI({
+	itemSpacing = Vector2(8, 6),
+	cellPadding = Vector2(12, 3),
+	sliderWidth = 220,
+}, Vector2(1600, 900))
+
+local PREVIEW_WIDTH = 0.45 -- share of the width for the 3D preview
+
+local ACTIVE = "active"
+
+local modelSpinner = ModelSpinner()
+local spinnerKey = nil
+
+local selected = ACTIVE          -- ACTIVE or a stored ship's record id
+local renaming = nil             -- record id being renamed
+local renameText = ""
+local showPrepay = false
+local prepay = { n = 6, unit = 0 } -- unit: 0 months, 1 years
+local lease = { bays = 1, n = 0, unit = 0 }
+local swap = nil                 -- { rec = Hangar.Record, take = { [name] = n } }
+local swapModal                  -- the swap window, created below
+
+--=============================================================================
+-- Helpers
+--=============================================================================
+
+local function money(n) return Format.Money(math.floor(n + 0.5), false) end
+
+local function shipTypeName(shipId)
+	local def = ShipDef[shipId]
+	return def and ls[def.i18n_key] or shipId
+end
+
+local function months(sel)
+	return sel.unit == 1 and sel.n * 12 or sel.n
+end
+
+-- A button that does nothing when disabled and says why in its tooltip
+local function button(label, enabled, tooltip)
+	local variant = not enabled and ui.theme.buttonColors.disabled or nil
+	local clicked = ui.button(label, Vector2(0, 0), variant, tooltip)
+	return clicked and enabled
+end
+
+local function iconText(icon, color, text)
+	local size = Vector2(ui.getTextLineHeight())
+	ui.icon(icon, size, color)
+	ui.sameLine()
+	ui.textColored(color, text)
+end
+
+local function drawUnitPicker(id, sel)
+	ui.pushItemWidth(widgetSizes.sliderWidth)
+	local max = sel.unit == 1 and 5 or 24
+	sel.n = ui.sliderInt("##" .. id .. "n", math.min(sel.n, max), 0, max)
+	ui.popItemWidth()
+	ui.sameLine()
+	ui.pushItemWidth(widgetSizes.sliderWidth * 0.6)
+	local changed, unit = ui.combo("##" .. id .. "unit", sel.unit, { l.MONTHS, l.YEARS })
+	if changed then sel.unit = unit end
+	ui.popItemWidth()
+
+	ui.sameLine()
+	for _, q in ipairs({ { 1, 0, l.Q_1M }, { 3, 0, l.Q_3M }, { 6, 0, l.Q_6M }, { 1, 1, l.Q_1Y }, { 2, 1, l.Q_2Y } }) do
+		if ui.button(q[3] .. "##" .. id .. q[3], Vector2(0, 0), ui.theme.buttonColors.dark) then
+			sel.n, sel.unit = q[1], q[2]
+		end
+		ui.sameLine()
+	end
+	ui.newLine()
+end
+
+local function quoteLine(monthly, nMonths)
+	local value, cost, discount = Hangar.QuotePrepay(monthly, nMonths)
+	if nMonths <= 0 then
+		ui.textColored(colors.fontDim, l.PAY_NOTHING_NOW)
+		return 0
+	end
+	local text = money(value)
+	if discount > 0 then
+		text = string.interp(l.PRICE_WITH_DISCOUNT, { value = money(value), discount = string.format("%d", discount * 100), cost = money(cost) })
+	end
+	ui.text(text)
+	return cost
+end
+
+--=============================================================================
+-- Lease form (no hangar here)
+--=============================================================================
+
+local function drawLeaseForm(station)
+	local player = Game.player
+	local factor = Hangar.StationFactor(station)
+	local tonnes = Hangar.HullMass(player.shipId)
+
+	ui.withFont(orbiteer.heading, function()
+		ui.text(string.interp(l.NO_HANGAR_HERE, { station = station.label }))
+	end)
+	ui.spacing()
+
+	ui.text(l.BAYS)
+	ui.sameLine()
+	ui.pushItemWidth(widgetSizes.sliderWidth)
+	lease.bays = ui.sliderInt("##leasebays", lease.bays, 1, Hangar.MAX_BAYS)
+	ui.popItemWidth()
+	ui.sameLine()
+	ui.textColored(colors.fontDim, l.BAYS_CAN_CHANGE)
+
+	local empty = Hangar.QuoteRent(factor, lease.bays, 0)
+	local withShip = Hangar.QuoteRent(factor, lease.bays, tonnes)
+	ui.text(string.interp(l.RENT_RULE, { bay = money(Hangar.BAY_RENT * factor), tonne = money(Hangar.TONNE_RENT * factor) }))
+	ui.textColored(colors.fontDim, string.interp(l.RENT_EXAMPLE, {
+		empty = money(empty), ship = player.shipName, tonnes = tonnes, rent = money(withShip)
+	}))
+
+	ui.spacing()
+	ui.text(l.PAY_UPFRONT)
+	drawUnitPicker("lease", lease)
+	local n = months(lease)
+	local cost = quoteLine(withShip, n)
+	if n > 0 then
+		ui.sameLine()
+		local credit = Hangar.QuotePrepay(withShip, n)
+		local date = Hangar.CreditLastsUntil(Game.time, credit, withShip)
+		ui.textColored(colors.fontDim, string.interp(l.PAID_UNTIL_ABOUT, { date = Format.DateOnly(date) }))
+	end
+
+	ui.spacing()
+	local canPay = PlayerState.GetMoney() >= cost
+	if button(l.LEASE_HANGAR, canPay, not canPay and l.NOT_ENOUGH_MONEY or nil) then
+		Hangar.Lease(station, lease.bays, n, tonnes)
+		selected = ACTIVE
+	end
+
+	local others = {}
+	for _, h in ipairs(Hangar.GetHangars()) do
+		table.insert(others, string.interp(l.OTHER_HANGAR, { station = h.station, used = h.bays - Hangar.FreeBays(h), bays = h.bays }))
+	end
+	if #others > 0 then
+		ui.spacing()
+		ui.textWrapped(l.YOUR_OTHER_HANGARS .. " " .. table.concat(others, " · "))
+	end
+end
+
+--=============================================================================
+-- Hangar header: bays, rent, upfront payment, debt
+--=============================================================================
+
+local function drawHeader(h)
+	ui.withFont(orbiteer.heading, function()
+		ui.icon(icons.hangar, Vector2(ui.getTextLineHeight()), colors.font)
+		ui.sameLine()
+		ui.text(string.interp(l.HANGAR_AT, { station = h.station }))
+	end)
+
+	if button(l.PAY_UPFRONT_BUTTON, true) then showPrepay = not showPrepay end
+	ui.sameLine()
+	if button(l.ADD_BAY, h.bays < Hangar.MAX_BAYS, h.bays >= Hangar.MAX_BAYS and l.MAX_BAYS_REACHED or nil) then
+		Hangar.AddBay(h)
+	end
+	ui.sameLine()
+	local canRemove = h.bays > 1 and Hangar.FreeBays(h) > 0
+	if button(l.REMOVE_BAY, canRemove, not canRemove and l.REMOVE_BAY_NEEDS_EMPTY or nil) then
+		Hangar.RemoveBay(h)
+	end
+	ui.sameLine()
+	local canEnd = Hangar.CanEndLease(h)
+	if button(l.END_LEASE, canEnd, not canEnd and l.END_LEASE_NEEDS_EMPTY or nil) then
+		Hangar.EndLease(h)
+		return false
+	end
+
+	if showPrepay then
+		ui.spacing()
+		ui.text(l.PAY_UPFRONT)
+		drawUnitPicker("prepay", prepay)
+		local n = months(prepay)
+		local cost = quoteLine(Hangar.MonthlyRent(h), n)
+		ui.sameLine()
+		local canPay = n > 0 and PlayerState.GetMoney() >= cost
+		if button(l.PAY .. "##prepay", canPay, (n > 0 and not canPay) and l.NOT_ENOUGH_MONEY or nil) then
+			Hangar.Prepay(h, n)
+			showPrepay = false
+		end
+	end
+
+	if Hangar.IsLocked(h) then
+		ui.spacing()
+		iconText(icons.lease_locked, colors.alertRed, string.interp(l.RENT_UNPAID_BANNER, { debt = money(h.debt), months = h.unpaidMonths }))
+		ui.sameLine()
+		local debt = math.floor(h.debt + 0.5)
+		local canPay = PlayerState.GetMoney() >= debt
+		if button(string.interp(l.PAY_AMOUNT, { amount = money(debt) }), canPay, not canPay and l.NOT_ENOUGH_MONEY or nil) then
+			Hangar.PayDebt(h)
+		end
+	end
+
+	if #h.store > 0 then
+		ui.textColored(colors.alertYellow, string.interp(l.ITEMS_IN_STORE, { count = #h.store }))
+	end
+
+	return true
+end
+
+--=============================================================================
+-- Ship list and details
+--=============================================================================
+
+local function activeView()
+	local p = Game.player
+	local equip = {}
+	for _, item in pairs(p:GetComponent('EquipSet'):GetInstalledEquipment()) do table.insert(equip, item) end
+	local cargo = {}
+	for name, n in p:GetComponent('CargoManager'):Commodities() do cargo[name] = n end
+	return {
+		active = true,
+		shipId = p.shipId, name = p.shipName, label = p.label,
+		skin = p:GetSkin(), pattern = p.model.pattern,
+		hull = p.hullPercent, fuel = p.fuel,
+		items = equip, cargo = cargo,
+		cargoCap = p.cargo_cap,
+		hyperdrive = p:GetInstalledHyperdrive(),
+	}
+end
+
+local function recordView(rec)
+	local items, hyperdrive = {}, nil
+	for _, item in pairs(rec.equip) do
+		table.insert(items, item)
+		if item.slot and item.slot.type:match("^hyperdrive") then hyperdrive = item end
+	end
+	return {
+		rec = rec,
+		shipId = rec.shipId, name = rec.name, label = rec.label,
+		skin = rec.skin, pattern = rec.pattern,
+		hull = rec.hull, fuel = rec.fuel,
+		items = items, cargo = rec.cargo,
+		cargoCap = Hangar.RecordCargoCapacity(rec),
+		hyperdrive = hyperdrive,
+	}
+end
+
+local function cargoText(cargo)
+	local parts = {}
+	for name, n in pairs(cargo) do
+		local c = Commodities[name]
+		table.insert(parts, string.format("%d t %s", n, c and c:GetName() or name))
+	end
+	table.sort(parts)
+	return #parts > 0 and table.concat(parts, ", ") or l.EMPTY_HOLD
+end
+
+local function shipCell(name, shipId, hull)
+	return string.interp(l.SHIP_CELL, { name = name, type = shipTypeName(shipId), hull = string.format("%d", hull) })
+end
+
+-- The bays and what each one costs. One upfront credit covers all bays, so
+-- every bay shows the same "paid until" date.
+local function drawBays(h)
+	local p = Game.player
+	local stored = Hangar.StoredShips(h)
+	local paidUntil = Hangar.PaidUntil(h)
+	local paidText = paidUntil and Format.DateOnly(paidUntil) or l.NOT_PREPAID
+	local dash = "—"
+
+	local function dim(text) ui.textColored(colors.fontDim, text) end
+	local function selectRow(text, id)
+		if ui.selectable(text .. "##hangarRow" .. tostring(id), selected == id, { "SpanAllColumns" }) then
+			selected = id
+			renaming = nil
+		end
+	end
+
+	ui.withStyleVars({ CellPadding = widgetSizes.cellPadding }, function()
+		if ui.beginTable("hangarBays", 6, { "RowBg", "BordersInnerH", "SizingFixedFit", "NoSavedSettings" }) then
+			ui.tableSetupColumn(l.COL_BAY, { "WidthFixed" })
+			ui.tableSetupColumn(l.COL_SHIP, { "WidthStretch" })
+			ui.tableSetupColumn(l.COL_BAY_FEE, { "WidthFixed" })
+			ui.tableSetupColumn(l.COL_PARKING, { "WidthFixed" })
+			ui.tableSetupColumn(l.COL_PER_MONTH, { "WidthFixed" })
+			ui.tableSetupColumn(l.COL_PAID_UNTIL, { "WidthFixed" })
+			ui.tableHeadersRow()
+
+			-- The ship you're flying isn't in a bay and costs nothing
+			ui.tableNextRow()
+			ui.tableNextColumn()
+			selectRow(l.ACTIVE, ACTIVE)
+			ui.tableNextColumn()
+			ui.text(shipCell(p.shipName, p.shipId, p.hullPercent))
+			for _ = 1, 4 do ui.tableNextColumn() dim(dash) end
+
+			local totalBay, totalParking = 0, 0
+			for i = 1, h.bays do
+				local rec = stored[i]
+				local bay, parking = Hangar.BayRent(h, rec)
+				bay, parking = math.floor(bay + 0.5), math.floor(parking + 0.5)
+				totalBay, totalParking = totalBay + bay, totalParking + parking
+
+				ui.tableNextRow()
+				ui.tableNextColumn()
+				if rec then
+					selectRow(tostring(i), rec.id)
+					ui.tableNextColumn()
+					ui.text(shipCell(rec.name, rec.shipId, rec.hull))
+				else
+					dim(tostring(i))
+					ui.tableNextColumn()
+					ui.icon(icons.bay_empty, Vector2(ui.getTextLineHeight()), colors.fontDim)
+					ui.sameLine()
+					dim(l.EMPTY_BAY)
+				end
+				ui.tableNextColumn()
+				ui.text(money(bay))
+				ui.tableNextColumn()
+				if rec then
+					ui.text(string.interp(l.PARKING_CELL, { tonnes = Hangar.HullMass(rec.shipId), fee = money(parking) }))
+				else
+					dim(dash)
+				end
+				ui.tableNextColumn()
+				ui.text(money(bay + parking))
+				ui.tableNextColumn()
+				ui.text(paidText)
+			end
+
+			ui.tableNextRow()
+			ui.tableNextColumn()
+			ui.tableNextColumn()
+			dim(string.interp(l.TOTAL_ROW, { used = #stored, bays = h.bays }))
+			ui.tableNextColumn()
+			ui.text(money(totalBay))
+			ui.tableNextColumn()
+			ui.text(money(totalParking))
+			ui.tableNextColumn()
+			ui.text(money(totalBay + totalParking))
+			ui.tableNextColumn()
+			ui.text(paidText)
+			ui.endTable()
+		end
+	end)
+
+	if paidUntil then
+		ui.textWrapped(string.interp(l.CREDIT_LINE, { credit = money(h.credit), date = paidText }))
+	else
+		ui.textWrapped(l.NO_CREDIT_LINE)
+	end
+
+	-- The next bill covers the days since the lease or the last bill: a part
+	-- month the first time, whole calendar months after that
+	local billDate = Hangar.NextBill() or Game.time
+	local from = Hangar.BilledFrom(h)
+	local bill = Hangar.RentSoFar(h, billDate)
+	local source = h.credit >= bill and l.FROM_CREDIT
+		or h.credit > 0 and l.FROM_CREDIT_AND_ACCOUNT
+		or l.FROM_ACCOUNT
+	local partMonth = from > Hangar.MonthStart(billDate - 1) + 1
+	dim(string.interp(partMonth and l.NEXT_BILL_PART or l.NEXT_BILL_FULL, {
+		date = Format.DateOnly(billDate), amount = money(bill), source = source,
+		from = Format.DateOnly(from), to = Format.DateOnly(billDate - 1),
+	}))
+	if partMonth then
+		dim(string.interp(l.THEN_MONTHLY, { rent = money(Hangar.MonthlyRent(h)) }))
+	end
+end
+
+local function drawCompare(value, against, fmt)
+	ui.text(fmt(value))
+	if against and value ~= against then
+		ui.sameLine()
+		local better = value > against
+		ui.textColored(better and colors.compareBetter or colors.compareWorse,
+			string.format("(%s%s)", better and "+" or "", fmt(value - against)))
+	end
+end
+
+local function selectedView(h)
+	if selected ~= ACTIVE then
+		for _, rec in ipairs(Hangar.StoredShips(h)) do
+			if rec.id == selected then return recordView(rec) end
+		end
+		selected = ACTIVE
+	end
+	return activeView()
+end
+
+local function drawPreview(view)
+	local key = view.shipId .. tostring(view.pattern) .. tostring(selected)
+	if spinnerKey ~= key then
+		spinnerKey = key
+		modelSpinner:setModel(ShipDef[view.shipId].modelName, view.skin, view.pattern)
+	end
+	local size = ui.getContentRegion()
+	modelSpinner:setSize(Vector2(size.x, math.min(size.y, size.x * 0.75)))
+	modelSpinner:draw()
+end
+
+local function drawDetails(h, view)
+	local def = ShipDef[view.shipId]
+
+	if view.rec and renaming == view.rec.id then
+		local text, entered = ui.inputText("##hangarRename", renameText, { "EnterReturnsTrue" })
+		renameText = text
+		ui.sameLine()
+		if ui.button(l.SAVE_NAME) or entered then
+			Hangar.RenameStored(view.rec, renameText)
+			renaming = nil
+		end
+	else
+		ui.withFont(orbiteer.heading, function() ui.text(view.name) end)
+	end
+
+	local status = view.active and l.STATUS_ACTIVE or string.interp(l.STATUS_STORED, { date = Format.DateOnly(view.rec.storedAt) })
+	ui.textColored(colors.fontDim, string.format("%s · %s · %s", shipTypeName(view.shipId), view.label, status))
+	ui.spacing()
+
+	local cmpCargo = not view.active and Game.player.cargo_cap or nil
+
+	if ui.beginTable("hangarShipDetails", 2, { "SizingFixedFit" }) then
+		local function row(name, fn)
+			ui.tableNextRow()
+			ui.tableNextColumn()
+			ui.textColored(colors.fontDim, name)
+			ui.tableNextColumn()
+			fn()
+		end
+		row(l.HULL, function() ui.textColored(view.hull < 70 and colors.alertYellow or colors.font, string.format("%d%%", view.hull)) end)
+		row(l.FUEL, function() ui.textColored(view.fuel < 50 and colors.alertYellow or colors.font, string.format("%d%%", view.fuel)) end)
+		row(l.HYPERDRIVE, function()
+			if view.hyperdrive then ui.text(view.hyperdrive:GetName()) else ui.textColored(colors.alertYellow, l.NO_HYPERDRIVE) end
+		end)
+		row(l.CARGO_HOLD, function() drawCompare(view.cargoCap, cmpCargo, function(v) return string.format("%d t", v) end) end)
+		row(l.CREW, function()
+			local crew = Game.player:CrewNumber()
+			local text = string.format("%d–%d", def.minCrew, def.maxCrew)
+			if not view.active and (crew > def.maxCrew or crew < def.minCrew) then
+				ui.textColored(colors.alertYellow, text .. "  " .. string.interp(l.YOU_HAVE_CREW, { crew = crew }))
+			else
+				ui.text(text)
+			end
+		end)
+		row(l.CARGO_ABOARD, function() ui.textWrapped(cargoText(view.cargo)) end)
+		row(l.EQUIPMENT, function()
+			local names = {}
+			for _, item in ipairs(view.items) do table.insert(names, item:GetName()) end
+			table.sort(names)
+			ui.textWrapped(#names > 0 and table.concat(names, ", ") or l.NONE)
+		end)
+		ui.endTable()
+	end
+	ui.spacing()
+
+	if view.active then
+		ui.textColored(colors.fontDim, l.THIS_IS_YOUR_SHIP)
+		ui.textColored(colors.fontDim, #Hangar.StoredShips(h) > 0 and l.SELECT_A_SHIP or l.NO_SHIPS_STORED)
+	else
+		local locked = Hangar.IsLocked(h)
+		if button(l.FLY_THIS_SHIP, not locked, locked and l.HANGAR_LOCKED or nil) then
+			local take = {}
+			swap = { rec = view.rec, take = take }
+			-- Default: everything that fits comes along
+			local room = Hangar.RecordCargoCapacity(view.rec)
+			for _, n in pairs(view.rec.cargo) do room = room - n end
+			local lifeSupport = Hangar.RecordLifeSupport(view.rec)
+			for name, n in Game.player:GetComponent('CargoManager'):Commodities() do
+				local c = Commodities[name]
+				if (c.life_support or 0) <= lifeSupport then
+					take[name] = math.max(0, math.min(n, room))
+					room = room - take[name]
+				else
+					take[name] = 0
+				end
+			end
+			swapModal:open()
+		end
+		ui.sameLine()
+		if renaming ~= view.rec.id and ui.button(l.RENAME) then
+			renaming = view.rec.id
+			renameText = view.rec.name
+		end
+	end
+end
+
+--=============================================================================
+-- Swap window
+--=============================================================================
+
+swapModal = ModalWindow.New("HangarSwap", function(self)
+	if not swap then self:close() return end
+	local rec = swap.rec
+	local player = Game.player
+	local cargoMgr = player:GetComponent('CargoManager')
+
+	ui.withFont(orbiteer.heading, function()
+		ui.icon(icons.ship_swap, Vector2(ui.getTextLineHeight()), colors.font)
+		ui.sameLine()
+		ui.text(string.interp(l.SWAP_TITLE, { ship = rec.name }))
+	end)
+	ui.textColored(colors.fontDim, string.interp(l.SWAP_NOTE, { ship = player.shipName }))
+	ui.spacing()
+
+	-- Cargo picker
+	local room = Hangar.RecordCargoCapacity(rec)
+	for _, n in pairs(rec.cargo) do room = room - n end
+	local taken = 0
+	for _, n in pairs(swap.take) do taken = taken + n end
+
+	ui.text(l.CARGO)
+	ui.sameLine()
+	ui.textColored(taken > room and colors.alertRed or colors.econProfit, string.format("%d / %d t", taken, room))
+	if next(rec.cargo) then
+		ui.textColored(colors.fontDim, string.interp(l.ALREADY_ABOARD, { ship = rec.name, cargo = cargoText(rec.cargo) }))
+	end
+
+	local lifeSupport = Hangar.RecordLifeSupport(rec)
+	local any = false
+	for name, n in cargoMgr:Commodities() do
+		any = true
+		local c = Commodities[name]
+		ui.text(string.format("%s (%d t)", c:GetName(), n))
+		ui.sameLine(widgetSizes.sliderWidth * 1.3)
+		if (c.life_support or 0) > lifeSupport then
+			ui.textColored(colors.fontDim, l.NEEDS_CARGO_LIFE_SUPPORT)
+			swap.take[name] = 0
+		else
+			ui.pushItemWidth(widgetSizes.sliderWidth)
+			swap.take[name] = ui.sliderInt("##take" .. name, swap.take[name] or 0, 0, n, l.TAKE_FORMAT)
+			ui.popItemWidth()
+		end
+	end
+	if not any then
+		ui.textColored(colors.fontDim, l.NO_CARGO_ABOARD)
+	else
+		if ui.button(l.ALL_THAT_FITS) then
+			local left = room
+			for name, n in cargoMgr:Commodities() do
+				local c = Commodities[name]
+				local v = (c.life_support or 0) <= lifeSupport and math.max(0, math.min(n, left)) or 0
+				swap.take[name] = v
+				left = left - v
+			end
+		end
+		ui.sameLine()
+		if ui.button(l.TAKE_NONE) then
+			for name in pairs(swap.take) do swap.take[name] = 0 end
+		end
+		ui.textColored(colors.fontDim, string.interp(l.REST_STAYS, { ship = player.shipName }))
+	end
+
+	ui.spacing()
+	local def = ShipDef[rec.shipId]
+	ui.text(string.interp(l.CREW_LINE, { crew = player:CrewNumber(), ship = rec.name, min = def.minCrew, max = def.maxCrew }))
+
+	local blockers, warnings = Hangar.CheckSwap(rec, swap.take)
+	if #blockers > 0 or #warnings > 0 then ui.spacing() end
+	for _, b in ipairs(blockers) do ui.textColored(colors.alertRed, b) end
+	for _, w in ipairs(warnings) do ui.textColored(colors.alertYellow, w) end
+
+	ui.spacing()
+	if ui.button(lc.CANCEL) then
+		swap = nil
+		self:close()
+		return
+	end
+	ui.sameLine()
+	if button(l.SWAP_SHIPS, #blockers == 0, blockers[1]) then
+		local ok, result = Hangar.Swap(rec, swap.take)
+		swap = nil
+		if ok then
+			selected = ACTIVE
+			spinnerKey = nil
+		end
+		self:close()
+	end
+end)
+
+--=============================================================================
+-- Tab
+--=============================================================================
+
+StationView:registerView({
+	id = "hangarView",
+	name = l.HANGAR,
+	icon = icons.hangar,
+	showView = true,
+	draw = function()
+		local station = Game.player:GetDockedWith()
+		if not station then return end
+		local h = Hangar.GetHangarAt(station)
+
+		ui.withFont(pionillium.body, function()
+			ui.withStyleVars({ ItemSpacing = widgetSizes.itemSpacing }, function()
+				if not h then
+					drawLeaseForm(station)
+					return
+				end
+
+				if not drawHeader(h) then return end
+				ui.spacing()
+				drawBays(h)
+				ui.separator()
+
+				local view = selectedView(h)
+				local previewWidth = ui.getContentRegion().x * PREVIEW_WIDTH
+				ui.child("hangarPreview", Vector2(previewWidth, 0), function()
+					drawPreview(view)
+				end)
+				ui.sameLine()
+				ui.child("hangarDetails", Vector2(0, 0), function()
+					drawDetails(h, view)
+				end)
+			end)
+		end)
+	end,
+	refresh = function()
+		selected = ACTIVE
+		renaming = nil
+		showPrepay = false
+		spinnerKey = nil
+	end,
+	debugReload = function()
+		package.reimport()
+	end
+})

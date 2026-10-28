@@ -57,6 +57,8 @@ public:
 	RefCountedPtr<Galaxy> GetGalaxy() const { return m_galaxy; }
 	Space *GetSpace() const { return m_space.get(); }
 	double GetTime() const { return m_time; }
+	// debug: jump the clock forward; nothing is simulated in between
+	void AdvanceTime(double seconds) { m_time += seconds; }
 	Player *GetPlayer() const { return m_player.get(); }
 
 	// the player out of the ship (on foot)

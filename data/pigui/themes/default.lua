@@ -785,6 +785,11 @@ theme.icons = {
 	follow_plan = 543,
 	-- map and view
 	zoom_to_ship = 544,
+	-- hangar, fleet and crew
+	hangar = 560,
+	ship_swap = 561,
+	bay_empty = 562,
+	lease_locked = 570,
 }
 
 return theme

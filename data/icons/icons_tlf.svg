@@ -37,7 +37,14 @@
     32 zoom_to_ship        magnifier over a ship (zoom the map to your ship)
     33-47 free
 
-    row 3 free (48-63)
+    row 3 - hangar, fleet and crew
+    48 hangar              ship under an arched hangar roof (station Hangar tab)
+    49 ship_swap           two ships with arrows turning round them (swap ships)
+    50 bay_empty           dashed bay outline (empty bay)
+    51-57 free (planned: mission_cargo, crew_lounge, equipment_store, ship_send,
+          ship_receive, in_transit, transfer_cancel)
+    58 lease_locked        padlock in a bay (hangar locked by unpaid rent)
+    59-63 free (planned: 59 fleet)
 
   To add a row, grow height and viewBox by 40 and bump "grid" in icons_tlf.icondef.
   The "Slot guides" layer is hidden (display:none) so it never renders in game;
@@ -407,6 +414,69 @@
          style="fill:#ffffff"
          transform="translate(16,16.4) scale(0.75)"
          d="M0,-9 L6.5,8 L0,4.5 L-6.5,8 Z" />
+    </g>
+
+    <!-- row 3: hangar, fleet and crew -->
+
+    <!-- 48: hangar -->
+    <g id="icon_hangar" transform="translate(0,120)">
+      <!-- arched roof and walls -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round"
+         d="M5,35 V18 Q20,3 35,18 V35" />
+      <!-- floor -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M2.5,35.5 H37.5" />
+      <path
+         style="fill:#ffffff"
+         transform="translate(20,25) scale(0.85)"
+         d="M0,-9 L6.5,8 L0,4.5 L-6.5,8 Z" />
+    </g>
+
+    <!-- 49: ship_swap -->
+    <g id="icon_ship_swap" transform="translate(40,120)">
+      <!-- arrows turning round the two ships -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M7,11 Q20,1 30.5,8 M33,29 Q20,39 9.5,32" />
+      <polygon style="fill:#ffffff" points="35,11 27.6,10.2 31.6,3.8" />
+      <polygon style="fill:#ffffff" points="5,29 12.4,29.8 8.4,36.2" />
+      <!-- ship going in, ship coming out -->
+      <path
+         style="fill:#ffffff"
+         transform="translate(13.5,20.5) scale(0.7)"
+         d="M0,-9 L6.5,8 L0,4.5 L-6.5,8 Z" />
+      <path
+         style="fill:#ffffff"
+         transform="translate(26.5,19.5) rotate(180) scale(0.7)"
+         d="M0,-9 L6.5,8 L0,4.5 L-6.5,8 Z" />
+    </g>
+
+    <!-- 50: bay_empty -->
+    <g id="icon_bay_empty" transform="translate(80,120)">
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round;stroke-dasharray:5,4"
+         d="M6,33 V8 H34 V33" />
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M2.5,35.5 H37.5" />
+    </g>
+
+    <!-- 58: lease_locked -->
+    <g id="icon_lease_locked" transform="translate(400,120)">
+      <!-- bay outline -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;opacity:0.6"
+         d="M3.5,36.5 V7 H36.5 V36.5" />
+      <!-- shackle -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3.5;stroke-linecap:round"
+         d="M15,20 V16 A5,5 0 0 1 25,16 V20" />
+      <!-- body with a keyhole -->
+      <path
+         style="fill:#ffffff;fill-rule:evenodd"
+         d="M11.5,20 H28.5 V33 H11.5 Z M18.5,24 H21.5 V29.5 H18.5 Z" />
     </g>
 
   </g>

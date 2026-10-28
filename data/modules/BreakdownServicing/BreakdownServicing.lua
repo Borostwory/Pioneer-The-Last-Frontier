@@ -13,6 +13,7 @@ local Character = require 'Character'
 local utils = require 'utils'
 local Commodities = require 'Commodities'
 local PlayerState = require 'PlayerState'
+local Hangar = require 'modules.Hangar.Hangar'
 
 local l = Lang.GetResource("module-breakdownservicing")
 local lui = Lang.GetResource("ui-core")
@@ -313,6 +314,11 @@ end
 local unserialize = function (data)
 	loaded_data = data
 end
+
+-- Each ship stored in a hangar keeps its own service record
+Hangar.RegisterShipState("BreakdownServicing",
+	function () return table.copy(service_history) end,
+	function (data) service_history = table.copy(data) end)
 
 Event.Register("onCreateBB", onCreateBB)
 Event.Register("onGameStart", onGameStart)

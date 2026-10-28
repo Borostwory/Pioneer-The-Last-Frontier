@@ -1,0 +1,840 @@
+-- Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+-- Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+-- The Last Frontier: station hangars where the player stores ships.
+--
+-- A stored ship is a record (type, paint, hull, fuel, equipment, cargo and
+-- per-ship module state), not a body in space: only the current system exists
+-- in Space. Swapping rebuilds Game.player from a record, as the Ship Market
+-- does when buying a ship.
+--
+-- Rent is billed monthly, on the 1st of each calendar month. Money paid
+-- upfront becomes credit on the hangar and is drawn before the player's money.
+-- Unpaid rent becomes debt (with a late charge, up to a cap) and locks the
+-- hangar until it is paid.
+
+local Comms = require 'Comms'
+local Commodities = require 'Commodities'
+local Event = require 'Event'
+local Game = require 'Game'
+local HullConfig = require 'HullConfig'
+local Lang = require 'Lang'
+local Passengers = require 'Passengers'
+local PlayerState = require 'PlayerState'
+local Serializer = require 'Serializer'
+local ShipDef = require 'ShipDef'
+local Timer = require 'Timer'
+local Format = require 'Format'
+local utils = require 'utils'
+
+local l = Lang.GetResource("module-hangar")
+
+local Hangar = {}
+
+Hangar.MAX_BAYS = 4
+Hangar.BAY_RENT = 40            -- cr per bay per month
+Hangar.TONNE_RENT = 4           -- cr per tonne of hull parked, per month
+Hangar.LATE_CHARGE = 0.1        -- added to each unpaid bill
+Hangar.DEBT_CAP_MONTHS = 6      -- unpaid months after which debt stops growing
+
+-- Discount for paying upfront, by number of months
+Hangar.PREPAY_DISCOUNTS = {
+	{ months = 12, discount = 0.15 },
+	{ months = 6, discount = 0.10 },
+	{ months = 3, discount = 0.05 },
+}
+
+---@class Hangar.Record
+---@field id integer
+---@field hangar string            key of the hangar the ship is stored in
+---@field storedAt number          game time it was stored
+---@field order integer            bay order: a swapped-in ship takes the order of the one it replaces
+---@field shipId string
+---@field name string
+---@field label string
+---@field skin SceneGraph.ModelSkin
+---@field pattern integer?
+---@field hull number
+---@field fuel number
+---@field equip table<string|integer, EquipType>
+---@field cargo table<string, integer>
+---@field state table<string, any> per-ship module state (Hangar.RegisterShipState)
+---@field check table<string, number> ship properties when stored, compared when taken out
+
+---@class Hangar.Lease
+---@field key string
+---@field path SystemPath
+---@field station string
+---@field system string
+---@field factor number
+---@field bays integer
+---@field credit number            rent covered by money paid upfront
+---@field creditCost number        what that credit cost
+---@field accrued number           rent since the last bill
+---@field accruedTo number         game time `accrued` is counted to
+---@field billedFrom number?       game time the next bill counts from (the lease or the last bill)
+---@field debt number
+---@field unpaidMonths integer
+---@field store EquipType[]        equipment kept in the hangar
+
+local hangars = {} ---@type table<string, Hangar.Lease>
+local ships = {} ---@type table<integer, Hangar.Record>
+local nextId = 1
+local nextBill = nil ---@type number?
+
+local shipStates = {} ---@type table<string, { get: fun(): any, set: fun(data: any) }>
+
+local loaded_data
+local billingToken = 0
+
+--=============================================================================
+-- Helpers
+--=============================================================================
+
+local function round(x) return math.floor(x + 0.5) end
+
+local function hullMass(shipId)
+	return ShipDef[shipId] and ShipDef[shipId].hullMass or 0
+end
+Hangar.HullMass = hullMass
+
+-- Rent is a price per calendar month: a full month costs the monthly rent
+-- whatever its length, a part month its share of that month's days.
+
+-- The game time of the 1st of the month that time t is in
+local function monthStart(t)
+	local year, month = util.gameTimeToTimeParts(t)
+	return util.timePartsToGameTime(year, month, 1, 0, 0, 0)
+end
+Hangar.MonthStart = monthStart
+
+-- The game time of the 1st of the month after time t
+local function firstOfNextMonth(t)
+	local year, month = util.gameTimeToTimeParts(t)
+	month = month + 1
+	if month > 12 then month, year = 1, year + 1 end
+	return util.timePartsToGameTime(year, month, 1, 0, 0, 0)
+end
+
+-- Months between t0 and t1, part months counted by their share of the days
+local function monthsBetween(t0, t1)
+	local months = 0
+	while t0 < t1 do
+		local start, stop = monthStart(t0), firstOfNextMonth(t0)
+		local t = math.min(t1, stop)
+		months = months + (t - t0) / (stop - start)
+		t0 = t
+	end
+	return months
+end
+
+-- The time `credit` runs out, spent from time t at `monthly` rent
+function Hangar.CreditLastsUntil(t, credit, monthly)
+	if monthly <= 0 then return nil end
+	for _ = 1, 1200 do
+		local start, stop = monthStart(t), firstOfNextMonth(t)
+		local cost = monthly * (stop - t) / (stop - start)
+		if cost >= credit then
+			return t + credit / monthly * (stop - start)
+		end
+		credit = credit - cost
+		t = stop
+	end
+	return t
+end
+
+-- The game time of the next monthly bill
+function Hangar.NextBill()
+	return nextBill
+end
+
+---@param station SpaceStation
+function Hangar.StationKey(station)
+	return tostring(station.path)
+end
+
+-- Busy systems cost more, as with the landing fee; surface starports less.
+---@param station SpaceStation
+function Hangar.StationFactor(station)
+	local body = station.path:GetSystemBody()
+	local pop = body and body.parent and body.parent.population or 0
+	local f = math.clamp(0.7 + 0.15 * pop, 0.7, 1.75)
+	if station.isGroundStation then f = f * 0.8 end
+	return f
+end
+
+---@param equip table<string|integer, EquipType>
+local function sumCapability(equip, name)
+	local total = 0
+	for _, item in pairs(equip) do
+		if item.capabilities and item.capabilities[name] then
+			total = total + item.capabilities[name]
+		end
+	end
+	return total
+end
+
+local function cargoTotal(cargo)
+	local total = 0
+	for _, n in pairs(cargo) do total = total + n end
+	return total
+end
+
+-- Properties compared between storing a ship and taking it out again.
+---@param ship Ship
+local function checkProps(ship)
+	local equip = ship:GetComponent('EquipSet'):GetInstalledEquipment()
+	local props = {
+		equipVolume = ship.equipVolume,
+		totalVolume = ship.totalVolume,
+		cargo_cap = ship.cargo_cap,
+		equipMass = ship.mass_cap - ship.usedCargo,
+		hull = ship.hullPercent,
+		fuel = ship.fuel,
+	}
+	for _, item in pairs(equip) do
+		for k in pairs(item.capabilities or {}) do
+			local cap = k .. "_cap"
+			props[cap] = ship:hasprop(cap) and ship[cap] or 0
+		end
+	end
+	return props
+end
+
+--=============================================================================
+-- Per-ship module state
+--=============================================================================
+
+-- Function: RegisterShipState
+--
+-- Let a module keep per-ship state across swaps. `get` returns the state of
+-- the player's current ship (it must not be changed later by the module), `set`
+-- restores a state taken earlier. `set` runs after the swap's queued
+-- onShipTypeChanged event, so it wins over any reset done there.
+---@param name string
+---@param get fun(): any
+---@param set fun(data: any)
+function Hangar.RegisterShipState(name, get, set)
+	shipStates[name] = { get = get, set = set }
+end
+
+--=============================================================================
+-- Rent and billing
+--=============================================================================
+
+---@param h Hangar.Lease
+function Hangar.StoredShips(h)
+	local list = {}
+	for _, rec in pairs(ships) do
+		if rec.hangar == h.key then table.insert(list, rec) end
+	end
+	table.sort(list, function(a, b) return (a.order or a.id) < (b.order or b.id) end)
+	return list
+end
+
+---@param h Hangar.Lease
+function Hangar.FreeBays(h)
+	return h.bays - #Hangar.StoredShips(h)
+end
+
+-- Rent per month for what the hangar holds now
+---@param h Hangar.Lease
+function Hangar.MonthlyRent(h)
+	local tonnes = 0
+	for _, rec in ipairs(Hangar.StoredShips(h)) do
+		tonnes = tonnes + hullMass(rec.shipId)
+	end
+	return (Hangar.BAY_RENT * h.bays + Hangar.TONNE_RENT * tonnes) * h.factor
+end
+
+-- Rent per month for one bay: the bay fee, and the parking fee for the ship
+-- in it (0 when the bay is empty)
+---@param h Hangar.Lease
+---@param rec Hangar.Record?
+function Hangar.BayRent(h, rec)
+	local bay = Hangar.BAY_RENT * h.factor
+	local parking = rec and Hangar.TONNE_RENT * hullMass(rec.shipId) * h.factor or 0
+	return bay, parking
+end
+
+-- Monthly rent for a hangar that doesn't exist yet
+function Hangar.QuoteRent(factor, bays, tonnes)
+	return (Hangar.BAY_RENT * bays + Hangar.TONNE_RENT * (tonnes or 0)) * factor
+end
+
+function Hangar.PrepayDiscount(months)
+	for _, d in ipairs(Hangar.PREPAY_DISCOUNTS) do
+		if months >= d.months then return d.discount end
+	end
+	return 0
+end
+
+-- Credit and its cost for paying `months` of the given monthly rent upfront
+function Hangar.QuotePrepay(monthly, months)
+	local value = monthly * months
+	local discount = Hangar.PrepayDiscount(months)
+	return value, round(value * (1 - discount)), discount
+end
+
+-- Count rent up to time t at the hangar's current rate. Called before
+-- anything that changes the rate (ships parked or taken out, bays changed).
+---@param h Hangar.Lease
+local function accrue(h, t)
+	if t > h.accruedTo then
+		h.accrued = h.accrued + Hangar.MonthlyRent(h) * monthsBetween(h.accruedTo, t)
+		h.accruedTo = t
+	end
+end
+
+---@param h Hangar.Lease
+local function drawCredit(h, amount)
+	if h.credit <= 0 then return 0 end
+	local used = math.min(h.credit, amount)
+	h.creditCost = h.creditCost - h.creditCost * used / h.credit
+	h.credit = h.credit - used
+	if h.credit < 0.01 then h.credit, h.creditCost = 0, 0 end
+	return used
+end
+
+-- Take what you can of `amount` from the player's money
+local function takeMoney(amount)
+	local paid = math.min(math.max(PlayerState.GetMoney(), 0), amount)
+	if paid > 0 then PlayerState.AddMoney(-paid) end
+	return paid
+end
+
+---@param h Hangar.Lease
+function Hangar.IsLocked(h)
+	return h.debt > 0
+end
+
+-- Rent counted since the last bill, up to time t (now by default), at the
+-- current rate
+---@param h Hangar.Lease
+function Hangar.RentSoFar(h, t)
+	t = t or Game.time
+	return h.accrued + Hangar.MonthlyRent(h) * monthsBetween(h.accruedTo, t)
+end
+
+-- Where the next bill starts counting from
+---@param h Hangar.Lease
+function Hangar.BilledFrom(h)
+	return h.billedFrom or h.accruedTo
+end
+
+-- Estimated time the prepaid credit runs out, or nil when there is none
+---@param h Hangar.Lease
+function Hangar.PaidUntil(h)
+	if h.credit <= 0 then return nil end
+	return Hangar.CreditLastsUntil(Game.time, math.max(0, h.credit - Hangar.RentSoFar(h)), Hangar.MonthlyRent(h))
+end
+
+-- Bill one hangar at time t (the 1st of a month). Returns the bill and how
+-- much of it came from credit, from money, and was left unpaid.
+---@param h Hangar.Lease
+local function billHangar(h, t)
+	accrue(h, t)
+	local bill = h.accrued
+	h.accrued = 0
+	h.billedFrom = t
+
+	local fromCredit = drawCredit(h, bill)
+	local due = bill - fromCredit
+
+	local fromMoney, unpaid = 0, 0
+	if due > 0 then
+		fromMoney = takeMoney(due)
+		unpaid = due - fromMoney
+	end
+
+	if unpaid > 0.5 then
+		if h.unpaidMonths < Hangar.DEBT_CAP_MONTHS then
+			h.debt = h.debt + unpaid * (1 + Hangar.LATE_CHARGE)
+			h.unpaidMonths = h.unpaidMonths + 1
+		end
+		Comms.ImportantMessage(string.interp(l.RENT_UNPAID, {
+			station = h.station, debt = Format.Money(round(h.debt), false)
+		}), h.station)
+	end
+
+	-- Old debt is paid off from whatever money there is
+	if h.debt > 0 then
+		h.debt = h.debt - takeMoney(h.debt)
+		if h.debt < 0.5 then
+			h.debt, h.unpaidMonths = 0, 0
+		end
+	end
+
+	return bill, fromCredit, fromMoney, unpaid
+end
+
+local scheduleBilling
+
+-- Bill every 1st that has passed, in order (time may have jumped months)
+local function runBilling()
+	while nextBill and nextBill <= Game.time do
+		for _, h in pairs(hangars) do
+			billHangar(h, nextBill)
+		end
+		nextBill = firstOfNextMonth(nextBill + 1)
+	end
+	scheduleBilling()
+end
+
+scheduleBilling = function()
+	if not nextBill then nextBill = firstOfNextMonth(Game.time) end
+	billingToken = billingToken + 1
+	local token = billingToken
+	Timer:CallAt(nextBill, function()
+		if token == billingToken then runBilling() end
+	end)
+end
+
+--=============================================================================
+-- Leases
+--=============================================================================
+
+---@param station SpaceStation
+---@return Hangar.Lease?
+function Hangar.GetHangarAt(station)
+	return station and hangars[Hangar.StationKey(station)]
+end
+
+---@return Hangar.Lease?
+function Hangar.GetHangar(key)
+	return hangars[key]
+end
+
+---@return Hangar.Lease[]
+function Hangar.GetHangars()
+	local list = utils.build_array(pairs(hangars))
+	table.sort(list, function(a, b) return a.station < b.station end)
+	return list
+end
+
+-- Lease a hangar at the station the player is docked at, paying `months` of
+-- rent upfront (0 for none). The upfront payment is worked out for the rent
+-- with `tonnes` of hull parked (the player's own ship, typically).
+---@param station SpaceStation
+function Hangar.Lease(station, bays, months, tonnes)
+	local key = Hangar.StationKey(station)
+	if hangars[key] then return false, l.ALREADY_LEASED end
+	bays = math.clamp(bays, 1, Hangar.MAX_BAYS)
+
+	local factor = Hangar.StationFactor(station)
+	local value, cost = Hangar.QuotePrepay(Hangar.QuoteRent(factor, bays, tonnes), months)
+	if cost > PlayerState.GetMoney() then return false, l.NOT_ENOUGH_MONEY end
+	PlayerState.AddMoney(-cost)
+
+	hangars[key] = {
+		key = key,
+		path = station.path,
+		station = station.label,
+		system = Game.system.name,
+		factor = factor,
+		bays = bays,
+		credit = value,
+		creditCost = cost,
+		accrued = 0,
+		accruedTo = Game.time,
+		billedFrom = Game.time,
+		debt = 0,
+		unpaidMonths = 0,
+		store = {},
+	}
+	return true
+end
+
+---@param h Hangar.Lease
+function Hangar.Prepay(h, months)
+	if months <= 0 then return false end
+	local value, cost = Hangar.QuotePrepay(Hangar.MonthlyRent(h), months)
+	if cost > PlayerState.GetMoney() then return false, l.NOT_ENOUGH_MONEY end
+	PlayerState.AddMoney(-cost)
+	h.credit = h.credit + value
+	h.creditCost = h.creditCost + cost
+	return true
+end
+
+---@param h Hangar.Lease
+function Hangar.AddBay(h)
+	if h.bays >= Hangar.MAX_BAYS then return false end
+	accrue(h, Game.time)
+	h.bays = h.bays + 1
+	return true
+end
+
+---@param h Hangar.Lease
+function Hangar.RemoveBay(h)
+	if h.bays <= 1 or Hangar.FreeBays(h) < 1 then return false end
+	accrue(h, Game.time)
+	h.bays = h.bays - 1
+	return true
+end
+
+---@param h Hangar.Lease
+function Hangar.PayDebt(h)
+	if h.debt <= 0 then return true end
+	local debt = round(h.debt)
+	if PlayerState.GetMoney() < debt then return false, l.NOT_ENOUGH_MONEY end
+	PlayerState.AddMoney(-debt)
+	h.debt, h.unpaidMonths = 0, 0
+	return true
+end
+
+---@param h Hangar.Lease
+function Hangar.CanEndLease(h)
+	return #Hangar.StoredShips(h) == 0 and #h.store == 0 and h.debt <= 0
+end
+
+-- End a lease: rent so far is settled, unused credit is refunded at the price
+-- that was paid for it.
+---@param h Hangar.Lease
+function Hangar.EndLease(h)
+	if not Hangar.CanEndLease(h) then return false end
+	accrue(h, Game.time)
+	local due = h.accrued - drawCredit(h, h.accrued)
+	if due > PlayerState.GetMoney() then return false, l.NOT_ENOUGH_MONEY end
+	PlayerState.AddMoney(round(h.creditCost) - round(due))
+	hangars[h.key] = nil
+	return true
+end
+
+--=============================================================================
+-- Ship records
+--=============================================================================
+
+---@param rec Hangar.Record
+function Hangar.RecordCargoCapacity(rec)
+	return ShipDef[rec.shipId].cargo + sumCapability(rec.equip, "cargo")
+end
+
+---@param rec Hangar.Record
+function Hangar.RecordLifeSupport(rec)
+	return sumCapability(rec.equip, "cargo_life_support")
+end
+
+---@param rec Hangar.Record
+function Hangar.RecordHasHyperdrive(rec)
+	for _, item in pairs(rec.equip) do
+		if item.slot and item.slot.type:match("^hyperdrive") then return true end
+	end
+	return false
+end
+
+-- Snapshot the player's ship into a new record. Doesn't change the ship.
+---@param leave table<string, integer> cargo that stays with the stored ship
+local function snapshotPlayer(leave)
+	local player = Game.player
+	local equip = {}
+	for k, item in pairs(player:GetComponent('EquipSet'):GetInstalledEquipment()) do
+		equip[k] = item
+	end
+
+	local state = {}
+	for name, hooks in pairs(shipStates) do
+		state[name] = hooks.get()
+	end
+
+	return {
+		shipId = player.shipId,
+		name = player.shipName,
+		label = player.label,
+		skin = player:GetSkin(),
+		pattern = player.model.pattern,
+		hull = player.hullPercent,
+		fuel = player.fuel,
+		equip = equip,
+		cargo = table.copy(leave),
+		state = state,
+		check = checkProps(player),
+	}
+end
+
+-- Install a record's equipment on the player's (empty) ship: hull slots
+-- first, then items without a slot, then items in slots provided by other
+-- items, parents before children. Items without a slot get new cache indexes,
+-- so compound slot ids are remapped. Returns the items that couldn't be fitted.
+---@param equip table<string|integer, EquipType>
+local function installEquipment(equip)
+	local equipSet = Game.player:GetComponent('EquipSet')
+
+	local function depth(k)
+		if type(k) ~= "string" then return 0 end
+		local _, n = k:gsub("##", "")
+		return n
+	end
+
+	local entries = {}
+	for k, item in pairs(equip) do table.insert(entries, { key = k, item = item }) end
+	table.sort(entries, function(a, b)
+		local da, db = depth(a.key), depth(b.key)
+		if da ~= db then return da < db end
+		if type(a.key) ~= type(b.key) then return type(a.key) == "string" end
+		return a.key < b.key
+	end)
+
+	local idMap = {}
+	local failed = {}
+
+	for _, e in ipairs(entries) do
+		local ok = false
+		if type(e.key) == "number" then
+			ok = equipSet:Install(e.item)
+			if ok then idMap[tostring(e.key)] = tostring(equipSet.cache[e.item]) end
+		else
+			local first, rest = e.key:match("^([^#]+)(.*)$")
+			local id = (idMap[first] or first) .. rest
+			local handle = equipSet:GetSlotHandle(id)
+			ok = handle ~= nil and equipSet:Install(e.item, handle)
+		end
+		if not ok then
+			logWarning("Hangar: could not refit {} ({}) on {}" % { e.item:GetName(), tostring(e.key), Game.player.shipId })
+			table.insert(failed, e.item)
+		end
+	end
+
+	return failed
+end
+
+---@param rec Hangar.Record
+local function compareChecks(rec)
+	if not rec.check then return end
+	local now = checkProps(Game.player)
+	for k, v in pairs(rec.check) do
+		local n = now[k] or 0
+		if math.abs(n - v) > 0.01 then
+			logWarning("Hangar: '{}' {} was {} when stored, {} after taking it out" % { rec.name, k, v, n })
+		end
+	end
+	for k, n in pairs(now) do
+		if rec.check[k] == nil and math.abs(n) > 0.01 then
+			logWarning("Hangar: '{}' {} is {} after taking it out, missing when stored" % { rec.name, k, n })
+		end
+	end
+end
+
+--=============================================================================
+-- Swapping
+--=============================================================================
+
+-- Reasons a swap can't happen (blockers) and things the player should know
+-- (warnings). `take` is the cargo to take along: commodity name -> count.
+---@param rec Hangar.Record
+---@param take table<string, integer>
+function Hangar.CheckSwap(rec, take)
+	local player = Game.player
+	local blockers, warnings = {}, {}
+	local station = player:GetDockedWith()
+	local def = ShipDef[rec.shipId]
+
+	if not station or Hangar.StationKey(station) ~= rec.hangar then
+		table.insert(blockers, l.NOT_DOCKED_HERE)
+	end
+
+	local h = hangars[rec.hangar]
+	if h and Hangar.IsLocked(h) then
+		table.insert(blockers, l.HANGAR_LOCKED)
+	end
+
+	if Game.GetExcursionMode and Game.GetExcursionMode() ~= "ship" then
+		table.insert(blockers, l.NOT_ABOARD)
+	end
+
+	local roverPlanet = Game.GetRoverPlanet and Game.GetRoverPlanet()
+	if roverPlanet then
+		local body = roverPlanet:GetSystemBody()
+		table.insert(blockers, string.interp(l.ROVER_OUT, { planet = body and body.name or "?" }))
+	end
+
+	if Passengers.CountOccupiedBerths(player) > 0 then
+		table.insert(blockers, l.PASSENGERS_ABOARD)
+	end
+
+	local crew = player:CrewNumber()
+	if crew > def.maxCrew then
+		table.insert(blockers, string.interp(l.TOO_MANY_CREW, { ship = rec.name, max = def.maxCrew, crew = crew }))
+	elseif crew < def.minCrew then
+		table.insert(warnings, string.interp(l.TOO_FEW_CREW, { ship = rec.name, min = def.minCrew, crew = crew }))
+	end
+
+	local room = Hangar.RecordCargoCapacity(rec) - cargoTotal(rec.cargo)
+	local taken = cargoTotal(take)
+	if taken > room then
+		table.insert(blockers, string.interp(l.TOO_MUCH_CARGO, { ship = rec.name, room = room, over = taken - room }))
+	end
+
+	local lifeSupport = Hangar.RecordLifeSupport(rec)
+	for name, n in pairs(take) do
+		local commodity = Commodities[name]
+		if n > 0 and commodity and (commodity.life_support or 0) > lifeSupport then
+			table.insert(blockers, string.interp(l.NEEDS_LIFE_SUPPORT, { commodity = commodity:GetName() }))
+		end
+	end
+
+	if rec.hull < 70 or rec.fuel < 50 then
+		table.insert(warnings, string.interp(l.LOW_HULL_FUEL, {
+			ship = rec.name, hull = string.format("%d", rec.hull), fuel = string.format("%d", rec.fuel)
+		}))
+	end
+
+	return blockers, warnings
+end
+
+-- Store the player's ship in its bay and take the stored ship `rec` out.
+---@param rec Hangar.Record
+---@param take table<string, integer> cargo to take along: commodity name -> count
+function Hangar.Swap(rec, take)
+	local blockers = Hangar.CheckSwap(rec, take)
+	if #blockers > 0 then return false, blockers[1] end
+
+	local player = Game.player
+	local h = assert(hangars[rec.hangar])
+	local cargoMgr = player:GetComponent('CargoManager')
+
+	-- Cargo that stays with the ship being stored
+	local leave = {}
+	for name, count in cargoMgr:Commodities() do
+		local n = count - math.clamp(take[name] or 0, 0, count)
+		if n > 0 then leave[name] = n end
+	end
+
+	local out = snapshotPlayer(leave)
+
+	accrue(h, Game.time)
+
+	for name, n in pairs(leave) do
+		cargoMgr:RemoveCommodity(Commodities[name], n)
+	end
+
+	-- Rebuild the player's ship from the record. SetShipType removes all
+	-- equipment (the stored ship keeps the item instances) and keeps cargo.
+	player:SetShipType(rec.shipId)
+	player:SetSkin(rec.skin)
+	if rec.pattern then player.model:SetPattern(rec.pattern) end
+	player:SetLabel(rec.label)
+	player:SetShipName(rec.name)
+
+	local failed = installEquipment(rec.equip)
+	for _, item in ipairs(failed) do table.insert(h.store, item) end
+
+	player:SetHullPercent(math.clamp(rec.hull, 0, 100))
+	player:SetFuelPercent(math.clamp(rec.fuel, 0, 100))
+
+	for name, n in pairs(rec.cargo) do
+		if not cargoMgr:AddCommodity(Commodities[name], n) then
+			-- CheckSwap made room for it; keep it rather than lose it
+			logWarning("Hangar: no room for {} t {} from '{}'" % { n, name, rec.name })
+			out.cargo[name] = (out.cargo[name] or 0) + n
+		end
+	end
+
+	compareChecks(rec)
+
+	-- The stored ship goes into the bay the other one leaves
+	ships[rec.id] = nil
+	out.id = nextId
+	nextId = nextId + 1
+	out.hangar = rec.hangar
+	out.storedAt = Game.time
+	out.order = rec.order or rec.id
+	ships[out.id] = out
+
+	-- Per-ship module state is restored after the queued onShipTypeChanged
+	Event.Queue("onHangarShipSwapped", player, rec.state or {})
+
+	if #failed > 0 then
+		Comms.ImportantMessage(string.interp(l.ITEMS_MOVED_TO_STORE, { count = #failed }), h.station)
+	end
+
+	return true, out
+end
+
+---@param rec Hangar.Record
+function Hangar.RenameStored(rec, name)
+	name = name and name:match("^%s*(.-)%s*$") or ""
+	if #name > 0 then rec.name = name end
+end
+
+---@return Hangar.Record[]
+function Hangar.GetAllShips()
+	local list = utils.build_array(pairs(ships))
+	table.sort(list, function(a, b) return a.id < b.id end)
+	return list
+end
+
+-- Add a ship record directly (debug tool, later the Ship Market). The record
+-- needs shipId, name, label, skin, pattern, hull, fuel, equip, cargo.
+---@param h Hangar.Lease
+function Hangar.AddRecord(h, rec)
+	if Hangar.FreeBays(h) < 1 then return false end
+	accrue(h, Game.time)
+	rec.id = nextId
+	nextId = nextId + 1
+	rec.hangar = h.key
+	rec.storedAt = Game.time
+	rec.order = rec.id
+	rec.cargo = rec.cargo or {}
+	rec.equip = rec.equip or {}
+	rec.state = rec.state or {}
+	ships[rec.id] = rec
+	return true, rec
+end
+
+-- Debug: bill every hangar now, as if it were the 1st (the schedule is kept)
+-- Debug: bill a hangar now as if a whole month had passed at today's rent
+---@param h Hangar.Lease
+function Hangar.DebugBillMonth(h)
+	accrue(h, Game.time)
+	h.accrued = h.accrued + Hangar.MonthlyRent(h)
+	return billHangar(h, Game.time)
+end
+
+-- Debug: drop the upfront credit, so the next bill comes from money
+---@param h Hangar.Lease
+function Hangar.DebugClearCredit(h)
+	h.credit, h.creditCost = 0, 0
+end
+
+--=============================================================================
+-- Events and saving
+--=============================================================================
+
+Event.Register("onHangarShipSwapped", function(ship, state)
+	if not ship:IsPlayer() then return end
+	for name, hooks in pairs(shipStates) do
+		if state[name] ~= nil then hooks.set(state[name]) end
+	end
+end)
+
+Event.Register("onGameStart", function()
+	if loaded_data then
+		hangars = loaded_data.hangars or {}
+		ships = loaded_data.ships or {}
+		nextId = loaded_data.nextId or 1
+		nextBill = loaded_data.nextBill
+		for _, h in pairs(hangars) do h.store = h.store or {} end
+		loaded_data = nil
+	end
+	runBilling()
+end)
+
+Event.Register("onGameEnd", function()
+	hangars = {}
+	ships = {}
+	nextId = 1
+	nextBill = nil
+	billingToken = billingToken + 1
+end)
+
+local serialize = function()
+	return { hangars = hangars, ships = ships, nextId = nextId, nextBill = nextBill }
+end
+
+local unserialize = function(data)
+	loaded_data = data
+end
+
+Serializer:Register("Hangar", serialize, unserialize)
+
+return Hangar

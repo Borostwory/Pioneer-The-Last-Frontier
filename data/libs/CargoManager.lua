@@ -96,8 +96,15 @@ end
 ---@param type CommodityType
 ---@param count integer
 function CargoManager:AddCommodity(type, count)
+	count = count or 1
+
+	-- Adding nothing always fits; don't leave an empty 0t entry behind
+	if count <= 0 then
+		return true
+	end
+
 	-- TODO: use a cargo volume metric with variable mass instead of fixed 1t == 1m^3
-	local required_space = (type.mass or 1) * (count or 1)
+	local required_space = (type.mass or 1) * count
 
 	if self:GetFreeSpace() < required_space then
 		return false
@@ -146,7 +153,12 @@ end
 function CargoManager:RemoveCommodity(type, count)
 	local storage = self.commodities[type.name]
 
-	if not storage or storage.count == 0 then
+	if not storage then
+		return 0
+	end
+
+	if storage.count == 0 then
+		self.commodities[type.name] = nil
 		return 0
 	end
 
@@ -256,6 +268,11 @@ end
 function CargoManager:Unserialize()
 	setmetatable(self, CargoManager.meta)
 	self.listeners = {}
+
+	-- Older saves can hold empty 0t entries
+	for name, storage in pairs(self.commodities) do
+		if storage.count <= 0 then self.commodities[name] = nil end
+	end
 
 	return self
 end
