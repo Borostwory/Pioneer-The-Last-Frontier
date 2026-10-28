@@ -175,6 +175,18 @@
     "description": "Bay table column: the fee for the bay itself",
     "message": "Bay fee"
   },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Cost"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Location"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Name"
+  },
   "COL_PAID_UNTIL": {
     "description": "Bay table column",
     "message": "Paid until"
@@ -191,13 +203,45 @@
     "description": "Bay table column",
     "message": "Ship"
   },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Best skill"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Station"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Status"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Store"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Type"
+  },
   "COMES_ABOARD": {
     "description": "Swap window",
     "message": "will come aboard"
   },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/week"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/night + {wage}/week"
+  },
   "CREDIT_LINE": {
     "description": "Under the bay table",
     "message": "Paid upfront: {credit} of credit left, shared by all bays. At today's rent it lasts until about {date}; after that, rent is taken from your account on the 1st of each month."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "The rent you paid upfront for your hangar at {station} runs out on {date}. After that, it's billed on the 1st of each month."
   },
   "CREW": {
     "description": "",
@@ -287,6 +331,10 @@
     "description": "Message",
     "message": "{count} item(s) have arrived at your hangar store at {station}."
   },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Equipment here…"
+  },
   "EQUIPMENT_TAB": {
     "description": "Hangar sub-tab",
     "message": "Equipment"
@@ -302,6 +350,26 @@
   "FIT_TOOLTIP": {
     "description": "Tooltip on the fit button",
     "message": "Fit to \"{ship}\""
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Fleet"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Crew in lounges"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangars"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Ships"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Equipment store: {items}"
   },
   "FLY_THIS_SHIP": {
     "description": "Button: swap to this stored ship",
@@ -383,6 +451,10 @@
     "description": "",
     "message": "Into a free bay here ({free} free)"
   },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "in hyperspace"
+  },
   "IN_LOUNGE": {
     "description": "Swap window: where a crew member is now",
     "message": "in the lounge"
@@ -418,6 +490,26 @@
   "LOAD_TOOLTIP": {
     "description": "",
     "message": "Load aboard"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} crew waiting in the lounge"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Your hangar: {ships} of {bays} bay(s) in use, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "billed monthly"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "paid until {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "rent unpaid"
   },
   "LOUNGE_AFTER_SWAP": {
     "description": "Swap window",
@@ -463,6 +555,10 @@
     "description": "Unit picker",
     "message": "months"
   },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d months"
+  },
   "NEEDS_CARGO_LIFE_SUPPORT": {
     "description": "Swap window: this cargo can't go on the stored ship",
     "message": "needs cargo life support"
@@ -482,6 +578,10 @@
   "NOBODY_WAITING": {
     "description": "",
     "message": "Nobody is waiting here."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Nobody is waiting in a lounge or travelling."
   },
   "NOBODY_WAITING_ELSEWHERE": {
     "description": "",
@@ -538,6 +638,10 @@
   "NO_FREE_BAY_HERE": {
     "description": "",
     "message": "No free bay here. Add a bay first."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "You lease no hangar. Lease one at any station, in its Hangar tab."
   },
   "NO_HANGAR_HERE": {
     "description": "",
@@ -618,6 +722,14 @@
   "PICK_A_SHIP": {
     "description": "",
     "message": "Pick a ship."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Rent now: {rent} a month. Pay for:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Pay rent upfront for {station}"
   },
   "PRICE_WITH_DISCOUNT": {
     "description": "",
@@ -727,6 +839,10 @@
     "description": "",
     "message": "Send to the lounge at another station"
   },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Send equipment…"
+  },
   "SEND_EQUIPMENT_TITLE": {
     "description": "",
     "message": "Send equipment from {station}"
@@ -819,9 +935,21 @@
     "description": "",
     "message": "the ship you're flying"
   },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "Flying"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Stored, locked: rent unpaid"
+  },
   "STATUS_STORED": {
     "description": "",
     "message": "stored since {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Stored"
   },
   "STORE_AT": {
     "description": "",
@@ -846,6 +974,10 @@
   "STORE_NEEDS_HANGAR": {
     "description": "",
     "message": "you have no hangar here."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} item(s), {tons} t"
   },
   "SWAP_NOTE": {
     "description": "",
@@ -923,6 +1055,14 @@
     "description": "Button: bring something here from another station",
     "message": "Transfer from…"
   },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Transfer here"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Have it delivered to your hangar here"
+  },
   "TRANSFER_SHIP_TITLE": {
     "description": "",
     "message": "Transfer a ship to {station}"
@@ -955,6 +1095,10 @@
     "description": "",
     "message": "Unload into the cargo store"
   },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "unpaid: {debt}"
+  },
   "WAGE_PER_WEEK": {
     "description": "",
     "message": "{wage} a week"
@@ -974,6 +1118,18 @@
   "WAITING_SINCE": {
     "description": "",
     "message": "waiting since {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Welcome back."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} crew are waiting in the lounge."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Your hangar here holds {ships} ship(s) in {bays} bay(s)."
   },
   "WITHOUT_A_SLOT": {
     "description": "Heading over items fitted without a slot",

@@ -28,6 +28,8 @@ local gaugeSpacing = ui.getTextLineHeight() * 0.8
 
 local Lang = require 'Lang'
 local l = Lang.GetResource("ui-core")
+local lh = Lang.GetResource("module-hangar")
+local Hangar = require 'modules.Hangar.Hangar'
 local Vector2 = _G.Vector2
 
 local rescaleVector = ui.rescaleUI(Vector2(1, 1), Vector2(1600, 900), true)
@@ -273,6 +275,25 @@ local function drawPlayerInfo()
 				parent_body = station.path:GetSystemBody().parent.name})
 	end
 
+	-- The Last Frontier: what you keep here
+	local hangarLine = ""
+	local summary = Hangar.SummaryAt(station)
+	if summary.hangar or summary.crew > 0 then
+		local parts = {}
+		if summary.hangar then
+			local paidUntil = Hangar.PaidUntil(summary.hangar)
+			table.insert(parts, string.interp(lh.LOBBY_HANGAR, {
+				ships = summary.ships, bays = summary.hangar.bays,
+				paid = Hangar.IsLocked(summary.hangar) and lh.LOBBY_UNPAID
+					or paidUntil and string.interp(lh.LOBBY_PAID_UNTIL, { date = Format.DateOnly(paidUntil) })
+					or lh.LOBBY_MONTHLY }))
+		end
+		if summary.crew > 0 then
+			table.insert(parts, string.interp(lh.LOBBY_CREW, { crew = summary.crew }))
+		end
+		hangarLine = table.concat(parts, " · ")
+	end
+
 	ui.withFont(pionillium.heading, function()
 		ui.withStyleVars({ItemSpacing = widgetSizes.itemSpacing}, function()
 			local buttonSizeSpacing = widgetSizes.buttonLaunchSize.y + widgetSizes.itemSpacing.y
@@ -288,6 +309,7 @@ local function drawPlayerInfo()
 						{ station_docks, "" },
 						{ station_orbit_info, "" },
 						{ local_gravity_pressure, ""},
+						{ hangarLine, "" },
 					})
 				end)
 

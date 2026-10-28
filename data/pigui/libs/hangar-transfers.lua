@@ -59,10 +59,15 @@ local function quoteLine(cost, time, ly)
 	})
 end
 
--- A combo over `list`, labelled by `label(item)`; returns the picked item
+-- A combo over `list`, labelled by `label(item)`; returns the picked item.
+-- A window opened with a destination (`state.toKey`) starts on it.
 local function pick(id, list, index, label)
 	local names = {}
-	for _, item in ipairs(list) do table.insert(names, label(item)) end
+	for i, item in ipairs(list) do
+		table.insert(names, label(item))
+		if state.toKey and item.key == state.toKey then index = i - 1 end
+	end
+	state.toKey = nil
 	if #names == 0 then return nil, 0 end
 	index = math.min(index or 0, #names - 1)
 	ui.pushItemWidth(ui.getContentRegion().x * 0.7)
@@ -298,15 +303,15 @@ end
 -- Opening them, and texts for things on their way
 --=============================================================================
 
-function Transfers.SendShip(rec) open({ window = "sendShip", rec = rec, index = 0 }) end
+function Transfers.SendShip(rec, toKey) open({ window = "sendShip", rec = rec, index = 0, toKey = toKey }) end
 function Transfers.ShipFrom(h) open({ window = "shipFrom", hangar = h }) end
-function Transfers.SendEquipment(h) open({ window = "equipment", hangar = h, sending = true, index = 0, picked = {} }) end
+function Transfers.SendEquipment(h, toKey) open({ window = "equipment", hangar = h, sending = true, index = 0, picked = {}, toKey = toKey }) end
 function Transfers.EquipmentFrom(h) open({ window = "equipment", hangar = h, sending = false, index = 0, picked = {} }) end
 function Transfers.Cancel(t) open({ window = "cancel", transfer = t }) end
 
 ---@param place Hangar.Place
-function Transfers.SendCrew(place, character)
-	open({ window = "crew", place = place, sending = true, index = 0, picked = character and { [character] = true } or {} })
+function Transfers.SendCrew(place, character, toKey)
+	open({ window = "crew", place = place, sending = true, index = 0, picked = character and { [character] = true } or {}, toKey = toKey })
 end
 function Transfers.CrewFrom(place) open({ window = "crew", place = place, sending = false, index = 0, picked = {} }) end
 

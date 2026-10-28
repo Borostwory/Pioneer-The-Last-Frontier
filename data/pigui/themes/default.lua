@@ -797,6 +797,7 @@ theme.icons = {
 	in_transit = 568,
 	transfer_cancel = 569,
 	lease_locked = 570,
+	fleet = 571,
 }
 
 return theme

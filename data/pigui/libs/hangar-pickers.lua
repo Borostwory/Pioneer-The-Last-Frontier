@@ -5,7 +5,11 @@
 -- swap window and the Ship Market, when the current ship is stored and
 -- another one flown.
 
+local Comms = require 'Comms'
+local Event = require 'Event'
 local Game = require 'Game'
+local PlayerState = require 'PlayerState'
+local ModalWindow = require 'pigui.libs.modal-win'
 local Lang = require 'Lang'
 local Format = require 'Format'
 local Commodities = require 'Commodities'
@@ -19,6 +23,7 @@ local lc = Lang.GetResource("ui-core")
 
 local colors = ui.theme.colors
 local icons = ui.theme.icons
+local orbiteer = ui.fonts.orbiteer
 
 local Vector2 = _G.Vector2
 
@@ -158,6 +163,71 @@ function Pickers.drawCrew(state, def, shipName)
 		local rate = Hangar.LoungeRate(Hangar.StationFactor(station))
 		ui.textColored(colors.fontDim, string.interp(l.LOUNGE_AFTER_SWAP, { count = inLoungeAfter, cost = Pickers.money(rate * inLoungeAfter) }))
 	end
+end
+
+-- Let go of someone waiting in the lounge, with the same consequences as
+-- dismissing them on the Crew tab
+local function dismissFromLounge(member)
+	if not Hangar.DismissFromLounge(member) then return end
+
+	local contract = member.contract
+	if contract then
+		if contract.outstanding > 0 then
+			Comms.Message(lc.IM_TIRED_OF_WORKING_FOR_NOTHING_DONT_YOU_KNOW_WHAT_A_CONTRACT_IS, member.name)
+			member.playerRelationship = member.playerRelationship - 5
+			if contract.outstanding > 5e2 then
+				PlayerState.AddCrime("CONTRACT_FRAUD", contract.outstanding * 1.1)
+			end
+		elseif member:TestRoll('playerRelationship') then
+			Comms.Message(lc.ITS_BEEN_GREAT_WORKING_FOR_YOU_IF_YOU_NEED_ME_AGAIN_ILL_BE_HERE_A_WHILE, member.name)
+		elseif not member:TestRoll('lawfulness') then
+			Comms.Message(lc.YOURE_GOING_TO_REGRET_SACKING_ME, member.name)
+			member.playerRelationship = member.playerRelationship - 1
+		else
+			Comms.Message(lc.GOOD_RIDDANCE_TO_YOU_TOO, member.name)
+			member.playerRelationship = member.playerRelationship - 1
+		end
+	end
+
+	-- CrewContracts ends the contract, as for anyone leaving the crew
+	Event.Queue('onLeaveCrew', Game.player, member)
+	member:Save() -- they can turn up on bulletin boards again
+end
+
+-- Dismissing asks first
+local dismissing = nil ---@type Character?
+
+local dismissModal = ModalWindow.New("LoungeDismiss", function(self)
+	local member = dismissing
+	if not member then self:close() return end
+
+	ui.withFont(orbiteer.heading, function()
+		ui.text(string.interp(l.DISMISS_TITLE, { name = member.name }))
+	end)
+	ui.text(string.interp(l.DISMISS_TEXT, { name = member.name }))
+	local owed = member.contract and member.contract.outstanding or 0
+	if owed > 0 then
+		ui.textColored(owed > 5e2 and colors.alertRed or colors.alertYellow,
+			string.interp(l.DISMISS_OWED, { owed = Pickers.money(owed), limit = Pickers.money(5e2) }))
+	end
+	ui.spacing()
+
+	if ui.button(lc.CANCEL) then
+		dismissing = nil
+		self:close()
+	end
+	ui.sameLine()
+	if ui.button(lc.DISMISS .. "##confirmDismiss") then
+		dismissFromLounge(member)
+		dismissing = nil
+		self:close()
+	end
+end)
+
+-- Ask, then let go of someone waiting in a lounge
+function Pickers.ConfirmDismiss(member)
+	dismissing = member
+	dismissModal:open()
 end
 
 -- Blockers in red, warnings in amber

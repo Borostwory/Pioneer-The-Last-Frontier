@@ -83,6 +83,7 @@ Hangar.PREPAY_DISCOUNTS = {
 ---@field debt number
 ---@field unpaidMonths integer
 ---@field store EquipType[]        equipment kept in the hangar
+---@field creditWarned boolean?   the "prepaid rent running out" message was sent
 ---@field cargo table<string, integer>?  goods kept in the hangar: commodity name -> tons
 ---@field cargoTags table<string, table<any, integer>>? how much of them missions hold
 
@@ -615,6 +616,7 @@ function Hangar.Prepay(h, months)
 	PlayerState.AddMoney(-cost)
 	h.credit = h.credit + value
 	h.creditCost = h.creditCost + cost
+	h.creditWarned = nil
 	return true
 end
 
@@ -835,14 +837,13 @@ function Hangar.HireIntoLounge(character)
 	return true
 end
 
--- Let go of someone waiting in the lounge where the player is docked. Only
--- takes them out of the lounge: the caller ends their contract as for any
--- dismissal.
+-- Let go of someone waiting in a lounge (here, or from afar in the Fleet
+-- tab). Only takes them out of the lounge: the caller ends their contract as
+-- for any dismissal.
 ---@param character Character
 function Hangar.DismissFromLounge(character)
-	local station = Game.player:GetDockedWith()
 	local lounge, entry, index = Hangar.FindInLounge(character)
-	if not station or not lounge or lounge.key ~= Hangar.StationKey(station) then return false end
+	if not lounge then return false end
 	removeFromLounge(lounge, entry, index)
 	return true
 end
@@ -2045,6 +2046,55 @@ end
 -- Events and saving
 --=============================================================================
 
+--=============================================================================
+-- Messages
+--=============================================================================
+
+-- What you have at a station: ships stored here (and on their way here),
+-- crew waiting here, and the hangar (nil without one)
+function Hangar.SummaryAt(station)
+	local key = Hangar.StationKey(station)
+	local h = hangars[key]
+	local stored, incoming = 0, 0
+	if h then
+		for _, rec in ipairs(Hangar.StoredShips(h)) do
+			if rec.transit then incoming = incoming + 1 else stored = stored + 1 end
+		end
+	end
+	local lounge = lounges[key]
+	return { hangar = h, ships = stored, incoming = incoming, crew = lounge and #lounge.crew or 0 }
+end
+
+-- Docking where you have a hangar or crew waiting
+local function onPlayerDocked(player, station)
+	local sum = Hangar.SummaryAt(station)
+	if not sum.hangar and sum.crew == 0 then return end
+	local parts = {}
+	if sum.hangar then
+		table.insert(parts, string.interp(l.WELCOME_HANGAR, { ships = sum.ships, bays = sum.hangar.bays }))
+	end
+	if sum.crew > 0 then
+		table.insert(parts, string.interp(l.WELCOME_CREW, { crew = sum.crew }))
+	end
+	Comms.Message(l.WELCOME_BACK .. " " .. table.concat(parts, " "), station.label)
+end
+
+-- A week before prepaid rent runs out, once per payment
+local function checkCredit()
+	for _, h in pairs(hangars) do
+		local paidUntil = Hangar.PaidUntil(h)
+		if paidUntil and not h.creditWarned and paidUntil - Game.time < 7 * 86400 then
+			h.creditWarned = true
+			Comms.ImportantMessage(string.interp(l.CREDIT_RUNNING_OUT, {
+				station = h.station, date = Format.DateOnly(paidUntil) }), h.station)
+		end
+	end
+end
+
+Event.Register("onShipDocked", function(ship, station)
+	if ship:IsPlayer() then onPlayerDocked(ship, station) end
+end)
+
 Event.Register("onHangarShipSwapped", function(ship, state)
 	if not ship:IsPlayer() then return end
 	for name, hooks in pairs(shipStates) do
@@ -2081,6 +2131,11 @@ Event.Register("onGameStart", function()
 
 	runBilling()
 	processArrivals()
+	checkCredit()
+	Timer:CallEvery(86400, function()
+		if not Game.player then return true end
+		checkCredit()
+	end)
 end)
 
 Event.Register("onMissionRemoved", releaseTag)
