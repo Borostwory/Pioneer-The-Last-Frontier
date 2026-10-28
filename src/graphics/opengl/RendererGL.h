@@ -89,7 +89,7 @@ namespace Graphics {
 		void SetShadowData(const ShadowDataBlock *data, Texture *const *maps) final;
 		void SetCityLightData(const CityLightDataBlock *data, Texture *lightMap, Texture *lightGrid) final;
 		void SetCityGroundData(const CityGroundDataBlock *data, Texture *roads, Texture *lots) final;
-		void SetSurfaceTrackData(const SurfaceTrackDataBlock *data, Texture *tracks) final;
+		void SetSurfaceTrackData(const SurfaceTrackDataBlock *data, Texture *wheels, Texture *feet) final;
 		void SetShipLightData(const ShipLightDataBlock *data) final;
 
 		bool FlushCommandBuffers() final;
@@ -133,7 +133,8 @@ namespace Graphics {
 		const BufferBinding<UniformBuffer> &GetShipLightUniformBuffer();
 		// the rover's tracks for this frame; allocates a "no tracks" block if none was set
 		const BufferBinding<UniformBuffer> &GetSurfaceTrackUniformBuffer();
-		Texture *GetSurfaceTracks() const { return m_surfaceTracks; }
+		Texture *GetWheelTracks() const { return m_wheelTracks; }
+		Texture *GetFootTracks() const { return m_footTracks; }
 		OGL::UniformLinearBuffer *GetDrawUniformBuffer(Uint32 size);
 		OGL::RenderStateCache *GetStateCache() { return m_renderStateCache.get(); }
 
@@ -171,7 +172,8 @@ namespace Graphics {
 		Texture *m_cityLots = nullptr;
 		BufferBinding<UniformBuffer> m_shipLightUniformBuffer;
 		BufferBinding<UniformBuffer> m_surfaceTrackUniformBuffer;
-		Texture *m_surfaceTracks = nullptr;
+		Texture *m_wheelTracks = nullptr;
+		Texture *m_footTracks = nullptr;
 		bool m_useNVDepthRanged;
 		OGL::RenderTarget *m_activeRenderTarget = nullptr;
 		std::unique_ptr<OGL::CommandList> m_drawCommandList;

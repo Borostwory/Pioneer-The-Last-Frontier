@@ -270,6 +270,7 @@ bool Excursion::Board()
 
 	m_game->GetSpace()->KillBody(m_walker);
 	m_walker = nullptr;
+	m_trackWalker = nullptr;
 
 	LuaEvent::Queue("onPlayerBoard", player);
 	return true;
@@ -392,6 +393,7 @@ bool Excursion::EnterRover()
 
 	m_game->GetSpace()->KillBody(m_walker);
 	m_walker = nullptr;
+	m_trackWalker = nullptr;
 	m_rover->SetDriven(true);
 	m_mode = Mode::ROVER;
 	m_game->GetWorldView()->surfaceView->ResetLook();
@@ -593,6 +595,56 @@ void Excursion::OnShipMoved()
 		m_rover->SetAsleep(!near);
 		PressTracks();
 	}
+	if (m_mode == Mode::ON_FOOT && m_walker)
+		PressFootprints();
+}
+
+void Excursion::PressFootprints()
+{
+	// a print at each step: steps this long walking and running (m), between
+	// these paces (m/s), the feet this far either side of the way (m); a jump
+	// further than TRACK_JUMP (placed, loaded) starts them again
+	constexpr double WALK_STEP = 0.75;
+	constexpr double RUN_STEP = 1.3;
+	constexpr double WALK_PACE = 1.6;
+	constexpr double RUN_PACE = 4.5;
+	constexpr double FOOT_SPREAD = 0.11;
+	constexpr double TRACK_JUMP = 5.0;
+
+	if (m_trackWalker != m_walker) {
+		m_trackWalker = m_walker;
+		m_footTracked = false;
+	}
+	// on the ground, the terrain itself (not a pad, a road or a building)
+	const vector3d feet = m_walker->GetPosition();
+	const Frame *frame = Frame::GetFrame(m_walker->GetFrame());
+	const bool onTerrain = m_walker->IsOnGround() && frame && frame->GetBody() && frame->GetBody()->IsType(ObjectType::TERRAINBODY) &&
+		std::abs(feet.Length() - static_cast<const TerrainBody *>(frame->GetBody())->GetDrawnTerrainHeight(feet.Normalized())) < 0.1;
+	if (!onTerrain) {
+		m_footTracked = false;
+		return;
+	}
+	const double moved = (feet - m_footLast).Length();
+	m_footLast = feet;
+	if (!m_footTracked || moved > TRACK_JUMP) {
+		m_footTracked = true;
+		m_footTravel = 0.0;
+		return;
+	}
+
+	m_footTravel += moved;
+	const double speed = m_walker->GetVelocity().Length();
+	const double step = WALK_STEP + (RUN_STEP - WALK_STEP) * Clamp((speed - WALK_PACE) / (RUN_PACE - WALK_PACE), 0.0, 1.0);
+	if (m_footTravel < step)
+		return;
+	m_footTravel = std::fmod(m_footTravel, step);
+
+	// the left foot and the right in turn, toes the way the walker faces
+	const vector3d up = feet.Normalized();
+	const vector3d forward = AlongGround(m_walker->GetForward(), up);
+	const vector3d right = forward.Cross(up);
+	m_footLeft = !m_footLeft;
+	m_tracks->PressFoot(m_walker->GetFrame(), feet + right * (m_footLeft ? -FOOT_SPREAD : FOOT_SPREAD), forward);
 }
 
 void Excursion::PressTracks()
@@ -651,6 +703,7 @@ void Excursion::LoadFromJson(const Json &jsonObj, Space *space)
 {
 	m_mode = Mode::SHIP;
 	m_walker = nullptr;
+	m_trackWalker = nullptr;
 	m_rover = nullptr;
 	m_roverAway = false;
 	// saved before there was anything to save: aboard
@@ -677,6 +730,7 @@ void Excursion::LoadFromJson(const Json &jsonObj, Space *space)
 	if (m_walker && m_mode != Mode::ON_FOOT && m_mode != Mode::EVA) {
 		space->KillBody(m_walker);
 		m_walker = nullptr;
+		m_trackWalker = nullptr;
 	}
 
 	if (excursionObj.count("rover_away") && !m_rover) {
@@ -713,6 +767,7 @@ void Excursion::OnSpaceDestroyed()
 	}
 
 	m_walker = nullptr;
+	m_trackWalker = nullptr;
 	m_rover = nullptr;
 	m_trackRover = nullptr;
 	m_tracks->Clear();

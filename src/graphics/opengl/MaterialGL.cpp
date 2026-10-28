@@ -46,7 +46,8 @@ namespace Graphics {
 		static size_t s_cityLotsName = "cityLots"_hash;
 		static size_t s_shipLightDataName = "ShipLightData"_hash;
 		static size_t s_surfaceTrackDataName = "SurfaceTrackData"_hash;
-		static size_t s_surfaceTracksName = "surfaceTracks"_hash;
+		static size_t s_wheelTracksName = "wheelTracks"_hash;
+		static size_t s_footTracksName = "footTracks"_hash;
 
 		// XXX potential target for allocation optimization
 		// (e.g. use renderer-owned freelist block allocator and align and group all three buffers into one allocation?)
@@ -149,10 +150,11 @@ namespace Graphics {
 			if (m_shipLightBinding != Shader::InvalidBinding)
 				SetBuffer(s_shipLightDataName, m_renderer->GetShipLightUniformBuffer());
 
-			// the rover's tracks round it, see SurfaceTracks.h
+			// the tracks of the rover and the walker round them, see SurfaceTracks.h
 			if (m_surfaceTrackBinding != Shader::InvalidBinding) {
 				SetBuffer(s_surfaceTrackDataName, m_renderer->GetSurfaceTrackUniformBuffer());
-				SetTexture(s_surfaceTracksName, m_renderer->GetSurfaceTracks());
+				SetTexture(s_wheelTracksName, m_renderer->GetWheelTracks());
+				SetTexture(s_footTracksName, m_renderer->GetFootTracks());
 			}
 
 			// this should always be present, but just in case...

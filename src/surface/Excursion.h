@@ -61,7 +61,7 @@ public:
 	Walker *GetWalker() const { return m_walker; }
 	// the rover while it is out of the ship in this system, driven or parked
 	Rover *GetRover() const { return m_rover; }
-	// the tracks its wheels leave
+	// the tracks its wheels and the walker's boots leave
 	SurfaceTracks *GetTracks() const { return m_tracks.get(); }
 	// out of the ship, here or parked in another system
 	bool IsRoverOut() const { return m_rover || m_roverAway; }
@@ -114,7 +114,7 @@ public:
 	// the ship has moved (Player::TimeStepUpdate) or been interpolated for
 	// drawing (Player::UpdateInterpTransform): an EVA walker follows it, the
 	// parked rover sleeps with no one within ROVER_WAKE_DISTANCE, and the
-	// rover's wheels press their tracks
+	// rover's wheels and the walker's boots press their tracks
 	void OnShipMoved();
 	void OnShipInterpolated(double alpha);
 
@@ -163,6 +163,8 @@ private:
 	void BringBackRover(Space *space);
 	// the wheels' tracks from where they last pressed them to where they are
 	void PressTracks();
+	// on foot, a boot's print at each step
+	void PressFootprints();
 	// the ship's flight controls take no input while the player is outside
 	void SetShipControlsEnabled(bool enabled);
 
@@ -183,6 +185,13 @@ private:
 	const Rover *m_trackRover = nullptr;
 	vector3d m_wheelTracks[4];
 	bool m_wheelTracked[4] = {};
+	// the walker's last position, how far it has gone since its last
+	// print, and which foot that was, for this walker
+	const Walker *m_trackWalker = nullptr;
+	vector3d m_footLast = vector3d(0.0);
+	double m_footTravel = 0.0;
+	bool m_footTracked = false;
+	bool m_footLeft = false;
 };
 
 #endif /* _EXCURSION_H */

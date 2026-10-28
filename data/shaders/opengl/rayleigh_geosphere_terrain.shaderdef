@@ -28,7 +28,8 @@ Texture sampler2D cityLots
 Texture sampler2D cityLightMap
 Texture sampler2D cityLightGrid
 
-Texture sampler2D surfaceTracks
+Texture sampler2D wheelTracks
+Texture sampler2D footTracks
 
 Buffer LightData binding=0
 Buffer DrawData binding=1

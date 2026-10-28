@@ -593,7 +593,7 @@ namespace Graphics {
 		m_cityRoads = m_cityLots = nullptr;
 		m_shipLightUniformBuffer = {};
 		m_surfaceTrackUniformBuffer = {};
-		m_surfaceTracks = nullptr;
+		m_wheelTracks = m_footTracks = nullptr;
 
 		return true;
 	}
@@ -886,10 +886,11 @@ namespace Graphics {
 		*groundData.data() = *data;
 	}
 
-	void RendererOGL::SetSurfaceTrackData(const SurfaceTrackDataBlock *data, Texture *tracks)
+	void RendererOGL::SetSurfaceTrackData(const SurfaceTrackDataBlock *data, Texture *wheels, Texture *feet)
 	{
 		m_surfaceTrackUniformBuffer = {};
-		m_surfaceTracks = data ? tracks : nullptr;
+		m_wheelTracks = data ? wheels : nullptr;
+		m_footTracks = data ? feet : nullptr;
 		if (!data)
 			return;
 

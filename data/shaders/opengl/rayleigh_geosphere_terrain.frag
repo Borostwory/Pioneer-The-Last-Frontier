@@ -150,7 +150,8 @@ void main(void)
 	// and the bumps of the material textures, but for the smooth paving
 	N = terrainBumpNormal(N, materialDx, materialDy, bump);
 	N = normalize(mix(N, baseNormal, pavingSmoothing));
-	// the tracks of the rover's wheels in soft ground (surface-tracks.glsl)
+	// the tracks of the rover's wheels and the walker's boots in soft ground
+	// (surface-tracks.glsl)
 	albedo *= surfaceTracksAt(varyingEyepos, surfaceUp, baseNormal, paved, N);
 	// shadows of ships, stations and buildings from the main star
 	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
