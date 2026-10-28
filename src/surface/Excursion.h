@@ -8,10 +8,13 @@
 #include "galaxy/SystemPath.h"
 #include "vector3.h"
 
+#include <memory>
+
 class Body;
 class Game;
 class Rover;
 class Space;
+class SurfaceTracks;
 class Walker;
 
 // The player outside the ship: getting out of a landed ship on foot, or out
@@ -51,12 +54,15 @@ public:
 	};
 
 	explicit Excursion(Game *game);
+	~Excursion();
 
 	Mode GetMode() const { return m_mode; }
 	bool IsOffShip() const { return m_mode != Mode::SHIP; }
 	Walker *GetWalker() const { return m_walker; }
 	// the rover while it is out of the ship in this system, driven or parked
 	Rover *GetRover() const { return m_rover; }
+	// the tracks its wheels leave
+	SurfaceTracks *GetTracks() const { return m_tracks.get(); }
 	// out of the ship, here or parked in another system
 	bool IsRoverOut() const { return m_rover || m_roverAway; }
 	// the planet the rover is out on; false while it is in the hold
@@ -106,8 +112,9 @@ public:
 	bool GetNavInfo(NavInfo &info) const;
 
 	// the ship has moved (Player::TimeStepUpdate) or been interpolated for
-	// drawing (Player::UpdateInterpTransform): an EVA walker follows it, and
-	// the parked rover sleeps with no one within ROVER_WAKE_DISTANCE
+	// drawing (Player::UpdateInterpTransform): an EVA walker follows it, the
+	// parked rover sleeps with no one within ROVER_WAKE_DISTANCE, and the
+	// rover's wheels press their tracks
 	void OnShipMoved();
 	void OnShipInterpolated(double alpha);
 
@@ -154,6 +161,8 @@ private:
 	// the rover parked in another system, back on its planet if that is in
 	// this space
 	void BringBackRover(Space *space);
+	// the wheels' tracks from where they last pressed them to where they are
+	void PressTracks();
 	// the ship's flight controls take no input while the player is outside
 	void SetShipControlsEnabled(bool enabled);
 
@@ -168,6 +177,12 @@ private:
 	SystemPath m_roverPlanet;
 	vector3d m_roverPos;
 	vector3d m_roverForward;
+
+	std::unique_ptr<SurfaceTracks> m_tracks;
+	// where each wheel last pressed its track, for this rover
+	const Rover *m_trackRover = nullptr;
+	vector3d m_wheelTracks[4];
+	bool m_wheelTracked[4] = {};
 };
 
 #endif /* _EXCURSION_H */

@@ -86,6 +86,11 @@ public:
 	// m/s at the tyres: the speed on the ground, spinning free in the air
 	// (with the throttle, down without it, stopped by the brake)
 	double GetWheelSpeed() const { return m_wheelSpeed; }
+	// wheel i (fl, fr, rl, rr): where it touches the ground, in the rover's
+	// frame; false off the ground or on something over the terrain (a pad,
+	// a building)
+	bool GetWheelOnTerrain(int i, vector3d &ground) const;
+	double GetTyreHalfWidth() const; // m
 
 	// the lamps, as the ship's (Ship::SetLightsLevel, Camera::SetShipLights):
 	// off (0) or brighter at each level; they stay as they are when parked
@@ -125,6 +130,8 @@ private:
 		double contact = 0.0; // distance of the ground under it from the planet centre
 		double offset = 0.0; // suspension: up from rest (m)
 		double oldOffset = 0.0;
+		vector3d ground = vector3d(0.0); // where it touches the ground
+		bool onTerrain = false;
 	};
 
 	void FindRig();

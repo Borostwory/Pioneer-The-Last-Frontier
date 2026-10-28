@@ -31,6 +31,7 @@ in float surfaceHeight;
 #include "shadows.glsl"
 #include "city-ground.glsl"
 #include "ship-lights.glsl"
+#include "surface-tracks.glsl"
 
 in float dist;
 
@@ -144,6 +145,8 @@ void main(void)
 	// and the bumps of the material textures, but for the smooth paving
 	tnorm = terrainBumpNormal(tnorm, materialDx, materialDy, bump);
 	tnorm = normalize(mix(tnorm, meshNormal, pavingSmoothing));
+	// the tracks of the rover's wheels in soft ground (surface-tracks.glsl)
+	albedo.rgb *= surfaceTracksAt(varyingEyepos, surfaceUp, meshNormal, paved, tnorm);
 
 #ifdef TERRAIN_WITH_WATER
 	// water: sun glint per light here, the rest after the light loop

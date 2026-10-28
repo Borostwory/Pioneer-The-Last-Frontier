@@ -17,7 +17,9 @@
 #include "Ship.h"
 #include "Space.h"
 #include "SpaceStation.h"
+#include "surface/Excursion.h"
 #include "surface/Rover.h"
+#include "surface/SurfaceTracks.h"
 
 #include "galaxy/StarSystem.h"
 #include "graphics/TextureBuilder.h"
@@ -404,6 +406,8 @@ void Camera::Draw(const Body *excludeBody)
 	SetCityLights();
 	// and its streets, for the terrain (city-ground.glsl)
 	SetCityGround();
+	// the rover's tracks, for the terrain (surface-tracks.glsl)
+	SetSurfaceTracks();
 	// the lamps of the ships around, for the lit shaders (ship-lights.glsl)
 	SetShipLights();
 
@@ -439,6 +443,7 @@ void Camera::Draw(const Body *excludeBody)
 	m_renderer->EndGpuTimer();
 	m_renderer->SetCityLightData(nullptr, nullptr, nullptr);
 	m_renderer->SetCityGroundData(nullptr, nullptr, nullptr);
+	m_renderer->SetSurfaceTrackData(nullptr, nullptr);
 	m_renderer->SetShipLightData(nullptr);
 
 	// city forcefields queued by their stations, over everything solid and
@@ -690,6 +695,22 @@ void Camera::SetShipLights() const
 	}
 	data.state[0] = float(count);
 	m_renderer->SetShipLightData(&data);
+}
+
+// Hands the terrain shaders the tracks the rover's wheels left round it
+// (SurfaceTracks.h), while the camera is near them
+void Camera::SetSurfaceTracks() const
+{
+	SurfaceTracks *tracks = Pi::game->GetExcursion()->GetTracks();
+	const Frame *f = Frame::GetFrame(tracks->GetFrame());
+	if (!f)
+		return;
+	const FrameId camFrame = m_context->GetTempFrame();
+	const matrix4x4d frameToView(f->GetInterpOrientRelTo(camFrame), f->GetInterpPositionRelTo(camFrame));
+	Graphics::SurfaceTrackDataBlock data;
+	Graphics::Texture *texture = nullptr;
+	if (tracks->GetRenderData(m_renderer, f->GetId(), frameToView, data, texture))
+		m_renderer->SetSurfaceTrackData(&data, texture);
 }
 
 void Camera::SetCityGround() const

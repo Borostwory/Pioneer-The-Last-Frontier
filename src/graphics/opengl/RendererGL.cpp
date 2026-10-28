@@ -592,6 +592,8 @@ namespace Graphics {
 		m_cityGroundUniformBuffer = {};
 		m_cityRoads = m_cityLots = nullptr;
 		m_shipLightUniformBuffer = {};
+		m_surfaceTrackUniformBuffer = {};
+		m_surfaceTracks = nullptr;
 
 		return true;
 	}
@@ -882,6 +884,19 @@ namespace Graphics {
 		auto groundData = GetDrawUniformBuffer(sizeof(CityGroundDataBlock))->Allocate<CityGroundDataBlock>(m_cityGroundUniformBuffer);
 		assert(groundData.isValid());
 		*groundData.data() = *data;
+	}
+
+	void RendererOGL::SetSurfaceTrackData(const SurfaceTrackDataBlock *data, Texture *tracks)
+	{
+		m_surfaceTrackUniformBuffer = {};
+		m_surfaceTracks = data ? tracks : nullptr;
+		if (!data)
+			return;
+
+		// ScopedMap will be released at the end of the function
+		auto trackData = GetDrawUniformBuffer(sizeof(SurfaceTrackDataBlock))->Allocate<SurfaceTrackDataBlock>(m_surfaceTrackUniformBuffer);
+		assert(trackData.isValid());
+		*trackData.data() = *data;
 	}
 
 	void RendererOGL::SetShipLightData(const ShipLightDataBlock *data)
@@ -1388,6 +1403,17 @@ namespace Graphics {
 			*shipData.data() = ShipLightDataBlock {};
 		}
 		return m_shipLightUniformBuffer;
+	}
+
+	const BufferBinding<UniformBuffer> &RendererOGL::GetSurfaceTrackUniformBuffer()
+	{
+		if (!m_surfaceTrackUniformBuffer.buffer) {
+			// shaders reading SurfaceTrackData always need a valid block; this one has no tracks
+			auto trackData = GetDrawUniformBuffer(sizeof(SurfaceTrackDataBlock))->Allocate<SurfaceTrackDataBlock>(m_surfaceTrackUniformBuffer);
+			assert(trackData.isValid());
+			*trackData.data() = SurfaceTrackDataBlock {};
+		}
+		return m_surfaceTrackUniformBuffer;
 	}
 
 	OGL::UniformLinearBuffer *RendererOGL::GetDrawUniformBuffer(Uint32 size)

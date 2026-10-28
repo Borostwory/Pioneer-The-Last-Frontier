@@ -45,6 +45,8 @@ namespace Graphics {
 		static size_t s_cityRoadsName = "cityRoads"_hash;
 		static size_t s_cityLotsName = "cityLots"_hash;
 		static size_t s_shipLightDataName = "ShipLightData"_hash;
+		static size_t s_surfaceTrackDataName = "SurfaceTrackData"_hash;
+		static size_t s_surfaceTracksName = "surfaceTracks"_hash;
 
 		// XXX potential target for allocation optimization
 		// (e.g. use renderer-owned freelist block allocator and align and group all three buffers into one allocation?)
@@ -81,6 +83,7 @@ namespace Graphics {
 			m_cityLightBinding = s->GetBufferBindingInfo(s_cityLightDataName).binding;
 			m_cityGroundBinding = s->GetBufferBindingInfo(s_cityGroundDataName).binding;
 			m_shipLightBinding = s->GetBufferBindingInfo(s_shipLightDataName).binding;
+			m_surfaceTrackBinding = s->GetBufferBindingInfo(s_surfaceTrackDataName).binding;
 		}
 
 		Program *Material::EvaluateVariant()
@@ -145,6 +148,12 @@ namespace Graphics {
 			// lights of the nearby ships, see Ship::SetLightsLevel
 			if (m_shipLightBinding != Shader::InvalidBinding)
 				SetBuffer(s_shipLightDataName, m_renderer->GetShipLightUniformBuffer());
+
+			// the rover's tracks round it, see SurfaceTracks.h
+			if (m_surfaceTrackBinding != Shader::InvalidBinding) {
+				SetBuffer(s_surfaceTrackDataName, m_renderer->GetSurfaceTrackUniformBuffer());
+				SetTexture(s_surfaceTracksName, m_renderer->GetSurfaceTracks());
+			}
 
 			// this should always be present, but just in case...
 			if (m_perDrawBinding != Shader::InvalidBinding) {

@@ -257,6 +257,18 @@ void Rover::SaveToJson(Json &jsonObj, Space *space)
 	jsonObj["rover"] = roverObj;
 }
 
+bool Rover::GetWheelOnTerrain(int i, vector3d &ground) const
+{
+	const Wheel &w = m_wheels[Clamp(i, 0, 3)];
+	ground = w.ground;
+	return w.onTerrain;
+}
+
+double Rover::GetTyreHalfWidth() const
+{
+	return 0.5 * TYRE_WIDTH * m_wheelRadius;
+}
+
 void Rover::SetLightsLevel(int level)
 {
 	m_lightsLevel = Clamp(level, 0, MAX_LIGHTS_LEVEL);
@@ -667,12 +679,19 @@ void Rover::TimeStepUpdate(const float timeStep)
 	m_wheelsOnGround = 0;
 	for (int i = 0; i < 4; i++) {
 		Wheel &w = m_wheels[i];
-		const double atRest = (newPos + newOrient * vector3d(w.hub.x, 0.0, w.hub.z)).Length();
+		const vector3d column = newPos + newOrient * vector3d(w.hub.x, 0.0, w.hub.z);
+		const double atRest = column.Length();
 		const double want = m_onGround ? Clamp(contacts[i] - atRest, -SUSP_DOWN, SUSP_UP) : -SUSP_DOWN;
 		w.offset += (want - w.offset) * follow;
 		w.contact = contacts[i];
-		if (m_onGround && contacts[i] - atRest > WHEEL_TOUCH_MARGIN - SUSP_DOWN)
+		const bool touching = m_onGround && contacts[i] - atRest > WHEEL_TOUCH_MARGIN - SUSP_DOWN;
+		if (touching)
 			m_wheelsOnGround++;
+		// where it touches, and whether that is the terrain itself (not a pad,
+		// a road or a building over it)
+		const vector3d up = column / atRest;
+		w.ground = up * contacts[i];
+		w.onTerrain = touching && contacts[i] < terrain->GetDrawnTerrainHeight(up) + WHEEL_TOUCH_MARGIN;
 	}
 	m_speed = vFlat.Dot(AlongGround(m_forward, nextUp));
 	if (m_onGround) {

@@ -89,6 +89,7 @@ namespace Graphics {
 		void SetShadowData(const ShadowDataBlock *data, Texture *const *maps) final;
 		void SetCityLightData(const CityLightDataBlock *data, Texture *lightMap, Texture *lightGrid) final;
 		void SetCityGroundData(const CityGroundDataBlock *data, Texture *roads, Texture *lots) final;
+		void SetSurfaceTrackData(const SurfaceTrackDataBlock *data, Texture *tracks) final;
 		void SetShipLightData(const ShipLightDataBlock *data) final;
 
 		bool FlushCommandBuffers() final;
@@ -130,6 +131,9 @@ namespace Graphics {
 		Texture *GetCityLots() const { return m_cityLots; }
 		// the ships' lights for this frame; allocates a "lights off" block if none was set
 		const BufferBinding<UniformBuffer> &GetShipLightUniformBuffer();
+		// the rover's tracks for this frame; allocates a "no tracks" block if none was set
+		const BufferBinding<UniformBuffer> &GetSurfaceTrackUniformBuffer();
+		Texture *GetSurfaceTracks() const { return m_surfaceTracks; }
 		OGL::UniformLinearBuffer *GetDrawUniformBuffer(Uint32 size);
 		OGL::RenderStateCache *GetStateCache() { return m_renderStateCache.get(); }
 
@@ -166,6 +170,8 @@ namespace Graphics {
 		Texture *m_cityRoads = nullptr;
 		Texture *m_cityLots = nullptr;
 		BufferBinding<UniformBuffer> m_shipLightUniformBuffer;
+		BufferBinding<UniformBuffer> m_surfaceTrackUniformBuffer;
+		Texture *m_surfaceTracks = nullptr;
 		bool m_useNVDepthRanged;
 		OGL::RenderTarget *m_activeRenderTarget = nullptr;
 		std::unique_ptr<OGL::CommandList> m_drawCommandList;

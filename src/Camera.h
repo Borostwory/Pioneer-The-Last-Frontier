@@ -141,6 +141,7 @@ public:
 private:
 	void SetCityLights() const;
 	void SetCityGround() const;
+	void SetSurfaceTracks() const;
 	void SetShipLights() const;
 	double CityDarkness(const Body *body, const vector3d &up) const;
 	void DrawCityDots(FrameId camFrameId) const;

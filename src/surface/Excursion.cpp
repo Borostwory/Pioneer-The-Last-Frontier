@@ -11,6 +11,7 @@
 #include "Player.h"
 #include "Rover.h"
 #include "Space.h"
+#include "SurfaceTracks.h"
 #include "SurfaceViewController.h"
 #include "TerrainBody.h"
 #include "Walker.h"
@@ -89,9 +90,12 @@ namespace {
 } // namespace
 
 Excursion::Excursion(Game *game) :
-	m_game(game)
+	m_game(game),
+	m_tracks(new SurfaceTracks())
 {
 }
+
+Excursion::~Excursion() = default;
 
 Body *Excursion::GetControlledBody() const
 {
@@ -485,6 +489,7 @@ bool Excursion::StowRover()
 
 	m_game->GetSpace()->KillBody(m_rover);
 	m_rover = nullptr;
+	m_trackRover = nullptr;
 
 	LuaEvent::Queue("onRoverStowed", player);
 	LuaEvent::Queue("onPlayerBoard", player);
@@ -586,6 +591,35 @@ void Excursion::OnShipMoved()
 		const bool near = m_mode == Mode::ROVER ||
 			(me->GetFrame() == m_rover->GetFrame() && me->GetPositionRelTo(m_rover).LengthSqr() < ROVER_WAKE_DISTANCE * ROVER_WAKE_DISTANCE);
 		m_rover->SetAsleep(!near);
+		PressTracks();
+	}
+}
+
+void Excursion::PressTracks()
+{
+	// pressed once a wheel has gone this far (m); a jump further (placed,
+	// loaded) starts the track again
+	constexpr double TRACK_STEP = 0.05;
+	constexpr double TRACK_JUMP = 5.0;
+
+	if (m_trackRover != m_rover) {
+		m_trackRover = m_rover;
+		for (bool &tracked : m_wheelTracked)
+			tracked = false;
+	}
+	for (int i = 0; i < 4; i++) {
+		vector3d ground;
+		if (!m_rover->GetWheelOnTerrain(i, ground)) {
+			m_wheelTracked[i] = false;
+			continue;
+		}
+		const double moved = (ground - m_wheelTracks[i]).LengthSqr();
+		if (m_wheelTracked[i] && moved < TRACK_STEP * TRACK_STEP)
+			continue;
+		if (m_wheelTracked[i] && moved < TRACK_JUMP * TRACK_JUMP)
+			m_tracks->Press(m_rover->GetFrame(), m_wheelTracks[i], ground, m_rover->GetTyreHalfWidth());
+		m_wheelTracks[i] = ground;
+		m_wheelTracked[i] = true;
 	}
 }
 
@@ -680,6 +714,8 @@ void Excursion::OnSpaceDestroyed()
 
 	m_walker = nullptr;
 	m_rover = nullptr;
+	m_trackRover = nullptr;
+	m_tracks->Clear();
 	if (IsOffShip()) {
 		m_mode = Mode::SHIP;
 		ShowShipView();

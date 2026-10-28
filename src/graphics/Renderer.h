@@ -99,6 +99,15 @@ namespace Graphics {
 	};
 	static_assert(sizeof(ShipLightDataBlock) == 400, "ShipLightDataBlock must match the std140 layout of ShipLightData");
 
+	// Layout of the SurfaceTrackData uniform buffer (std140, see surface-tracks.glsl):
+	// the tracks of the rover's wheels on the ground round it (SurfaceTracks.h)
+	struct SurfaceTrackDataBlock {
+		matrix4x4f viewToTrack; // view space -> the track map's plane (metres: x, z along it, y up)
+		float window[4];		// x, z of the window's centre (texels), texel size (m), texels per side (0: no tracks)
+		float params[4];		// strength (how soft the ground is), depth of a full rut (m), unused, unused
+	};
+	static_assert(sizeof(SurfaceTrackDataBlock) == 96, "SurfaceTrackDataBlock must match the std140 layout of SurfaceTrackData");
+
 	// Renderer base, functions return false if
 	// failed/unsupported
 	class Renderer {
@@ -211,6 +220,12 @@ namespace Graphics {
 		// (ship-lights.glsl). Pass nullptr to switch them off; the renderer also
 		// does at the end of the frame.
 		virtual void SetShipLightData(const ShipLightDataBlock *data) {}
+
+		// Tracks of the rover's wheels round it (see SurfaceTracks.h), used by
+		// every material whose shader declares the SurfaceTrackData buffer
+		// (surface-tracks.glsl). Pass nullptr to switch them off; the renderer
+		// also does at the end of the frame. The texture must stay alive until then.
+		virtual void SetSurfaceTrackData(const SurfaceTrackDataBlock *data, Texture *tracks) {}
 
 		//drawing functions
 		// TODO: placeholder API; here until CommandLists are exposed

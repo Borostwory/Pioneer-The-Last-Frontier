@@ -72,6 +72,7 @@ namespace Graphics {
 			uint32_t m_cityLightBinding;
 			uint32_t m_cityGroundBinding;
 			uint32_t m_shipLightBinding;
+			uint32_t m_surfaceTrackBinding;
 
 			std::unique_ptr<char[]> m_pushConstants;
 			std::unique_ptr<Texture *[]> m_textureBindings;

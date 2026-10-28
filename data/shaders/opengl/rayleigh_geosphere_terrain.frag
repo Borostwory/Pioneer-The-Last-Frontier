@@ -52,6 +52,7 @@ in vec3 waterSkyLight;
 #include "city-glow.glsl"
 #include "city-ground.glsl"
 #include "ship-lights.glsl"
+#include "surface-tracks.glsl"
 
 // the glint of the ships' lamps on water
 #define SHIP_WATER_SHINE 128.0
@@ -149,6 +150,8 @@ void main(void)
 	// and the bumps of the material textures, but for the smooth paving
 	N = terrainBumpNormal(N, materialDx, materialDy, bump);
 	N = normalize(mix(N, baseNormal, pavingSmoothing));
+	// the tracks of the rover's wheels in soft ground (surface-tracks.glsl)
+	albedo *= surfaceTracksAt(varyingEyepos, surfaceUp, baseNormal, paved, N);
 	// shadows of ships, stations and buildings from the main star
 	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
 	vec3 light = vec3(0.0);
