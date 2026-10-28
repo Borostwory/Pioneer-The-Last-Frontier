@@ -25,6 +25,9 @@ local shipList = nil
 local shipNames = {}
 local selectedShip = 0
 local lastBill = nil
+local equipList = nil
+local equipNames = {}
+local selectedEquip = 0
 local pass = { n = 1, unit = 0 } -- unit: 0 days, 1 weeks, 2 months
 local fastForwardTo = nil         -- set while time runs fast to a target
 
@@ -167,6 +170,21 @@ debugView.registerTab("debug-hangar", {
 				local def = shipList[selectedShip + 1]
 				if def then Hangar.AddRecord(h, newRecord(def)) end
 			end
+
+			if not equipList then
+				equipList = utils.build_array(pairs(Equipment.new))
+				table.sort(equipList, function(a, b) return a:GetName() < b:GetName() end)
+				equipNames = utils.map_array(equipList, function(e) return e:GetName() end)
+			end
+			local changedE, idxE = ui.combo("##debugHangarEquip", selectedEquip, equipNames)
+			if changedE then selectedEquip = idxE end
+			ui.sameLine()
+			if ui.button("Put one in the store") then
+				local proto = equipList[selectedEquip + 1]
+				if proto then table.insert(h.store, proto:Instance()) end
+			end
+			ui.sameLine()
+			ui.text("{} item(s) in the store" % { #h.store })
 
 			ui.separator()
 			if ui.button("Bill a month now") then

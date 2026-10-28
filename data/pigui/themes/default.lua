@@ -791,6 +791,7 @@ theme.icons = {
 	bay_empty = 562,
 	mission_cargo = 563,
 	crew_lounge = 564,
+	equipment_store = 565,
 	lease_locked = 570,
 }
 

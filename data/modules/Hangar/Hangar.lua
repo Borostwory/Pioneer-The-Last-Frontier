@@ -16,6 +16,7 @@
 local CargoManager = require 'CargoManager'
 local Comms = require 'Comms'
 local Commodities = require 'Commodities'
+local EquipSet = require 'EquipSet'
 local Event = require 'Event'
 local Game = require 'Game'
 local HullConfig = require 'HullConfig'
@@ -805,6 +806,285 @@ function Hangar.TakeFromLounge(character)
 	if not station or not lounge or lounge.key ~= Hangar.StationKey(station) then return false end
 	if not player:TakeCrewFromLounge(character) then return false, l.SHIP_FULL end
 	removeFromLounge(lounge, entry, index)
+	return true
+end
+
+--=============================================================================
+-- Equipment store
+--
+-- Equipment moves between the hangar's store and the ships here: the active
+-- ship (through its EquipSet, as the Equipment Market does) or a stored ship
+-- (its record is edited, with the same rules checked against the hull).
+-- `target` is Hangar.ACTIVE or a stored ship's record.
+--=============================================================================
+
+Hangar.ACTIVE = "active"
+
+---@class Hangar.SlotEntry
+---@field id string           slot id, compound for slots provided by fitted items
+---@field slot HullConfig.Slot
+---@field item EquipType?
+---@field depth integer       0 for hull slots, 1 for slots on a fitted item, ...
+
+-- Slots provided by fitted items are named after the key their item is
+-- fitted under: "<key>##<slot>"
+local function depthOf(id)
+	local _, n = tostring(id):gsub("##", "")
+	return n
+end
+
+-- All slots of a stored ship: the hull's and those of the items on it
+local function recordSlots(rec)
+	local slots = {}
+	for _, slot in pairs(HullConfig.GetHullConfig(rec.shipId).slots) do slots[slot.id] = slot end
+	local changed = true
+	while changed do
+		changed = false
+		for key, item in pairs(rec.equip) do
+			local fitted = type(key) ~= "string" or slots[key]
+			if item.provides_slots and fitted then
+				for _, sub in pairs(item.provides_slots) do
+					local id = tostring(key) .. "##" .. sub.id
+					if not slots[id] then slots[id] = sub changed = true end
+				end
+			end
+		end
+	end
+	return slots
+end
+
+-- slot id -> slot, slot id or loose key -> item, used and total volume, hull id
+local function targetState(target)
+	if target == Hangar.ACTIVE then
+		local player = Game.player
+		local es = player:GetComponent('EquipSet')
+		local items = {}
+		for key, item in pairs(es:GetInstalledEquipment()) do
+			if type(key) == "number" then key = es.cache[item] end
+			items[key] = item
+		end
+		return es.slotCache, items, player.equipVolume, player.totalVolume, player.shipId
+	end
+	local used = 0
+	for _, item in pairs(target.equip) do used = used + item.volume end
+	return recordSlots(target), target.equip, used, HullConfig.GetHullConfig(target.shipId).equipCapacity, target.shipId
+end
+
+-- The volume an item takes on a hull: items sized to their ship (the cargo
+-- scoop) are sized again for it
+local function volumeOn(item, shipId)
+	if not item.SpecializeForShip then return item.volume end
+	local probe = item:GetPrototype():Instance()
+	probe:SpecializeForShip(HullConfig.GetHullConfig(shipId))
+	return probe.volume
+end
+
+local function specializeFor(item, shipId)
+	if not item.SpecializeForShip then return end
+	rawset(item, "mass", nil)
+	rawset(item, "volume", nil)
+	rawset(item, "price", nil)
+	item:SpecializeForShip(HullConfig.GetHullConfig(shipId))
+end
+
+-- The slots of a ship here, hull slots first, each followed by the slots of
+-- the item fitted in it; and the items fitted without a slot
+---@return Hangar.SlotEntry[] slots, { key: integer, item: EquipType }[] loose, number used, number capacity
+function Hangar.EquipmentOf(target)
+	local slots, items, used, capacity = targetState(target)
+	local list = {}
+	local function add(id, depth)
+		table.insert(list, { id = id, slot = slots[id], item = items[id], depth = depth })
+		local children = {}
+		for childId in pairs(slots) do
+			if childId:sub(1, #id + 2) == id .. "##" and depthOf(childId) == depth + 1 then table.insert(children, childId) end
+		end
+		table.sort(children)
+		for _, childId in ipairs(children) do add(childId, depth + 1) end
+	end
+	local top = {}
+	for id in pairs(slots) do
+		if depthOf(id) == 0 then table.insert(top, id) end
+	end
+	table.sort(top, function(a, b)
+		local sa, sb = slots[a], slots[b]
+		if sa.type ~= sb.type then return sa.type < sb.type end
+		return a < b
+	end)
+	for _, id in ipairs(top) do add(id, 0) end
+
+	local loose = {}
+	for key, item in pairs(items) do
+		if type(key) == "number" then table.insert(loose, { key = key, item = item }) end
+	end
+	table.sort(loose, function(a, b) return a.key < b.key end)
+	-- slots provided by loose items follow the loose list
+	for _, entry in ipairs(loose) do
+		for id in pairs(slots) do
+			if id:sub(1, #tostring(entry.key) + 2) == tostring(entry.key) .. "##" and depthOf(id) == 1 then
+				add(id, 1)
+			end
+		end
+	end
+	return list, loose, used, capacity
+end
+
+-- Why an item fitted under `key` can't come off now, or nil
+local function unfitBlocker(target, key, item)
+	local slots, items = targetState(target)
+	local prefix = tostring(key) .. "##"
+	for id in pairs(items) do
+		if type(id) == "string" and id:sub(1, #prefix) == prefix then return l.UNFIT_CHILDREN_FIRST end
+	end
+	if item:IsA("Equipment.CabinType") and item:GetNumPassengers() > 0 then
+		return l.CABIN_OCCUPIED
+	end
+	if item.capabilities and item.capabilities.surface_rover and target == Hangar.ACTIVE
+			and Game.GetRoverPlanet and Game.GetRoverPlanet() then
+		return l.ROVER_IS_OUT
+	end
+	local cargoCap = item.capabilities and item.capabilities.cargo or 0
+	local lifeSupport = item.capabilities and item.capabilities.cargo_life_support or 0
+	if target == Hangar.ACTIVE then
+		if not item:CanBeSold(Game.player) then
+			return cargoCap > 0 and l.CARGO_RACK_IN_USE or l.CANT_BE_REMOVED
+		end
+	else
+		if cargoCap > 0 and Hangar.RecordCargoCapacity(target) - cargoCap < cargoTotal(target.cargo) then
+			return l.CARGO_RACK_IN_USE
+		end
+		if lifeSupport > 0 then
+			for name in pairs(target.cargo) do
+				local c = Commodities[name]
+				if c and (c.life_support or 0) > Hangar.RecordLifeSupport(target) - lifeSupport then
+					return l.LIFE_SUPPORT_IN_USE
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- The key an item is fitted under on a ship here
+local function keyOf(target, item)
+	local _, items = targetState(target)
+	for key, it in pairs(items) do
+		if it == item then return key end
+	end
+end
+
+---@param h Hangar.Lease
+function Hangar.CanUnfit(h, target, item)
+	if Hangar.IsLocked(h) then return false, l.HANGAR_LOCKED end
+	local key = keyOf(target, item)
+	if key == nil then return false end
+	local blocker = unfitBlocker(target, key, item)
+	return blocker == nil, blocker
+end
+
+-- Unfit an item into the hangar's store
+---@param h Hangar.Lease
+function Hangar.Unfit(h, target, item)
+	local ok, reason = Hangar.CanUnfit(h, target, item)
+	if not ok then return false, reason end
+	if target == Hangar.ACTIVE then
+		if not Game.player:GetComponent('EquipSet'):Remove(item) then return false end
+	else
+		target.equip[keyOf(target, item)] = nil
+		target.check = nil -- its stats changed on purpose
+	end
+	table.insert(h.store, item)
+	return true
+end
+
+-- Unfit everything that can come off, items on other items first. Returns how
+-- many came off.
+---@param h Hangar.Lease
+function Hangar.UnfitAll(h, target)
+	local count = 0
+	local progress = true
+	while progress do
+		progress = false
+		local entries, loose = Hangar.EquipmentOf(target)
+		local items = {}
+		for _, e in ipairs(entries) do if e.item then table.insert(items, { item = e.item, depth = e.depth }) end end
+		for _, e in ipairs(loose) do table.insert(items, { item = e.item, depth = 0 }) end
+		table.sort(items, function(a, b) return a.depth > b.depth end)
+		for _, e in ipairs(items) do
+			if Hangar.Unfit(h, target, e.item) then
+				count = count + 1
+				progress = true
+			end
+		end
+	end
+	return count
+end
+
+-- Where an item from the store would go on a ship here: a slot id, the loose
+-- marker true, or nil and the reason it can't. `slotId` is a preferred slot.
+---@param h Hangar.Lease
+function Hangar.FitPlace(h, target, item, slotId)
+	if Hangar.IsLocked(h) then return nil, l.HANGAR_LOCKED end
+	local slots, items, used, capacity, shipId = targetState(target)
+	local free = capacity - used
+	local volume = volumeOn(item, shipId)
+
+	if not item.slot then
+		if free < volume then return nil, l.NO_EQUIP_VOLUME end
+		return true
+	end
+
+	local hardpoint = item.slot.hardpoint or false
+	local function fits(id, slot)
+		return not items[id] and (slot.hardpoint or false) == hardpoint and EquipSet.CompatibleWithSlot(item, slot)
+	end
+	local typeMatch, sizeMatch, freeSlot = false, false, nil
+	if slotId and slots[slotId] and fits(slotId, slots[slotId]) then freeSlot = slotId end
+	local ids = {}
+	for id in pairs(slots) do table.insert(ids, id) end
+	table.sort(ids)
+	for _, id in ipairs(ids) do
+		local slot = slots[id]
+		if (slot.hardpoint or false) == hardpoint and EquipSet.SlotTypeMatches(item.slot.type, slot.type) then
+			typeMatch = true
+			if EquipSet.CompatibleWithSlot(item, slot) then
+				sizeMatch = true
+				if not freeSlot and not items[id] then freeSlot = id end
+			end
+		end
+	end
+	if not typeMatch then return nil, l.NO_SLOT_FOR_IT end
+	if not sizeMatch then return nil, l.SLOT_WRONG_SIZE end
+	if not freeSlot then return nil, l.SLOTS_TAKEN end
+	if free < volume then return nil, l.NO_EQUIP_VOLUME end
+	return freeSlot
+end
+
+-- Fit an item from the store to a ship here
+---@param h Hangar.Lease
+function Hangar.Fit(h, target, item, slotId)
+	local place, reason = Hangar.FitPlace(h, target, item, slotId)
+	if not place then return false, reason end
+	local _, _, _, _, shipId = targetState(target)
+	specializeFor(item, shipId)
+
+	if target == Hangar.ACTIVE then
+		local es = Game.player:GetComponent('EquipSet')
+		local ok = place == true and es:Install(item) or place ~= true and es:Install(item, es:GetSlotHandle(place))
+		if not ok then return false end
+	else
+		local key = place
+		if place == true then
+			-- loose items are keyed by a number no other loose item uses
+			key = 1
+			for k in pairs(target.equip) do
+				if type(k) == "number" and k >= key then key = k + 1 end
+			end
+		end
+		target.equip[key] = item
+		target.check = nil
+	end
+	utils.remove_elem(h.store, item)
 	return true
 end
 

@@ -22,6 +22,7 @@ local ui = require 'pigui'
 
 local l = Lang.GetResource("module-hangar")
 local lc = Lang.GetResource("ui-core")
+local le = Lang.GetResource("equipment-core")
 local ls = Lang.GetResource("ships")
 
 local colors = ui.theme.colors
@@ -52,6 +53,8 @@ local prepay = { n = 6, unit = 0 } -- unit: 0 months, 1 years
 local lease = { bays = 1, n = 0, unit = 0 }
 local swap = nil                 -- { rec = Hangar.Record, take = { [name] = { [tag] = n } }, aboard = { [Character] = true } }
 local swapModal                  -- the swap window, created below
+local equipShip = ACTIVE         -- Equipment sub-tab: ACTIVE or a stored ship's record id
+local equipSlot = nil            -- the slot picked to fit the next item into
 
 --=============================================================================
 -- Helpers
@@ -673,6 +676,140 @@ swapModal = ModalWindow.New("HangarSwap", function(self)
 end)
 
 --=============================================================================
+-- Equipment sub-tab (the hangar store)
+--=============================================================================
+
+-- A slot's name, as the Equipment Market shows it
+local function slotName(slot)
+	if slot.i18n_key then
+		return Lang.GetResource(slot.i18n_res)[slot.i18n_key]
+	end
+	local base = slot.type:match("([%w_-]+)%.?")
+	return le[(slot.hardpoint and "HARDPOINT_" or "SLOT_") .. base:upper()] or slot.type
+end
+
+-- Extra state an item keeps: hyperdrive fuel, missiles in a rack
+local function itemNote(item)
+	local parts = { string.format("%s m³", ui.Format.Number(item.volume, 1)) }
+	if item.storedFuel and item.GetMaxFuel then
+		table.insert(parts, string.interp(l.DRIVE_FUEL, { fuel = string.format("%.1f", item.storedFuel) }))
+	end
+	return table.concat(parts, " · ")
+end
+
+local function drawEquipment(station, h)
+	ui.withFont(orbiteer.heading, function()
+		ui.icon(icons.hangar, Vector2(ui.getTextLineHeight()), colors.font)
+		ui.sameLine()
+		ui.text(string.interp(l.HANGAR_AT, { station = h.station }))
+	end)
+	if Hangar.IsLocked(h) then
+		iconText(icons.lease_locked, colors.alertRed, l.HANGAR_LOCKED)
+	end
+
+	-- the ship being fitted: the active one or one stored here
+	local stored = Hangar.StoredShips(h)
+	local target, targetName = Hangar.ACTIVE, Game.player.shipName
+	local names, ids = { string.interp(l.SHIP_ACTIVE_OPTION, { name = Game.player.shipName }) }, { ACTIVE }
+	for _, rec in ipairs(stored) do
+		table.insert(names, string.interp(l.SHIP_STORED_OPTION, { name = rec.name }))
+		table.insert(ids, rec.id)
+		if rec.id == equipShip then target, targetName = rec, rec.name end
+	end
+	if target == Hangar.ACTIVE then equipShip = ACTIVE end
+
+	local entries, loose, used, capacity = Hangar.EquipmentOf(target)
+	local footer = ui.getTextLineHeightWithSpacing() * 2.5
+	local size = ui.getContentRegion()
+	local half = (size.x - widgetSizes.itemSpacing.x) / 2
+
+	ui.child("equipFitted", Vector2(half, size.y - footer), function()
+		ui.text(l.FITTED_ON)
+		ui.sameLine()
+		ui.pushItemWidth(half * 0.5)
+		local current = 0
+		for i, id in ipairs(ids) do if id == equipShip then current = i - 1 end end
+		local changed, index = ui.combo("##equipShip", current, names)
+		if changed then equipShip = ids[index + 1] equipSlot = nil end
+		ui.popItemWidth()
+		ui.sameLine()
+		if button(l.UNFIT_ALL, not Hangar.IsLocked(h), Hangar.IsLocked(h) and l.HANGAR_LOCKED or l.UNFIT_ALL_TOOLTIP) then
+			Hangar.UnfitAll(h, target)
+		end
+		ui.textColored(colors.fontDim, string.interp(l.EQUIP_VOLUME, {
+			used = ui.Format.Number(used, 1), capacity = ui.Format.Number(capacity, 1) }))
+		ui.separator()
+
+		local function itemRow(id, item)
+			local ok, why = Hangar.CanUnfit(h, target, item)
+			if button(ui.get_icon_glyph(icons.forward) .. "##unfit" .. tostring(item), ok, ok and l.UNFIT_TOOLTIP or why) then
+				Hangar.Unfit(h, target, item)
+				equipSlot = nil
+			end
+			ui.sameLine()
+			ui.text(item:GetName())
+			ui.sameLine()
+			ui.textColored(colors.fontDim, itemNote(item))
+			-- while locked the banner above says why
+			if not ok and why and not Hangar.IsLocked(h) then
+				ui.textColored(colors.fontDim, "      " .. why)
+			end
+		end
+
+		for _, e in ipairs(entries) do
+			local indent = string.rep("    ", e.depth)
+			if e.item then
+				ui.textColored(colors.fontDim, indent .. slotName(e.slot))
+				ui.sameLine(ui.getContentRegion().x * 0.3)
+				itemRow(e.id, e.item)
+			else
+				local label = indent .. slotName(e.slot) .. "##slot" .. e.id
+				if ui.selectable(label, equipSlot == e.id, {}) then
+					equipSlot = equipSlot ~= e.id and e.id or nil
+				end
+				ui.sameLine(ui.getContentRegion().x * 0.3)
+				ui.textColored(colors.fontDim, l.EMPTY_SLOT)
+			end
+		end
+		if #loose > 0 then
+			ui.spacing()
+			ui.textColored(colors.fontDim, l.WITHOUT_A_SLOT)
+			for _, e in ipairs(loose) do itemRow(e.key, e.item) end
+		end
+	end)
+	ui.sameLine()
+	ui.child("equipStore", Vector2(half, size.y - footer), function()
+		local volume = 0
+		for _, item in ipairs(h.store) do volume = volume + item.volume end
+		ui.text(string.interp(l.STORE_AT, { station = h.station }))
+		ui.textColored(colors.fontDim, string.interp(l.STORE_CONTENTS, { count = #h.store, volume = ui.Format.Number(volume, 1) }))
+		ui.separator()
+		if #h.store == 0 then
+			ui.textColored(colors.fontDim, l.STORE_EMPTY)
+		end
+		-- a copy: fitting changes the store
+		for _, item in ipairs(table.copy(h.store)) do
+			local place, why = Hangar.FitPlace(h, target, item, equipSlot)
+			local tooltip = place and string.interp(l.FIT_TOOLTIP, { ship = targetName }) or why
+			if button(ui.get_icon_glyph(icons.backward) .. "##fit" .. tostring(item), place ~= nil, tooltip) then
+				Hangar.Fit(h, target, item, equipSlot)
+				equipSlot = nil
+			end
+			ui.sameLine()
+			ui.text(item:GetName())
+			ui.sameLine()
+			ui.textColored(colors.fontDim, itemNote(item))
+			if not place and not Hangar.IsLocked(h) then
+				ui.textColored(colors.fontDim, "      " .. why)
+			end
+		end
+	end)
+
+	ui.separator()
+	ui.textColored(colors.fontDim, l.STORE_HELP)
+end
+
+--=============================================================================
 -- Crew lounge sub-tab (works at every station, with or without a hangar)
 --=============================================================================
 
@@ -870,6 +1007,10 @@ StationView:registerView({
 			ui.withStyleVars({ ItemSpacing = widgetSizes.itemSpacing }, function()
 				ui.tabBar("hangarTabs", {
 					{ ui.get_icon_glyph(icons.hangar) .. " " .. l.SHIPS, drawShips },
+					{ ui.get_icon_glyph(icons.equipment_store) .. " " .. l.EQUIPMENT_TAB, function()
+						-- the store is part of the hangar
+						if h then drawEquipment(station, h) else drawLeaseForm(station) end
+					end },
 					{ ui.get_icon_glyph(icons.crew_lounge) .. " " .. l.CREW_LOUNGE, function() drawLounge(station) end },
 				})
 			end)
@@ -877,6 +1018,8 @@ StationView:registerView({
 	end,
 	refresh = function()
 		selected = ACTIVE
+		equipShip = ACTIVE
+		equipSlot = nil
 		renaming = nil
 		showPrepay = false
 		spinnerKey = nil

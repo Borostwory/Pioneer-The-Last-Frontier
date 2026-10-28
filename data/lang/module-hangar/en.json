@@ -47,6 +47,14 @@
     "description": "Tooltip: button bringing a crew member aboard",
     "message": "Bring aboard"
   },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "passengers aboard"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "can't be removed now"
+  },
   "CANT_LAUNCH_FEWER": {
     "description": "",
     "message": "You can't launch with fewer than {min} crew."
@@ -62,6 +70,10 @@
   "CARGO_HOLD": {
     "description": "Size of the ship's cargo hold",
     "message": "Cargo hold"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "the cargo it holds wouldn't fit without it"
   },
   "COL_BAY": {
     "description": "Bay table column",
@@ -123,11 +135,19 @@
     "description": "Window asking before someone in a lounge is dismissed",
     "message": "Dismiss {name}?"
   },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t fuel"
+  },
   "EMPTY_BAY": {
     "description": "Bay table: an empty bay",
     "message": "empty"
   },
   "EMPTY_HOLD": {
+    "description": "",
+    "message": "empty"
+  },
+  "EMPTY_SLOT": {
     "description": "",
     "message": "empty"
   },
@@ -142,6 +162,22 @@
   "EQUIPMENT": {
     "description": "",
     "message": "Equipment"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Equipment"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Equipment volume: {used} of {capacity} m³ used"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Fitted on"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Fit to \"{ship}\""
   },
   "FLY_THIS_SHIP": {
     "description": "Button: swap to this stored ship",
@@ -210,6 +246,10 @@
   "LEASE_HANGAR": {
     "description": "Button",
     "message": "Lease hangar"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "cargo aboard needs it"
   },
   "LIGHT_YEARS_AWAY": {
     "description": "Crew tab: distance to a lounge in another system",
@@ -307,6 +347,10 @@
     "description": "Under the bay table",
     "message": "Nothing paid upfront: rent is taken from your account on the 1st of each month."
   },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "not enough equipment volume"
+  },
   "NO_HANGAR_HERE": {
     "description": "",
     "message": "You have no hangar at {station}."
@@ -318,6 +362,10 @@
   "NO_SHIPS_STORED": {
     "description": "",
     "message": "No ships are stored here yet."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "no slot for it on this ship"
   },
   "OFFER_POSITION_IN_LOUNGE": {
     "description": "Bulletin board, crew for hire",
@@ -415,6 +463,10 @@
     "description": "",
     "message": "The rest stays aboard \"{ship}\"."
   },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "the rover is parked out on a planet"
+  },
   "ROVER_OUT": {
     "description": "Swap blocker",
     "message": "Your rover is parked on {planet}. Stow it first."
@@ -435,6 +487,10 @@
     "description": "Hangar sub-tab",
     "message": "Ships"
   },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "\"{name}\" (active)"
+  },
   "SHIP_CELL": {
     "description": "Bay table: a ship",
     "message": "{name} ({type}) · hull {hull}%"
@@ -443,6 +499,10 @@
     "description": "Tooltip on a disabled bring-aboard button",
     "message": "\"{ship}\" takes at most {max} crew."
   },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "\"{name}\" (stored here)"
+  },
   "SHOW_ON_MAP": {
     "description": "Tooltip: button selecting a system on the sector map",
     "message": "Show on the sector map"
@@ -450,6 +510,14 @@
   "SINCE": {
     "description": "Crew tab column",
     "message": "Since"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "its slots on this ship are taken"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "its slot on this ship is the wrong size"
   },
   "STATION": {
     "description": "Crew tab column",
@@ -462,6 +530,22 @@
   "STATUS_STORED": {
     "description": "",
     "message": "stored since {date}"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Hangar store at {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} item(s) · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "The store is empty."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Unfit items into the store, then fit them to the ship picked on the left. Equipment Market rules, no fee. Pick an empty slot first to fit an item into that slot."
   },
   "SWAP_NOTE": {
     "description": "",
@@ -507,6 +591,22 @@
     "description": "Bay table: total row",
     "message": "Total: {used} of {bays} bays in use"
   },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Unfit all"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Move everything that can come off this ship into the store"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "unfit the items mounted on it first"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Unfit into the store"
+  },
   "WAGE_PER_WEEK": {
     "description": "",
     "message": "{wage} a week"
@@ -526,6 +626,10 @@
   "WAITING_SINCE": {
     "description": "",
     "message": "waiting since {date}"
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Fitted without a slot"
   },
   "YEARS": {
     "description": "Unit picker",

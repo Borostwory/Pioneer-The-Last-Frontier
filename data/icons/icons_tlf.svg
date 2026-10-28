@@ -43,8 +43,8 @@
     50 bay_empty           dashed bay outline (empty bay)
     51 mission_cargo       crate with a diamond mark (cargo held for a mission)
     52 crew_lounge         figure seated on a bench (crew waiting in a station lounge)
-    53-57 free (planned: equipment_store, ship_send, ship_receive, in_transit,
-          transfer_cancel)
+    53 equipment_store     shelf rack holding a module (hangar equipment store)
+    54-57 free (planned: ship_send, ship_receive, in_transit, transfer_cancel)
     58 lease_locked        padlock in a bay (hangar locked by unpaid rent)
     59-63 free (planned: 59 fleet)
 
@@ -493,6 +493,20 @@
       <path
          style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
          d="M4,28.5 H36 M7.5,28.5 V36 M32.5,28.5 V36" />
+    </g>
+
+    <!-- 53: equipment_store -->
+    <g id="icon_equipment_store" transform="translate(200,120)">
+      <!-- rack: posts and two shelves -->
+      <path
+         style="fill:none;stroke:#ffffff;stroke-width:3;stroke-linecap:round"
+         d="M5,4 V36 M35,4 V36 M5,20 H35 M5,34 H35" />
+      <!-- a module on the top shelf, with its connector -->
+      <path
+         style="fill:#ffffff;fill-rule:evenodd"
+         d="M10,7 H24 V18 H10 Z M13.5,10.5 V14.5 H20.5 V10.5 Z" />
+      <!-- a smaller one below -->
+      <rect style="fill:#ffffff" x="20" y="25" width="11" height="8" />
     </g>
 
     <!-- 58: lease_locked -->
