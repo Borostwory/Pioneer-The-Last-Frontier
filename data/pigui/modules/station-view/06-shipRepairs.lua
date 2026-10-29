@@ -49,16 +49,19 @@ local widgetSizes = ui.rescaleUI({
 	buttonSize = Vector2(100, 0),
 	verticalDummy = Vector2(0, 50),
 	gaugeWidth = 600,
+	paintshopItemSpacing = Vector2(8, 6),
 }, Vector2(1600, 900))
 
 
 local popup = ModalWindow.New('ChiefMechanicPopup', function(self)
-	ui.text(l.YOU_DONT_HAVE_ENOUGH_MONEY_FOR_THAT_OPTION)
-	ui.dummy(Vector2((ui.getContentRegion().x - 100*rescaleVector.x) / 2, 0))
-	ui.sameLine()
-	if ui.button(l.OK, Vector2(100*rescaleVector.x, 0)) then
-		self:close()
-	end
+	ui.withFont(pionillium.body, function()
+		ui.text(l.YOU_DONT_HAVE_ENOUGH_MONEY_FOR_THAT_OPTION)
+		ui.dummy(Vector2((ui.getContentRegion().x - 100*rescaleVector.x) / 2, 0))
+		ui.sameLine()
+		if ui.button(l.OK, Vector2(100*rescaleVector.x, 0)) then
+			self:close()
+		end
+	end)
 end)
 
 local tryRepair = function (damage, price)
@@ -124,12 +127,14 @@ local function refreshModelSpinner()
 end
 
 local popupChangesApplied = ModalWindow.New('paintshopPopupChangesApplied', function(self)
-	ui.text(l.NEW_PAINTJOB_APPLIED)
-	ui.dummy(Vector2((ui.getContentRegion().x - 100*rescaleVector.x) / 2, 0))
-	ui.sameLine()
-	if ui.button(l.OK, Vector2(100*rescaleVector.x, 0)) then
-		self:close()
-	end
+	ui.withFont(pionillium.body, function()
+		ui.text(l.NEW_PAINTJOB_APPLIED)
+		ui.dummy(Vector2((ui.getContentRegion().x - 100*rescaleVector.x) / 2, 0))
+		ui.sameLine()
+		if ui.button(l.OK, Vector2(100*rescaleVector.x, 0)) then
+			self:close()
+		end
+	end)
 end)
 
 -- prepares color for use on the ship model
@@ -235,7 +240,7 @@ local function drawShipRepair()
 				local paintshopAvailable = determinePaintshopAvailability()
 
 				if (paintshopAvailable) then
-					if ui.button(l.VISIT_PAINTSHOP, Vector2(250, 36)) then
+					if ui.button(l.VISIT_PAINTSHOP) then
 						activeTab = 1
 					end
 				else
@@ -255,7 +260,7 @@ end
 local function drawPaintshop()
 
 	ui.withFont(pionillium.heading, function()
-		if ui.button(l.VISIT_REPAIR_SERVICES, Vector2(250, 36)) then
+		if ui.button(l.VISIT_REPAIR_SERVICES) then
 			activeTab = 0
 			return
 		end
@@ -279,8 +284,8 @@ local function drawPaintshop()
 	end
 
 	local columnWidth = ui.getContentRegion().x/2
-	local itemSpacing = Vector2(8, 6)
-	local verticalDummy = Vector2(0, 50)
+	local itemSpacing = widgetSizes.paintshopItemSpacing
+	local verticalDummy = widgetSizes.verticalDummy
 	ui.withStyleVars({ ItemSpacing = itemSpacing }, function ()
 		ui.child("PaintshopModelSpinner", Vector2(columnWidth, 0), function()
 			modelSpinner:setSize(ui.getContentRegion())
@@ -300,23 +305,23 @@ local function drawPaintshop()
 
 			ui.withFont(pionillium.body, function()
 
-				if ui.button("<", Vector2(20, 36)) then
+				if ui.button("<") then
 					changePattern(-1)
 				end
 				ui.sameLine()
 				ui.text(l.PATTERN.. " " ..previewPattern)
 				ui.sameLine()
-				if ui.button(">", Vector2(20, 36)) then
+				if ui.button(">") then
 					changePattern(1)
 				end
 
 				ui.sameLine()
-				if ui.button(l.RESET_PREVIEW, Vector2(columnWidth/4, 36)) then
+				if ui.button(l.RESET_PREVIEW) then
 					resetPreview()
 				end
 
 				ui.sameLine()
-				if ui.button(l.RANDOM_COLORS, Vector2(columnWidth/4, 36)) then
+				if ui.button(l.RANDOM_COLORS) then
 
 					local function randomColor()
 						return Color(Engine.rand:Integer(0,255), Engine.rand:Integer(0,255), Engine.rand:Integer(0,255))
@@ -357,7 +362,7 @@ local function drawPaintshop()
 				ui.withStyleColors({Text = priceColor }, function()
 					ui.text(l.PRICE.. ": " ..Format.Money(price, false))
 				end)
-				if ui.button(l.PURCHASE_PAINTJOB, Vector2(200, 36)) then
+				if ui.button(l.PURCHASE_PAINTJOB) then
 					applyChanges()
 				end
 			end)

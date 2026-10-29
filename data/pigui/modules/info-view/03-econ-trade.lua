@@ -280,6 +280,12 @@ local function transfer_hyperfuel_mil(hyperdrive, amt)
 	end
 end
 
+-- every fuel button is as wide as the widest label any of them carries, so
+-- none is cut off at high resolutions and the rows stay aligned
+local function fuelButtonSize()
+	return Vector2(ui.calcButtonSize(ui.get_icon_glyph(icons.chevron_right) .. "-100").x, 0)
+end
+
 local function fuelTransferButton(drive, amt)
 	local driveEnabled = false
 
@@ -294,7 +300,7 @@ local function fuelTransferButton(drive, amt)
 	local icon = amt < 0 and icons.chevron_up or icons.chevron_down
 	local tooltip = amt < 0 and l.PUMP_DOWN_FROM_HYPERDRIVE_TOOLTIP or l.PUMP_DOWN_TO_HYPERDRIVE_TOOLTIP
 
-	if ui.button(ui.get_icon_glyph(icon) .. tostring(math.abs(amt)), Vector2(100, 0), color, string.format(tooltip, math.abs(amt))) then
+	if ui.button(ui.get_icon_glyph(icon) .. tostring(math.abs(amt)), fuelButtonSize(), color, string.format(tooltip, math.abs(amt))) then
 		if not driveEnabled then
 			if drive.fuel == Commodities.hydrogen then
 				transfer_hyperfuel_hydrogen(drive, amt)
@@ -350,7 +356,7 @@ local function drawPumpDialog()
 	ui.sameLine(width)
 	local options = {1, 10, 100}
 	for _, k in ipairs(options) do
-		if ui.button(ui.get_icon_glyph(icons.chevron_left) .. tostring(k)  .. "##fuel", Vector2(100, 0), nil, string.format(l.PUMP_DOWN_FROM_CARGO_TOOLTIP, k)) then
+		if ui.button(ui.get_icon_glyph(icons.chevron_left) .. tostring(k)  .. "##fuel", fuelButtonSize(), nil, string.format(l.PUMP_DOWN_FROM_CARGO_TOOLTIP, k)) then
 			-- Refuel k tonnes from cargo hold
 			Game.player:Refuel(Commodities.hydrogen, k)
 		end
@@ -365,7 +371,7 @@ local function drawPumpDialog()
 	ui.sameLine(width)
 	for _, v in ipairs(options) do
 		local fuel = -1*v
-		if ui.button(ui.get_icon_glyph(icons.chevron_right) .. fuel .. "##pump", Vector2(100, 0), nil, string.format(l.PUMP_DOWN_TO_CARGO_TOOLTIP, v)) then
+		if ui.button(ui.get_icon_glyph(icons.chevron_right) .. fuel .. "##pump", fuelButtonSize(), nil, string.format(l.PUMP_DOWN_TO_CARGO_TOOLTIP, v)) then
 			pumpDown(fuel)
 		end
 		ui.sameLine()

@@ -55,12 +55,14 @@ local hyperdriveIcon = PiImage.New("icons/goods/Hydrogen.png")
 
 local popupMsg = ''
 local popup = ModalWindow.New('lobbyPopup', function(self)
-	ui.text(popupMsg)
-	ui.dummy(Vector2((ui.getContentRegion().x - 100*rescaleVector.x) / 2, 0))
-	ui.sameLine()
-	if ui.button("OK", Vector2(100*rescaleVector.x, 0)) then
-		self:close()
-	end
+	ui.withFont(pionillium.body, function()
+		ui.text(popupMsg)
+		ui.dummy(Vector2((ui.getContentRegion().x - 100*rescaleVector.x) / 2, 0))
+		ui.sameLine()
+		if ui.button("OK", Vector2(100*rescaleVector.x, 0)) then
+			self:close()
+		end
+	end)
 end)
 
 local requestLaunch = function (station)

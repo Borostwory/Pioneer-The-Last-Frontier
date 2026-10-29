@@ -37,6 +37,7 @@ local widgetSizes = ui.rescaleUI({
 	itemSpacing = Vector2(18, 4),
 	cardPadding = Vector2(10, 6),
 	purchaseButtons = Vector2(220, 0),
+	specsCellPadding = Vector2(3, 4),
 }, Vector2(1600, 900))
 widgetSizes.iconSpacer = (widgetSizes.buyButton - widgetSizes.iconSize)/2
 
@@ -696,30 +697,34 @@ local tradeMenu = function()
 				local shipFormatAndCompare = FormatAndCompareShips.New( def, currentShip )
 
 				ui.child("ShipSpecs", Vector2(0, 0), function()
-					ui.withStyleVars({ CellPadding = Vector2(3,4) }, function()
+					-- a readable font for the specs instead of the tiny default one;
+					-- details rather than body, so four columns of labels still fit
+					ui.withFont(pionillium.details, function()
+						ui.withStyleVars({ CellPadding = widgetSizes.specsCellPadding }, function()
 
-						if not shipFormatAndCompare:beginTable() then return end
+							if not shipFormatAndCompare:beginTable() then return end
 
-						shipFormatAndCompare:draw_hyperdrive_cell( l.HYPERDRIVE_FITTED )
-						shipFormatAndCompare:draw_tonnage_cell( l.WEIGHT_EMPTY, "hullMass" )
-						shipFormatAndCompare:draw_accel_cell( l.FORWARD_ACCEL_EMPTY, "FORWARD", "emptyMass" )
-						shipFormatAndCompare:draw_tonnage_cell( l.FUEL_WEIGHT, "fuelTankMass" )
-						shipFormatAndCompare:draw_accel_cell( l.REVERSE_ACCEL_EMPTY, "REVERSE", "emptyMass" )
-						shipFormatAndCompare:draw_cargo_cell( l.CARGO_SPACE, "cargoCapacity" )
-						shipFormatAndCompare:draw_accel_cell( l.UP_ACCEL_EMPTY, "UP", "emptyMass" )
-						shipFormatAndCompare:draw_volume_cell( l.EQUIPMENT_CAPACITY, "equipCapacity" )
-						shipFormatAndCompare:draw_deltav_cell( l.DELTA_V_EMPTY, "emptyMass", "hullMass")
-						shipFormatAndCompare:draw_yes_no_equip_slot_cell( l.ATMOSPHERIC_SHIELDING, "hull.atmo_shield" )
-						shipFormatAndCompare:draw_unformated_cell( l.MINIMUM_CREW, "minCrew" )
-						shipFormatAndCompare:draw_atmos_pressure_limit_cell( l.ATMO_PRESS_LIMIT )
-						shipFormatAndCompare:draw_unformated_cell( l.MAXIMUM_CREW, "maxCrew" )
-						shipFormatAndCompare:draw_equip_slot_cell( l.MISSILE_MOUNTS, "missile" )
-						shipFormatAndCompare:draw_berths_slot_cell( l.PASSENGER_CABIN_CAPACITY )
-						shipFormatAndCompare:draw_equip_slot_cell( l.SCOOP_MOUNTS, "scoop" )
-						shipFormatAndCompare:draw_yes_no_equip_slot_cell( l.ROVER_BAY, "vehicle_bay" )
+							shipFormatAndCompare:draw_hyperdrive_cell( l.HYPERDRIVE_FITTED )
+							shipFormatAndCompare:draw_tonnage_cell( l.WEIGHT_EMPTY, "hullMass" )
+							shipFormatAndCompare:draw_accel_cell( l.FORWARD_ACCEL_EMPTY, "FORWARD", "emptyMass" )
+							shipFormatAndCompare:draw_tonnage_cell( l.FUEL_WEIGHT, "fuelTankMass" )
+							shipFormatAndCompare:draw_accel_cell( l.REVERSE_ACCEL_EMPTY, "REVERSE", "emptyMass" )
+							shipFormatAndCompare:draw_cargo_cell( l.CARGO_SPACE, "cargoCapacity" )
+							shipFormatAndCompare:draw_accel_cell( l.UP_ACCEL_EMPTY, "UP", "emptyMass" )
+							shipFormatAndCompare:draw_volume_cell( l.EQUIPMENT_CAPACITY, "equipCapacity" )
+							shipFormatAndCompare:draw_deltav_cell( l.DELTA_V_EMPTY, "emptyMass", "hullMass")
+							shipFormatAndCompare:draw_yes_no_equip_slot_cell( l.ATMOSPHERIC_SHIELDING, "hull.atmo_shield" )
+							shipFormatAndCompare:draw_unformated_cell( l.MINIMUM_CREW, "minCrew" )
+							shipFormatAndCompare:draw_atmos_pressure_limit_cell( l.ATMO_PRESS_LIMIT )
+							shipFormatAndCompare:draw_unformated_cell( l.MAXIMUM_CREW, "maxCrew" )
+							shipFormatAndCompare:draw_equip_slot_cell( l.MISSILE_MOUNTS, "missile" )
+							shipFormatAndCompare:draw_berths_slot_cell( l.PASSENGER_CABIN_CAPACITY )
+							shipFormatAndCompare:draw_equip_slot_cell( l.SCOOP_MOUNTS, "scoop" )
+							shipFormatAndCompare:draw_yes_no_equip_slot_cell( l.ROVER_BAY, "vehicle_bay" )
 
-						ui.endTable()
+							ui.endTable()
 
+						end)
 					end)
 				end)
 

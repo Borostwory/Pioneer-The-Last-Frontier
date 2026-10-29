@@ -42,12 +42,15 @@ function TableWidget.New(id, title, config)
     self = {
         id = id,
         popup = config.popup or ModalWindow.New('popupMsg' .. id, function()
-            ui.text(self.popup.msg)
-            ui.dummy(Vector2((ui.getContentRegion().x - 100) / 2, 0))
-            ui.sameLine()
-            if ui.button("OK", Vector2(100, 0)) then
-                self.popup:close()
-            end
+            ui.withFont(ui.fonts.pionillium.body, function()
+                local okWidth = ui.calcButtonSize("OK").x * 2
+                ui.text(self.popup.msg)
+                ui.dummy(Vector2((ui.getContentRegion().x - okWidth) / 2, 0))
+                ui.sameLine()
+                if ui.button("OK", Vector2(okWidth, 0)) then
+                    self.popup:close()
+                end
+            end)
         end),
         title = title,
         items = {},

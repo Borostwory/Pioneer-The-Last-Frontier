@@ -35,12 +35,14 @@ local function refreshStatusIcon()
 end
 
 local popup = ModalWindow.New('policePopup', function(self)
-	ui.text(l.YOU_NOT_ENOUGH_MONEY .. ".")
-	ui.dummy(Vector2((ui.getContentRegion().x - 100*rescaleVector.x) / 2, 0))
-	ui.sameLine()
-	if ui.button(l.OK, Vector2(100*rescaleVector.x, 0)) then
-		self:close()
-	end
+	ui.withFont(pionillium.body, function()
+		ui.text(l.YOU_NOT_ENOUGH_MONEY .. ".")
+		ui.dummy(Vector2((ui.getContentRegion().x - 100*rescaleVector.x) / 2, 0))
+		ui.sameLine()
+		if ui.button(l.OK, Vector2(100*rescaleVector.x, 0)) then
+			self:close()
+		end
+	end)
 end)
 
 local widgetSizes = ui.rescaleUI({
@@ -245,7 +247,10 @@ local function drawPolice()
 				ui.text(intro_txt)
 			end)
 
-			ui.tabBarFont("tabs", policeTabs, pionillium.heading)
+			-- the tabs' contents are drawn in the body font, not the tiny default one
+			ui.withFont(pionillium.body, function()
+				ui.tabBarFont("tabs", policeTabs, pionillium.heading)
+			end)
 		end)
 
 		ui.sameLine(0, padding.x * 2)

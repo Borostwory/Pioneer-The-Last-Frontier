@@ -1797,8 +1797,9 @@ local function displaySystemViewUI(delta_t, refresh)
 		systemViewLayout.enabled = not systemViewLayout.enabled
 	end
 
+	-- the planner only works on the orrery, so the 2D atlas has no button for it
 	plannerView.disabled = systemView:GetDisplayMode() ~= "Orrery"
-	plannerView.icon = plannerView.disabled and icons.square_dashed or icons.semi_major_axis
+	plannerView.hidden = plannerView.disabled
 
 	systemViewLayout:display()
 	if systemViewLayout.enabled then

@@ -47,6 +47,7 @@ local Sidebar = utils.class("UI.Sidebar")
 ---@field title string?
 ---@field active boolean?
 ---@field exclusive boolean?
+---@field hidden boolean? no button and no display, e.g. a tool the current view cannot use
 ---@field refresh? fun(self)
 ---@field draw? fun(self, min, max)
 ---@field drawTitle? fun(self)
@@ -103,7 +104,8 @@ function Sidebar:UpdateCoords()
 	local spacing = ui.getItemSpacing()
 	local padding = ui.getWindowPadding()
 
-	local buttonWidth = #self.modules * (buttonSize + spacing.x) - spacing.x
+	local shown = #utils.filter_array(self.modules, function(v) return not v.hidden end)
+	local buttonWidth = shown * (buttonSize + spacing.x) - spacing.x
 
 	self.buttonSize = Vector2(buttonWidth, buttonSize) + padding * 2
 
@@ -123,19 +125,21 @@ function Sidebar:DrawButtons()
 	ui.setNextWindowSize(self.buttonSize, "Always")
 	ui.window(self.id .. "@Buttons", windowFlags, function()
 		for i, v in ipairs(self.modules) do
-			if ui.mainMenuButton(v.icon, v.tooltip, v.active) then
-				local exclusive = self.active and self.active.exclusive or v.exclusive
-				if v ~= self.active and exclusive then
-					self.nextActive = v
-				else
-					v.closing = v.active
-					v.active = true
+			if not v.hidden then
+				if ui.mainMenuButton(v.icon, v.tooltip, v.active) then
+					local exclusive = self.active and self.active.exclusive or v.exclusive
+					if v ~= self.active and exclusive then
+						self.nextActive = v
+					else
+						v.closing = v.active
+						v.active = true
 
-					if not v.closing then self:SafeCall(v, v.refresh) end
+						if not v.closing then self:SafeCall(v, v.refresh) end
+					end
 				end
-			end
 
-			ui.sameLine()
+				ui.sameLine()
+			end
 		end
 	end)
 end
@@ -214,7 +218,7 @@ function Sidebar:Draw()
 		self:SafeCall(module, module.update)
 	end
 
-	local activeModules = utils.filter_array(self.modules, function(v) return v.active and not v.disabled end)
+	local activeModules = utils.filter_array(self.modules, function(v) return v.active and not v.disabled and not v.hidden end)
 
 	self:UpdateCoords()
 

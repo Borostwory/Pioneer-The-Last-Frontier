@@ -192,12 +192,15 @@ function CommodityMarketWidget.New(id, title, config)
 	local self = TableWidget.New(id, title, config)
 
 	self.popup = config.popup or ModalWindow.New('popupMsg' .. id, function()
-        ui.text(self.popup.msg)
-        ui.dummy(Vector2((ui.getContentRegion().x - 100) / 2, 0))
-        ui.sameLine()
-        if ui.button("OK", Vector2(100, 0)) then
-            self.popup:close()
-        end
+        ui.withFont(pionillium.body, function()
+            local okWidth = ui.calcButtonSize("OK").x * 2
+            ui.text(self.popup.msg)
+            ui.dummy(Vector2((ui.getContentRegion().x - okWidth) / 2, 0))
+            ui.sameLine()
+            if ui.button("OK", Vector2(okWidth, 0)) then
+                self.popup:close()
+            end
+        end)
     end)
 
 	self.icons = {}
@@ -449,19 +452,24 @@ function CommodityMarketWidget:TradeMenu()
 			end)
 
 			ui.setCursorPos(bottomHalf)
-			if ui.button("-100", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(-100) end
-			ui.sameLine()
-			if ui.button("-10", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(-10) end
-			ui.sameLine()
-			if ui.button("-1", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(-1) end
-			ui.sameLine()
-			if ui.button(l.RESET, self.style.widgetSizes.bigButton) then self:ChangeTradeAmount(-self.tradeAmount) end
-			ui.sameLine()
-			if ui.button("+1", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(1) end
-			ui.sameLine()
-			if ui.button("+10", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(10) end
-			ui.sameLine()
-			if ui.button("+100", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(100) end
+			-- the amount buttons carry the body font, not the tiny default one
+			ui.withFont(pionillium.body, function()
+				if ui.button("-100", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(-100) end
+				ui.sameLine()
+				if ui.button("-10", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(-10) end
+				ui.sameLine()
+				if ui.button("-1", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(-1) end
+				ui.sameLine()
+				local resetSize = Vector2(math.max(self.style.widgetSizes.bigButton.x, ui.calcButtonSize(l.RESET).x),
+					self.style.widgetSizes.bigButton.y)
+				if ui.button(l.RESET, resetSize) then self:ChangeTradeAmount(-self.tradeAmount) end
+				ui.sameLine()
+				if ui.button("+1", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(1) end
+				ui.sameLine()
+				if ui.button("+10", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(10) end
+				ui.sameLine()
+				if ui.button("+100", self.style.widgetSizes.smallButton) then self:ChangeTradeAmount(100) end
+			end)
 
 			ui.dummy(self.style.itemSpacing/2)
 			ui.withStyleColors({Text = self.tradeTextColor }, function()
