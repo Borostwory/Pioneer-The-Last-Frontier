@@ -24,12 +24,49 @@ local lc = Lang.GetResource("ui-core")
 local colors = ui.theme.colors
 local icons = ui.theme.icons
 local orbiteer = ui.fonts.orbiteer
+local pionillium = ui.fonts.pionillium
 
 local Vector2 = _G.Vector2
 
-local sliderWidth = ui.rescaleUI(Vector2(220, 0), Vector2(1600, 900)).x
+local sizes = ui.rescaleUI({
+	slider = Vector2(220, 0),
+	modalSpacing = Vector2(8, 6),
+	cellPadding = Vector2(8, 3),
+	minModalWidth = Vector2(640, 0),
+}, Vector2(1600, 900))
+local sliderWidth = sizes.slider.x
 
 local Pickers = {}
+
+-- A window for the hangar: the body font and spacing every hangar window
+-- uses (whatever font the screen behind it has), a fixed width share of the
+-- screen so long lines wrap, centred, its height following the contents
+function Pickers.NewModal(name, render, widthShare)
+	local modal = ModalWindow.New(name, function(self)
+		ui.withFont(pionillium.body, function()
+			ui.withStyleVars({ ItemSpacing = sizes.modalSpacing }, function()
+				render(self)
+			end)
+		end)
+	end, function(_, innerFn)
+		local width = math.max(ui.screenWidth * (widthShare or 0.42), sizes.minModalWidth.x)
+		ui.setNextWindowSizeConstraints(Vector2(width, 0), Vector2(width, ui.screenHeight * 0.9))
+		innerFn()
+	end)
+	modal.centered = true
+	return modal
+end
+
+-- A window title: icon and text in the heading font
+function Pickers.title(icon, text)
+	ui.withFont(orbiteer.heading, function()
+		if icon then
+			ui.icon(icon, Vector2(ui.getTextLineHeight()), colors.font)
+			ui.sameLine()
+		end
+		ui.text(text)
+	end)
+end
 
 function Pickers.money(n) return Format.Money(math.floor(n + 0.5), false) end
 
@@ -77,29 +114,45 @@ function Pickers.drawCargo(state, room, lifeSupport, restStaysOn)
 	ui.textColored(taken > room and colors.alertRed or colors.econProfit, string.format("%d / %d t", taken, room))
 
 	local lots = Hangar.CargoLots()
-	for _, lot in ipairs(lots) do
-		local c = Commodities[lot.name]
-		local held = lot.tag ~= CargoManager.ORDINARY
-		state.take[lot.name] = state.take[lot.name] or {}
-		local parts = state.take[lot.name]
+	if #lots > 0 then
+		ui.withStyleVars({ CellPadding = sizes.cellPadding }, function()
+			if not ui.beginTable("pickCargo", 3, { "SizingFixedFit", "NoSavedSettings" }) then return end
+			ui.tableSetupColumn("##commodity", { "WidthFixed" })
+			ui.tableSetupColumn("##take", { "WidthFixed" }, sliderWidth)
+			ui.tableSetupColumn("##mission", { "WidthStretch" })
+			for _, lot in ipairs(lots) do
+				local c = Commodities[lot.name]
+				local held = lot.tag ~= CargoManager.ORDINARY
+				state.take[lot.name] = state.take[lot.name] or {}
+				local parts = state.take[lot.name]
 
-		local name = string.format("%s (%d t)", c:GetName(), lot.count)
-		if held then name = ui.get_icon_glyph(icons.mission_cargo) .. " " .. name end
-		ui.text(name)
-		if held and ui.isItemHovered() then ui.setTooltip(lot.label) end
-		ui.sameLine(sliderWidth * 1.3)
-		if (c.life_support or 0) > lifeSupport then
-			ui.textColored(colors.fontDim, l.NEEDS_CARGO_LIFE_SUPPORT)
-			parts[lot.tag] = 0
-		else
-			ui.pushItemWidth(sliderWidth)
-			parts[lot.tag] = ui.sliderInt("##take" .. lot.name .. tostring(lot.tag), parts[lot.tag] or 0, 0, lot.count, l.TAKE_FORMAT)
-			ui.popItemWidth()
-		end
-		if held then
-			ui.sameLine()
-			ui.textColored(colors.fontDim, lot.label)
-		end
+				ui.tableNextRow()
+				ui.tableNextColumn()
+				ui.alignTextToFramePadding()
+				local name = string.format("%s (%d t)", c:GetName(), lot.count)
+				if held then name = ui.get_icon_glyph(icons.mission_cargo) .. " " .. name end
+				ui.text(name)
+				if held and ui.isItemHovered() then ui.setTooltip(lot.label) end
+
+				ui.tableNextColumn()
+				if (c.life_support or 0) > lifeSupport then
+					ui.alignTextToFramePadding()
+					ui.textColored(colors.fontDim, l.NEEDS_CARGO_LIFE_SUPPORT)
+					parts[lot.tag] = 0
+				else
+					ui.pushItemWidth(-1)
+					parts[lot.tag] = ui.sliderInt("##take" .. lot.name .. tostring(lot.tag), parts[lot.tag] or 0, 0, lot.count, l.TAKE_FORMAT)
+					ui.popItemWidth()
+				end
+
+				ui.tableNextColumn()
+				if held then
+					ui.alignTextToFramePadding()
+					ui.textColored(colors.fontDim, lot.label)
+				end
+			end
+			ui.endTable()
+		end)
 	end
 
 	if #lots == 0 then
@@ -197,7 +250,7 @@ end
 -- Dismissing asks first
 local dismissing = nil ---@type Character?
 
-local dismissModal = ModalWindow.New("LoungeDismiss", function(self)
+local dismissModal = Pickers.NewModal("LoungeDismiss", function(self)
 	local member = dismissing
 	if not member then self:close() return end
 

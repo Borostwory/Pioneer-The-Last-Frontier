@@ -167,6 +167,10 @@
     "description": "Hangar sub-tab",
     "message": "Cargo"
   },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Arrives"
+  },
   "COL_BAY": {
     "description": "Bay table column",
     "message": "Bay"
@@ -178,6 +182,10 @@
   "COL_COST": {
     "description": "Fleet tab column",
     "message": "Cost"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Distance"
   },
   "COL_LOCATION": {
     "description": "Fleet tab column",
@@ -887,10 +895,6 @@
     "description": "Bay table: a ship",
     "message": "{name} ({type}) · hull {hull}%"
   },
-  "SHIP_ELSEWHERE_ROW": {
-    "description": "A ship stored at another hangar",
-    "message": "\"{ship}\" ({type}) at {station}"
-  },
   "SHIP_FULL": {
     "description": "Tooltip on a disabled bring-aboard button",
     "message": "\"{ship}\" takes at most {max} crew."
@@ -1013,11 +1017,11 @@
   },
   "TOO_FEW_CREW": {
     "description": "Swap warning",
-    "message": "\"{ship}\" needs at least {min} crew; {crew} are ticked. You can't launch until you hire more or take someone from the lounge."
+    "message": "\"{ship}\" needs at least {min} crew, and only {crew} would be aboard. You can't launch until you hire more or take someone from the lounge."
   },
   "TOO_MANY_CREW": {
     "description": "Swap blocker",
-    "message": "\"{ship}\" takes at most {max} crew; {crew} are ticked. Untick {over} to leave them in the lounge."
+    "message": "\"{ship}\" takes at most {max} crew, and {crew} would be aboard. Untick {over} to leave them in the lounge."
   },
   "TOO_MUCH_CARGO": {
     "description": "Swap blocker",

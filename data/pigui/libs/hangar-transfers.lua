@@ -106,13 +106,7 @@ local function footer(self, blocked, bookLabel, book)
 	end
 end
 
-local function title(icon, text)
-	ui.withFont(orbiteer.heading, function()
-		ui.icon(icon, Vector2(ui.getTextLineHeight()), colors.font)
-		ui.sameLine()
-		ui.text(text)
-	end)
-end
+local title = Pickers.title
 
 --=============================================================================
 -- The windows
@@ -170,14 +164,35 @@ function draw.shipFrom(self)
 	if #rows == 0 then
 		ui.textColored(colors.fontDim, l.NO_SHIPS_ELSEWHERE)
 	end
-	for i, row in ipairs(rows) do
-		local label = string.interp(l.SHIP_ELSEWHERE_ROW, {
-			ship = row.rec.name, type = shipType(row.rec.shipId), station = row.from.station }) .. "##shipFrom" .. i
-		-- a selectable closes the popup it's in unless told not to
-		if ui.selectable(label, state.picked == row.rec, { "DontClosePopups" }) then state.picked = row.rec end
-		ui.sameLine(ui.getContentRegion().x * 0.55)
-		ui.textColored(colors.fontDim, quoteLine(row.cost, row.time, row.ly))
-		Pickers.mapButton("shipFrom" .. i, row.from.path)
+	if #rows > 0 and ui.beginTable("shipFromList", 6, { "RowBg", "BordersInnerH", "SizingFixedFit", "NoSavedSettings" }) then
+		ui.tableSetupColumn(l.COL_SHIP, { "WidthStretch" })
+		ui.tableSetupColumn(l.COL_STATION, { "WidthFixed" })
+		ui.tableSetupColumn(l.COL_DISTANCE, { "WidthFixed" })
+		ui.tableSetupColumn(l.COL_ARRIVES, { "WidthFixed" })
+		ui.tableSetupColumn(l.COL_COST, { "WidthFixed" })
+		ui.tableSetupColumn("##map", { "WidthFixed" })
+		ui.tableHeadersRow()
+		for i, row in ipairs(rows) do
+			ui.tableNextRow()
+			ui.tableNextColumn()
+			local label = string.format("%s (%s)", row.rec.name, shipType(row.rec.shipId)) .. "##shipFrom" .. i
+			-- a selectable closes the popup it's in unless told not to
+			if ui.selectable(label, state.picked == row.rec, { "SpanAllColumns", "DontClosePopups", "AllowOverlap" }) then
+				state.picked = row.rec
+			end
+			ui.tableNextColumn()
+			ui.text(row.from.station)
+			ui.tableNextColumn()
+			ui.text(distanceText(row.ly))
+			ui.tableNextColumn()
+			ui.text(string.format("%s (%s)", Format.DateOnly(Game.time + row.time), ui.Format.Duration(row.time, 2)))
+			ui.tableNextColumn()
+			ui.text(money(row.cost))
+			ui.tableNextColumn()
+			ui.dummy(Vector2(0, 0))
+			Pickers.mapButton("shipFrom" .. i, row.from.path)
+		end
+		ui.endTable()
 	end
 	ui.textColored(colors.fontDim, l.SHIPS_ELSEWHERE_NOTE)
 	ui.textWrapped(l.SHIP_TRAVELS_NOTE)
@@ -291,17 +306,10 @@ function draw.cancel(self)
 	footer(self, Hangar.CancelBlocked(t), l.CANCEL_DELIVERY, function() Hangar.CancelTransfer(t) end)
 end
 
-modal = ModalWindow.New("HangarTransfer", function(self)
+modal = Pickers.NewModal("HangarTransfer", function(self)
 	if not state then self:close() return end
-	ui.withFont(pionillium.body, function()
-		draw[state.window](self)
-	end)
-end, function(_, innerFn)
-	local width = math.max(ui.screenWidth * 0.4, 520)
-	ui.setNextWindowSizeConstraints(Vector2(width, 0), Vector2(width, ui.screenHeight * 0.9))
-	innerFn()
+	draw[state.window](self)
 end)
-modal.centered = true
 
 local function open(s)
 	state = s

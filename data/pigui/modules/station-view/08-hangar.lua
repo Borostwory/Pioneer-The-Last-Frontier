@@ -122,6 +122,13 @@ local function quoteLine(monthly, nMonths)
 	return cost
 end
 
+-- A heading with a line under it
+local function section(title)
+	ui.spacing()
+	ui.withFont(orbiteer.body, function() ui.text(title) end)
+	ui.separator()
+end
+
 local bestSkill = Pickers.bestSkill
 local skillsTooltip = Pickers.skillsTooltip
 local crewAboard = Pickers.crewAboard
@@ -481,8 +488,37 @@ local function drawDetails(h, view)
 	ui.textColored(colors.fontDim, string.format("%s · %s · %s", shipTypeName(view.shipId), view.label, status))
 	ui.spacing()
 
+	-- what can be done with it: kept in view above the details, which scroll
+	if view.active then
+		ui.textColored(colors.fontDim, l.THIS_IS_YOUR_SHIP)
+		ui.textColored(colors.fontDim, #Hangar.StoredShips(h) > 0 and l.SELECT_A_SHIP or l.NO_SHIPS_STORED)
+	elseif transfer then
+		ui.textColored(colors.fontDim, ui.get_icon_glyph(icons.in_transit) .. " " .. l.SHIP_ON_ITS_WAY)
+		if ui.button(Transfers.glyph(icons.transfer_cancel, l.CANCEL_DELIVERY)) then
+			Transfers.Cancel(transfer)
+		end
+	else
+		local locked = Hangar.IsLocked(h)
+		if button(Transfers.glyph(icons.ship_swap, l.FLY_THIS_SHIP), not locked, locked and l.HANGAR_LOCKED or nil) then
+			-- Default: everything that fits comes along, mission cargo first
+			swap = { rec = view.rec, take = Hangar.FitCargo(view.rec), aboard = Pickers.everyoneAboard() }
+			swapModal:open()
+		end
+		ui.sameLine()
+		if button(Transfers.glyph(icons.ship_send, l.SEND_TO), not locked, locked and l.HANGAR_LOCKED or l.SEND_SHIP_TOOLTIP) then
+			Transfers.SendShip(view.rec)
+		end
+		ui.sameLine()
+		if renaming ~= view.rec.id and ui.button(l.RENAME) then
+			renaming = view.rec.id
+			renameText = view.rec.name
+		end
+	end
+	ui.separator()
+
 	local cmpCargo = not view.active and Game.player.cargo_cap or nil
 
+	ui.child("hangarShipFacts", Vector2(0, 0), function()
 	if ui.beginTable("hangarShipDetails", 2, { "SizingFixedFit" }) then
 		local function row(name, fn)
 			ui.tableNextRow()
@@ -515,58 +551,28 @@ local function drawDetails(h, view)
 		end)
 		ui.endTable()
 	end
-	ui.spacing()
-
-	if view.active then
-		ui.textColored(colors.fontDim, l.THIS_IS_YOUR_SHIP)
-		ui.textColored(colors.fontDim, #Hangar.StoredShips(h) > 0 and l.SELECT_A_SHIP or l.NO_SHIPS_STORED)
-	elseif transfer then
-		ui.textColored(colors.fontDim, ui.get_icon_glyph(icons.in_transit) .. " " .. l.SHIP_ON_ITS_WAY)
-		if ui.button(Transfers.glyph(icons.transfer_cancel, l.CANCEL_DELIVERY)) then
-			Transfers.Cancel(transfer)
-		end
-	else
-		local locked = Hangar.IsLocked(h)
-		if button(l.FLY_THIS_SHIP, not locked, locked and l.HANGAR_LOCKED or nil) then
-			-- Default: everything that fits comes along, mission cargo first
-			swap = { rec = view.rec, take = Hangar.FitCargo(view.rec), aboard = Pickers.everyoneAboard() }
-			swapModal:open()
-		end
-		ui.sameLine()
-		if button(Transfers.glyph(icons.ship_send, l.SEND_TO), not locked, locked and l.HANGAR_LOCKED or l.SEND_SHIP_TOOLTIP) then
-			Transfers.SendShip(view.rec)
-		end
-		ui.sameLine()
-		if renaming ~= view.rec.id and ui.button(l.RENAME) then
-			renaming = view.rec.id
-			renameText = view.rec.name
-		end
-	end
+	end)
 end
 
 --=============================================================================
 -- Swap window
 --=============================================================================
 
-swapModal = ModalWindow.New("HangarSwap", function(self)
+swapModal = Pickers.NewModal("HangarSwap", function(self)
 	if not swap then self:close() return end
 	local rec = swap.rec
 	local player = Game.player
 
-	ui.withFont(orbiteer.heading, function()
-		ui.icon(icons.ship_swap, Vector2(ui.getTextLineHeight()), colors.font)
-		ui.sameLine()
-		ui.text(string.interp(l.SWAP_TITLE, { ship = rec.name }))
-	end)
-	ui.textColored(colors.fontDim, string.interp(l.SWAP_NOTE, { ship = player.shipName }))
-	ui.spacing()
+	Pickers.title(icons.ship_swap, string.interp(l.SWAP_TITLE, { ship = rec.name }))
+	ui.textWrapped(string.interp(l.SWAP_NOTE, { ship = player.shipName }))
 
+	section(l.CARGO)
 	if next(rec.cargo) then
-		ui.textColored(colors.fontDim, string.interp(l.ALREADY_ABOARD, { ship = rec.name, cargo = cargoText(rec.cargo, Hangar.RecordHeldCargo(rec)) }))
+		ui.textWrapped(string.interp(l.ALREADY_ABOARD, { ship = rec.name, cargo = cargoText(rec.cargo, Hangar.RecordHeldCargo(rec)) }))
 	end
 	Pickers.drawCargo(swap, Hangar.RecordFreeSpace(rec), Hangar.RecordLifeSupport(rec), player.shipName)
 
-	ui.spacing()
+	section(l.CREW)
 	Pickers.drawCrew(swap, ShipDef[rec.shipId], rec.name)
 
 	local blockers, warnings = Hangar.CheckSwap(rec, swap.take, swap.aboard)
@@ -615,7 +621,7 @@ end
 -- Selling an item from the store asks first
 local selling = nil ---@type { h: Hangar.Lease, item: EquipType }?
 
-local sellModal = ModalWindow.New("HangarSellItem", function(self)
+local sellModal = Pickers.NewModal("HangarSellItem", function(self)
 	local sale = selling
 	local station = Game.player:GetDockedWith()
 	if not sale or not station then self:close() return end

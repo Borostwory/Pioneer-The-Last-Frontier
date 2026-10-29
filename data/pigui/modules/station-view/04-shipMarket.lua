@@ -36,7 +36,6 @@ local widgetSizes = ui.rescaleUI({
 	confirmButtonSize = Vector2(384, 48),
 	itemSpacing = Vector2(18, 4),
 	cardPadding = Vector2(10, 6),
-	modalItemSpacing = Vector2(8, 6),
 	purchaseButtons = Vector2(220, 0),
 }, Vector2(1600, 900))
 widgetSizes.iconSpacer = (widgetSizes.buyButton - widgetSizes.iconSize)/2
@@ -374,19 +373,10 @@ end
 
 local drawPurchase
 
-purchaseModal = ModalWindow.New("ShipMarketPurchase", function(self)
-	ui.withFont(pionillium.body, function()
-		ui.withStyleVars({ ItemSpacing = widgetSizes.modalItemSpacing }, function()
-			drawPurchase(self)
-		end)
-	end)
-end, function(_, innerFn)
-	-- a fixed width so long lines wrap; the height follows the contents
-	local width = math.max(ui.screenWidth * 0.42, 560)
-	ui.setNextWindowSizeConstraints(Vector2(width, 0), Vector2(width, ui.screenHeight * 0.9))
-	innerFn()
+-- the same window as the hangar's: body font, fixed width, centred
+purchaseModal = Pickers.NewModal("ShipMarketPurchase", function(self)
+	drawPurchase(self)
 end)
-purchaseModal.centered = true
 
 drawPurchase = function(self)
 	if not purchase then self:close() return end

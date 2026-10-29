@@ -102,7 +102,7 @@ local function dim(text) return { text = text, color = colors.fontDim } end
 
 local prepay = nil ---@type { h: Hangar.Lease, months: integer }?
 
-local prepayModal = ModalWindow.New("FleetPrepay", function(self)
+local prepayModal = Pickers.NewModal("FleetPrepay", function(self)
 	if not prepay then self:close() return end
 	local h = prepay.h
 	ui.withFont(orbiteer.heading, function()
