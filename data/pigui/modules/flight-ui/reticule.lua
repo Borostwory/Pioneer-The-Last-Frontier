@@ -20,6 +20,26 @@ local lui = require 'Lang'.GetResource("ui-core")
 local reticuleCircleRadius = math.min(ui.screenWidth, ui.screenHeight) / 8
 local reticuleCircleThickness = 2.0
 
+-- the reticle's two halves, moved apart: arcs of a wider circle left and right
+-- of the view, each spanning sideArcHours clock hours either side of 9 / 3 o'clock
+local sideArcRadius = math.min(ui.screenHeight * 0.45, ui.screenWidth * 0.27)
+local sideArcHours = 1
+local sideArcHalfAngle = sideArcHours / 6 * math.pi
+-- the delta-v and brake gauge bars along the arcs (px): how wide each bar is,
+-- its gap from the arc, and the gap between bars side by side
+local gaugeThickness = 7
+local gaugeOffset = 5
+local gaugeGap = 3
+-- the frame and target readouts sit just outside the arcs and their gauges
+local sideLabelRadius = sideArcRadius + gaugeOffset + gaugeThickness * 2 + gaugeGap + reticuleCircleRadius * 0.1
+-- the space the arcs frame: an ellipse as wide as the arcs but flatter, clear of
+-- the heading tape above and the radar below; the horizon hooks and the small
+-- marker indicators run along its inside
+local reticuleFrame = Vector2(sideArcRadius, sideArcRadius * 0.55)
+
+-- degrees of heading across the heading tape
+local headingTapeSpan = 60
+
 local flightAssistIconSize = ui.theme.styles.SmallButtonSize.x
 -- first we calculate the padding so that it does not turn out to be fractional
 -- precise padding is needed so that the radial menu is the same for both menus
@@ -48,6 +68,7 @@ local gameView = require 'pigui.views.game'
 -- for modules
 ui.reticuleCircleRadius = reticuleCircleRadius
 ui.reticuleCircleThickness = reticuleCircleThickness
+ui.reticuleFrame = reticuleFrame
 
 -- center of screen, set each frame by the handler
 local center = nil
@@ -73,25 +94,32 @@ local function textShadowedRight(label)
 	ui.textShadowed(label)
 end
 
--- display the pitch indicator on the right inside of the reticule circle
+-- display the pitch indicator on the inside of the right arc
 local function displayReticulePitch(pitch_degrees)
 	local tick_length = 4
-	local radius = reticuleCircleRadius - 1
+	local radius = sideArcRadius - 1
+	local top, bottom = 3 - sideArcHours, 3 + sideArcHours
 	ui.lineOnClock(center, 3, tick_length, radius, colors.navigationalElements, 1)
-	ui.lineOnClock(nil, 2.25, tick_length, radius, colors.navigationalElements, 1)
-	ui.lineOnClock(nil, 3.75, tick_length, radius, colors.navigationalElements, 1)
-	ui.lineOnClock(nil, 1.5, tick_length, radius, colors.navigationalElements, 1)
-	ui.lineOnClock(nil, 4.5, tick_length, radius, colors.navigationalElements, 1)
+	ui.lineOnClock(nil, 3 - sideArcHours / 2, tick_length, radius, colors.navigationalElements, 1)
+	ui.lineOnClock(nil, 3 + sideArcHours / 2, tick_length, radius, colors.navigationalElements, 1)
+	ui.lineOnClock(nil, top, tick_length, radius, colors.navigationalElements, 1)
+	ui.lineOnClock(nil, bottom, tick_length, radius, colors.navigationalElements, 1)
 
 	local xpitch = (pitch_degrees + 90) / 180
-	local xpitch_h = 4.5 - xpitch * 3
+	local xpitch_h = bottom - xpitch * (bottom - top)
 	ui.lineOnClock(nil, xpitch_h, tick_length * 1.5, radius, colors.navigationalElements, 2)
 end
 
--- display the horizon inside the reticule circle
+-- distance from the center to the reticle frame at the given clock hour
+local function frameRadiusOnClock(hours)
+	local angle = hours / 6 * math.pi
+	return 1 / math.sqrt((math.sin(angle) / reticuleFrame.x)^2 + (math.cos(angle) / reticuleFrame.y)^2)
+end
+
+-- display the horizon in the middle of the view
 local function displayReticuleHorizon(roll_degrees)
-	-- offset inside the circle (px)
-	local offset = 30
+	-- how far out the hooks sit, as a fraction of the reticle frame
+	local inset = 0.9
 	-- width of the horizontal bar (px)
 	local width = 10
 	-- height of the horizontal bar (clock hours)
@@ -99,63 +127,56 @@ local function displayReticuleHorizon(roll_degrees)
 
 	local hrs = roll_degrees / 360 * 12 + 3
 
-	local radius = reticuleCircleRadius - offset
+	-- the frame is symmetric, so both hooks share the radius at their hour and
+	-- the line between them stays true; the level marks keep the side radius
+	local radius = frameRadiusOnClock(hrs) * inset
+	local level_radius = reticuleFrame.x * inset
 	-- left hook
 	ui.lineOnClock(center, hrs, width, radius, colors.navigationalElements, 1)
 	ui.addLine(ui.pointOnClock(nil, radius, hrs),
 		ui.pointOnClock(nil, radius, hrs + height_hrs),
 		colors.navigationalElements, 1)
-	ui.lineOnClock(nil, -3, -width/2, radius, colors.navigationalElements, 1)
+	ui.lineOnClock(nil, -3, -width/2, level_radius, colors.navigationalElements, 1)
 	-- right hook
 	ui.lineOnClock(nil, hrs + 6, width, radius, colors.navigationalElements, 1)
 	ui.addLine(ui.pointOnClock(nil, radius, hrs + 6),
 		ui.pointOnClock(nil, radius, hrs + 6 - height_hrs),
 		colors.navigationalElements, 1)
-	ui.lineOnClock(nil, 3, -width/2, radius, colors.navigationalElements, 1)
+	ui.lineOnClock(nil, 3, -width/2, level_radius, colors.navigationalElements, 1)
 end
 
--- display the compass at the top of the reticule circle
-local function displayReticuleCompass(heading)
-	-- labelled points on the compass
+-- display the heading tape across the top of the view: a tick every 5 degrees,
+-- taller every 15, the compass points as letters, and a caret with the heading
+local function displayHeadingTape(heading)
+	-- labelled points on the tape
 	local directions = {
 		[0] = lc.COMPASS_N, [45] = lc.COMPASS_NE, [90] = lc.COMPASS_E, [135] = lc.COMPASS_SE,
 		[180] = lc.COMPASS_S, [225] = lc.COMPASS_SW, [270] = lc.COMPASS_W, [315] = lc.COMPASS_NW
 	}
-	local function clamp(x)
-		if x < 0 then
-			return clamp(x + 360)
-		elseif x >= 360 then
-			return clamp(x - 360)
+	local width = sideArcRadius * 0.9
+	local tape = Vector2(center.x, center.y - sideArcRadius * 0.7)
+
+	local first = math.ceil((heading - headingTapeSpan / 2) / 5) * 5
+	for d = first, heading + headingTapeSpan / 2, 5 do
+		local x = tape.x + (d - heading) / headingTapeSpan * width
+		local label = directions[d % 360]
+		if label then
+			ui.addStyledText(Vector2(x, tape.y), ui.anchor.center, ui.anchor.bottom, label, colors.navigationalElements, pionillium.tiny, "")
 		else
-			return x
-		end
-	end
-	local left = math.floor(heading - 45)
-	local right = left + 90
-
-	ui.lineOnClock(center, 0, 3, reticuleCircleRadius, colors.reticuleCircle, 1)
-
-	local function stroke(d, p, multiple, height, thickness)
-		if d % multiple == 0 then
-			ui.lineOnClock(nil, 2.8 * p - 1.4, -height, reticuleCircleRadius, colors.reticuleCircle, thickness)
+			local height = d % 15 == 0 and 8 or 4
+			ui.addLine(Vector2(x, tape.y), Vector2(x, tape.y - height), colors.reticuleCircle, 1)
 		end
 	end
 
-	for d=left,right do
-		local p = (d - left) / 90
-		stroke(d, p, 15, 3, 1)
-		stroke(d, p, 45, 4, 1)
-		stroke(d, p, 90, 4, 2)
-		for k,v in pairs(directions) do
-			if clamp(k) == clamp(d) then
-				local a = ui.pointOnClock(nil, reticuleCircleRadius + 8, 3 * p - 1.5)
-				ui.addStyledText(a, ui.anchor.center, ui.anchor.bottom, v, colors.navigationalElements, pionillium.tiny, "")
-			end
-		end
+	-- caret under the tape where the ship points
+	ui.addLine(Vector2(tape.x - 5, tape.y + 9), Vector2(tape.x, tape.y + 4), colors.reticuleCircle, 1)
+	ui.addLine(Vector2(tape.x, tape.y + 4), Vector2(tape.x + 5, tape.y + 9), colors.reticuleCircle, 1)
+	if showNavigationalNumbers then
+		ui.addStyledText(Vector2(tape.x, tape.y + 11), ui.anchor.center, ui.anchor.top, math.floor(heading + 0.5) .. "°", colors.reticuleCircle, pionillium.small, lui.HUD_CURRENT_HEADING)
 	end
 end
 
--- display the delta-v gauges on the left side of the reticule circle
+-- display the delta-v gauges along the left arc
 local function displayReticuleDeltaV()
 	-- ratio is 1.0 for full, 0.0 for empty
 	local function gauge(ratio, radius, color, thickness)
@@ -169,12 +190,13 @@ local function displayReticuleDeltaV()
 		if ratio > 1 then
 			ratio = 1
 		end
-		ui.pathArcTo(center, radius + thickness / 2, ui.pi_2 + ui.pi_4, ui.pi_2 + ui.pi_4 + ui.pi_2 * ratio, 64)
+		local bottom = ui.pi - sideArcHalfAngle
+		ui.pathArcTo(center, radius + thickness / 2, bottom, bottom + 2 * sideArcHalfAngle * ratio, 64)
 		ui.pathStroke(color, false, thickness)
 	end
 
-	local offset = 3
-	local thickness = 5
+	local offset = gaugeOffset
+	local thickness = gaugeThickness
 
 	local deltav_max = player:GetMaxDeltaV()
 	local deltav_remaining = player:GetRemainingDeltaV()
@@ -185,22 +207,23 @@ local function displayReticuleDeltaV()
 	local dvc = deltav_current / deltav_max
 
 	-- draw full gauge in background color
-	gauge(1.0, reticuleCircleRadius + offset, colors.deltaVTotal, thickness)
+	gauge(1.0, sideArcRadius + offset, colors.deltaVTotal, thickness)
 	-- draw remaining from bottom
 	if dvr > 0 then
-	  gauge(dvr, reticuleCircleRadius + offset, colors.deltaVRemaining, thickness)
+	  gauge(dvr, sideArcRadius + offset, colors.deltaVRemaining, thickness)
 	end
 	-- draw maneuver thinner inside remaining
 	if dvm > 0 then
-	  gauge(dvm, reticuleCircleRadius + offset + thickness / 4, colors.deltaVManeuver, thickness / 2)
+	  gauge(dvm, sideArcRadius + offset + thickness / 4, colors.deltaVManeuver, thickness / 2)
 	end
 	-- draw current beside the others
 	if dvc > 0 then
-	  gauge(dvc, reticuleCircleRadius + offset + thickness, colors.deltaVCurrent, thickness)
+	  gauge(dvc, sideArcRadius + offset + thickness + gaugeGap, colors.deltaVCurrent, thickness)
 	end
 
+	-- the readouts sit just past the arc's ends: delta-v below, percentage above
 	ui.withFont(pionillium.reticle_sm, function()
-		local uiPos = ui.pointOnClock(center, reticuleCircleRadius + thickness * 2 + ui.getTextLineHeight(), 7.5)
+		local uiPos = ui.pointOnClock(center, sideArcRadius + thickness * 2 + gaugeGap + ui.getTextLineHeight(), 9 - sideArcHours - 0.1)
 
 		local iconSize = pionillium.reticle_md.size + ui.theme.styles.FramePadding.y * 2
 
@@ -212,7 +235,7 @@ local function displayReticuleDeltaV()
 			ui.setItemTooltip(lui.HUD_DELTA_V)
 		end)
 
-		uiPos = ui.pointOnClock(center, reticuleCircleRadius + thickness * 2, 10.5)
+		uiPos = ui.pointOnClock(center, sideArcRadius + thickness * 2 + gaugeGap, 9 + sideArcHours + 0.1)
 		ui.setCursorPos(uiPos - Vector2(ui.getTextLineHeight() * 0.5))
 
 		textShadowedRight(ui.Format.Number(dvr * 100, 2) .. "%")
@@ -225,7 +248,7 @@ end
 -- to tell the user to flip and start braking now
 local brakeNowRatio = 0.93
 
--- display the velocity vs. braking distance gauges on the right side of the reticule circle
+-- display the velocity vs. braking distance gauges along the right arc
 local function displayReticuleBrakeGauge(ratio_primary, ratio_secondary)
 	local function gauge(ratio, radius, color, thickness)
 		if ratio < 0 then
@@ -238,29 +261,29 @@ local function displayReticuleBrakeGauge(ratio_primary, ratio_secondary)
 		if ratio > 1 then
 			ratio = 1
 		end
-		ui.pathArcTo(center, radius + thickness / 2, ui.pi_4, - ui.pi_4 + ui.pi_2 * (1 - ratio), 64)
+		ui.pathArcTo(center, radius + thickness / 2, sideArcHalfAngle, -sideArcHalfAngle + 2 * sideArcHalfAngle * (1 - ratio), 64)
 		ui.pathStroke(color, false, thickness)
 	end
-	local thickness = 5
-	local offset = 3
+	local thickness = gaugeThickness
+	local offset = gaugeOffset
 
 	if ratio_primary <= 1 then
-		gauge(1, reticuleCircleRadius + offset, colors.brakeBackground, thickness)
+		gauge(1, sideArcRadius + offset, colors.brakeBackground, thickness)
 		local color
 		if ratio_primary > brakeNowRatio then
 			color = colors.brakeNow
 		else
 			color = colors.brakePrimary
 		end
-		gauge(ratio_secondary, reticuleCircleRadius + offset, colors.brakeSecondary, thickness)
-		gauge(ratio_primary, reticuleCircleRadius + offset, color, thickness)
+		gauge(ratio_secondary, sideArcRadius + offset, colors.brakeSecondary, thickness)
+		gauge(ratio_primary, sideArcRadius + offset, color, thickness)
 	else
-		gauge(1, reticuleCircleRadius + offset, colors.brakeOvershoot, thickness)
-		gauge(2 - math.min(ratio_primary, 2), reticuleCircleRadius + offset, colors.brakePrimary, thickness)
+		gauge(1, sideArcRadius + offset, colors.brakeOvershoot, thickness)
+		gauge(2 - math.min(ratio_primary, 2), sideArcRadius + offset, colors.brakePrimary, thickness)
 	end
 end
 
--- display heading, pitch and roll around the reticule circle
+-- display heading (on the tape), pitch (on the right arc) and roll (in the middle)
 local function displayReticulePitchHorizonCompass()
 	local heading, pitch, roll = Game.player:GetHeadingPitchRoll("planet")
 	local pitch_degrees = (pitch / ui.twoPi * 360)
@@ -268,11 +291,9 @@ local function displayReticulePitchHorizonCompass()
 	local roll_degrees = (roll / ui.twoPi * 360);
 
 	if showNavigationalNumbers then
-		local uiPos = ui.pointOnClock(center, reticuleCircleRadius + 5, 4.7)
+		-- just past the bottom of the right arc
+		local uiPos = ui.pointOnClock(center, sideArcRadius + 5, 3 + sideArcHours + 0.05)
 		ui.addStyledText(uiPos, ui.anchor.left, ui.anchor.top, math.floor(pitch_degrees + 0.5) .. "°", colors.reticuleCircle, pionillium.small, lui.HUD_CURRENT_PITCH)
-
-		uiPos = ui.pointOnClock(center, reticuleCircleRadius + 15, 1.3)
-		ui.addStyledText(uiPos, ui.anchor.left, ui.anchor.bottom, math.floor(heading_degrees + 0.5) .. "°", colors.reticuleCircle, pionillium.small, lui.HUD_CURRENT_HEADING)
 
 		uiPos = ui.pointOnClock(center, reticuleCircleRadius + 5, 6)
 		ui.addStyledText(uiPos, ui.anchor.center, ui.anchor.top, math.floor(roll_degrees + 0.5) .. "°", colors.reticuleCircle, pionillium.small, lui.HUD_CURRENT_ROLL)
@@ -280,7 +301,7 @@ local function displayReticulePitchHorizonCompass()
 
 	displayReticulePitch(pitch_degrees)
 	displayReticuleHorizon(roll_degrees)
-	displayReticuleCompass(heading_degrees)
+	displayHeadingTape(heading_degrees)
 end
 
 local function displayReticuleLandingAssist()
@@ -864,7 +885,8 @@ end
 local function displayFlightAssist(radius)
 	local follow_target = player:GetFollowTarget()
 	local assist_button_radius = flightAssistButtonSize / 2
-	local uiPos = ui.pointOnClock(center, radius + assist_button_radius * 2, 4.1)
+	-- just past the bottom of the right arc
+	local uiPos = ui.pointOnClock(center, radius + assist_button_radius * 2, 3 + sideArcHours + 0.1)
 	local padding = 3.0
 	local speed_limit_size = assist_button_radius
 
@@ -935,7 +957,8 @@ local function displayAlertMarker()
 	local alert = player:GetAlertState()
 	local iconsize = Vector2(24, 24)
 	if alert then
-		local uiPos = ui.pointOnClock(center, reticuleCircleRadius * 1.2 , 2)
+		-- by the top of the right arc
+		local uiPos = ui.pointOnClock(center, sideLabelRadius, 3 - sideArcHours)
 		if alert == "ship-firing" then
 			ui.addIcon(uiPos, icons.alert2, colors.alertRed, iconsize, ui.anchor.center, ui.anchor.center, lc.LASER_FIRE_DETECTED)
 		elseif alert == "ship-nearby" then
@@ -946,14 +969,17 @@ end
 
 
 local function displayReticule()
-	-- reticule circle
-	ui.addCircle(center, reticuleCircleRadius, colors.reticuleCircle, ui.circleSegments(reticuleCircleRadius), reticuleCircleThickness)
+	-- the reticle's two halves, apart either side of the view
+	ui.pathArcTo(center, sideArcRadius, ui.pi - sideArcHalfAngle, ui.pi + sideArcHalfAngle, 32)
+	ui.pathStroke(colors.reticuleCircle, false, reticuleCircleThickness)
+	ui.pathArcTo(center, sideArcRadius, -sideArcHalfAngle, sideArcHalfAngle, 32)
+	ui.pathStroke(colors.reticuleCircle, false, reticuleCircleThickness)
 
 	local frame = player.frameBody
 	local frameLabel = player.frameLabel
 	local navTarget = player:GetNavTarget()
 	local combatTarget = player:GetCombatTarget()
-	local radius = reticuleCircleRadius * 1.2
+	local radius = sideLabelRadius
 
 	if reticuleTarget == "frame" and (navTarget or combatTarget) then
 		reticuleTarget = (combatTarget and "combatTarget") or (navTarget and "navTarget") --[[@as string]]
@@ -987,7 +1013,8 @@ local function displayReticule()
 	end
 
 	displayFlightAssist(radius)
-	displayManeuverData(radius)
+	-- the maneuver readout stays under the middle of the view
+	displayManeuverData(reticuleCircleRadius * 1.2)
 	displayReticulePitchHorizonCompass()
 	displayReticuleLandingAssist()
 	displayReticuleDeltaV()

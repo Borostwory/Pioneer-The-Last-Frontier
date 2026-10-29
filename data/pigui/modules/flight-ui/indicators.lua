@@ -25,7 +25,13 @@ local player = nil
 
 local gameView = require 'pigui.views.game'
 
-local reticuleCircleRadius
+-- the ellipse framed by the reticle's side arcs, set each frame (half width, half height)
+local reticuleFrame
+
+-- how far out a screen offset from the center is, relative to the reticle frame (1 = on it)
+local function frameDistance(offset)
+	return math.sqrt((offset.x / reticuleFrame.x)^2 + (offset.y / reticuleFrame.y)^2)
+end
 
 -- display the HUD markers in space for ship forward, backward, left, right, up and down
 local function displayDirectionalMarkers()
@@ -35,7 +41,7 @@ local function displayDirectionalMarkers()
 		if screen.z <= 0 then
 			ui.addIcon(coord, icon, colors.reticuleCircle, Vector2(32, 32), ui.anchor.center, ui.anchor.center, nil, angle)
 		end
-		return showDirection and (coord - center):length() > reticuleCircleRadius
+		return showDirection and frameDistance(coord - center) > 1
 	end
 	local function angle(forward, adjust)
 		local aux2 = Vector2(forward.x, forward.y)
@@ -59,12 +65,12 @@ local function displayDirectionalMarkers()
 	end
 end
 
--- show the larger indicator "in-space" around something and maybe the small indicator inside the reticule circle
+-- show the larger indicator "in-space" around something and maybe the small indicator inside the reticle frame
 local function displayIndicator(onscreen, position, direction, icon, color, showIndicator, tooltip)
 	local size = Vector2(32, 32) -- size of full icon
-	local indicatorSize = Vector2(16, 16) -- size of small indicator inside the reticule circle
-	local dir = Vector2(direction.x, direction.y) * reticuleCircleRadius * 0.90
-	local indicator = center + dir
+	local indicatorSize = Vector2(16, 16) -- size of small indicator inside the reticle frame
+	local dir = Vector2(direction.x, direction.y)
+	local indicator = center + dir * (0.90 / frameDistance(dir))
 	if onscreen then
 		ui.addIcon(position, icon, color, size, ui.anchor.center, ui.anchor.center)
 		if tooltip then
@@ -74,8 +80,9 @@ local function displayIndicator(onscreen, position, direction, icon, color, show
 			end
 		end
 	end
-	-- only show small indicator if the large icon is outside the reticule radius
-	if showIndicator and (center - position):length() > reticuleCircleRadius * 1.2 then
+	-- only show small indicator if the large icon is outside the reticle frame or not
+	-- shown at all (behind the camera its position is mirrored towards the center)
+	if showIndicator and (not onscreen or frameDistance(position - center) > 1) then
 		ui.addIcon(indicator, icon, color, indicatorSize, ui.anchor.center, ui.anchor.center)
 	end
 end
@@ -242,7 +249,7 @@ gameView.registerModule("indicators", {
 		player = gameView.player
 		center = gameView.center
 		colors = ui.theme.colors
-		reticuleCircleRadius = ui.reticuleCircleRadius
+		reticuleFrame = ui.reticuleFrame
 
 		local frame = player.frameBody
 		local navTarget = player:GetNavTarget()
