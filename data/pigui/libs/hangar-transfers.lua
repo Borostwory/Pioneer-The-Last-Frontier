@@ -12,6 +12,7 @@ local ShipDef = require 'ShipDef'
 local PlayerState = require 'PlayerState'
 local ModalWindow = require 'pigui.libs.modal-win'
 local Hangar = require 'modules.Hangar.Hangar'
+local Pickers = require 'pigui.libs.hangar-pickers'
 
 local ui = require 'pigui'
 
@@ -138,9 +139,12 @@ function draw.sendShip(self)
 		footer(self, l.NO_OTHER_HANGARS, l.BOOK_DELIVERY, function() end)
 		return
 	end
+	Pickers.mapButton("sendShipTo", to.path)
 	local cost, time, ly = Hangar.ShipDeliveryQuote(rec.shipId, from.path, to.path)
 	ui.text(quoteLine(cost, time, ly))
 	ui.textWrapped(l.SHIP_TRAVELS_NOTE)
+	local dock = Hangar.DockWarning(rec.shipId, to.path, to.station)
+	if dock then ui.textColored(colors.alertYellow, dock) end
 	footer(self, Hangar.SendShipBlocked(rec, to), l.BOOK_DELIVERY, function() Hangar.SendShip(rec, to) end)
 end
 
@@ -173,11 +177,14 @@ function draw.shipFrom(self)
 		if ui.selectable(label, state.picked == row.rec, { "DontClosePopups" }) then state.picked = row.rec end
 		ui.sameLine(ui.getContentRegion().x * 0.55)
 		ui.textColored(colors.fontDim, quoteLine(row.cost, row.time, row.ly))
+		Pickers.mapButton("shipFrom" .. i, row.from.path)
 	end
 	ui.textColored(colors.fontDim, l.SHIPS_ELSEWHERE_NOTE)
 	ui.textWrapped(l.SHIP_TRAVELS_NOTE)
 
 	local rec = state.picked
+	local dock = rec and Hangar.DockWarning(rec.shipId, h.path, h.station)
+	if dock then ui.textColored(colors.alertYellow, dock) end
 	local blocked = not rec and l.PICK_A_SHIP or Hangar.SendShipBlocked(rec, h)
 	footer(self, blocked, l.BOOK_DELIVERY, function() Hangar.SendShip(rec, h) end)
 end
@@ -197,6 +204,7 @@ function draw.equipment(self)
 		footer(self, l.NO_OTHER_HANGARS, l.BOOK_DELIVERY, function() end)
 		return
 	end
+	Pickers.mapButton("equipOther", other.path)
 	if other ~= state.other then state.other, state.picked = other, {} end
 	local from, to = sending and here or other, sending and other or here
 
@@ -245,6 +253,7 @@ function draw.crew(self)
 		footer(self, sending and l.NO_DESTINATION or l.NOBODY_WAITING_ELSEWHERE, l.BOOK_PASSAGE, function() end)
 		return
 	end
+	Pickers.mapButton("crewOther", other.path)
 	if not sending and other ~= state.other then state.other, state.picked = other, {} end
 
 	local fromKey = sending and hereKey or other.key

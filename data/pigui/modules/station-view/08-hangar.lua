@@ -174,13 +174,14 @@ local function drawLeaseForm(station)
 		selected = ACTIVE
 	end
 
-	local others = {}
-	for _, h in ipairs(Hangar.GetHangars()) do
-		table.insert(others, string.interp(l.OTHER_HANGAR, { station = h.station, used = h.bays - Hangar.FreeBays(h), bays = h.bays }))
-	end
+	local others = Hangar.GetHangars()
 	if #others > 0 then
 		ui.spacing()
-		ui.textWrapped(l.YOUR_OTHER_HANGARS .. " " .. table.concat(others, " · "))
+		ui.text(l.YOUR_OTHER_HANGARS)
+		for _, h in ipairs(others) do
+			ui.textColored(colors.fontDim, "    " .. string.interp(l.OTHER_HANGAR, { station = h.station, used = h.bays - Hangar.FreeBays(h), bays = h.bays }))
+			Pickers.mapButton("otherHangar" .. h.key, h.path)
+		end
 	end
 end
 
@@ -962,14 +963,17 @@ local function drawLounge(station)
 
 	ui.separator()
 	ui.textWrapped(string.interp(l.LOUNGE_RATE_LINE, { rate = money(rate), now = money(rate * #waiting) }))
-	local elsewhere = {}
+	local first = true
 	for _, other in ipairs(Hangar.GetLounges()) do
 		if not lounge or other.key ~= lounge.key then
-			table.insert(elsewhere, string.interp(l.WAITING_AT, { count = #other.crew, station = other.station }))
+			if first then
+				ui.textColored(colors.fontDim, l.ALSO_WAITING_ELSEWHERE)
+				first = false
+			end
+			ui.sameLine()
+			ui.textColored(colors.fontDim, string.interp(l.WAITING_AT, { count = #other.crew, station = other.station }))
+			Pickers.mapButton("lounge" .. other.key, other.path)
 		end
-	end
-	if #elsewhere > 0 then
-		ui.textColored(colors.fontDim, l.ALSO_WAITING_ELSEWHERE .. " " .. table.concat(elsewhere, " · "))
 	end
 end
 

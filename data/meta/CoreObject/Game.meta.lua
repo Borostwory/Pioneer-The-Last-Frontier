@@ -141,6 +141,11 @@ function Game.GetRoverPlanet() end
 ---@param seconds number
 ---@return boolean ok
 function Game.DebugAdvanceTime(seconds) end
+-- whether a ship type fits a docking port of the station at `path` (nil: unknown)
+---@param path SystemPath
+---@param shipId string
+---@return boolean?
+function Game.CanDockAt(path, shipId) end
 ---@return number? fuel
 ---@return number? thrust
 ---@return boolean? burntOut

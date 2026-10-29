@@ -1355,6 +1355,19 @@ local function book(t)
 	return t
 end
 
+-- A warning when ship type `shipId` fits none of the docking ports at the
+-- station at `path` (named `station`): once it leaves, it can't dock there
+-- again. Nil when it fits, or when the game can't tell (an older build
+-- without Game.CanDockAt).
+function Hangar.DockWarning(shipId, path, station)
+	if not Game.CanDockAt then return nil end
+	local ok, fits = pcall(Game.CanDockAt, path, shipId)
+	if ok and fits == false then
+		return string.interp(l.DOCK_SIZE_WARNING, { station = station })
+	end
+	return nil
+end
+
 -- Why ship `rec` can't be sent to hangar `to` now, or nil
 function Hangar.SendShipBlocked(rec, to)
 	local from = hangars[rec.hangar]
@@ -1814,6 +1827,10 @@ function Hangar.CheckSwap(rec, take, aboard)
 	checkBoarding(blockers, warnings, def, rec.name, take, aboard,
 		Hangar.RecordFreeSpace(rec), Hangar.RecordLifeSupport(rec))
 
+	local here = hangars[rec.hangar]
+	local dock = here and Hangar.DockWarning(rec.shipId, here.path, here.station)
+	if dock then table.insert(warnings, dock) end
+
 	if rec.hull < 70 or rec.fuel < 50 then
 		table.insert(warnings, string.interp(l.LOW_HULL_FUEL, {
 			ship = rec.name, hull = string.format("%d", rec.hull), fuel = string.format("%d", rec.fuel)
@@ -1960,6 +1977,11 @@ function Hangar.CheckBuy(def, equip, mode, aboard)
 				ship = name, room = room, used = used, over = used - room, current = Game.player.shipName }))
 		end
 	end
+
+	-- the Ship Market doesn't check docking ports either
+	local station = Game.player:GetDockedWith()
+	local dock = station and Hangar.DockWarning(def.id, station.path, station.label)
+	if dock then table.insert(warnings, dock) end
 	return blockers, warnings
 end
 

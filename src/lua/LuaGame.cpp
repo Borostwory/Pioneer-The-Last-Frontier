@@ -2,6 +2,7 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 #include "LuaGame.h"
+#include "CollMesh.h"
 #include "DateTime.h"
 #include "DeathView.h"
 #include "FileSystem.h"
@@ -18,13 +19,18 @@
 #include "Player.h"
 #include "SaveGameManager.h"
 #include "SectorView.h"
+#include "ShipType.h"
 #include "Space.h"
+#include "SpaceStationType.h"
 #include "StringF.h"
 #include "SystemView.h"
 #include "WorldView.h"
 #include "core/GZipFormat.h"
 #include "galaxy/Galaxy.h"
+#include "galaxy/StarSystem.h"
+#include "galaxy/SystemBody.h"
 #include "pigui/LuaPiGui.h"
+#include "scenegraph/Model.h"
 #include "surface/Excursion.h"
 #include "surface/Rover.h"
 #include "surface/Walker.h"
@@ -726,6 +732,63 @@ static int l_game_get_rover(lua_State *l)
 }
 
 /*
+ * Function: CanDockAt
+ *
+ * Whether a ship type fits any docking port of the station at a path, in
+ * this system or another: the same size check the station makes when the
+ * ship asks to dock (the ship's collision radius against each port's
+ * minimum and maximum ship size). The station's type is worked out the way
+ * the station picks it, so no station body is needed.
+ *
+ * > fits = Game.CanDockAt(stationPath, shipId)
+ *
+ * Return:
+ *
+ *   fits - true or false, or nil when the path isn't a station or the ship
+ *          type is unknown
+ *
+ * Status:
+ *
+ *   experimental
+ */
+static int l_game_can_dock_at(lua_State *l)
+{
+	const SystemPath *path = LuaObject<SystemPath>::CheckFromLua(1);
+	const std::string shipId = LuaPull<std::string>(l, 2);
+	if (!Pi::game)
+		return 0;
+
+	auto shipType = ShipType::types.find(shipId);
+	if (shipType == ShipType::types.end())
+		return 0;
+
+	if (!path->IsBodyPath())
+		return 0;
+	RefCountedPtr<StarSystem> system = Pi::game->GetGalaxy()->GetStarSystem(*path);
+	if (!system || path->bodyIndex >= system->GetNumBodies())
+		return 0;
+	const SystemBody *sbody = system->GetBodyByPath(*path);
+	if (!sbody || sbody->GetSuperType() != SystemBody::SUPERTYPE_STARPORT)
+		return 0;
+
+	// as SpaceStation::InitStation picks it
+	Random rand(sbody->GetSeed());
+	const SpaceStationType *type = SpaceStationType::ForSystemBody(sbody, rand);
+	SceneGraph::Model *model = Pi::FindModel(shipType->second.modelName);
+	if (!type || !model || !model->GetCollisionMesh())
+		return 0;
+
+	const double radius = model->GetCollisionMesh()->GetAabb().GetRadius();
+	bool fits = false;
+	for (const SpaceStationType::SPort &port : type->Ports())
+		if (port.minShipSize < radius && radius < port.maxShipSize)
+			fits = true;
+
+	LuaPush(l, fits);
+	return 1;
+}
+
+/*
  * Function: DebugAdvanceTime
  *
  * Jump the game clock forward, for testing. Only while the player is docked.
@@ -1094,6 +1157,7 @@ void LuaGame::Register()
 		{ "GetRover", l_game_get_rover },
 		{ "GetRoverPlanet", l_game_get_rover_planet },
 		{ "DebugAdvanceTime", l_game_debug_advance_time },
+		{ "CanDockAt", l_game_can_dock_at },
 		{ "GetJetpackState", l_game_get_jetpack_state },
 		{ "GetControlledBody", l_game_get_controlled_body },
 		{ "SaveGameStats", l_game_savegame_stats },

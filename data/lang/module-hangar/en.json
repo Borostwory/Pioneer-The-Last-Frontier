@@ -299,6 +299,10 @@
     "description": "Window asking before someone in a lounge is dismissed",
     "message": "Dismiss {name}?"
   },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "This ship doesn't fit the docking ports at {station}: once it leaves, it can't dock there again."
+  },
   "DRIVE_FUEL": {
     "description": "Hyperdrive in the store: fuel it holds",
     "message": "{fuel} t fuel"

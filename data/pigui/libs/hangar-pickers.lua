@@ -230,6 +230,17 @@ function Pickers.ConfirmDismiss(member)
 	dismissModal:open()
 end
 
+-- A small button selecting the system of `path` on the sector map; nothing
+-- when it's the current system
+function Pickers.mapButton(id, path)
+	if Game.system and path:IsSameSystem(Game.system.path) then return end
+	ui.sameLine()
+	if ui.inlineIconButton("##map" .. id, icons.sector_map, l.SHOW_ON_MAP) then
+		Game.sectorView:SwitchToPath(path:SystemOnly())
+		Game.SetView("SectorView")
+	end
+end
+
 -- Blockers in red, warnings in amber
 function Pickers.drawProblems(blockers, warnings)
 	if #blockers > 0 or #warnings > 0 then ui.spacing() end
