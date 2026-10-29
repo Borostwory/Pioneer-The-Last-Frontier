@@ -117,7 +117,7 @@ not on the upstream Pioneer project.
 
 ## Getting The Last Frontier
 
-**Latest release: [v0.1.0 – early preview](https://github.com/Borostwory/Pioneer-The-Last-Frontier/releases/tag/v0.1.0)**
+**[Download the latest release](https://github.com/Borostwory/Pioneer-The-Last-Frontier/releases/latest)**
 (Windows, 64-bit). All releases are on the
 [Releases page](https://github.com/Borostwory/Pioneer-The-Last-Frontier/releases).
 
