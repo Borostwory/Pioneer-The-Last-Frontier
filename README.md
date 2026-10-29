@@ -48,7 +48,10 @@ delivered between stations. Every station has a crew lounge, where crew who
 aren't aboard wait on half wages; hire them straight into the lounge or send
 them to another station's lounge. A Fleet tab shows everything you own.
 
-<a href=".github/images/screens/hangar.jpg"><img src=".github/images/screens/hangar.jpg" width="49%" alt="Hangar"></a>
+<p>
+  <a href=".github/images/screens/hangar.jpg"><img src=".github/images/screens/hangar.jpg" width="49%" alt="Hangar"></a>
+  <a href=".github/images/screens/fleet.jpg"><img src=".github/images/screens/fleet.jpg" width="49%" alt="Fleet tab"></a>
+</p>
 
 ### Weather and Clouds
 
@@ -88,6 +91,17 @@ Sun shadows, city lights, ship lights and animated stars.
 
 <a href=".github/images/screens/sun.jpg"><img src=".github/images/screens/sun.jpg" width="49%" alt="Animated star surface"></a>
 
+### Flight HUD
+
+A wider reticle with a heading tape, and near planets a fighter-jet style
+pitch ladder with headings along the horizon and speed and altitude tapes.
+KSP-inspired direction markers, coloured in the heading-lock menu.
+
+<p>
+  <a href=".github/images/screens/flight-hud.jpg"><img src=".github/images/screens/flight-hud.jpg" width="49%" alt="Flight HUD over Mars"></a>
+  <a href=".github/images/screens/direction-markers.jpg"><img src=".github/images/screens/direction-markers.jpg" width="49%" alt="Direction markers in the heading-lock menu"></a>
+</p>
+
 ### And more
 
 - **Hyperspace** – a relativistic jump effect and new jump sounds.
@@ -113,6 +127,18 @@ not on the upstream Pioneer project.
 
 The mod's options are in their own **The Last Frontier (mod)** tab in the
 settings window.
+
+### Where your settings and saves live
+
+The Last Frontier keeps its settings, saved games, mods and data overrides in
+its own folder, separate from the original Pioneer and from other forks, so
+they don't overwrite each other:
+
+| System  | Folder |
+|---------|--------|
+| Windows | `Documents\PioneerTLF` |
+| macOS   | `~/Library/Application Support/PioneerTLF` |
+| Linux   | `~/.local/share/pioneertlf` (or `$XDG_DATA_HOME/pioneertlf`) |
 
 To build from source instead, use the `the-last-frontier` branch; see
 [COMPILING.txt](COMPILING.txt).
