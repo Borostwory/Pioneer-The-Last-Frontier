@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "laive"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "Laive \"{ship}\""
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "Skrenda"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Pridėti vietą"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "viską"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Kiek telpa"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Jau laive \"{ship}\": {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Jis jau pakeliui į kitą stotį."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Čia jau nuomojatės angarą."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Jis jau grįžta."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Taip pat laukia kitur:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "misija"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Vietos"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Vietas galima pridėti ar pašalinti vėliau."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Užsakyti pristatymą"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Užsakyti kelionę"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "\"{ship}\" laikomas jūsų angare čia."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "Laivo \"{ship}\" korpusas parduotas: daiktų perkelta į įrangos sandėlį: {items}, krovinių į krovinių sandėlį: {tons} t, įgulos narių į poilsio salę: {crew}."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Pakviesti į laivą"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Jo įranga keliauja į angaro įrangos sandėlį, o krovinys – į angaro krovinių sandėlį; parduodamas tik korpusas."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Paliekamas toks, koks yra, su įranga ir visu kroviniu; niekas nepereina į naują laivą. Mokate visą kainą."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Parduodamas su visa įranga. Visas krovinys pereina į naują laivą."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Atiduoti tuščią laivo \"{ship}\" korpusą"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Laikyti \"{ship}\" vietoje čia"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Atiduoti \"{ship}\" mainais"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Pirkti {ship}?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "laive yra keleivių"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Atšaukti pristatymą"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "Grąžinama {refund} (pusė kainos), ir jis grįžta į {station}, atvyksta {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Atšaukti pristatymą: {what}?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "dabar negalima nuimti"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} yra paviršiaus kosmouostas, o šis laivas neturi vietos atmosferiniam skydui."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Negalite pakilti, jei įgulos narių mažiau nei {min}."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Krovinys"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Krovinys laive"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Krovinių triumas"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "be jo netilptų jame esantis krovinys"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Krovinių sandėlis, {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Krovinių sandėlis tuščias."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Iškraukite prekes į angaro krovinių sandėlį ir pakraukite jas į laivą, kuriuo skrendate. Neribota ir nemokama; misijos krovinys išlaiko savo žymą."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Krovinys"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Atvyksta"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Vieta"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Vietos mokestis"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Kaina"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Atstumas"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Vieta"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Pavadinimas"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Apmokėta iki"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Stovėjimo mokestis"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Per mėnesį"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Laivas"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Geriausias įgūdis"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Stotis"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Būsena"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Sandėlis"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Tipas"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "ateis į laivą"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/sav."
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/naktis + {wage}/sav."
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Apmokėta iš anksto: liko {credit} kredito, bendro visoms vietoms. Pagal dabartinę nuomą jo užteks maždaug iki {date}; po to nuoma nuskaitoma iš jūsų sąskaitos kiekvieno mėnesio 1 d."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "Iš anksto sumokėta nuoma už jūsų angarą stotyje {station} baigiasi {date}. Po to ji bus nuskaitoma kiekvieno mėnesio 1 d."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Įgula"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} atvyko į įgulos poilsio salę stotyje {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Įgula laivui \"{ship}\" (telpa {min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "Įgulos narių: {crew} (šiame laive telpa {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Įgulos poilsio salė"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Įgula naujam laivui"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Kas nepažymėtas, laukia čia poilsio salėje."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Kelionės metu mokama pusė atlyginimo, poilsio salės mokesčio nėra. Atvykę jie laukia tenykštėje poilsio salėje."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Kas bus su laivu \"{ship}\"? Pasirinkite:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Pristatymo tarnyba"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Pristatyti \"{ship}\""
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Esate jiems skolingi {owed} atlyginimo. Jie to gerai nepriims, o didesnė nei {limit} skola laikoma sutarties sukčiavimu."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} laukia čia poilsio salėje. Sutartis baigiasi ir šis žmogus palieka jūsų įgulą."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Atleisti: {name}?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Šis laivas netinka stoties {station} švartavimosi prievadams: kartą išskridęs, jis ten nebegalės prisišvartuoti."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t kuro"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "tuščia"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "tuščias"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "tuščia"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Nutraukti nuomą"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Atsisakyti galima tik tuščio angaro: jokių laivų, įrangos ar prekių, nieko pakeliui ir jokios nesumokėtos nuomos."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Įranga"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "Į jūsų angaro sandėlį stotyje {station} atvyko daiktų: {count}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Įranga čia…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Įranga"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Įrangos tūris: užimta {used} iš {capacity} m³"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Sumontuota"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Montuoti į \"{ship}\""
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Laivynas"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Įgula poilsio salėse"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Angarai"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Laivai"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Įrangos sandėlis: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Skristi šiuo laivu"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Nuskaitoma iš jūsų sąskaitos."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Mokama iš jūsų kredito."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Mokama iš jūsų kredito, likutis – iš jūsų sąskaitos."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "Iš:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "Iš: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Kuras"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "lauks poilsio salėje"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Angaro skirtukas"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Angaras"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Angaras, {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Šis angaras užrakintas, kol nebus sumokėta skola už nuomą."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} (laisvų vietų: {free})"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Ačiū! Lauksiu čia įgulos poilsio salėje, kol prireiks manęs laive."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "krovinių triumas pilnas"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Krovinių triumas: užimta {used} iš {total} t"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Korpusas"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Visa įgula, išskyrus jus, laukia čia poilsio salėje. Pakvieskite juos į laivą per Angaro skirtuko skiltį Įgulos poilsio salė."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hiperpavara"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "Į laisvą vietą čia (laisvų: {free})"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "hipererdvėje"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "poilsio salėje"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "Čia poilsio salėje"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "Šio angaro sandėlyje laikoma įrangos daiktų: {count}."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "Įrangos daiktų, kurie netilpo atgal į laivą ir laikomi angaro sandėlyje: {count}."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "Pasirinkta daiktų: {count}"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Nuomotis angarą"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "jo reikia kroviniui laive"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "už {dist} šm"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Pakrauti į laivą"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "Poilsio salėje laukia įgulos narių: {crew}"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Jūsų angaras: užimta {ships} iš {bays} vietų, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "mokama kas mėnesį"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "apmokėta iki {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "nuoma nesumokėta"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "Po pakeitimo čia poilsio salėje: {count}, {cost} už naktį, plius pusė atlyginimo."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Įgulos poilsio salė, {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Nesumokėti poilsio salės mokesčiai: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Esate skolingi {debt} poilsio salės mokesčių. Sumokėkite juos, kol dar kas nors lauks poilsio salėje."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Poilsio salė: {rate} vienam žmogui už naktį (dabar {now} už naktį), mokama mėnesio 1 d. Čia laukianti įgula gauna pusę atlyginimo kaip budėjimo užmokestį ir nieko naujo neišmoksta."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Poilsio salės mokesčių nepavyko sumokėti visiškai. Esate skolingi {debt}; skola bus nuskaityta, kai turėsite pinigų."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Laukdami gauna pusę atlyginimo. Perkelkite juos stoties Angaro skirtuko skiltyje Įgulos poilsio salė."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "\"{ship}\": korpusas {hull}%, kuras {fuel}%. Čia galima remontuoti ir papildyti kuro."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Angare gali būti ne daugiau kaip 4 vietos."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Paliktas misijos krovinys turi būti pristatytas tuo laivu, kuris jį veža."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "mėnesiai"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d mėn."
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "reikia krovinių skyriaus gyvybės palaikymo"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} reikia krovinių skyriaus gyvybės palaikymo, kurio laikomas laivas neturi."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Kita sąskaita {date}: apie {amount}, nuoma už {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Kita sąskaita {date}: apie {amount}, nuoma už {from} – {to} (mėnesio dalis). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Čia niekas nelaukia."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Niekas nelaukia poilsio salėje ir nekeliauja."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Kitoje stotyje niekas nelaukia."
+  },
+  "NONE": {
+    "description": "",
+    "message": "nėra"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Pažymėkite, ką siųsti."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Turite būti savo laive."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Tas laivas laikomas kitoje stotyje."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Neturite pakankamai pinigų."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "neapmokėta iš anksto"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Stotyje {station} nėra laisvos vietos grįžti."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Laive krovinių nėra."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Iš anksto nieko nesumokėta: nuoma nuskaitoma iš jūsų sąskaitos kiekvieno mėnesio 1 d."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Pasirinkite, kur siųsti."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "nepakanka įrangos tūrio"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Stotyje {station} nėra laisvos vietos."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Čia nėra laisvos vietos. Pirmiausia pridėkite vietą."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Nenuomojate jokio angaro. Išsinuomokite jį bet kurioje stotyje, jos Angaro skirtuke."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Neturite angaro stotyje {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "nėra, negali palikti savo sistemos"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Neturite kito angaro."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "Kituose jūsų angaruose laivų nelaikoma."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Čia dar nelaikoma jokių laivų."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "šiame laive jam nėra lizdo"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "Daiktų: {count}"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Pasiūlyti vietą, kol kas laukiant čia įgulos poilsio salėje"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "pakeliui iš {from}, atvyksta {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "Angaras, iš kurio jis atkeliavo, jau ne jūsų."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} vietų)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "apmokėta maždaug iki {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Laive yra keleivių: pirmiausia įvykdykite keleivių sutartis."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Mokėti"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Mokėti {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Kol kas nieko: nuoma mokama kiekvieno mėnesio 1 d."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Mokėti iš anksto"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Mokėti iš anksto…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Pasirinkite laivą."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Dabartinė nuoma: {rent} per mėnesį. Mokėti už:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Mokėti nuomą iš anksto, {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, atvyksta {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 mėn."
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 m."
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 m."
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 mėn."
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 mėn."
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Pašalinti vietą"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Pašalinti galima tik tuščią vietą, ir angare turi likti bent viena."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Pervadinti"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Tuščias: {empty} per mėnesį. Pastačius \"{ship}\" ({tonnes} t): {rent} per mėnesį."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Nuoma per mėnesį: {bay} už vietą, plius {tonne} už toną pastatyto korpuso."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Nepavyko sumokėti nuomos už jūsų angarą stotyje {station}. Esate skolingi {debt}; ten esantys laivai užrakinti, kol skola bus sumokėta."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Nuoma nesumokėta: {debt} ({months} mėn., su 10% priemoka už vėlavimą). Čia esantys laivai užrakinti, kol skola bus sumokėta."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Likutis lieka laive \"{ship}\"."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "grįžta į {to}, atvyksta {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "visureigis pastatytas planetoje"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Jūsų visureigis pastatytas: {planet}. Pirmiausia jį pakraukite."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "ta pati sistema"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Išsaugoti"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Pasirinkite laikomą laivą lentelėje viršuje, kad jį pamatytumėte ir skristumėte juo."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Parduoti"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} moka {price} už {item}, kaip mokėtų Įrangos turgus."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Parduoti {item}?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Parduoti šiai stočiai už {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Siųsti įgulą iš poilsio salės, {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Siųsti į kitos stoties poilsio salę"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Siųsti įrangą…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Siųsti įrangą iš {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Siųsti daiktus iš šio sandėlio į kitą jūsų angarą"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Pristatymo tarnyba nugabens šį laivą į kitą jūsų angarą"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Siųsti į…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Laukti čia poilsio salėje"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Laivai"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Pakeliui esantys laivai ir laivai angaruose, užrakintuose dėl nesumokėtos nuomos, nerodomi."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "\"{name}\" (aktyvus)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "\"{ship}\" atvyko į jūsų angarą stotyje {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · korpusas {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "\"{ship}\" telpa ne daugiau kaip {max} įgulos narių."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Pakeliui: kol neatvyks, juo negalima skristi, jo siųsti ar perginkluoti."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Kaina: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "\"{ship}\" grįžo į jūsų angarą stotyje {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "\"{name}\" (laikomas čia)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Laivas keliauja su savo kroviniu ir įranga ir užima savo vietą paskirties stotyje. Kelionės metu juo negalima skristi ir jo perginkluoti. Stovėjimo mokestis skaičiuojamas nuo atvykimo."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Rodyti sektoriaus žemėlapyje"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Nuo"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "jo lizdai šiame laive užimti"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "jo lizdas šiame laive netinkamo dydžio"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Stotis"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "laivas, kuriuo skrendate"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "Skrenda"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Laikomas, užrakintas: nuoma nesumokėta"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "laikomas nuo {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Laikomas"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Angaro sandėlis, {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "Daiktų: {count} · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Sandėlis tuščias."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Nuimkite daiktus į sandėlį, tada sumontuokite juos į kairėje pasirinktą laivą arba parduokite šiai stočiai. Įrangos turgaus taisyklės ir kainos, montavimas nemokamas. Norėdami sumontuoti daiktą į konkretų lizdą, pirmiausia pasirinkite tuščią lizdą."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "jūsų angare čia nėra laisvos vietos."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "čia neturite angaro."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "Daiktų: {items}, {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "\"{ship}\" bus laikomas šioje vietoje. Įgula niekada nelieka laikomame laive: kas žemiau nepažymėtas, laukia čia poilsio salėje."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Keisti laivus"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Persėsti į \"{ship}\"?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Nieko"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Po to {rent} už kiekvieną pilną mėnesį, mokama mėnesio 1 d."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Tai laivas, kuriuo skrendate."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "\"{ship}\" reikia bent {min} įgulos narių, o laive būtų tik {crew}. Negalėsite pakilti, kol nepasamdysite daugiau arba nepakviesite ko nors iš poilsio salės."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "\"{ship}\" telpa ne daugiau kaip {max} įgulos narių, o laive būtų {crew}. Atžymėkite {over}, kad jie liktų poilsio salėje."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "\"{ship}\" telpa {room} t. Paimkite {over} t mažiau."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Iš viso: užimta {used} iš {bays} vietų"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Į:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "{ship} telpa {room} t, o laive turite {used} t. Atiduodant mainais, visas krovinys pereina į naują laivą: pirmiausia parduokite arba iškraukite {over} t, arba pasirinkite kitą variantą."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Turite {used} t krovinio, o {ship} telpa {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Atgabenti įgulą į poilsio salę, {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Atgabenti kitoje stotyje laukiančią įgulą į šią poilsio salę"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Perkelti įrangą į {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Pristatyti čia daiktus iš kito angaro sandėlio"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Perkelti iš…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Perkelti čia"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Pristatyti į jūsų angarą čia"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Perkelti laivą į {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Pristatyti čia laivą, laikomą kitame jūsų angare"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "keliauja į {station}, atvyksta {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Nuimti viską"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Perkelti į sandėlį viską, ką galima nuimti nuo šio laivo"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "pirmiausia nuimkite ant jo sumontuotus daiktus"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Nuimti į sandėlį"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Iškrauti į krovinių sandėlį"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "nesumokėta: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} per savaitę"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} – {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "Laukia: {count}"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Laukia poilsio salėse"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "laukia nuo {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Sveiki sugrįžę."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "Poilsio salėje laukia įgulos narių: {crew}."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Jūsų angare čia laivų: {ships}, vietų: {bays}."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Sumontuota be lizdo"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "metai"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Kiti jūsų angarai:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Jūs (vadas)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(turite {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Mokate: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Gaunate: {amount}"
+  }
+}

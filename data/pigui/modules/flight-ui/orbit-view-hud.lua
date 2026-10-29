@@ -14,9 +14,11 @@
 local Engine = require 'Engine'
 local Event = require 'Event'
 local Game = require 'Game'
+local Lang = require 'Lang'
 local ui = require 'pigui'
 local Constants = _G.Constants
 local Vector2 = _G.Vector2
+local lui = Lang.GetResource("ui-core")
 
 local gameView = require 'pigui.views.game'
 local _getBodyIcon = require 'pigui.modules.flight-ui.body-icons'
@@ -58,10 +60,10 @@ local toggleFlags = ui.WindowFlags {
 }
 
 local L = {
-	SHOW = "Show 3D Orbit View",
-	HIDE = "Hide 3D Orbit View",
-	FOCUS_BODY = "3D Orbit View focus: Orbited Body (click to focus Player Ship)",
-	FOCUS_PLAYER = "3D Orbit View focus: Player Ship (click to focus Orbited Body)",
+	SHOW = lui.ORBIT_VIEW_SHOW,
+	HIDE = lui.ORBIT_VIEW_HIDE,
+	FOCUS_BODY = lui.ORBIT_VIEW_FOCUS_BODY,
+	FOCUS_PLAYER = lui.ORBIT_VIEW_FOCUS_PLAYER,
 }
 
 local visible = false
@@ -116,10 +118,10 @@ end
 -- orbit markers labelled on the player's and the planner's orbits, which
 -- carry the marker's altitude (other orbits' apsides stay icon-only)
 local markerLabels = {
-	[Projectable.PERIAPSIS] = "Pe",
-	[Projectable.APOAPSIS] = "Ap",
-	[Projectable.ASCENDING_NODE] = "AN",
-	[Projectable.DESCENDING_NODE] = "DN",
+	[Projectable.PERIAPSIS] = lui.ORBIT_MARKER_PERIAPSIS,
+	[Projectable.APOAPSIS] = lui.ORBIT_MARKER_APOAPSIS,
+	[Projectable.ASCENDING_NODE] = lui.ORBIT_MARKER_ASCENDING_NODE,
+	[Projectable.DESCENDING_NODE] = lui.ORBIT_MARKER_DESCENDING_NODE,
 }
 
 local function getLabel(obj)
@@ -127,12 +129,12 @@ local function getLabel(obj)
 		return markerLabels[obj.type] .. " " .. ui.Format.Distance(obj.altitude)
 	end
 	if obj.type == Projectable.IMPACT then
-		return "Impact in " .. ui.Format.Duration(math.max((obj.time or 0) - Game.time, 0), 2)
+		return string.format(lui.ORBIT_IMPACT_IN, ui.Format.Duration(math.max((obj.time or 0) - Game.time, 0), 2))
 	end
 	if obj.type == Projectable.OBJECT then
 		if obj.base == Projectable.SYSTEMBODY then return obj.ref.name
 		elseif obj.base == Projectable.PLANNER then return ""
-		elseif obj.base == Projectable.PLANNER_BURN then return "Burn " .. tostring(obj.burnIndex or 1)
+		elseif obj.base == Projectable.PLANNER_BURN then return string.format(lui.BURN_NUMBER, obj.burnIndex or 1)
 		elseif obj.ref then return obj.ref:GetLabel()
 		else return "" end
 	elseif obj.type == Projectable.L4 then return "L4"

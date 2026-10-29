@@ -35,6 +35,7 @@ local Input = require 'Input'
 local Lang = require 'Lang'
 local Timer = require 'Timer'
 local lc = Lang.GetResource("core")
+local lui = Lang.GetResource("ui-core")
 local ui = require 'pigui'
 local Vector2 = _G.Vector2
 
@@ -72,77 +73,77 @@ local UNAVAILABLE = "-"
 -- The plan cap, mirrored from src/TransferPlanner.cpp (kMaxBurns).
 local MAX_BURN_COUNT = 8
 
--- strings the game ships no lang key for; no data/lang entries are added here
+-- the panel's strings, from the ui-core lang resource; the numeric drag
+-- formats and the "1x" time-acceleration label stay literal
 local L = {
-	TITLE = "BURN PLAN",
-	SUMMARY = "%d to go  ·  %s of %s  ·  %s",
-	SUMMARY_TIP = "Burns left, the Δv they still need of the Δv the ship has, and their burn time at the current thrust",
-	ALL_DONE = "All burns complete",
-	BURN = "Burn %d",
-	NO_BURNS = "No planned burns",
-	CAPTION_BURN = "Burn",
-	CAPTION_DV = "Δv",
-	CAPTION_IGNITION = "Ignition",
-	CAPTION_NODE = "Node",
-	CAPTION_DURATION = "Burn time",
-	CAPTION_DV_TIP = "Δv still to fly; the bar under it is the part already flown",
-	CAPTION_IGNITION_TIP = "Time to engine start: half the burn time before the node",
-	CAPTION_NODE_TIP = "Time to the planned node, the middle of the burn",
-	CAPTION_DURATION_TIP = "Burn time left at the current thrust",
-	DV_TIP = "Planned %s\nFlown %s\nLeft %s",
-	DURATION_TIP = "%s in total at the current thrust, %s left",
-	NO_THRUST = "No forward thrust: the burn time is unknown",
-	DONE = "Done",
-	STATUS_PENDING = "Planned burn",
-	STATUS_ACTIVE = "Active burn",
-	STATUS_COMPLETED = "Completed burn",
+	TITLE = lui.BURN_PLAN_TITLE,
+	SUMMARY = lui.BURN_PLAN_SUMMARY,
+	SUMMARY_TIP = lui.BURN_PLAN_SUMMARY_TIP,
+	ALL_DONE = lui.BURN_PLAN_ALL_DONE,
+	BURN = lui.BURN_NUMBER,
+	NO_BURNS = lui.BURN_PLAN_NO_BURNS,
+	CAPTION_BURN = lui.BURN_CAPTION_BURN,
+	CAPTION_DV = lui.BURN_CAPTION_DV,
+	CAPTION_IGNITION = lui.BURN_CAPTION_IGNITION,
+	CAPTION_NODE = lui.BURN_CAPTION_NODE,
+	CAPTION_DURATION = lui.BURN_CAPTION_DURATION,
+	CAPTION_DV_TIP = lui.BURN_CAPTION_DV_TIP,
+	CAPTION_IGNITION_TIP = lui.BURN_CAPTION_IGNITION_TIP,
+	CAPTION_NODE_TIP = lui.BURN_CAPTION_NODE_TIP,
+	CAPTION_DURATION_TIP = lui.BURN_CAPTION_DURATION_TIP,
+	DV_TIP = lui.BURN_DV_TIP,
+	DURATION_TIP = lui.BURN_DURATION_TIP,
+	NO_THRUST = lui.BURN_NO_THRUST,
+	DONE = lui.BURN_DONE,
+	STATUS_PENDING = lui.BURN_STATUS_PLANNED,
+	STATUS_ACTIVE = lui.BURN_STATUS_ACTIVE,
+	STATUS_COMPLETED = lui.BURN_STATUS_COMPLETED,
 	-- chained burns: this burn starts before the previous one ends
-	OVERLAP = "Starts %s before Burn %d ends",
-	COMPLETE = "Mark this burn complete",
+	OVERLAP = lui.BURN_OVERLAP,
+	COMPLETE = lui.BURN_MARK_COMPLETE,
 	-- the Warp tooltip names the configured stop-before-burn offset, so the row
 	-- control states exactly what it will do; the greyed form states why it
 	-- cannot (the target is at or before now, exactly startWarp's own rule)
-	WARP = "Warp: time acceleration to stop %ds before this burn starts (half its duration before the planned time)",
-	WARP_REACHED = "Target is already reached",
-	WARP_STRIP = "Warp to Burn %d - stop %ds before, %s",
-	WARP_LIMITED = " (limited)",
-	CANCEL_WARP = "Cancel warp: restore the previous time acceleration",
-	OFFSET_LABEL = "Stop before burn",
+	WARP = lui.BURN_WARP_TIP,
+	WARP_REACHED = lui.BURN_WARP_REACHED,
+	WARP_STRIP = lui.BURN_WARP_STRIP,
+	WARP_STRIP_LIMITED = lui.BURN_WARP_STRIP_LIMITED,
+	CANCEL_WARP = lui.BURN_CANCEL_WARP,
+	OFFSET_LABEL = lui.BURN_STOP_BEFORE_BURN,
 	OFFSET_FORMAT = "%.0f s",
-	OFFSET_TIP = "Warp stops this far before the burn start (half the burn duration before the planned time); shared by all burns",
-	ARRIVE_LABEL = "then",
-	ARRIVE_PAUSE = "Pause",
-	ARRIVE_PAUSE_TIP = "When the warp arrives, pause the game",
+	OFFSET_TIP = lui.BURN_STOP_BEFORE_BURN_TIP,
+	ARRIVE_LABEL = lui.BURN_ARRIVE_THEN,
+	ARRIVE_PAUSE = lui.BURN_ARRIVE_PAUSE,
+	ARRIVE_PAUSE_TIP = lui.BURN_ARRIVE_PAUSE_TIP,
 	ARRIVE_NORMAL = "1x",
-	ARRIVE_NORMAL_TIP = "When the warp arrives, carry on at normal speed (1x)",
-	APPROACH_STOP = "Stop before closest approach",
+	ARRIVE_NORMAL_TIP = lui.BURN_ARRIVE_NORMAL_TIP,
+	APPROACH_STOP = lui.BURN_APPROACH_STOP,
 	APPROACH_STOP_FORMAT = "%.0f s",
-	APPROACH_STOP_TIP = "Stop the clock this long before the closest approach to the target of the approach planned in the map - pausing, or carrying on at 1x, as chosen for the burns. Time acceleration is stepped down on the way so it cannot run past.",
-	APPROACH_STATUS = "%s: %s in %s",
-	APPROACH_NONE = "No approach planned",
-	APPROACH_PASSED = "%s: closest approach passed",
-	ACCURACY_LABEL = "Burn accuracy",
+	APPROACH_STOP_TIP = lui.BURN_APPROACH_STOP_TIP,
+	APPROACH_STATUS = lui.BURN_APPROACH_STATUS,
+	APPROACH_NONE = lui.BURN_APPROACH_NONE,
+	APPROACH_PASSED = lui.BURN_APPROACH_PASSED,
+	ACCURACY_LABEL = lui.BURN_ACCURACY,
 	ACCURACY_FORMAT = "%.1f %%",
-	ACCURACY_TIP = "Auto Burn flies each burn onto the planned trajectory, with its planned timing, easing the throttle at the end. If the resulting periapsis or apoapsis is still further off than this share of their altitude (or the orbit is out of the planned plane), it turns and makes a small correction burn.",
+	ACCURACY_TIP = lui.BURN_ACCURACY_TIP,
 	-- each tooltip states only what its own control does. The two controls are
 	-- genuinely independent: Auto Orientation is a flight control state, Auto
 	-- Burn an engine flag applied on top of it; setting one never sets the
 	-- other, and the tooltips say exactly that (plan Phase 3 re-architecture).
-	AUTO_ORIENTATION = "Auto Orientation: hold the ship at the active burn's direction. Orientation only, it never fires the main engine",
-	AUTO_BURN = "Auto Burn: fire the main engine for the active burn, and only while the ship is aligned with the burn direction - unaligned it produces no thrust. Use it together with Auto Orientation to have the ship point itself; it never changes the ship's orientation",
-	NEEDS_AUTOPILOT = "Requires ship autopilot equipment",
+	AUTO_ORIENTATION = lui.BURN_AUTO_ORIENTATION_TIP,
+	AUTO_BURN = lui.BURN_AUTO_BURN_TIP,
+	NEEDS_AUTOPILOT = lui.BURN_NEEDS_AUTOPILOT,
 	-- textual state indicator for the two toggles: the pressed state must read
 	-- unambiguously, not only as a subtle button-colour shift
-	STATE_ORIENTATION = "Auto Orientation",
-	STATE_BURN = "Auto Burn",
-	STATE_ON = "ON",
-	STATE_OFF = "OFF",
-	SHOW = "Show the multi-burn burn list",
-	HIDE = "Hide the multi-burn burn list",
+	STATE_ORIENTATION = lui.BURN_AUTO_ORIENTATION,
+	STATE_BURN = lui.BURN_AUTO_BURN,
+	STATE_ON = lui.BURN_STATE_ON,
+	STATE_OFF = lui.BURN_STATE_OFF,
+	-- the state line is "Label: ON" / "Label: OFF"
+	STATE_LINE = lui.BURN_STATE_LINE,
+	SHOW = lui.BURN_LIST_SHOW,
+	HIDE = lui.BURN_LIST_HIDE,
 }
-
--- the state line is "Label: ON" / "Label: OFF"
-local STATE_SEPARATOR = ": "
 
 -- module state: visibility is persisted; everything else is derived per frame
 local visible = false
@@ -924,10 +925,10 @@ local function drawAutopilotControls(player)
 	ui.withFont(dataFont.name, dataFont.size, function()
 		ui.alignTextToLineHeight(styles.MainButtonSize.y)
 		ui.textColored(orientationOn and colors.burnHudToggleOnText or colors.burnHudToggleOffText,
-			L.STATE_ORIENTATION .. STATE_SEPARATOR .. (orientationOn and L.STATE_ON or L.STATE_OFF))
+			string.format(L.STATE_LINE, L.STATE_ORIENTATION, orientationOn and L.STATE_ON or L.STATE_OFF))
 		ui.sameLine()
 		ui.textColored(burnOn and colors.burnHudToggleOnText or colors.burnHudToggleOffText,
-			L.STATE_BURN .. STATE_SEPARATOR .. (burnOn and L.STATE_ON or L.STATE_OFF))
+			string.format(L.STATE_LINE, L.STATE_BURN, burnOn and L.STATE_ON or L.STATE_OFF))
 	end)
 end
 
@@ -1067,8 +1068,7 @@ end
 local function drawWarpStrip()
 	local level = warp.lastRequest or Game.GetRequestedTimeAcceleration()
 	local clamped = Game.GetTimeAcceleration() ~= Game.GetRequestedTimeAcceleration()
-	local text = string.format(L.WARP_STRIP, warp.idx + 1, stopBeforeBurnS, level)
-		.. (clamped and L.WARP_LIMITED or "")
+	local text = string.format(clamped and L.WARP_STRIP_LIMITED or L.WARP_STRIP, warp.idx + 1, stopBeforeBurnS, level)
 
 	ui.withFont(dataFont.name, dataFont.size, function()
 		ui.textColored(colors.maneuver, text)

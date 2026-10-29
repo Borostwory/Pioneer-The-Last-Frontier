@@ -119,6 +119,218 @@
     "description": "",
     "message": "公告板"
   },
+  "BURN_ACCURACY": {
+    "description": "Flight HUD burn list label of the Auto Burn accuracy setting (in percent).",
+    "message": "点火精度"
+  },
+  "BURN_ACCURACY_TIP": {
+    "description": "Tooltip of the 'Burn accuracy' setting in the flight HUD burn list.",
+    "message": "自动点火会按计划的时机将每次点火飞到计划轨道上，并在结束时逐渐收小油门。如果得到的最近点或最远点偏差仍超过其高度的这一比例（或轨道偏离计划平面），它会转向并进行一次小的修正点火。"
+  },
+  "BURN_APPROACH_NONE": {
+    "description": "Flight HUD burn list closest approach status when no approach target is set.",
+    "message": "未计划接近"
+  },
+  "BURN_APPROACH_PASSED": {
+    "description": "Flight HUD burn list closest approach status after it has happened. %s = target name.",
+    "message": "%s：已过最接近点"
+  },
+  "BURN_APPROACH_STATUS": {
+    "description": "Flight HUD burn list closest approach status. 1st %s = target name, 2nd %s = closest distance, 3rd %s = countdown to the closest approach.",
+    "message": "%s：%s，%s 后"
+  },
+  "BURN_APPROACH_STOP": {
+    "description": "Flight HUD burn list checkbox: stop the clock before the closest approach to the planned target.",
+    "message": "最接近前停止"
+  },
+  "BURN_APPROACH_STOP_TIP": {
+    "description": "Tooltip of the 'Stop before closest approach' setting in the flight HUD burn list.",
+    "message": "在地图中计划的接近目标的最接近点之前这么久停止时钟——按点火设置暂停，或以 1x 继续。途中会逐级降低时间加速，以免越过。"
+  },
+  "BURN_ARRIVE_NORMAL_TIP": {
+    "description": "Tooltip of the 1x button in the flight HUD burn list.",
+    "message": "加速结束时，以正常速度（1x）继续"
+  },
+  "BURN_ARRIVE_PAUSE": {
+    "description": "Flight HUD burn list button: pause the game when the warp arrives.",
+    "message": "暂停"
+  },
+  "BURN_ARRIVE_PAUSE_TIP": {
+    "description": "Tooltip of the Pause button in the flight HUD burn list.",
+    "message": "加速结束时，暂停游戏"
+  },
+  "BURN_ARRIVE_THEN": {
+    "description": "Flight HUD burn list: short connecting word before the choice of what happens when a warp arrives ('then' Pause / 1x).",
+    "message": "然后"
+  },
+  "BURN_AUTO_BURN": {
+    "description": "Name of the Auto Burn toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "自动点火"
+  },
+  "BURN_AUTO_BURN_TIP": {
+    "description": "Tooltip of the Auto Burn toggle button in the flight HUD burn list.",
+    "message": "自动点火：为当前点火开启主引擎，且仅在飞船对准点火方向时——未对准时不产生推力。与自动定向配合使用可让飞船自行转向；它本身从不改变飞船的朝向"
+  },
+  "BURN_AUTO_ORIENTATION": {
+    "description": "Name of the Auto Orientation toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "自动定向"
+  },
+  "BURN_AUTO_ORIENTATION_TIP": {
+    "description": "Tooltip of the Auto Orientation toggle button in the flight HUD burn list.",
+    "message": "自动定向：使飞船保持在当前点火的方向上。只控制朝向，从不开启主引擎"
+  },
+  "BURN_CANCEL_WARP": {
+    "description": "Tooltip of the button that cancels a warp to a burn (flight HUD).",
+    "message": "取消加速：恢复之前的时间加速"
+  },
+  "BURN_CAPTION_BURN": {
+    "description": "Flight HUD burn list column caption: the burn number.",
+    "message": "点火"
+  },
+  "BURN_CAPTION_DURATION": {
+    "description": "Flight HUD burn list column caption: burn duration.",
+    "message": "点火时长"
+  },
+  "BURN_CAPTION_DURATION_TIP": {
+    "description": "Tooltip of the Burn time column caption in the flight HUD burn list.",
+    "message": "以当前推力计算的剩余点火时长"
+  },
+  "BURN_CAPTION_DV": {
+    "description": "Flight HUD burn list column caption: delta-v of the burn.",
+    "message": "Δv"
+  },
+  "BURN_CAPTION_DV_TIP": {
+    "description": "Tooltip of the Δv column caption in the flight HUD burn list.",
+    "message": "尚需完成的 Δv；下方的条表示已完成的部分"
+  },
+  "BURN_CAPTION_IGNITION": {
+    "description": "Flight HUD burn list column caption: time until engine start.",
+    "message": "点火倒计时"
+  },
+  "BURN_CAPTION_IGNITION_TIP": {
+    "description": "Tooltip of the Ignition column caption in the flight HUD burn list.",
+    "message": "距引擎启动的时间：节点前点火时长的一半"
+  },
+  "BURN_CAPTION_NODE": {
+    "description": "Flight HUD burn list column caption: time until the planned maneuver node.",
+    "message": "节点"
+  },
+  "BURN_CAPTION_NODE_TIP": {
+    "description": "Tooltip of the Node column caption in the flight HUD burn list.",
+    "message": "距计划节点（点火的中点）的时间"
+  },
+  "BURN_DONE": {
+    "description": "Flight HUD burn list: shown in place of the countdown for a completed burn.",
+    "message": "完成"
+  },
+  "BURN_DURATION_TIP": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list. 1st %s = total duration, 2nd %s = remaining duration.",
+    "message": "以当前推力共计 %s，剩余 %s"
+  },
+  "BURN_DV_TIP": {
+    "description": "Tooltip of a burn's delta-v in the flight HUD burn list. The three %s are speeds: planned, already flown, left. Keep the line breaks.",
+    "message": "计划 %s\n已完成 %s\n剩余 %s"
+  },
+  "BURN_LIST_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the burn list panel.",
+    "message": "隐藏多次点火列表"
+  },
+  "BURN_LIST_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the burn list panel.",
+    "message": "显示多次点火列表"
+  },
+  "BURN_MARK_COMPLETE": {
+    "description": "Tooltip of the button that marks a planned burn as flown (flight HUD burn list and map planner).",
+    "message": "将此次点火标记为完成"
+  },
+  "BURN_NEEDS_AUTOPILOT": {
+    "description": "Tooltip of the greyed-out Auto Orientation / Auto Burn buttons when the ship has no autopilot.",
+    "message": "需要飞船自动驾驶装备"
+  },
+  "BURN_NO_THRUST": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list when the ship has no forward thrust.",
+    "message": "无前向推力：点火时长未知"
+  },
+  "BURN_NUMBER": {
+    "description": "Label of one planned burn (flight HUD burn list, map planner burn list, map and 3D orbit view burn markers). %d = burn number, starting at 1.",
+    "message": "点火 %d"
+  },
+  "BURN_OVERLAP": {
+    "description": "Flight HUD burn list tooltip when a burn starts before the previous one ends. %s = overlap duration, %d = number of the previous burn.",
+    "message": "提前 %s 开始，早于点火 %d 结束"
+  },
+  "BURN_PLAN_ALL_DONE": {
+    "description": "Flight HUD burn list summary when every planned burn has been flown.",
+    "message": "所有点火已完成"
+  },
+  "BURN_PLAN_NO_BURNS": {
+    "description": "Flight HUD burn list when the plan is empty.",
+    "message": "无计划点火"
+  },
+  "BURN_PLAN_SUMMARY": {
+    "description": "Flight HUD burn list summary line. %d = burns left, 1st %s = delta-v they need, 2nd %s = delta-v the ship has, 3rd %s = their total burn time.",
+    "message": "剩余 %d 次  ·  %s / %s  ·  %s"
+  },
+  "BURN_PLAN_SUMMARY_TIP": {
+    "description": "Tooltip of the flight HUD burn list summary line.",
+    "message": "剩余点火次数、它们还需的 Δv 与飞船现有 Δv 之比，以及以当前推力计算的点火时长"
+  },
+  "BURN_PLAN_TITLE": {
+    "description": "Title of the flight HUD burn list panel.",
+    "message": "点火计划"
+  },
+  "BURN_PROGRESS": {
+    "description": "Below the flight HUD reticule: which planned burn is active. 1st %d = active burn number, 2nd %d = number of burns in the plan.",
+    "message": "点火 %d/%d"
+  },
+  "BURN_STATE_LINE": {
+    "description": "State line of a flight HUD burn list toggle. 1st %s = toggle name (Auto Orientation / Auto Burn), 2nd %s = ON / OFF.",
+    "message": "%s：%s"
+  },
+  "BURN_STATE_OFF": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched off.",
+    "message": "关"
+  },
+  "BURN_STATE_ON": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched on.",
+    "message": "开"
+  },
+  "BURN_STATUS_ACTIVE": {
+    "description": "Tooltip of a burn's status: the burn the ship is to fly next (flight HUD burn list and map planner).",
+    "message": "当前点火"
+  },
+  "BURN_STATUS_COMPLETED": {
+    "description": "Tooltip of a burn's status: already flown (flight HUD burn list and map planner).",
+    "message": "已完成的点火"
+  },
+  "BURN_STATUS_PLANNED": {
+    "description": "Tooltip of a burn's status: not yet flown and not the active burn (flight HUD burn list and map planner).",
+    "message": "计划中的点火"
+  },
+  "BURN_STOP_BEFORE_BURN": {
+    "description": "Flight HUD burn list label of the setting for how many seconds before the burn start the warp stops.",
+    "message": "点火前停止"
+  },
+  "BURN_STOP_BEFORE_BURN_TIP": {
+    "description": "Tooltip of the 'Stop before burn' setting in the flight HUD burn list.",
+    "message": "在点火开始前（计划时间前点火时长的一半）这么久停止时间加速；所有点火共用"
+  },
+  "BURN_WARP_REACHED": {
+    "description": "Tooltip of a greyed-out Warp button in the flight HUD burn list: the burn start is now or in the past.",
+    "message": "已到达目标时间"
+  },
+  "BURN_WARP_STRIP": {
+    "description": "Flight HUD status line while warping to a burn. 1st %d = burn number, 2nd %d = seconds to stop before (the 's' after it means seconds), %s = time acceleration level such as 1000x.",
+    "message": "加速至点火 %d - 提前 %d 秒停止，%s"
+  },
+  "BURN_WARP_STRIP_LIMITED": {
+    "description": "Same as BURN_WARP_STRIP, shown when the game is limiting the requested time acceleration. 1st %d = burn number, 2nd %d = seconds to stop before, %s = requested time acceleration level.",
+    "message": "加速至点火 %d - 提前 %d 秒停止，%s（受限）"
+  },
+  "BURN_WARP_TIP": {
+    "description": "Tooltip of a burn's Warp button in the flight HUD burn list. %d = configured number of seconds to stop before the burn (the 's' after it means seconds).",
+    "message": "加速：时间加速至此次点火开始（计划时间前点火时长的一半）前 %d 秒停止"
+  },
   "BUY": {
     "description": "Commodities and equipment prices",
     "message": "购买"
@@ -274,6 +486,230 @@
   "CLOSE": {
     "description": "",
     "message": "关闭"
+  },
+  "CLOUD_CLUSTERING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud clustering sliders",
+    "message": "局部覆盖：在此层有云的地方，天空被云覆盖的比例。不改变全球覆盖率。0 = 碎云遍布行星大部分地区（其中约 40% 的天空），100 = 几乎阴天的云层，之间有大片晴空（约 85-90%）。"
+  },
+  "CLOUD_CLUSTERING_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud clustering sliders, in percent",
+    "message": "云团聚集度 (%)"
+  },
+  "CLOUD_CLUSTERING_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud clustering slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "聚集度，{layer}"
+  },
+  "CLOUD_COVER_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud cover sliders",
+    "message": "全球覆盖：此层覆盖整个行星的比例。100 = 物理推导值（地球：低层约 40%，中层约 27%，高层约 30%），50 = 约一半，0 = 关闭该层。超过 100 后逐渐趋于阴天。"
+  },
+  "CLOUD_COVER_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud cover sliders, in percent",
+    "message": "云量倍率 (%)"
+  },
+  "CLOUD_COVER_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud cover slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "云量，{layer}"
+  },
+  "CLOUD_LAYER_HIGH": {
+    "description": "Settings window, The Last Frontier tab: name of the high cloud layer, inserted as {layer} into the per-layer slider labels (e.g. CLOUD_COVER_LAYER); lower case in English because it follows a comma",
+    "message": "高层（卷云）"
+  },
+  "CLOUD_LAYER_LOW": {
+    "description": "Settings window, The Last Frontier tab: name of the low cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "低层（层云/层积云）"
+  },
+  "CLOUD_LAYER_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: name of the medium cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "中层（高积云）"
+  },
+  "CLOUD_QUALITY": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud ray-marching quality",
+    "message": "云质量"
+  },
+  "CLOUD_QUALITY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud quality' combo box",
+    "message": "在近地面和空中时，沿每条视线穿过云层的采样数。越少越快；差别主要在靠近云时的细节。"
+  },
+  "CLOUD_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "高（32 步）"
+  },
+  "CLOUD_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "低（16 步）"
+  },
+  "CLOUD_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "中（24 步）"
+  },
+  "CLOUD_QUALITY_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "极高（48 步）"
+  },
+  "CLOUD_RESOLUTION": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud rendering resolution near the ground. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "云分辨率"
+  },
+  "CLOUD_RESOLUTION_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution' combo box",
+    "message": "在近地面和空中渲染云的分辨率（所用的最低分辨率），之后再缩放到屏幕。越高越清晰，也越慢。"
+  },
+  "CLOUD_RESOLUTION_FULL": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option, render clouds at the full screen resolution",
+    "message": "全屏分辨率"
+  },
+  "CLOUD_RESOLUTION_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "高（720 行）"
+  },
+  "CLOUD_RESOLUTION_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "低（360 行）"
+  },
+  "CLOUD_RESOLUTION_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "中（540 行）"
+  },
+  "CLOUD_RESOLUTION_SPACE": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the finest cloud resolution, used from space. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "太空云分辨率"
+  },
+  "CLOUD_RESOLUTION_SPACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution from space' combo box",
+    "message": "所用的最高分辨率。在行星上方高处，云的绘制成本很低，但其细节在屏幕上变小，因此分辨率会根据细节需要逐渐升至此值。在地球上向下看时，约 100 km 开始上升，约 450 km 达到此值；云更大的行星（稀薄、寒冷的大气，或更大的云尺寸设置）会更晚达到。"
+  },
+  "CLOUD_RESOLUTION_ULTRA": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "超高（1440 行）"
+  },
+  "CLOUD_RESOLUTION_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "极高（1080 行）"
+  },
+  "CLOUD_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for shadows cast by clouds",
+    "message": "云影"
+  },
+  "CLOUD_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud shadows' combo box. 'Soft' and 'Detailed' should match CLOUD_SHADOWS_SOFT and CLOUD_SHADOWS_DETAILED",
+    "message": "云投在地面、城市和飞船上的阴影。柔和：云区下方变暗。精细：每朵云的阴影。两者都以云分辨率计算，因此开销很小。"
+  },
+  "CLOUD_SHADOWS_DETAILED": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, the shadow of each individual cloud",
+    "message": "精细"
+  },
+  "CLOUD_SHADOWS_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, dimming under whole cloud fields",
+    "message": "柔和"
+  },
+  "CLOUD_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud size sliders",
+    "message": "此层中单朵云的大小。100 = 基本大小，最高 16 倍。不改变覆盖率。"
+  },
+  "CLOUD_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud size sliders, in percent",
+    "message": "云大小倍率 (%)"
+  },
+  "CLOUD_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "大小，{layer}"
+  },
+  "CLOUD_SOFTENING": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for how much the cloud image is blurred when upscaled",
+    "message": "云柔化"
+  },
+  "CLOUD_SOFTENING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud softening' combo box",
+    "message": "放大云图像时进行模糊，掩盖较低的分辨率。"
+  },
+  "CLOUD_SOFTENING_SHARP": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, no blur",
+    "message": "锐利"
+  },
+  "CLOUD_SOFTENING_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, moderate blur",
+    "message": "柔和"
+  },
+  "CLOUD_SOFTENING_VERY_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, strong blur",
+    "message": "非常柔和"
+  },
+  "CLOUD_SPACE_DETAIL": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how soon cloud resolution rises when seen from space, in percent",
+    "message": "太空云细节 (%)"
+  },
+  "CLOUD_SPACE_DETAIL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud detail from space' slider. The quoted names should match the translations of CLOUD_RESOLUTION and CLOUD_RESOLUTION_SPACE",
+    "message": "随着云变远、其细节在屏幕上变小，云分辨率从“云分辨率”升至“太空云分辨率”的快慢。在每颗行星上效果相同。减半会使锐化发生的距离加倍（更省）；0 = 从不锐化。在地球上以 4K 向下看：100 约在 450 km 达到全分辨率，50 约在 900 km，25 约在 1800 km。"
+  },
+  "CLOUD_SPEED": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how fast clouds drift and evolve",
+    "message": "云速度"
+  },
+  "CLOUD_SPEED_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud speed' slider",
+    "message": "云飘移和变形的速度，为实际风速的倍数。"
+  },
+  "CLOUD_SYSTEM_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud system size sliders",
+    "message": "云系（云的集群）及其间晴空区域的大小。不改变覆盖率。"
+  },
+  "CLOUD_SYSTEM_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud system size sliders, in percent",
+    "message": "云系大小倍率 (%)"
+  },
+  "CLOUD_SYSTEM_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud system size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "云系大小，{layer}"
+  },
+  "CLOUD_TEMPORAL": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for temporal cloud reconstruction",
+    "message": "云时间重建"
+  },
+  "CLOUD_TEMPORAL_16X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 16 cloud pixels is traced each frame",
+    "message": "16x（每帧 16 个像素中 1 个）"
+  },
+  "CLOUD_TEMPORAL_4X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 4 cloud pixels is traced each frame",
+    "message": "4x（每帧 4 个像素中 1 个）"
+  },
+  "CLOUD_TEMPORAL_9X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 9 cloud pixels is traced each frame",
+    "message": "9x（每帧 9 个像素中 1 个）"
+  },
+  "CLOUD_TEMPORAL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Temporal cloud reconstruction' combo box. 'Off' refers to the OFF option",
+    "message": "每帧只追踪部分云像素，其余由之前的帧补全。4x：四分之一，画面每 4 帧刷新一次。9x：九分之一，再快约一倍，每 9 帧刷新一次（适合高帧率；快速转向时云边缘可能短暂拖影）。16x：十六分之一，更快，每 16 帧刷新一次（适合 120+ fps；快速转向时和地平线处拖影更多）。关闭：每帧所有像素，最慢。"
+  },
+  "CLOUD_TRANSPARENCY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud transparency sliders",
+    "message": "穿过此层云的光量。100 = 物理推导值，200 = 厚度减半，50 = 厚度加倍。不改变覆盖率，但很高的值会使薄云（卷云）难以看见。"
+  },
+  "CLOUD_TRANSPARENCY_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud transparency sliders, in percent",
+    "message": "云透明度倍率 (%)"
+  },
+  "CLOUD_TRANSPARENCY_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud transparency slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "透明度，{layer}"
+  },
+  "CLOUD_VOLUMETRIC": {
+    "description": "Settings window, The Last Frontier tab: checkbox enabling volumetric clouds",
+    "message": "体积云"
+  },
+  "CLOUD_VOLUMETRIC_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
+    "message": "有大气的行星上的云层。启用多重采样（抗锯齿）时不绘制。"
+  },
+  "CLOUD_WEATHER_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",
+    "message": "缓存天气图案"
+  },
+  "CLOUD_WEATHER_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cached weather patterns' checkbox",
+    "message": "将最近行星的大尺度天气图案（风暴、锋面）一次性计算到一张贴图中，而不是逐像素计算：云渲染快约 15-20%，占用约 38 MB 显存。云的外观不变。"
   },
   "COLLAPSE": {
     "description": "Close / collapse an open folder or group",
@@ -895,6 +1331,14 @@
     "description": "Player combat rating",
     "message": "人畜无害的"
   },
+  "HEAD_BOB": {
+    "description": "Game option: the view bobs up and down as the player walks on foot",
+    "message": "步行时视角晃动"
+  },
+  "HEAD_BOB_DESC": {
+    "description": "The tooltip of the Head Bob on Foot option in the settings menu",
+    "message": "在船外行走或奔跑时，视角随每一步轻微晃动"
+  },
   "HEAVY_CARGO_SHUTTLE": {
     "description": "",
     "message": "重型货运穿梭机"
@@ -971,6 +1415,10 @@
     "description": "Tooltip for button",
     "message": "向上巡航模式"
   },
+  "HUD_BUTTON_DEPLOY_ROVER": {
+    "description": "Tooltip: set the surface rover down beside the landed ship and drive it",
+    "message": "驾驶漫游车"
+  },
   "HUD_BUTTON_DISABLE_AUTOPILOT": {
     "description": "Tooltip for button",
     "message": "禁用自动驾驶"
@@ -987,9 +1435,17 @@
     "description": "Tooltip for button",
     "message": "禁用跟随模式"
   },
+  "HUD_BUTTON_DISEMBARK": {
+    "description": "Tooltip: get out of the landed ship on foot",
+    "message": "下船"
+  },
   "HUD_BUTTON_EQUIPMENT": {
     "description": "Tooltip: Equipment",
     "message": "装备"
+  },
+  "HUD_BUTTON_EVA": {
+    "description": "Tooltip: leave the ship in space, floating beside it with the jetpack (extravehicular activity)",
+    "message": "舱外活动"
   },
   "HUD_BUTTON_EXTERNAL_VIEW": {
     "description": "Tooltip: External camera view",
@@ -1055,9 +1511,21 @@
     "description": "Tooltip: Landing gear is up",
     "message": "收起起落架"
   },
+  "HUD_BUTTON_LIGHTS_ARE_OFF": {
+    "description": "Tooltip: The ship's lamps, lighting the ground and everything around, are off; clicking switches them on",
+    "message": "灯光已关闭"
+  },
+  "HUD_BUTTON_LIGHTS_LEVEL": {
+    "description": "Tooltip: The ship's lamps are on at brightness level {level} of {max}; clicking steps to the next level, or off after the brightest",
+    "message": "灯光：{level} / {max} 级"
+  },
   "HUD_BUTTON_MANUAL_CONTROL": {
     "description": "Tooltip: Manual control",
     "message": "手动控制"
+  },
+  "HUD_BUTTON_PLAN_HEADING": {
+    "description": "Tooltip of the flight control state button while Auto Orientation holds the burn direction.",
+    "message": "计划朝向：使飞船保持在当前点火的方向上"
   },
   "HUD_BUTTON_ROTATION_DAMPING_IS_OFF": {
     "description": "Tooltip: Rotation damping is off",
@@ -1066,6 +1534,10 @@
   "HUD_BUTTON_ROTATION_DAMPING_IS_ON": {
     "description": "Tooltip: Rotation damping is on",
     "message": "开启旋转阻尼"
+  },
+  "HUD_BUTTON_ROVER_PARKED": {
+    "description": "Tooltip of the disabled rover button while the surface rover is out of the ship, parked where the player left it: the planet (or moon) and the star system, e.g. 'The rover is parked on Mars, Sol'",
+    "message": "漫游车停在{system}的{planet}上"
   },
   "HUD_BUTTON_SET_SPEED": {
     "description": "Tooltip: set speed",
@@ -1114,6 +1586,10 @@
   "HUD_BUTTON_UNDOCK": {
     "description": "Tooltip: Undock",
     "message": "出船坞"
+  },
+  "HUD_BUTTON_UNKNOWN_FLIGHT_STATE": {
+    "description": "Tooltip of the flight control state button for an unrecognised state (fallback).",
+    "message": "未知飞行控制状态"
   },
   "HUD_CARGO_MASS": {
     "description": "Cargo Mass",
@@ -1755,6 +2231,22 @@
     "description": "3d model of the ship",
     "message": "模型"
   },
+  "MOD_GRAPHICS": {
+    "description": "Mod settings tab section",
+    "message": "图形"
+  },
+  "MOD_ON_FOOT": {
+    "description": "Mod settings tab section",
+    "message": "步行与漫游车"
+  },
+  "MOD_OPTIONS": {
+    "description": "Settings window tab with the settings The Last Frontier adds",
+    "message": "The Last Frontier（模组）"
+  },
+  "MOD_SOUND": {
+    "description": "Mod settings tab section",
+    "message": "声音"
+  },
   "MONEY": {
     "description": "",
     "message": "货币"
@@ -1943,9 +2435,45 @@
     "description": "Label for the point of an orbit furthest from the orbited body",
     "message": "最远点"
   },
+  "ORBIT_IMPACT_IN": {
+    "description": "Label next to the predicted impact point on an orbit (system map and 3D orbit view). %s = time until impact.",
+    "message": "%s 后撞击"
+  },
+  "ORBIT_MARKER_APOAPSIS": {
+    "description": "Short abbreviation for apoapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the apoapsis.",
+    "message": "远点"
+  },
+  "ORBIT_MARKER_ASCENDING_NODE": {
+    "description": "Short abbreviation for ascending node: orbit marker label (followed by its altitude) and the button that moves a burn to the ascending node.",
+    "message": "升交点"
+  },
+  "ORBIT_MARKER_DESCENDING_NODE": {
+    "description": "Short abbreviation for descending node: orbit marker label (followed by its altitude) and the button that moves a burn to the descending node.",
+    "message": "降交点"
+  },
+  "ORBIT_MARKER_PERIAPSIS": {
+    "description": "Short abbreviation for periapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the periapsis.",
+    "message": "近点"
+  },
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "最近点"
+  },
+  "ORBIT_VIEW_FOCUS_BODY": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",
+    "message": "3D 轨道视图焦点：环绕天体（点击聚焦玩家飞船）"
+  },
+  "ORBIT_VIEW_FOCUS_PLAYER": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the player's ship.",
+    "message": "3D 轨道视图焦点：玩家飞船（点击聚焦环绕天体）"
+  },
+  "ORBIT_VIEW_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the floating 3D orbit view.",
+    "message": "隐藏 3D 轨道视图"
+  },
+  "ORBIT_VIEW_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the floating 3D orbit view.",
+    "message": "显示 3D 轨道视图"
   },
   "OUTER_ARM": {
     "description": "Arm of the Milky Way galaxy",
@@ -2062,6 +2590,218 @@
   "PLANET_TEXTURES": {
     "description": "",
     "message": "行星贴图"
+  },
+  "PLANNER_ADD_BURN": {
+    "description": "Orbit planner button that adds a burn to the plan.",
+    "message": "添加点火"
+  },
+  "PLANNER_APPROACH_ALTITUDE": {
+    "description": "Orbit planner closest approach distance over a planet or moon. %s = altitude.",
+    "message": "地表以上 %s"
+  },
+  "PLANNER_APPROACH_FLYBY": {
+    "description": "Orbit planner label: altitude to pass a planet or moon at.",
+    "message": "飞掠高度"
+  },
+  "PLANNER_APPROACH_FLYBY_TIP": {
+    "description": "Tooltip of the Flyby altitude setting.",
+    "message": "在行星或卫星表面以上这个高度经过。进入其引力影响范围后，它的引力会使轨迹弯曲；计划会瞄准使弯曲后的轨迹最低点位于此高度。"
+  },
+  "PLANNER_APPROACH_FROM_NAV": {
+    "description": "Orbit planner tooltip: the approach target is the navigation target.",
+    "message": "你的导航目标——在地图上选择物体以更换"
+  },
+  "PLANNER_APPROACH_FROM_SELECTION": {
+    "description": "Orbit planner tooltip: the approach target comes from the map selection.",
+    "message": "在地图上选中的物体"
+  },
+  "PLANNER_APPROACH_IMPACT": {
+    "description": "Orbit planner closest approach result when the plan hits the target body. %s = time until impact.",
+    "message": "%s 后撞击目标"
+  },
+  "PLANNER_APPROACH_INTERCEPT": {
+    "description": "Orbit planner button: plan a 1-burn intercept.",
+    "message": "拦截"
+  },
+  "PLANNER_APPROACH_INTERCEPT_BODY_TIP": {
+    "description": "Tooltip of the Intercept button for a planet or moon target.",
+    "message": "1 次点火：以飞掠高度经过行星或卫星"
+  },
+  "PLANNER_APPROACH_INTERCEPT_TIP": {
+    "description": "Tooltip of the Intercept button for a ship or station target.",
+    "message": "1 次点火：与目标相遇的转移轨道"
+  },
+  "PLANNER_APPROACH_NO_TARGET": {
+    "description": "Orbit planner approach section when there is no target.",
+    "message": "在地图上选择物体，或设置导航目标"
+  },
+  "PLANNER_APPROACH_ONE_BURN": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "1 次点火"
+  },
+  "PLANNER_APPROACH_ORBIT": {
+    "description": "Orbit planner label: altitude of the circular orbit a rendezvous with a planet or moon ends in.",
+    "message": "轨道高度"
+  },
+  "PLANNER_APPROACH_ORBIT_TIP": {
+    "description": "Tooltip of the Orbit altitude setting.",
+    "message": "捕获点火后所处圆轨道的高度。轨迹会瞄准使其在天体引力弯曲后的最低点位于此高度，并在那里进行捕获点火。"
+  },
+  "PLANNER_APPROACH_PLAN": {
+    "description": "Orbit planner button that computes the approach plan.",
+    "message": "计划接近"
+  },
+  "PLANNER_APPROACH_PLAN_TIP": {
+    "description": "Tooltip of the 'Plan approach' button. %s = PLANNER_APPROACH_ONE_BURN or PLANNER_APPROACH_TWO_BURNS.",
+    "message": "用从当前轨道出发、Δv 最少时机的 %s 替换计划。环绕其他天体的目标会分阶段到达，途中在每个天体的环绕轨道上停泊。\n如果找不到转移轨道，计划保持不变。"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS": {
+    "description": "Orbit planner button: plan a 2-burn rendezvous.",
+    "message": "交会"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_BODY_TIP": {
+    "description": "Tooltip of the Rendezvous button for a planet or moon target.",
+    "message": "2 次点火：以下方高度飞掠行星或卫星，然后在其引力影响范围内的最近点进行反向点火，进入环绕它的圆轨道"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_TIP": {
+    "description": "Tooltip of the Rendezvous button for a ship or station target.",
+    "message": "2 次点火：与目标相遇，然后在到达时匹配其速度"
+  },
+  "PLANNER_APPROACH_RESULT": {
+    "description": "Orbit planner closest approach result. 1st %s = distance (or PLANNER_APPROACH_ALTITUDE), 2nd %s = time until it.",
+    "message": "%s，%s 后"
+  },
+  "PLANNER_APPROACH_RESULT_TIP": {
+    "description": "Tooltip of the closest approach result.",
+    "message": "计划轨迹与目标的最接近点，至最后一次点火后一圈为止"
+  },
+  "PLANNER_APPROACH_SPEED": {
+    "description": "Orbit planner closest approach relative speed. %s = speed.",
+    "message": "相对速度 %s"
+  },
+  "PLANNER_APPROACH_STAND_OFF": {
+    "description": "Orbit planner label: distance behind a ship or station target to meet it at.",
+    "message": "间隔距离"
+  },
+  "PLANNER_APPROACH_STAND_OFF_FORMAT": {
+    "description": "Orbit planner drag field format for the stand-off distance. %.1f = kilometres (keep it exactly).",
+    "message": "后方 %.1f km"
+  },
+  "PLANNER_APPROACH_STAND_OFF_TIP": {
+    "description": "Tooltip of the Stand-off setting.",
+    "message": "在飞船或空间站自身轨道上其后方这么远处与之相遇，而不是在其中心。交会后，由于两者在同一轨道上飞行，飞船会保持这个间距。"
+  },
+  "PLANNER_APPROACH_TARGET": {
+    "description": "Orbit planner approach section. %s = target name.",
+    "message": "目标：%s"
+  },
+  "PLANNER_APPROACH_TITLE": {
+    "description": "Orbit planner section header for planning an approach to a target.",
+    "message": "最接近"
+  },
+  "PLANNER_APPROACH_TWO_BURNS": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "2 次点火"
+  },
+  "PLANNER_BURN_IS_COMPLETE": {
+    "description": "Orbit planner tooltip of the snap and Circularize buttons for a burn that has been flown.",
+    "message": "此次点火已完成"
+  },
+  "PLANNER_CIRCULARIZE": {
+    "description": "Orbit planner button that makes the orbit circular.",
+    "message": "圆化轨道"
+  },
+  "PLANNER_CIRCULARIZE_AT_APSIS": {
+    "description": "Part of the Circularize tooltip. 1st %s = periapsis / apoapsis, 2nd %s = time until it.",
+    "message": "%s，%s 后"
+  },
+  "PLANNER_CIRCULARIZE_AT_POINT": {
+    "description": "Part of the Circularize tooltip when no apsis lies ahead.",
+    "message": "此次点火的位置（前方没有最近点或最远点）"
+  },
+  "PLANNER_CIRCULARIZE_NONE": {
+    "description": "Orbit planner Circularize button tooltip when it is not possible.",
+    "message": "此次点火的轨道无法在此处圆化"
+  },
+  "PLANNER_CIRCULARIZE_TIP": {
+    "description": "Orbit planner Circularize button tooltip. 1st %s = where (PLANNER_CIRCULARIZE_AT_APSIS or PLANNER_CIRCULARIZE_AT_POINT), 2nd %s = delta-v needed.",
+    "message": "在 %s 将轨道变为圆形：需要 %s 的 Δv。\n将此次点火移到那里，并替换其顺向、法向和径向值。"
+  },
+  "PLANNER_DV_AFTER": {
+    "description": "Orbit planner delta-v summary label: delta-v left after the plan.",
+    "message": "计划后"
+  },
+  "PLANNER_DV_AFTER_TIP": {
+    "description": "Tooltip of the After plan delta-v line.",
+    "message": "完成所有计划点火后剩余的 Δv"
+  },
+  "PLANNER_DV_AVAILABLE": {
+    "description": "Orbit planner delta-v summary label: delta-v the ship has.",
+    "message": "可用"
+  },
+  "PLANNER_DV_AVAILABLE_TIP": {
+    "description": "Tooltip of the Available delta-v line.",
+    "message": "飞船燃料在当前质量下提供的 Δv"
+  },
+  "PLANNER_DV_PLAN": {
+    "description": "Orbit planner delta-v summary label: delta-v the remaining burns need.",
+    "message": "计划"
+  },
+  "PLANNER_DV_PLAN_TIP": {
+    "description": "Tooltip of the Plan delta-v line.",
+    "message": "尚待进行的点火所需的 Δv"
+  },
+  "PLANNER_DV_SHORT": {
+    "description": "Orbit planner delta-v summary when the plan needs more than the ship has. %s = missing delta-v.",
+    "message": "缺少 %s"
+  },
+  "PLANNER_DV_SHORT_TIP": {
+    "description": "Tooltip of the After plan line when delta-v is short.",
+    "message": "计划所需的 Δv 超过燃料所能提供的"
+  },
+  "PLANNER_EVENT_APOAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "最远点"
+  },
+  "PLANNER_EVENT_ASCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "升交点"
+  },
+  "PLANNER_EVENT_DESCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "降交点"
+  },
+  "PLANNER_EVENT_PERIAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "最近点"
+  },
+  "PLANNER_REF_EQUATOR": {
+    "description": "Orbit planner reference plane for nodes: the body's equatorial plane. %s = body name.",
+    "message": "%s的赤道"
+  },
+  "PLANNER_REF_TARGET_ORBIT": {
+    "description": "Orbit planner reference plane for nodes: the target's orbital plane. %s = target name.",
+    "message": "%s的轨道"
+  },
+  "PLANNER_REMAINING_DV": {
+    "description": "Orbit planner tooltip of a burn's remaining delta-v.",
+    "message": "此次点火剩余的速度增量"
+  },
+  "PLANNER_SNAP_NODE_NONE": {
+    "description": "Orbit planner AN/DN button tooltip when the node does not exist. 1st %s = node name, 2nd %s = reference plane.",
+    "message": "此次点火之前的轨道上，前方没有%s（相对于%s）"
+  },
+  "PLANNER_SNAP_NODE_TIP": {
+    "description": "Orbit planner AN/DN button tooltip. 1st %s = node name, 2nd %s = reference plane (PLANNER_REF_TARGET_ORBIT / PLANNER_REF_EQUATOR), 3rd %s = time until it.",
+    "message": "将此次点火移到下一个%s（相对于%s），%s 后。\n再次点击移到下一圈。"
+  },
+  "PLANNER_SNAP_NONE": {
+    "description": "Orbit planner Pe/Ap button tooltip when the event does not exist. %s = event name.",
+    "message": "此次点火之前的轨道上，前方没有%s"
+  },
+  "PLANNER_SNAP_TIP": {
+    "description": "Orbit planner Pe/Ap button tooltip. 1st %s = event name (periapsis / apoapsis), 2nd %s = time until it.",
+    "message": "将此次点火移到其之前轨道的下一个%s，%s 后。\n再次点击移到下一圈。"
   },
   "PLEASE_DESIGN_NEW_PAINTJOB": {
     "description": "",
@@ -2291,6 +3031,30 @@
     "description": "For hyperjump planner",
     "message": "跳跃路线"
   },
+  "ROVER_BAY": {
+    "description": "Used in ShipInfo view, followed by a yes/no depending on whether the ship has a vehicle bay for the surface rover",
+    "message": "漫游车舱"
+  },
+  "ROVER_DEFAULT_VIEW": {
+    "description": "Game option: the view the surface rover starts in when the player gets in",
+    "message": "上车时的漫游车视角"
+  },
+  "ROVER_DEFAULT_VIEW_DESC": {
+    "description": "The tooltip of the Rover View on Getting In option in the settings menu",
+    "message": "进入漫游车或驾驶它驶出飞船时的视角。驾驶时仍可用视角键切换"
+  },
+  "ROVER_VIEW_CAB": {
+    "description": "Rover view option: from the driver's seat, with the cab drawn",
+    "message": "驾驶室视角"
+  },
+  "ROVER_VIEW_EXTERNAL": {
+    "description": "Rover view option: from outside, circling the rover",
+    "message": "外部视角"
+  },
+  "ROVER_VIEW_NO_MODEL": {
+    "description": "Rover view option: from the driver's eyes, without the rover drawn (as the ship's internal view)",
+    "message": "驾驶员视角，不显示漫游车"
+  },
   "SAFETY_LOCKOUT": {
     "description": "Ship jump status",
     "message": "安全锁定"
@@ -2387,6 +3151,22 @@
     "description": "UI option",
     "message": "设置"
   },
+  "SETTINGS_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box choosing sun shadow quality",
+    "message": "阴影"
+  },
+  "SETTINGS_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadows' combo box",
+    "message": "飞船、空间站、城市建筑和地形在地面上及彼此之间投下的太阳阴影。数字为阴影贴图分辨率：越高越清晰，占用显存越多（约 12 / 48 / 192 MB）。你飞船周围的清晰阴影每帧重绘；较远的阴影在太阳或镜头移动之前会被复用，因此开销很小。"
+  },
+  "SETTINGS_WIND_HOWL": {
+    "description": "Settings window, The Last Frontier tab, Sound: label of the slider for the surface wind sound volume, in percent",
+    "message": "风啸声 (%)"
+  },
+  "SETTINGS_WIND_HOWL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Wind howl' slider",
+    "message": "在有大气的行星上悬停、着陆或贴近地面慢速飞行时听到的地表风声响度。100 为设计音量；同时跟随音效音量。"
+  },
   "SET_AS_TARGET": {
     "description": "",
     "message": "Set destination as navigation target"
@@ -2410,6 +3190,42 @@
   "SET_TO_ZERO": {
     "description": "For the speed limiter button",
     "message": "设置为零"
+  },
+  "SHADOW_DARKNESS": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how dark shadows are, in percent",
+    "message": "阴影暗度 (%)"
+  },
+  "SHADOW_DARKNESS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow darkness' slider",
+    "message": "在类似地球的天空下，阴影遮挡多少阳光；其余代表仍能照到阴影处的天空光。大气越稀薄，阴影越暗，真空中完全黑暗。"
+  },
+  "SHADOW_DEBUG_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox for a debug view tinting the scene by shadow map",
+    "message": "显示阴影贴图（调试）"
+  },
+  "SHADOW_DEBUG_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Show shadow maps (debug)' checkbox",
+    "message": "按所用的阴影贴图为所有物体着色：红色为你飞船周围的清晰贴图，绿色为中间贴图，蓝色为远处贴图。"
+  },
+  "SHADOW_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how far shadows are drawn, in metres",
+    "message": "阴影距离 (m)"
+  },
+  "SHADOW_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow distance' slider",
+    "message": "距镜头多远的空间站、城市和停放的飞船会投下阴影。越远，同一张阴影贴图覆盖的范围越大，远处的阴影就越粗糙。"
+  },
+  "SHADOW_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "高 (4096)"
+  },
+  "SHADOW_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "低 (1024)"
+  },
+  "SHADOW_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "中 (2048)"
   },
   "SHIP": {
     "description": "",
@@ -2575,6 +3391,50 @@
     "description": "Tab item in the start game menu",
     "message": "摘要"
   },
+  "SURFACE_BOARD_SHIP": {
+    "description": "On-foot HUD prompt: the key and this board the ship",
+    "message": "登船"
+  },
+  "SURFACE_ENTER_ROVER": {
+    "description": "On-foot HUD prompt: the key and this get into the surface rover",
+    "message": "进入漫游车"
+  },
+  "SURFACE_EVA_SHIP": {
+    "description": "EVA HUD: distance to the player's ship and the speed relative to it, e.g. 'Ship 35 m, 0.4 m/s'",
+    "message": "飞船 {distance}，{speed}"
+  },
+  "SURFACE_EXIT_ROVER": {
+    "description": "Rover HUD prompt: the key and this get out of the surface rover",
+    "message": "下车"
+  },
+  "SURFACE_FREE_CURSOR": {
+    "description": "On-foot HUD hint: hold Alt to free the mouse cursor",
+    "message": "按住 Alt 显示鼠标光标"
+  },
+  "SURFACE_JETPACK": {
+    "description": "On-foot HUD: label of the jetpack fuel bar",
+    "message": "喷气背包"
+  },
+  "SURFACE_ROVER_SPEED": {
+    "description": "Rover HUD: the speed in kilometres per hour, e.g. '42 km/h'",
+    "message": "{speed} km/h"
+  },
+  "SURFACE_ROVER_VIEW": {
+    "description": "Rover HUD hint: the key and this change the view (from the cab, without the rover's model, from outside)",
+    "message": "切换视角"
+  },
+  "SURFACE_STOW_ROVER": {
+    "description": "Rover HUD prompt next to the ship: the key and this drive the rover into the hold and board the ship",
+    "message": "收回漫游车并登船"
+  },
+  "SURFACE_YOUR_ROVER": {
+    "description": "On-foot HUD: label of the marker of the player's surface rover on the compass",
+    "message": "漫游车"
+  },
+  "SURFACE_YOUR_SHIP": {
+    "description": "On-foot HUD: label of the marker of the player's own ship on the compass",
+    "message": "飞船"
+  },
   "SYSTEM_BODY_INDEX_IS_OUT_OF_RANGE": {
     "description": "Message when restoring savegame",
     "message": "系统主体索引超出范围"
@@ -2615,6 +3475,26 @@
     "description": "Tooltip introducing the system security rating",
     "message": "System safety rating"
   },
+  "SYSTEM_VIEW_FOLLOW_PLAN": {
+    "description": "System map button tooltip: follow the ship's planned position.",
+    "message": "跟随计划中你飞船的位置——拖动地图时间即可沿计划飞行"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_15": {
+    "description": "System map combo item: latitude/longitude lines every 15 degrees.",
+    "message": "每 15°"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_30": {
+    "description": "System map combo item: latitude/longitude lines every 30 degrees.",
+    "message": "每 30°"
+  },
+  "SYSTEM_VIEW_LATLONG_LINES": {
+    "description": "System map: button tooltip and settings label for latitude/longitude lines on planets and moons.",
+    "message": "经纬线"
+  },
+  "SYSTEM_VIEW_ZOOM_TO_SHIP": {
+    "description": "System map button tooltip: centre and zoom the map on the player's ship.",
+    "message": "缩放到你的飞船"
+  },
   "TECH_CERTIFIED": {
     "description": "Lobby screen shows the tech level (an integer number) of the station",
     "message": "该站拥有{tech_level}级的技术证书。"
@@ -2626,6 +3506,14 @@
   "TECH_LEVEL": {
     "description": "System view label for technology level",
     "message": "科技等级"
+  },
+  "TERRAIN_DETAIL_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the slider for the planet terrain level-of-detail distance",
+    "message": "地形细节距离"
+  },
+  "TERRAIN_DETAIL_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Terrain detail distance' slider",
+    "message": "行星地形在多远距离内获得完整网格细节：当你距离一个地形块小于这么多个块宽时，它会被细化。越高远处越清晰，但会生成更多地形（CPU）并绘制更多三角形。这是中等高度（地球上约 200 至 2,000 km）的值；在近地面和高轨道会自动降低，因为那里开销更大或效果更小。15 = 默认，1 = Pioneer 原始行为。"
   },
   "TEXTURE_COMPRESSION": {
     "description": "",

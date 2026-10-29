@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "επί του σκάφους"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "Στο «{ship}»"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "Σε πτήση"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Προσθήκη θέσης"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "όλα"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Όσο χωράει"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Ήδη στο «{ship}»: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Βρίσκεται καθ' οδόν προς άλλον σταθμό."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Μισθώνετε ήδη υπόστεγο εδώ."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Βρίσκεται ήδη στον δρόμο της επιστροφής."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Περιμένουν επίσης αλλού:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "μια αποστολή"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Θέσεις"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Μπορείτε να προσθέσετε ή να αφαιρέσετε θέσεις αργότερα."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Κράτηση μεταφοράς"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Κράτηση ταξιδιού"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "Το «{ship}» φυλάσσεται στο υπόστεγό σας εδώ."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "Το κύτος του «{ship}» πουλήθηκε: {items} αντικείμενα πήγαν στην αποθήκη εξοπλισμού, {tons} t φορτίου στην αποθήκη φορτίου και {crew} μέλη πληρώματος στο σαλόνι."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Επιβίβαση"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Ο εξοπλισμός του πηγαίνει στην αποθήκη εξοπλισμού του υποστέγου και το φορτίο του στην αποθήκη φορτίου· πουλιέται μόνο το κύτος."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Φυλάσσεται όπως είναι, με τον εξοπλισμό του και όλο το φορτίο του· τίποτα δεν μεταφέρεται στο νέο σκάφος. Πληρώνετε ολόκληρη την τιμή."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Πουλιέται με όλον τον εξοπλισμό του. Όλο το φορτίο του μεταφέρεται στο νέο σκάφος."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Ανταλλαγή μόνο του κύτους του «{ship}»"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Φύλαξη του «{ship}» σε θέση εδώ"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Ανταλλαγή του «{ship}»"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Αγορά {ship};"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "επιβάτες στο σκάφος"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Ακύρωση μεταφοράς"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "Επιστρέφονται {refund} (η μισή τιμή), και επιστρέφει στο {station}, με άφιξη {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Ακύρωση της μεταφοράς του {what};"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "δεν μπορεί να αφαιρεθεί τώρα"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "Το {station} είναι επιφανειακός αερολιμένας και αυτό το σκάφος δεν έχει υποδοχή ατμοσφαιρικής θωράκισης."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Δεν μπορείτε να απογειωθείτε με λιγότερα από {min} μέλη πληρώματος."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Φορτίο"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Φορτίο στο σκάφος"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Αμπάρι φορτίου"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "το φορτίο που περιέχει δεν θα χωρούσε χωρίς αυτό"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Αποθήκη φορτίου στο {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Η αποθήκη φορτίου είναι άδεια."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Ξεφορτώστε εμπορεύματα στην αποθήκη φορτίου του υποστέγου και φορτώστε τα στο σκάφος που πετάτε. Απεριόριστη και δωρεάν· το φορτίο αποστολών διατηρεί τη σήμανσή του."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Φορτίο"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Άφιξη"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Θέση"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Τέλος θέσης"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Κόστος"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Απόσταση"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Τοποθεσία"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Όνομα"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Πληρωμένο έως"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Τέλος στάθμευσης"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Ανά μήνα"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Σκάφος"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Καλύτερη δεξιότητα"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Σταθμός"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Κατάσταση"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Αποθήκη"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Τύπος"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "θα επιβιβαστεί"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/εβδομάδα"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/νύχτα + {wage}/εβδομάδα"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Προκαταβολή: απομένουν {credit} πίστωσης, κοινή για όλες τις θέσεις. Με το σημερινό ενοίκιο φτάνει περίπου έως {date}· μετά το ενοίκιο χρεώνεται στον λογαριασμό σας την 1η κάθε μήνα."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "Το ενοίκιο που προπληρώσατε για το υπόστεγό σας στο {station} λήγει στις {date}. Μετά χρεώνεται την 1η κάθε μήνα."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Πλήρωμα"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "Ο/Η {name} έφτασε στο σαλόνι πληρώματος στο {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Πλήρωμα για το «{ship}» (δέχεται {min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} μέλη πληρώματος (αυτό το σκάφος δέχεται {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Σαλόνι πληρώματος"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Πλήρωμα για το νέο σκάφος"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Όποιος δεν είναι επιλεγμένος περιμένει στο σαλόνι εδώ."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Στη διαδρομή πληρώνεται ο μισός μισθός και κανένα τέλος σαλονιού. Με την άφιξη περιμένουν στο σαλόνι εκεί."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Τι θα γίνει με το «{ship}»; Επιλέξτε ένα:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Υπηρεσία μεταφορών"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Μεταφορά του «{ship}»"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Τους οφείλετε {owed} σε μισθούς. Δεν θα το πάρουν καλά, και οφειλή πάνω από {limit} θεωρείται απάτη σύμβασης."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "Ο/Η {name} περιμένει στο σαλόνι εδώ. Η σύμβασή του/της λήγει και αποχωρεί από το πλήρωμά σας."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Απόλυση του/της {name};"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Αυτό το σκάφος δεν χωράει στις θύρες πρόσδεσης του {station}: μόλις φύγει, δεν μπορεί να προσδεθεί ξανά εκεί."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t καυσίμου"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "άδεια"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "άδειο"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "κενή"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Λήξη μίσθωσης"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Μόνο ένα άδειο υπόστεγο μπορεί να παραδοθεί: χωρίς σκάφη, εξοπλισμό ή εμπορεύματα, τίποτα καθ' οδόν και χωρίς απλήρωτο ενοίκιο."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Εξοπλισμός"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} αντικείμενα έφτασαν στην αποθήκη του υποστέγου σας στο {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Εξοπλισμός εδώ…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Εξοπλισμός"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Όγκος εξοπλισμού: {used} από {capacity} m³ σε χρήση"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Τοποθετημένο σε"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Τοποθέτηση στο «{ship}»"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Στόλος"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Πλήρωμα στα σαλόνια"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Υπόστεγα"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Σκάφη"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Αποθήκη εξοπλισμού: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Πτήση με αυτό το σκάφος"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Χρεώνεται στον λογαριασμό σας."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Πληρώνεται από την πίστωσή σας."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Πληρώνεται από την πίστωσή σας, το υπόλοιπο από τον λογαριασμό σας."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "Από:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "Από: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Καύσιμα"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "θα περιμένει στο σαλόνι"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Καρτέλα υποστέγου"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Υπόστεγο"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Υπόστεγο στο {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Αυτό το υπόστεγο είναι κλειδωμένο μέχρι να πληρωθεί το απλήρωτο ενοίκιο."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} ελεύθερες θέσεις)"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Ευχαριστώ! Θα περιμένω στο σαλόνι πληρώματος εδώ μέχρι να με χρειαστείτε στο σκάφος."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "το αμπάρι φορτίου είναι γεμάτο"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Αμπάρι φορτίου: {used} από {total} t σε χρήση"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Κύτος"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Όλο το πλήρωμα εκτός από εσάς περιμένει στο σαλόνι εδώ. Επιβιβάστε τους από την καρτέλα Υπόστεγο, Σαλόνι πληρώματος."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Υπερκινητήρας"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "Σε ελεύθερη θέση εδώ ({free} ελεύθερες)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "στο υπερδιάστημα"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "στο σαλόνι"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "Στο σαλόνι εδώ"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "{count} αντικείμενα εξοπλισμού φυλάσσονται στην αποθήκη αυτού του υποστέγου."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "{count} αντικείμενα εξοπλισμού δεν χώρεσαν ξανά στο σκάφος και φυλάσσονται στην αποθήκη του υποστέγου."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} αντικείμενα επιλεγμένα"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Μίσθωση υποστέγου"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "το φορτίο στο σκάφος το χρειάζεται"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "σε απόσταση {dist} έ.φ."
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Φόρτωση στο σκάφος"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} μέλη πληρώματος περιμένουν στο σαλόνι"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Το υπόστεγό σας: {ships} από {bays} θέσεις σε χρήση, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "χρέωση μηνιαία"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "πληρωμένο έως {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "απλήρωτο ενοίκιο"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "Στο σαλόνι εδώ μετά την αλλαγή: {count}, {cost} τη νύχτα, συν μισό μισθό."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Σαλόνι πληρώματος στο {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Απλήρωτα τέλη σαλονιού: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Οφείλετε {debt} σε τέλη σαλονιού. Πληρώστε τα πριν περιμένει κάποιος άλλος σε σαλόνι."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Σαλόνι: {rate} ανά άτομο ανά νύχτα ({now} τη νύχτα τώρα), χρέωση την 1η. Το πλήρωμα που περιμένει εδώ παίρνει μισό μισθό ως αμοιβή διαθεσιμότητας και δεν μαθαίνει τίποτα νέο."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Τα τέλη σαλονιού δεν πληρώθηκαν πλήρως. Οφείλετε {debt}· θα αφαιρεθούν από τα χρήματά σας όταν τα έχετε."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Παίρνουν μισό μισθό όσο περιμένουν. Μετακινήστε τους από την καρτέλα Υπόστεγο ενός σταθμού, Σαλόνι πληρώματος."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "Το «{ship}» έχει {hull}% κύτος και {fuel}% καύσιμα. Επισκευές και ανεφοδιασμός είναι διαθέσιμα εδώ."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Ένα υπόστεγο έχει το πολύ 4 θέσεις."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Το φορτίο αποστολών που μένει πίσω πρέπει να παραδοθεί με το σκάφος που το μεταφέρει."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "μήνες"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d μήνες"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "χρειάζεται υποστήριξη ζωής φορτίου"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "Το {commodity} χρειάζεται υποστήριξη ζωής φορτίου, την οποία δεν έχει το φυλασσόμενο σκάφος."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Επόμενος λογαριασμός {date}: περίπου {amount}, το ενοίκιο για {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Επόμενος λογαριασμός {date}: περίπου {amount}, το ενοίκιο για {from} – {to} (μέρος μήνα). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Κανείς δεν περιμένει εδώ."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Κανείς δεν περιμένει σε σαλόνι ή ταξιδεύει."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Κανείς δεν περιμένει σε άλλον σταθμό."
+  },
+  "NONE": {
+    "description": "",
+    "message": "κανένα"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Επιλέξτε τι θα σταλεί."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Πρέπει να βρίσκεστε στο σκάφος σας."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Αυτό το σκάφος φυλάσσεται σε άλλον σταθμό."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Δεν έχετε αρκετά χρήματα."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "χωρίς προπληρωμή"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Καμία ελεύθερη θέση στο {station} για επιστροφή."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Κανένα φορτίο στο σκάφος."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Τίποτα προπληρωμένο: το ενοίκιο χρεώνεται στον λογαριασμό σας την 1η κάθε μήνα."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Επιλέξτε πού θα πάει."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "δεν υπάρχει αρκετός όγκος εξοπλισμού"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Καμία ελεύθερη θέση στο {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Καμία ελεύθερη θέση εδώ. Προσθέστε πρώτα μια θέση."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Δεν μισθώνετε κανένα υπόστεγο. Μισθώστε ένα σε οποιονδήποτε σταθμό, από την καρτέλα Υπόστεγο."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Δεν έχετε υπόστεγο στο {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "κανένας, δεν μπορεί να φύγει από το σύστημά του"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Δεν έχετε άλλο υπόστεγο."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "Κανένα σκάφος δεν φυλάσσεται στα άλλα υπόστεγά σας."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Δεν φυλάσσονται ακόμη σκάφη εδώ."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "δεν υπάρχει υποδοχή γι' αυτό σε αυτό το σκάφος"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} αντικείμενα"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Προσφορά θέσης, με αναμονή στο σαλόνι πληρώματος εδώ προς το παρόν"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "καθ' οδόν από {from}, άφιξη {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "Το υπόστεγο από το οποίο ήρθε δεν είναι πια δικό σας."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} θέσεις)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "πληρωμένο έως περίπου {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Επιβάτες στο σκάφος: ολοκληρώστε πρώτα τα συμβόλαια επιβατών σας."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Πληρωμή"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Πληρωμή {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Τίποτα τώρα: το ενοίκιο χρεώνεται την 1η κάθε μήνα."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Προπληρωμή"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Προπληρωμή…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Επιλέξτε σκάφος."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Ενοίκιο τώρα: {rent} τον μήνα. Πληρωμή για:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Προπληρωμή ενοικίου για {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, άφιξη {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 μ"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 έ"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 έ"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 μ"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 μ"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Αφαίρεση θέσης"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Μόνο μια άδεια θέση μπορεί να αφαιρεθεί, και ένα υπόστεγο διατηρεί τουλάχιστον μία."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Μετονομασία"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Άδειο: {empty} τον μήνα. Με το «{ship}» ({tonnes} t) σταθμευμένο: {rent} τον μήνα."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Ενοίκιο ανά μήνα: {bay} ανά θέση, συν {tonne} ανά τόνο σταθμευμένου κύτους."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Το ενοίκιο για το υπόστεγό σας στο {station} δεν μπόρεσε να πληρωθεί. Οφείλετε {debt}· τα σκάφη εκεί είναι κλειδωμένα μέχρι να πληρωθεί."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Απλήρωτο ενοίκιο: {debt} ({months} μήνες, με προσαύξηση καθυστέρησης 10%). Τα σκάφη εδώ είναι κλειδωμένα μέχρι να πληρωθεί."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Τα υπόλοιπα μένουν στο «{ship}»."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "επιστρέφει στο {to}, άφιξη {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "το όχημα είναι σταθμευμένο σε πλανήτη"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Το όχημά σας είναι σταθμευμένο στο {planet}. Φορτώστε το πρώτα."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "ίδιο σύστημα"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Αποθήκευση"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Επιλέξτε ένα φυλασσόμενο σκάφος στον παραπάνω πίνακα για να το δείτε και να το πετάξετε."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Πώληση"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "Το {station} πληρώνει {price} για το {item}, όπως θα πλήρωνε η Αγορά εξοπλισμού."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Πώληση {item};"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Πώληση σε αυτόν τον σταθμό για {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Αποστολή πληρώματος από το σαλόνι στο {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Αποστολή στο σαλόνι άλλου σταθμού"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Αποστολή εξοπλισμού…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Αποστολή εξοπλισμού από {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Αποστολή αντικειμένων από αυτή την αποθήκη σε άλλο υπόστεγό σας"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Η υπηρεσία μεταφορών θα πάει αυτό το σκάφος σε άλλο υπόστεγό σας"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Αποστολή σε…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Αναμονή στο σαλόνι εδώ"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Σκάφη"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Σκάφη καθ' οδόν και σκάφη σε υπόστεγα κλειδωμένα λόγω απλήρωτου ενοικίου δεν εμφανίζονται."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "«{name}» (ενεργό)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "Το «{ship}» έφτασε στο υπόστεγό σας στο {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · κύτος {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "Το «{ship}» δέχεται το πολύ {max} μέλη πληρώματος."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Καθ' οδόν: δεν μπορεί να πετάξει, να σταλεί ή να εξοπλιστεί μέχρι να φτάσει."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Τιμή: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "Το «{ship}» επέστρεψε στο υπόστεγό σας στο {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "«{name}» (φυλάσσεται εδώ)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Το σκάφος ταξιδεύει με το φορτίο και τον εξοπλισμό του και κρατά τη θέση του στον προορισμό. Δεν μπορεί να πετάξει ή να εξοπλιστεί στη διαδρομή. Η στάθμευση χρεώνεται από την άφιξή του."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Εμφάνιση στον χάρτη τομέα"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Από"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "οι υποδοχές του σε αυτό το σκάφος είναι κατειλημμένες"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "η υποδοχή του σε αυτό το σκάφος έχει λάθος μέγεθος"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Σταθμός"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "το σκάφος που πετάτε"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "Σε πτήση"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Φυλάσσεται, κλειδωμένο: απλήρωτο ενοίκιο"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "φυλάσσεται από {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Φυλάσσεται"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Αποθήκη υποστέγου στο {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} αντικείμενα · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Η αποθήκη είναι άδεια."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Αφαιρέστε αντικείμενα στην αποθήκη, μετά τοποθετήστε τα στο σκάφος που επιλέξατε αριστερά ή πουλήστε τα σε αυτόν τον σταθμό. Κανόνες και τιμές της Αγοράς εξοπλισμού, χωρίς τέλος τοποθέτησης. Επιλέξτε πρώτα μια κενή υποδοχή για να τοποθετήσετε ένα αντικείμενο σε αυτήν."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "το υπόστεγό σας εδώ δεν έχει ελεύθερη θέση."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "δεν έχετε υπόστεγο εδώ."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} αντικείμενα, {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "Το «{ship}» θα φυλαχτεί σε αυτή τη θέση. Το πλήρωμα δεν μένει ποτέ σε φυλασσόμενο σκάφος: όποιος δεν είναι επιλεγμένος παρακάτω περιμένει στο σαλόνι εδώ."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Αλλαγή σκάφους"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Αλλαγή στο «{ship}»;"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Κανένα"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Μετά, {rent} για κάθε πλήρη μήνα, χρέωση την 1η."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Αυτό είναι το σκάφος που πετάτε."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "Το «{ship}» χρειάζεται τουλάχιστον {min} μέλη πληρώματος και μόνο {crew} θα ήταν στο σκάφος. Δεν μπορείτε να απογειωθείτε μέχρι να προσλάβετε περισσότερους ή να πάρετε κάποιον από το σαλόνι."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "Το «{ship}» δέχεται το πολύ {max} μέλη πληρώματος και {crew} θα ήταν στο σκάφος. Αποεπιλέξτε {over} για να μείνουν στο σαλόνι."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "Το «{ship}» έχει χώρο για {room} t. Πάρτε {over} t λιγότερους."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Σύνολο: {used} από {bays} θέσεις σε χρήση"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Προς:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "Ένα {ship} χωράει {room} t και έχετε {used} t στο σκάφος. Κατά την ανταλλαγή όλο το φορτίο μεταφέρεται στο νέο σκάφος: πουλήστε ή ξεφορτώστε πρώτα {over} t, ή επιλέξτε άλλη επιλογή."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Έχετε {used} t φορτίου και ένα {ship} χωράει {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Μεταφορά πληρώματος στο σαλόνι στο {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Μεταφορά πληρώματος που περιμένει σε άλλον σταθμό σε αυτό το σαλόνι"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Μεταφορά εξοπλισμού στο {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Παράδοση εδώ αντικειμένων από την αποθήκη άλλου υποστέγου"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Μεταφορά από…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Μεταφορά εδώ"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Παράδοση στο υπόστεγό σας εδώ"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Μεταφορά σκάφους στο {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Παράδοση εδώ ενός σκάφους που φυλάσσεται σε άλλο υπόστεγό σας"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "ταξιδεύει προς {station}, άφιξη {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Αφαίρεση όλων"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Μεταφορά στην αποθήκη όλων όσων μπορούν να αφαιρεθούν από αυτό το σκάφος"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "αφαιρέστε πρώτα τα αντικείμενα που είναι τοποθετημένα πάνω του"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Αφαίρεση στην αποθήκη"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Εκφόρτωση στην αποθήκη φορτίου"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "απλήρωτα: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} την εβδομάδα"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} στο {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} σε αναμονή"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Σε αναμονή στα σαλόνια"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "σε αναμονή από {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Καλώς ήρθατε πίσω."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} μέλη πληρώματος περιμένουν στο σαλόνι."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Το υπόστεγό σας εδώ φιλοξενεί {ships} σκάφη σε {bays} θέσεις."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Τοποθετημένα χωρίς υποδοχή"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "έτη"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Τα άλλα υπόστεγά σας:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Εσείς (κυβερνήτης)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(έχετε {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Πληρώνετε: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Λαμβάνετε: {amount}"
+  }
+}

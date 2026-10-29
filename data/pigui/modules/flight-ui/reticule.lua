@@ -559,7 +559,7 @@ local function displayManeuverData(radius)
 			-- stack below the maneuver readout when it is on screen
 			uiPos.y = uiPos.y + ui.getTextLineHeight() + 2
 		end
-		ui.addStyledText(uiPos, ui.anchor.center, ui.anchor.top, string.format("Burn %d/%d", activeBurn + 1, burnCount), colors.maneuver, pionillium.small, nil, colors.lightBlackBackground)
+		ui.addStyledText(uiPos, ui.anchor.center, ui.anchor.top, string.format(lui.BURN_PROGRESS, activeBurn + 1, burnCount), colors.maneuver, pionillium.small, nil, colors.lightBlackBackground)
 	end
 end
 
@@ -570,14 +570,13 @@ local aicommand_info = {
 	CMD_FLYAROUND = { icon = icons.autopilot_medium_orbit, tooltip = lui.HUD_BUTTON_AUTOPILOT_ENTERING_ORBIT },
 }
 
--- strings the game ships no lang key for: the plan-heading control state
--- (Phase 3) is labelled in the same local table pattern as
--- flight-ui/burn-hud.lua, so no data/lang entries are added here. The engine
+-- the plan-heading control state (Phase 3) is labelled in the same local
+-- table pattern as flight-ui/burn-hud.lua, from the ui-core lang resource. The engine
 -- side of the planner is not a flight control state at all - Auto Burn is an
 -- independent enable-flag (player:GetPlanBurnEnabled), so it has no entry here.
 local L = {
-	PLAN_HEADING = "Plan Heading: hold the ship at the active burn's direction",
-	UNKNOWN_STATE = "Unknown flight control state",
+	PLAN_HEADING = lui.HUD_BUTTON_PLAN_HEADING,
+	UNKNOWN_STATE = lui.HUD_BUTTON_UNKNOWN_FLIGHT_STATE,
 }
 
 local flightstate_info = {

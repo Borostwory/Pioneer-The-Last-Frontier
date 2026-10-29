@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "air bòrd"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "Air bòrd “{ship}”"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "’Ga sgiathadh"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Cuir bàgh ris"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "a h-uile"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Na tha a’ freagairt"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Air bòrd “{ship}” mu thràth: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Tha e air an t-slighe gu stèisean eile."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Tha hangar air màl agad an seo mu thràth."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Tha e air an t-slighe air ais mu thràth."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "A’ feitheamh ann an àiteachan eile cuideachd:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "misean"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Bàghan"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Gabhaidh bàghan a chur ris no a thoirt air falbh às a dhèidh seo."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Glèidh lìbhrigeadh"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Glèidh turas"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "Tha “{ship}” ’ga stòradh sa hangar agad an seo."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "Chaidh slige “{ship}” a reic: chaidh {items} nì dhan stòr uidheamachd, {tons} t de charago dhan stòr charago agus {crew} dhen sgioba dhan t-seòmar-fheitheimh."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Thoir air bòrd"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Thèid an uidheamachd aige gu stòr uidheamachd a’ hangar agus an carago aige gu stòr carago a’ hangar; chan reicear ach an t-slige."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Cumar e mar a tha e, leis an uidheamachd aige agus an carago gu lèir; cha ghluais dad dhan t-soitheach ùr. Pàighidh tu a’ phrìs shlàn."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Reicear e leis an uidheamachd gu lèir aige. Gluaisidh an carago gu lèir aige dhan t-soitheach ùr."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Thoir seachad slige lom “{ship}” mar phàirt-phàigheadh"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Stòr “{ship}” ann am bàgh an seo"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Thoir seachad “{ship}” mar phàirt-phàigheadh"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "A bheil thu airson {ship} a cheannach?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "taistealaich air bòrd"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Sguir dhen lìbhrigeadh"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "Thèid {refund} (leth na prìse) a thoirt air ais, agus tillidh e gu {station}, a’ ruigsinn {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "A bheil thu airson sgur de lìbhrigeadh {what}?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "cha ghabh a thoirt air falbh an-dràsta"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "’S e reul-phort uachdair a th’ ann an {station}, agus chan eil slot dìonadh àile air an t-soitheach seo."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Chan urrainn dhut itealadh le nas lugha na {min} dhen sgioba."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Carago"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Carago air bòrd"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Roinn carago"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "cha fhreagradh an carago a th’ ann às aonais"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Stòr carago aig {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Tha an stòr carago falamh."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Falmhaich bathar a-steach do stòr carago a’ hangar agus luchdaich e dhan t-soitheach air a bheil thu a’ sgiathadh. Gun chrìoch agus saor; cumaidh carago misein a chomharra."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Carago"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "A’ ruigsinn"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Bàgh"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Cìs bàigh"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Cosgais"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Astar"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Àite"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Ainm"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Pàighte gu"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Cìs pàircidh"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Gach mìos"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Soitheach"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "An sgil as fheàrr"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Stèisean"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Staid"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Stòr"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Seòrsa"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "thig air bòrd"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/seachdain"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/oidhche + {wage}/seachdain"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Pàighte ro làimh: {credit} de chreideas air fhàgail, air a roinn eadar na bàghan gu lèir. Leis a’ mhàl an-diugh mairidh e gu mu {date}; às a dhèidh sin, thèid am màl a thoirt às a’ chunntas agad air a’ chiad latha dhen mhìos."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "Ruithidh am màl a phàigh thu ro làimh airson a’ hangar agad aig {station} a-mach air {date}. Às a dhèidh sin, thèid a chur air a’ chunntas air a’ chiad latha dhen mhìos."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Sgioba"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "Ràinig {name} seòmar-feitheimh an sgioba aig {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Sgioba airson “{ship}” ({min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} dhen sgioba (gabhaidh an soitheach seo {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Seòmar-feitheimh an sgioba"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Sgioba airson an t-soithich ùir"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Feithidh duine sam bith gun chromag san t-seòmar-fheitheimh an seo."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Thèid leth-thuarastal a phàigheadh air an t-slighe, gun chìs seòmar-feitheimh. Nuair a ruigeas iad, feithidh iad san t-seòmar-fheitheimh an sin."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Dè thachras do “{ship}”? Tagh fear:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Seirbheis lìbhrigidh"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Lìbhrig “{ship}”"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Tha {owed} de thuarastal agad orra. Cha chòrd seo riutha, agus ’s e foill cùmhnaint a th’ ann ma bhios barrachd air {limit} agad orra."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "Tha {name} a’ feitheamh san t-seòmar-fheitheimh an seo. Thig an cùmhnant gu crìch agus fàgaidh iad an sgioba agad."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "A bheil thu airson {name} a leigeil air falbh?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Chan eil an soitheach seo a’ freagairt air puirt docaidh {station}: nuair a dh’fhàgas e, cha ghabh e docadh an sin a-rithist."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t connaidh"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "falamh"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "falamh"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "falamh"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Cuir crìoch air a’ ghabhail"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Chan fhaodar ach hangar falamh a leigeil seachad: gun soithichean, uidheamachd no bathar, gun dad air an t-slighe, agus gun mhàl gun phàigheadh."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Uidheamachd"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "Ràinig {count} nì stòr a’ hangar agad aig {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Uidheamachd an seo…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Uidheamachd"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Meud uidheamachd: {used} à {capacity} m³ ’ga chleachdadh"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Air a chur air"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Cuir air “{ship}”"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Cabhlach"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Sgioba sna seòmraichean-feitheimh"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangaraichean"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Soithichean"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Stòr uidheamachd: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Sgiath an soitheach seo"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Air a thoirt às a’ chunntas agad."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Air a phàigheadh às a’ chreideas agad."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Air a phàigheadh às a’ chreideas agad, an còrr às a’ chunntas agad."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "O:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "O: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Connadh"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "feithidh e san t-seòmar-fheitheimh"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Taba a’ hangar"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangar"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Hangar aig {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Tha an hangar seo glaiste gus am pàighear am màl a tha ri phàigheadh."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} bàgh(an) saor)"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Mòran taing! Feithidh mi ann an seòmar-feitheimh an sgioba an seo gus am bi feum agad orm air bòrd."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "tha an roinn carago làn"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Roinn carago: {used} à {total} t ’ga chleachdadh"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Slige"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Feithidh an sgioba gu lèir ach thu fhèin san t-seòmar-fheitheimh an seo. Thoir air bòrd iad on taba Hangar, Seòmar-feitheimh an sgioba."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Draibh os-fhànais"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "Gu bàgh saor an seo ({free} saor)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "san os-fhànais"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "san t-seòmar-fheitheimh"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "San t-seòmar-fheitheimh an seo"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "Tha {count} nì uidheamachd ’gan cumail ann an stòr a’ hangar seo."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "Cha do fhreagair {count} nì uidheamachd air ais air an t-soitheach agus tha iad ’gan cumail ann an stòr a’ hangar."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} nì air an taghadh"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Gabh hangar air màl"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "tha feum aig carago air bòrd air"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} bl air falbh"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Luchdaich air bòrd"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} dhen sgioba a’ feitheamh san t-seòmar-fheitheimh"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "An hangar agad: {ships} à {bays} bàgh(an) ’gan cleachdadh, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "air a chur air a’ chunntas gach mìos"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "pàighte gu {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "màl gun phàigheadh"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "San t-seòmar-fheitheimh an seo às dèidh na h-iomlaid: {count}, {cost} gach oidhche, a bharrachd air leth-thuarastal."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Seòmar-feitheimh an sgioba aig {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Cìsean seòmar-feitheimh gun phàigheadh: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Tha {debt} agad ri phàigheadh ann an cìsean seòmar-feitheimh. Pàigh iad mus fheith duine sam bith eile ann an seòmar-feitheimh."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Seòmar-feitheimh: {rate} gach neach gach oidhche ({now} gach oidhche an-dràsta), air a chur air a’ chunntas air a’ chiad latha. Gheibh an sgioba a tha a’ feitheamh an seo leth-thuarastal mar ghleidheadh agus chan ionnsaich iad dad ùr."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Cha b’ urrainn dhuinn na cìsean seòmar-feitheimh a phàigheadh gu lèir. Tha {debt} agad ri phàigheadh; thèid a thoirt às an airgead agad nuair a bhios e agad."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Gheibh iad leth-thuarastal fhad ’s a tha iad a’ feitheamh. Gluais iad ann an taba Hangar stèisein, Seòmar-feitheimh an sgioba."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "Tha slige “{ship}” aig {hull}% agus tha {fuel}% fhathast san tanca-connaidh. Tha càradh agus connadh rim faighinn an seo."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Chan fhaod barrachd air 4 bàghan a bhith ann an hangar."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Feumar carago misein a dh’fhàgar air dheireadh a lìbhrigeadh leis an t-soitheach a tha ’ga ghiùlan."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "mìosan"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d mìos(an)"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "feumaidh e taic-beatha san ionad charago"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "Feumaidh {commodity} taic-beatha san ionad charago, agus chan eil seo aig an t-soitheach a tha ’ga stòradh."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "An ath chunntas {date}: mu {amount}, am màl airson {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "An ath chunntas {date}: mu {amount}, am màl airson {from} – {to} (pàirt de mhìos). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Chan eil duine a’ feitheamh an seo."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Chan eil duine a’ feitheamh ann an seòmar-feitheimh no a’ siubhal."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Chan eil duine a’ feitheamh aig stèisean eile."
+  },
+  "NONE": {
+    "description": "",
+    "message": "chan eil gin"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Cuir cromag ris na tha ri chur."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Feumaidh tu a bhith air bòrd an t-soithich agad."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Tha an soitheach sin ’ga stòradh aig stèisean eile."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Chan eil airgead gu leòr agad."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "gun ro-phàigheadh"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Chan eil bàgh saor aig {station} airson tilleadh ann."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Chan eil carago air bòrd."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Cha deach dad a phàigheadh ro làimh: thèid am màl a thoirt às a’ chunntas agad air a’ chiad latha dhen mhìos."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Tagh càit an tèid e."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "chan eil meud uidheamachd gu leòr ann"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Chan eil bàgh saor aig {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Chan eil bàgh saor an seo. Cuir bàgh ris an toiseach."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Chan eil hangar air màl agad. Gabh fear air màl aig stèisean sam bith, san taba Hangar aige."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Chan eil hangar agad aig {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "chan eil gin, chan urrainn dha an siostam aige fhàgail"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Chan eil hangar eile agad."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "Chan eil soitheach ’ga stòradh anns na hangaraichean eile agad."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Chan eil soitheach ’ga stòradh an seo fhathast."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "chan eil slot air a shon air an t-soitheach seo"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} nì"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Tairg dreuchd, a’ feitheamh ann an seòmar-feitheimh an sgioba an seo an-dràsta"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "air an t-slighe o {from}, a’ ruigsinn {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "Chan ann leatsa a tha an hangar às an tàinig e tuilleadh."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} bàghan)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "pàighte gu mu {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Taistealaich air bòrd: crìochnaich na cùmhnantan thaistealach agad an toiseach."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Pàigh"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Pàigh {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Dad an-dràsta: thèid am màl a chur air a’ chunntas air a’ chiad latha dhen mhìos."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Pàigh ro làimh"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Pàigh ro làimh…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Tagh soitheach."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Màl an-dràsta: {rent} gach mìos. Pàigh airson:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Pàigh màl ro làimh airson {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, a’ ruigsinn {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 mì"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 bl"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 bl"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 mì"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 mì"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Thoir air falbh bàgh"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Chan fhaodar ach bàgh falamh a thoirt air falbh, agus cumaidh hangar co-dhiù aon bhàgh."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Thoir ainm ùr air"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Falamh: {empty} gach mìos. Le “{ship}” ({tonnes} t) air a phàirceadh: {rent} gach mìos."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Màl gach mìos: {bay} gach bàgh, a bharrachd air {tonne} gach tunna de shlige air a phàirceadh."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Cha b’ urrainn dhuinn am màl airson a’ hangar agad aig {station} a phàigheadh. Tha {debt} agad ri phàigheadh; tha na soithichean an sin glaiste gus am pàighear e."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Màl gun phàigheadh: {debt} ({months} mìos(an), le cìs anmoch 10%). Tha na soithichean an seo glaiste gus am pàighear e."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Fanaidh an còrr air bòrd “{ship}”."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "a’ tilleadh gu {to}, a’ ruigsinn {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "tha an carbad air a phàirceadh a-muigh air planaid"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Tha an carbad agad air a phàirceadh air {planet}. Cuir air falbh e an toiseach."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "an aon siostam"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Sàbhail"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Tagh soitheach a tha ’ga stòradh sa chlàr gu h-àrd gus a fhaicinn agus a sgiathadh."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Reic"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "Pàighidh {station} {price} airson {item}, mar a dhèanadh am Margadh uidheamachd."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "A bheil thu airson {item} a reic?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Reic ris an stèisean seo air {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Cuir sgioba on t-seòmar-fheitheimh aig {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Cuir gu seòmar-feitheimh aig stèisean eile"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Cuir uidheamachd…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Cuir uidheamachd o {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Cuir nithean on stòr seo gu hangar eile agad"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Iarr air an t-seirbheis lìbhrigidh an soitheach seo a thoirt gu hangar eile agad"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Cuir gu…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Fuirich san t-seòmar-fheitheimh an seo"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Soithichean"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Chan eil soithichean air an t-slighe, no soithichean ann an hangaraichean glaiste air sgàth màl gun phàigheadh, air an liosta."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "“{name}” (gnìomhach)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "Ràinig “{ship}” an hangar agad aig {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · slige {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "Gabhaidh “{ship}” {max} dhen sgioba air a’ char as motha."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Air an t-slighe: cha ghabh a sgiathadh, a chur no ath-uidheamachadh gus an ruig e."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Prìs: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "Tha “{ship}” air ais aig an hangar agad aig {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "“{name}” (’ga stòradh an seo)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Siubhlaidh an soitheach leis a’ charago ’s leis an uidheamachd aige agus cumaidh e a bhàgh aig a’ cheann-uidhe. Cha ghabh a sgiathadh no ath-uidheamachadh air an t-slighe. Thèid pàirceadh a chur air a’ chunntas on a ruigeas e."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Seall air mapa na roinne"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "O"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "tha na slotaichean aige air an t-soitheach seo trang"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "tha meud ceàrr air an t-slot aige air an t-soitheach seo"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Stèisean"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "an soitheach air a bheil thu a’ sgiathadh"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "’Ga sgiathadh"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "’Ga stòradh, glaiste: màl gun phàigheadh"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "’ga stòradh o {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "’Ga stòradh"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Stòr a’ hangar aig {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} nì · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Tha an stòr falamh."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Thoir nithean dheth dhan stòr, an uairsin cuir iad air an t-soitheach a chaidh a thaghadh air an taobh chlì, no reic iad ris an stèisean seo. Riaghailtean is prìsean a’ Mhargaidh uidheamachd, gun chìs airson an cur air. Tagh slot falamh an toiseach gus nì a chur san t-slot sin."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "chan eil bàgh saor aig a’ hangar agad an seo."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "chan eil hangar agad an seo."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} nì, {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "Thèid “{ship}” a stòradh sa bhàgh seo. Cha bhi sgioba a’ fuireach air soitheach a tha ’ga stòradh: feithidh duine sam bith gun chromag gu h-ìosal san t-seòmar-fheitheimh an seo."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Iomlaidich soithichean"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "A bheil thu airson iomlaid gu “{ship}”?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Chan eil gin"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Às a dhèidh sin, {rent} airson gach mìos shlàn, air a chur air a’ chunntas air a’ chiad latha."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Seo an soitheach air a bheil thu a’ sgiathadh."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "Feumaidh “{ship}” co-dhiù {min} dhen sgioba, agus cha bhiodh ach {crew} air bòrd. Chan urrainn dhut itealadh gus am fastaidh tu barrachd no gus an toir thu cuideigin on t-seòmar-fheitheimh."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "Gabhaidh “{ship}” {max} dhen sgioba air a’ char as motha, agus bhiodh {crew} air bòrd. Thoir a’ chromag far {over} gus am fàgail san t-seòmar-fheitheimh."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "Tha rùm aig “{ship}” airson {room} t. Thoir {over} t nas lugha leat."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Iomlan: {used} à {bays} bàghan ’gan cleachdadh"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Gu:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "Gabhaidh {ship} {room} t, agus tha {used} t air bòrd agad. Nuair a bheir thu seachad e mar phàirt-phàigheadh, gluaisidh an carago gu lèir dhan t-soitheach ùr: reic no falmhaich {over} t an toiseach, no tagh roghainn eile."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Tha {used} t de charago agad agus gabhaidh {ship} {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Thoir sgioba dhan t-seòmar-fheitheimh aig {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Thoir sgioba a tha a’ feitheamh aig stèisean eile dhan t-seòmar-fheitheimh seo"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Gluais uidheamachd gu {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Faigh nithean o stòr hangar eile air an lìbhrigeadh an seo"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Gluais o…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Gluais an seo"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Faigh e air a lìbhrigeadh dhan hangar agad an seo"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Gluais soitheach gu {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Faigh soitheach a tha ’ga stòradh aig hangar eile agad air a lìbhrigeadh an seo"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "a’ siubhal gu {station}, a’ ruigsinn {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Thoir dheth a h-uile"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Gluais a h-uile rud a ghabhas toirt far an t-soithich seo dhan stòr"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "thoir dheth na nithean a tha air a chur air an toiseach"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Thoir dheth dhan stòr"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Falmhaich dhan stòr carago"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "gun phàigheadh: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} gach seachdain"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} aig {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} a’ feitheamh"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "A’ feitheamh ann an seòmraichean-feitheimh"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "a’ feitheamh o {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Fàilte air ais."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "Tha {crew} dhen sgioba a’ feitheamh san t-seòmar-fheitheimh."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Tha {ships} soitheach ann an {bays} bàgh(an) sa hangar agad an seo."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Air a chur air gun slot"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "bliadhnaichean"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Na hangaraichean eile agad:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Thu fhèin (comandair)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(tha {crew} agad)"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Pàighidh tu: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Gheibh thu: {amount}"
+  }
+}

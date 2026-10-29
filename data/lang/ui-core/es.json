@@ -119,6 +119,218 @@
     "description": "",
     "message": "Tablón de anuncios"
   },
+  "BURN_ACCURACY": {
+    "description": "Flight HUD burn list label of the Auto Burn accuracy setting (in percent).",
+    "message": "Precisión del encendido"
+  },
+  "BURN_ACCURACY_TIP": {
+    "description": "Tooltip of the 'Burn accuracy' setting in the flight HUD burn list.",
+    "message": "El encendido automático lleva cada encendido a la trayectoria planificada, con su sincronización planificada, reduciendo el empuje al final. Si el perigeo o apogeo resultante sigue más desviado que esta proporción de su altitud (o la órbita queda fuera del plano planificado), gira y hace un pequeño encendido de corrección."
+  },
+  "BURN_APPROACH_NONE": {
+    "description": "Flight HUD burn list closest approach status when no approach target is set.",
+    "message": "No hay aproximación planificada"
+  },
+  "BURN_APPROACH_PASSED": {
+    "description": "Flight HUD burn list closest approach status after it has happened. %s = target name.",
+    "message": "%s: máxima aproximación superada"
+  },
+  "BURN_APPROACH_STATUS": {
+    "description": "Flight HUD burn list closest approach status. 1st %s = target name, 2nd %s = closest distance, 3rd %s = countdown to the closest approach.",
+    "message": "%s: %s en %s"
+  },
+  "BURN_APPROACH_STOP": {
+    "description": "Flight HUD burn list checkbox: stop the clock before the closest approach to the planned target.",
+    "message": "Detener antes de la máxima aproximación"
+  },
+  "BURN_APPROACH_STOP_TIP": {
+    "description": "Tooltip of the 'Stop before closest approach' setting in the flight HUD burn list.",
+    "message": "Detiene el reloj este tiempo antes de la máxima aproximación al objetivo de la aproximación planificada en el mapa: pausando o siguiendo a 1x, según lo elegido para los encendidos. La aceleración temporal se reduce por pasos en el camino para no sobrepasarla."
+  },
+  "BURN_ARRIVE_NORMAL_TIP": {
+    "description": "Tooltip of the 1x button in the flight HUD burn list.",
+    "message": "Al llegar la aceleración, continuar a velocidad normal (1x)"
+  },
+  "BURN_ARRIVE_PAUSE": {
+    "description": "Flight HUD burn list button: pause the game when the warp arrives.",
+    "message": "Pausa"
+  },
+  "BURN_ARRIVE_PAUSE_TIP": {
+    "description": "Tooltip of the Pause button in the flight HUD burn list.",
+    "message": "Al llegar la aceleración, pausar el juego"
+  },
+  "BURN_ARRIVE_THEN": {
+    "description": "Flight HUD burn list: short connecting word before the choice of what happens when a warp arrives ('then' Pause / 1x).",
+    "message": "luego"
+  },
+  "BURN_AUTO_BURN": {
+    "description": "Name of the Auto Burn toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "Encendido auto"
+  },
+  "BURN_AUTO_BURN_TIP": {
+    "description": "Tooltip of the Auto Burn toggle button in the flight HUD burn list.",
+    "message": "Encendido auto: enciende el motor principal para el encendido activo, y solo mientras la nave está alineada con la dirección del encendido; sin alinear no produce empuje. Úsalo junto con la Orientación auto para que la nave se oriente sola; nunca cambia la orientación de la nave"
+  },
+  "BURN_AUTO_ORIENTATION": {
+    "description": "Name of the Auto Orientation toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "Orientación auto"
+  },
+  "BURN_AUTO_ORIENTATION_TIP": {
+    "description": "Tooltip of the Auto Orientation toggle button in the flight HUD burn list.",
+    "message": "Orientación auto: mantiene la nave en la dirección del encendido activo. Solo orientación, nunca enciende el motor principal"
+  },
+  "BURN_CANCEL_WARP": {
+    "description": "Tooltip of the button that cancels a warp to a burn (flight HUD).",
+    "message": "Cancelar aceleración: restaurar la aceleración temporal anterior"
+  },
+  "BURN_CAPTION_BURN": {
+    "description": "Flight HUD burn list column caption: the burn number.",
+    "message": "Encendido"
+  },
+  "BURN_CAPTION_DURATION": {
+    "description": "Flight HUD burn list column caption: burn duration.",
+    "message": "Duración"
+  },
+  "BURN_CAPTION_DURATION_TIP": {
+    "description": "Tooltip of the Burn time column caption in the flight HUD burn list.",
+    "message": "Tiempo de encendido restante con el empuje actual"
+  },
+  "BURN_CAPTION_DV": {
+    "description": "Flight HUD burn list column caption: delta-v of the burn.",
+    "message": "Δv"
+  },
+  "BURN_CAPTION_DV_TIP": {
+    "description": "Tooltip of the Δv column caption in the flight HUD burn list.",
+    "message": "Δv que falta por realizar; la barra de debajo es la parte ya realizada"
+  },
+  "BURN_CAPTION_IGNITION": {
+    "description": "Flight HUD burn list column caption: time until engine start.",
+    "message": "Ignición"
+  },
+  "BURN_CAPTION_IGNITION_TIP": {
+    "description": "Tooltip of the Ignition column caption in the flight HUD burn list.",
+    "message": "Tiempo hasta el arranque del motor: la mitad del tiempo de encendido antes del nodo"
+  },
+  "BURN_CAPTION_NODE": {
+    "description": "Flight HUD burn list column caption: time until the planned maneuver node.",
+    "message": "Nodo"
+  },
+  "BURN_CAPTION_NODE_TIP": {
+    "description": "Tooltip of the Node column caption in the flight HUD burn list.",
+    "message": "Tiempo hasta el nodo planificado, la mitad del encendido"
+  },
+  "BURN_DONE": {
+    "description": "Flight HUD burn list: shown in place of the countdown for a completed burn.",
+    "message": "Hecho"
+  },
+  "BURN_DURATION_TIP": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list. 1st %s = total duration, 2nd %s = remaining duration.",
+    "message": "%s en total con el empuje actual, quedan %s"
+  },
+  "BURN_DV_TIP": {
+    "description": "Tooltip of a burn's delta-v in the flight HUD burn list. The three %s are speeds: planned, already flown, left. Keep the line breaks.",
+    "message": "Planificado %s\nRealizado %s\nRestante %s"
+  },
+  "BURN_LIST_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the burn list panel.",
+    "message": "Ocultar la lista de encendidos"
+  },
+  "BURN_LIST_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the burn list panel.",
+    "message": "Mostrar la lista de encendidos"
+  },
+  "BURN_MARK_COMPLETE": {
+    "description": "Tooltip of the button that marks a planned burn as flown (flight HUD burn list and map planner).",
+    "message": "Marcar este encendido como completado"
+  },
+  "BURN_NEEDS_AUTOPILOT": {
+    "description": "Tooltip of the greyed-out Auto Orientation / Auto Burn buttons when the ship has no autopilot.",
+    "message": "Requiere equipo de piloto automático"
+  },
+  "BURN_NO_THRUST": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list when the ship has no forward thrust.",
+    "message": "Sin empuje hacia delante: se desconoce el tiempo de encendido"
+  },
+  "BURN_NUMBER": {
+    "description": "Label of one planned burn (flight HUD burn list, map planner burn list, map and 3D orbit view burn markers). %d = burn number, starting at 1.",
+    "message": "Encendido %d"
+  },
+  "BURN_OVERLAP": {
+    "description": "Flight HUD burn list tooltip when a burn starts before the previous one ends. %s = overlap duration, %d = number of the previous burn.",
+    "message": "Empieza %s antes de que termine el encendido %d"
+  },
+  "BURN_PLAN_ALL_DONE": {
+    "description": "Flight HUD burn list summary when every planned burn has been flown.",
+    "message": "Todos los encendidos completados"
+  },
+  "BURN_PLAN_NO_BURNS": {
+    "description": "Flight HUD burn list when the plan is empty.",
+    "message": "No hay encendidos planificados"
+  },
+  "BURN_PLAN_SUMMARY": {
+    "description": "Flight HUD burn list summary line. %d = burns left, 1st %s = delta-v they need, 2nd %s = delta-v the ship has, 3rd %s = their total burn time.",
+    "message": "Faltan %d  ·  %s de %s  ·  %s"
+  },
+  "BURN_PLAN_SUMMARY_TIP": {
+    "description": "Tooltip of the flight HUD burn list summary line.",
+    "message": "Encendidos restantes, el Δv que aún necesitan del Δv que tiene la nave, y su tiempo de encendido con el empuje actual"
+  },
+  "BURN_PLAN_TITLE": {
+    "description": "Title of the flight HUD burn list panel.",
+    "message": "PLAN DE ENCENDIDOS"
+  },
+  "BURN_PROGRESS": {
+    "description": "Below the flight HUD reticule: which planned burn is active. 1st %d = active burn number, 2nd %d = number of burns in the plan.",
+    "message": "Encendido %d/%d"
+  },
+  "BURN_STATE_LINE": {
+    "description": "State line of a flight HUD burn list toggle. 1st %s = toggle name (Auto Orientation / Auto Burn), 2nd %s = ON / OFF.",
+    "message": "%s: %s"
+  },
+  "BURN_STATE_OFF": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched off.",
+    "message": "NO"
+  },
+  "BURN_STATE_ON": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched on.",
+    "message": "SÍ"
+  },
+  "BURN_STATUS_ACTIVE": {
+    "description": "Tooltip of a burn's status: the burn the ship is to fly next (flight HUD burn list and map planner).",
+    "message": "Encendido activo"
+  },
+  "BURN_STATUS_COMPLETED": {
+    "description": "Tooltip of a burn's status: already flown (flight HUD burn list and map planner).",
+    "message": "Encendido completado"
+  },
+  "BURN_STATUS_PLANNED": {
+    "description": "Tooltip of a burn's status: not yet flown and not the active burn (flight HUD burn list and map planner).",
+    "message": "Encendido planificado"
+  },
+  "BURN_STOP_BEFORE_BURN": {
+    "description": "Flight HUD burn list label of the setting for how many seconds before the burn start the warp stops.",
+    "message": "Detener antes del encendido"
+  },
+  "BURN_STOP_BEFORE_BURN_TIP": {
+    "description": "Tooltip of the 'Stop before burn' setting in the flight HUD burn list.",
+    "message": "La aceleración se detiene este tiempo antes del inicio del encendido (la mitad de su duración antes de la hora planificada); común a todos los encendidos"
+  },
+  "BURN_WARP_REACHED": {
+    "description": "Tooltip of a greyed-out Warp button in the flight HUD burn list: the burn start is now or in the past.",
+    "message": "El objetivo ya se ha alcanzado"
+  },
+  "BURN_WARP_STRIP": {
+    "description": "Flight HUD status line while warping to a burn. 1st %d = burn number, 2nd %d = seconds to stop before (the 's' after it means seconds), %s = time acceleration level such as 1000x.",
+    "message": "Acelerando hasta el encendido %d - detener %ds antes, %s"
+  },
+  "BURN_WARP_STRIP_LIMITED": {
+    "description": "Same as BURN_WARP_STRIP, shown when the game is limiting the requested time acceleration. 1st %d = burn number, 2nd %d = seconds to stop before, %s = requested time acceleration level.",
+    "message": "Acelerando hasta el encendido %d - detener %ds antes, %s (limitada)"
+  },
+  "BURN_WARP_TIP": {
+    "description": "Tooltip of a burn's Warp button in the flight HUD burn list. %d = configured number of seconds to stop before the burn (the 's' after it means seconds).",
+    "message": "Acelerar: aceleración temporal hasta %ds antes del inicio de este encendido (la mitad de su duración antes de la hora planificada)"
+  },
   "BUY": {
     "description": "Commodities and equipment prices",
     "message": "Comprar"
@@ -274,6 +486,230 @@
   "CLOSE": {
     "description": "",
     "message": "Cerrar"
+  },
+  "CLOUD_CLUSTERING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud clustering sliders",
+    "message": "Cobertura local: cuánto cielo cubren las nubes donde esta capa tiene nubes. No cambia la cobertura global. 0 = nubes dispersas repartidas por la mayor parte del planeta (dentro de ellas, el cielo está cubierto en un ~40%), 100 = capas casi cubiertas con grandes zonas despejadas entre ellas (~85-90%)."
+  },
+  "CLOUD_CLUSTERING_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud clustering sliders, in percent",
+    "message": "Agrupamiento de nubes (%)"
+  },
+  "CLOUD_CLUSTERING_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud clustering slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Agrupamiento, {layer}"
+  },
+  "CLOUD_COVER_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud cover sliders",
+    "message": "Cobertura global: la parte de todo el planeta que cubre esta capa. 100 = derivada físicamente (Tierra: baja ~40%, media ~27%, alta ~30%), 50 = aproximadamente la mitad, 0 = capa desactivada. Por encima de 100 se acerca gradualmente a cielo cubierto."
+  },
+  "CLOUD_COVER_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud cover sliders, in percent",
+    "message": "Multiplicador de cobertura nubosa (%)"
+  },
+  "CLOUD_COVER_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud cover slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Cobertura, {layer}"
+  },
+  "CLOUD_LAYER_HIGH": {
+    "description": "Settings window, The Last Frontier tab: name of the high cloud layer, inserted as {layer} into the per-layer slider labels (e.g. CLOUD_COVER_LAYER); lower case in English because it follows a comma",
+    "message": "altitud alta (cirros)"
+  },
+  "CLOUD_LAYER_LOW": {
+    "description": "Settings window, The Last Frontier tab: name of the low cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "altitud baja (estratos / estratocúmulos)"
+  },
+  "CLOUD_LAYER_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: name of the medium cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "altitud media (altocúmulos)"
+  },
+  "CLOUD_QUALITY": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud ray-marching quality",
+    "message": "Calidad de las nubes"
+  },
+  "CLOUD_QUALITY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud quality' combo box",
+    "message": "Muestras tomadas a lo largo de cada rayo de visión a través de las nubes cerca del suelo y en el aire. Menos es más rápido; la diferencia está sobre todo en el detalle fino cerca de las nubes."
+  },
+  "CLOUD_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Alta (32 pasos)"
+  },
+  "CLOUD_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Baja (16 pasos)"
+  },
+  "CLOUD_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Media (24 pasos)"
+  },
+  "CLOUD_QUALITY_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Muy alta (48 pasos)"
+  },
+  "CLOUD_RESOLUTION": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud rendering resolution near the ground. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "Resolución de las nubes"
+  },
+  "CLOUD_RESOLUTION_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution' combo box",
+    "message": "Resolución a la que se renderizan las nubes cerca del suelo y en el aire (la más baja usada), antes de escalarlas a la pantalla. Más alta es más nítida y más lenta."
+  },
+  "CLOUD_RESOLUTION_FULL": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option, render clouds at the full screen resolution",
+    "message": "Resolución de pantalla completa"
+  },
+  "CLOUD_RESOLUTION_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Alta (720 líneas)"
+  },
+  "CLOUD_RESOLUTION_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Baja (360 líneas)"
+  },
+  "CLOUD_RESOLUTION_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Media (540 líneas)"
+  },
+  "CLOUD_RESOLUTION_SPACE": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the finest cloud resolution, used from space. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "Resolución de las nubes desde el espacio"
+  },
+  "CLOUD_RESOLUTION_SPACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution from space' combo box",
+    "message": "La resolución más fina usada. A gran altura sobre un planeta las nubes cuestan poco de dibujar, pero su detalle se vuelve pequeño en pantalla, así que la resolución sube gradualmente hacia esta, en la medida en que el detalle lo necesite. En la Tierra empieza a subir a unos 100 km y la alcanza a unos 450 km mirando hacia abajo; los planetas con nubes más grandes (atmósferas tenues y frías, o un ajuste de tamaño de nubes mayor) la necesitan más tarde."
+  },
+  "CLOUD_RESOLUTION_ULTRA": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Ultra (1440 líneas)"
+  },
+  "CLOUD_RESOLUTION_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Muy alta (1080 líneas)"
+  },
+  "CLOUD_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for shadows cast by clouds",
+    "message": "Sombras de las nubes"
+  },
+  "CLOUD_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud shadows' combo box. 'Soft' and 'Detailed' should match CLOUD_SHADOWS_SOFT and CLOUD_SHADOWS_DETAILED",
+    "message": "Sombras de las nubes sobre el suelo, las ciudades y las naves. Suaves: oscurecimiento bajo los campos de nubes. Detalladas: la sombra de cada nube. Ambas se calculan a la resolución de las nubes, así que cuestan poco."
+  },
+  "CLOUD_SHADOWS_DETAILED": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, the shadow of each individual cloud",
+    "message": "Detalladas"
+  },
+  "CLOUD_SHADOWS_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, dimming under whole cloud fields",
+    "message": "Suaves"
+  },
+  "CLOUD_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud size sliders",
+    "message": "Tamaño de cada nube de esta capa. 100 = tamaño base, hasta 16x. No cambia la cobertura."
+  },
+  "CLOUD_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud size sliders, in percent",
+    "message": "Multiplicador de tamaño de las nubes (%)"
+  },
+  "CLOUD_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Tamaño, {layer}"
+  },
+  "CLOUD_SOFTENING": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for how much the cloud image is blurred when upscaled",
+    "message": "Suavizado de las nubes"
+  },
+  "CLOUD_SOFTENING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud softening' combo box",
+    "message": "Difumina la imagen de las nubes al ampliarla, ocultando la resolución reducida."
+  },
+  "CLOUD_SOFTENING_SHARP": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, no blur",
+    "message": "Nítido"
+  },
+  "CLOUD_SOFTENING_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, moderate blur",
+    "message": "Suave"
+  },
+  "CLOUD_SOFTENING_VERY_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, strong blur",
+    "message": "Muy suave"
+  },
+  "CLOUD_SPACE_DETAIL": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how soon cloud resolution rises when seen from space, in percent",
+    "message": "Detalle de las nubes desde el espacio (%)"
+  },
+  "CLOUD_SPACE_DETAIL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud detail from space' slider. The quoted names should match the translations of CLOUD_RESOLUTION and CLOUD_RESOLUTION_SPACE",
+    "message": "Lo pronto que la resolución de las nubes sube de «Resolución de las nubes» a «Resolución de las nubes desde el espacio» a medida que las nubes se alejan y su detalle se hace más pequeño en pantalla. Funciona igual en todos los planetas. Reducirlo a la mitad duplica la distancia a la que se produce el afinado (más barato); 0 = nunca afinar. En la Tierra a 4K mirando hacia abajo: 100 alcanza la resolución completa a unos 450 km, 50 a unos 900 km, 25 a unos 1800 km."
+  },
+  "CLOUD_SPEED": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how fast clouds drift and evolve",
+    "message": "Velocidad de las nubes"
+  },
+  "CLOUD_SPEED_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud speed' slider",
+    "message": "Lo rápido que las nubes se desplazan y cambian de forma, como múltiplo de la velocidad real del viento."
+  },
+  "CLOUD_SYSTEM_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud system size sliders",
+    "message": "Tamaño de los sistemas nubosos (grupos de nubes) y de las zonas despejadas entre ellos. No cambia la cobertura."
+  },
+  "CLOUD_SYSTEM_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud system size sliders, in percent",
+    "message": "Multiplicador de tamaño de los sistemas nubosos (%)"
+  },
+  "CLOUD_SYSTEM_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud system size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Tamaño de sistema, {layer}"
+  },
+  "CLOUD_TEMPORAL": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for temporal cloud reconstruction",
+    "message": "Reconstrucción temporal de nubes"
+  },
+  "CLOUD_TEMPORAL_16X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 16 cloud pixels is traced each frame",
+    "message": "16x (1 de cada 16 píxeles por fotograma)"
+  },
+  "CLOUD_TEMPORAL_4X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 4 cloud pixels is traced each frame",
+    "message": "4x (1 de cada 4 píxeles por fotograma)"
+  },
+  "CLOUD_TEMPORAL_9X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 9 cloud pixels is traced each frame",
+    "message": "9x (1 de cada 9 píxeles por fotograma)"
+  },
+  "CLOUD_TEMPORAL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Temporal cloud reconstruction' combo box. 'Off' refers to the OFF option",
+    "message": "Cada fotograma calcula solo parte de los píxeles de las nubes y completa el resto a partir de fotogramas anteriores. 4x: una cuarta parte, la imagen se actualiza cada 4 fotogramas. 9x: una novena parte, aproximadamente el doble de rápido otra vez, actualizándose cada 9 fotogramas (mejor con muchos fotogramas por segundo; los giros rápidos pueden emborronar brevemente los bordes de las nubes). 16x: una dieciseisava parte, aún más rápido, actualizándose cada 16 fotogramas (para 120+ fps; más emborronado en giros rápidos y en el horizonte). Off: cada píxel en cada fotograma, lo más lento."
+  },
+  "CLOUD_TRANSPARENCY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud transparency sliders",
+    "message": "Cuánta luz atraviesa las nubes de esta capa. 100 = derivada físicamente, 200 = la mitad de espesas, 50 = el doble de espesas. No cambia la cobertura, pero valores muy altos hacen que las nubes finas (cirros) sean difíciles de ver."
+  },
+  "CLOUD_TRANSPARENCY_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud transparency sliders, in percent",
+    "message": "Multiplicador de transparencia de las nubes (%)"
+  },
+  "CLOUD_TRANSPARENCY_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud transparency slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Transparencia, {layer}"
+  },
+  "CLOUD_VOLUMETRIC": {
+    "description": "Settings window, The Last Frontier tab: checkbox enabling volumetric clouds",
+    "message": "Nubes volumétricas"
+  },
+  "CLOUD_VOLUMETRIC_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
+    "message": "Capas de nubes en planetas con atmósfera. No se dibujan mientras el multimuestreo (antialiasing) está activado."
+  },
+  "CLOUD_WEATHER_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",
+    "message": "Patrones meteorológicos en caché"
+  },
+  "CLOUD_WEATHER_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cached weather patterns' checkbox",
+    "message": "Calcula una sola vez en un mapa el patrón meteorológico a gran escala (tormentas, frentes) del planeta más cercano, en lugar de hacerlo para cada píxel: nubes un 15-20% más rápidas a cambio de unos 38 MB de memoria de vídeo. Las nubes se ven igual."
   },
   "COLLAPSE": {
     "description": "Close / collapse an open folder or group",
@@ -895,6 +1331,14 @@
     "description": "Player combat rating",
     "message": "Inofensivo"
   },
+  "HEAD_BOB": {
+    "description": "Game option: the view bobs up and down as the player walks on foot",
+    "message": "Balanceo de cabeza a pie"
+  },
+  "HEAD_BOB_DESC": {
+    "description": "The tooltip of the Head Bob on Foot option in the settings menu",
+    "message": "La vista se balancea suavemente con cada paso al caminar o correr fuera de la nave"
+  },
   "HEAVY_CARGO_SHUTTLE": {
     "description": "",
     "message": "Lanzadera pesada de carga"
@@ -971,6 +1415,10 @@
     "description": "Tooltip for button",
     "message": "Modo crucero hacia arriba"
   },
+  "HUD_BUTTON_DEPLOY_ROVER": {
+    "description": "Tooltip: set the surface rover down beside the landed ship and drive it",
+    "message": "Conducir el rover"
+  },
   "HUD_BUTTON_DISABLE_AUTOPILOT": {
     "description": "Tooltip for button",
     "message": "Apagar piloto automático"
@@ -987,9 +1435,17 @@
     "description": "Tooltip for button",
     "message": "Apagar modo de seguimiento"
   },
+  "HUD_BUTTON_DISEMBARK": {
+    "description": "Tooltip: get out of the landed ship on foot",
+    "message": "Desembarcar"
+  },
   "HUD_BUTTON_EQUIPMENT": {
     "description": "Tooltip: Equipment",
     "message": "Equipo"
+  },
+  "HUD_BUTTON_EVA": {
+    "description": "Tooltip: leave the ship in space, floating beside it with the jetpack (extravehicular activity)",
+    "message": "EVA"
   },
   "HUD_BUTTON_EXTERNAL_VIEW": {
     "description": "Tooltip: External camera view",
@@ -1055,9 +1511,21 @@
     "description": "Tooltip: Landing gear is up",
     "message": "Tren de aterrizaje retraído"
   },
+  "HUD_BUTTON_LIGHTS_ARE_OFF": {
+    "description": "Tooltip: The ship's lamps, lighting the ground and everything around, are off; clicking switches them on",
+    "message": "Luces apagadas"
+  },
+  "HUD_BUTTON_LIGHTS_LEVEL": {
+    "description": "Tooltip: The ship's lamps are on at brightness level {level} of {max}; clicking steps to the next level, or off after the brightest",
+    "message": "Luces: nivel {level} de {max}"
+  },
   "HUD_BUTTON_MANUAL_CONTROL": {
     "description": "Tooltip: Manual control",
     "message": "Control Manual"
+  },
+  "HUD_BUTTON_PLAN_HEADING": {
+    "description": "Tooltip of the flight control state button while Auto Orientation holds the burn direction.",
+    "message": "Rumbo del plan: mantener la nave en la dirección del encendido activo"
   },
   "HUD_BUTTON_ROTATION_DAMPING_IS_OFF": {
     "description": "Tooltip: Rotation damping is off",
@@ -1066,6 +1534,10 @@
   "HUD_BUTTON_ROTATION_DAMPING_IS_ON": {
     "description": "Tooltip: Rotation damping is on",
     "message": "Rotación amortiguada activa"
+  },
+  "HUD_BUTTON_ROVER_PARKED": {
+    "description": "Tooltip of the disabled rover button while the surface rover is out of the ship, parked where the player left it: the planet (or moon) and the star system, e.g. 'The rover is parked on Mars, Sol'",
+    "message": "El rover está estacionado en {planet}, {system}"
   },
   "HUD_BUTTON_SET_SPEED": {
     "description": "Tooltip: set speed",
@@ -1114,6 +1586,10 @@
   "HUD_BUTTON_UNDOCK": {
     "description": "Tooltip: Undock",
     "message": "Desacoplar"
+  },
+  "HUD_BUTTON_UNKNOWN_FLIGHT_STATE": {
+    "description": "Tooltip of the flight control state button for an unrecognised state (fallback).",
+    "message": "Estado de control de vuelo desconocido"
   },
   "HUD_CARGO_MASS": {
     "description": "Cargo Mass",
@@ -1755,6 +2231,22 @@
     "description": "3d model of the ship",
     "message": "Model"
   },
+  "MOD_GRAPHICS": {
+    "description": "Mod settings tab section",
+    "message": "Gráficos"
+  },
+  "MOD_ON_FOOT": {
+    "description": "Mod settings tab section",
+    "message": "A pie y en el rover"
+  },
+  "MOD_OPTIONS": {
+    "description": "Settings window tab with the settings The Last Frontier adds",
+    "message": "The Last Frontier (mod)"
+  },
+  "MOD_SOUND": {
+    "description": "Mod settings tab section",
+    "message": "Sonido"
+  },
   "MONEY": {
     "description": "",
     "message": "Money"
@@ -1943,9 +2435,45 @@
     "description": "Label for the point of an orbit furthest from the orbited body",
     "message": "Apogeo"
   },
+  "ORBIT_IMPACT_IN": {
+    "description": "Label next to the predicted impact point on an orbit (system map and 3D orbit view). %s = time until impact.",
+    "message": "Impacto en %s"
+  },
+  "ORBIT_MARKER_APOAPSIS": {
+    "description": "Short abbreviation for apoapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the apoapsis.",
+    "message": "Ap"
+  },
+  "ORBIT_MARKER_ASCENDING_NODE": {
+    "description": "Short abbreviation for ascending node: orbit marker label (followed by its altitude) and the button that moves a burn to the ascending node.",
+    "message": "NA"
+  },
+  "ORBIT_MARKER_DESCENDING_NODE": {
+    "description": "Short abbreviation for descending node: orbit marker label (followed by its altitude) and the button that moves a burn to the descending node.",
+    "message": "ND"
+  },
+  "ORBIT_MARKER_PERIAPSIS": {
+    "description": "Short abbreviation for periapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the periapsis.",
+    "message": "Pe"
+  },
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "Perigeo"
+  },
+  "ORBIT_VIEW_FOCUS_BODY": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",
+    "message": "Enfoque de la vista orbital 3D: cuerpo orbitado (clic para enfocar la nave)"
+  },
+  "ORBIT_VIEW_FOCUS_PLAYER": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the player's ship.",
+    "message": "Enfoque de la vista orbital 3D: nave del jugador (clic para enfocar el cuerpo orbitado)"
+  },
+  "ORBIT_VIEW_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the floating 3D orbit view.",
+    "message": "Ocultar la vista orbital 3D"
+  },
+  "ORBIT_VIEW_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the floating 3D orbit view.",
+    "message": "Mostrar la vista orbital 3D"
   },
   "OUTER_ARM": {
     "description": "Arm of the Milky Way galaxy",
@@ -2062,6 +2590,218 @@
   "PLANET_TEXTURES": {
     "description": "",
     "message": "Texturas planetarias"
+  },
+  "PLANNER_ADD_BURN": {
+    "description": "Orbit planner button that adds a burn to the plan.",
+    "message": "Añadir encendido"
+  },
+  "PLANNER_APPROACH_ALTITUDE": {
+    "description": "Orbit planner closest approach distance over a planet or moon. %s = altitude.",
+    "message": "%s sobre la superficie"
+  },
+  "PLANNER_APPROACH_FLYBY": {
+    "description": "Orbit planner label: altitude to pass a planet or moon at.",
+    "message": "Altitud de sobrevuelo"
+  },
+  "PLANNER_APPROACH_FLYBY_TIP": {
+    "description": "Tooltip of the Flyby altitude setting.",
+    "message": "Pasar a esta altura sobre la superficie de un planeta o luna. Su propia gravedad curva el paso una vez dentro de su esfera de influencia; el plan apunta para que el paso curvado tenga su punto más bajo a esta altitud."
+  },
+  "PLANNER_APPROACH_FROM_NAV": {
+    "description": "Orbit planner tooltip: the approach target is the navigation target.",
+    "message": "Tu objetivo de navegación - selecciona un objeto en el mapa para elegir otro"
+  },
+  "PLANNER_APPROACH_FROM_SELECTION": {
+    "description": "Orbit planner tooltip: the approach target comes from the map selection.",
+    "message": "El objeto seleccionado en el mapa"
+  },
+  "PLANNER_APPROACH_IMPACT": {
+    "description": "Orbit planner closest approach result when the plan hits the target body. %s = time until impact.",
+    "message": "Impacto con el objetivo en %s"
+  },
+  "PLANNER_APPROACH_INTERCEPT": {
+    "description": "Orbit planner button: plan a 1-burn intercept.",
+    "message": "Interceptar"
+  },
+  "PLANNER_APPROACH_INTERCEPT_BODY_TIP": {
+    "description": "Tooltip of the Intercept button for a planet or moon target.",
+    "message": "1 encendido: pasar junto al planeta o luna a la altitud de sobrevuelo"
+  },
+  "PLANNER_APPROACH_INTERCEPT_TIP": {
+    "description": "Tooltip of the Intercept button for a ship or station target.",
+    "message": "1 encendido: una transferencia que alcanza el objetivo"
+  },
+  "PLANNER_APPROACH_NO_TARGET": {
+    "description": "Orbit planner approach section when there is no target.",
+    "message": "Selecciona un objeto en el mapa o establece un objetivo de navegación"
+  },
+  "PLANNER_APPROACH_ONE_BURN": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "1 encendido"
+  },
+  "PLANNER_APPROACH_ORBIT": {
+    "description": "Orbit planner label: altitude of the circular orbit a rendezvous with a planet or moon ends in.",
+    "message": "Altitud de órbita"
+  },
+  "PLANNER_APPROACH_ORBIT_TIP": {
+    "description": "Tooltip of the Orbit altitude setting.",
+    "message": "La altitud de la órbita circular en la que te deja el encendido de captura. El paso se apunta para que, curvado por la gravedad del cuerpo, su punto más bajo esté a esta altitud, donde se hace el encendido de captura."
+  },
+  "PLANNER_APPROACH_PLAN": {
+    "description": "Orbit planner button that computes the approach plan.",
+    "message": "Planificar aproximación"
+  },
+  "PLANNER_APPROACH_PLAN_TIP": {
+    "description": "Tooltip of the 'Plan approach' button. %s = PLANNER_APPROACH_ONE_BURN or PLANNER_APPROACH_TWO_BURNS.",
+    "message": "Sustituye el plan por %s desde tu órbita actual, en el momento de menor Δv. Un objetivo alrededor de otro cuerpo se alcanza por etapas, aparcando en una órbita alrededor de cada cuerpo del camino.\nSi no se encuentra ninguna transferencia, el plan queda como estaba."
+  },
+  "PLANNER_APPROACH_RENDEZVOUS": {
+    "description": "Orbit planner button: plan a 2-burn rendezvous.",
+    "message": "Encuentro"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_BODY_TIP": {
+    "description": "Tooltip of the Rendezvous button for a planet or moon target.",
+    "message": "2 encendidos: pasar junto al planeta o luna a la altitud de abajo y luego un encendido retrógrado en el punto más cercano, dentro de su esfera de influencia, que te deja en una órbita circular a su alrededor"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_TIP": {
+    "description": "Tooltip of the Rendezvous button for a ship or station target.",
+    "message": "2 encendidos: alcanzar el objetivo y luego igualar su velocidad al llegar"
+  },
+  "PLANNER_APPROACH_RESULT": {
+    "description": "Orbit planner closest approach result. 1st %s = distance (or PLANNER_APPROACH_ALTITUDE), 2nd %s = time until it.",
+    "message": "%s en %s"
+  },
+  "PLANNER_APPROACH_RESULT_TIP": {
+    "description": "Tooltip of the closest approach result.",
+    "message": "Máxima aproximación de la trayectoria planificada al objetivo, hasta una revolución después del último encendido"
+  },
+  "PLANNER_APPROACH_SPEED": {
+    "description": "Orbit planner closest approach relative speed. %s = speed.",
+    "message": "Velocidad relativa %s"
+  },
+  "PLANNER_APPROACH_STAND_OFF": {
+    "description": "Orbit planner label: distance behind a ship or station target to meet it at.",
+    "message": "Separación"
+  },
+  "PLANNER_APPROACH_STAND_OFF_FORMAT": {
+    "description": "Orbit planner drag field format for the stand-off distance. %.1f = kilometres (keep it exactly).",
+    "message": "%.1f km detrás"
+  },
+  "PLANNER_APPROACH_STAND_OFF_TIP": {
+    "description": "Tooltip of the Stand-off setting.",
+    "message": "Encontrar una nave o estación a esta distancia por detrás, en su propia órbita, en lugar de en su centro. Tras un encuentro la nave mantiene esta separación, ya que ambas siguen la misma órbita."
+  },
+  "PLANNER_APPROACH_TARGET": {
+    "description": "Orbit planner approach section. %s = target name.",
+    "message": "Objetivo: %s"
+  },
+  "PLANNER_APPROACH_TITLE": {
+    "description": "Orbit planner section header for planning an approach to a target.",
+    "message": "Máxima aproximación"
+  },
+  "PLANNER_APPROACH_TWO_BURNS": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "2 encendidos"
+  },
+  "PLANNER_BURN_IS_COMPLETE": {
+    "description": "Orbit planner tooltip of the snap and Circularize buttons for a burn that has been flown.",
+    "message": "Este encendido está completado"
+  },
+  "PLANNER_CIRCULARIZE": {
+    "description": "Orbit planner button that makes the orbit circular.",
+    "message": "Circularizar"
+  },
+  "PLANNER_CIRCULARIZE_AT_APSIS": {
+    "description": "Part of the Circularize tooltip. 1st %s = periapsis / apoapsis, 2nd %s = time until it.",
+    "message": "el %s, en %s"
+  },
+  "PLANNER_CIRCULARIZE_AT_POINT": {
+    "description": "Part of the Circularize tooltip when no apsis lies ahead.",
+    "message": "el punto de este encendido (sin perigeo ni apogeo por delante)"
+  },
+  "PLANNER_CIRCULARIZE_NONE": {
+    "description": "Orbit planner Circularize button tooltip when it is not possible.",
+    "message": "La órbita de este encendido no se puede circularizar aquí"
+  },
+  "PLANNER_CIRCULARIZE_TIP": {
+    "description": "Orbit planner Circularize button tooltip. 1st %s = where (PLANNER_CIRCULARIZE_AT_APSIS or PLANNER_CIRCULARIZE_AT_POINT), 2nd %s = delta-v needed.",
+    "message": "Hacer circular la órbita en %s: %s de Δv.\nMueve este encendido allí y sustituye sus valores prógrado, normal y radial."
+  },
+  "PLANNER_DV_AFTER": {
+    "description": "Orbit planner delta-v summary label: delta-v left after the plan.",
+    "message": "Tras el plan"
+  },
+  "PLANNER_DV_AFTER_TIP": {
+    "description": "Tooltip of the After plan delta-v line.",
+    "message": "Δv que queda una vez realizados todos los encendidos planificados"
+  },
+  "PLANNER_DV_AVAILABLE": {
+    "description": "Orbit planner delta-v summary label: delta-v the ship has.",
+    "message": "Disponible"
+  },
+  "PLANNER_DV_AVAILABLE_TIP": {
+    "description": "Tooltip of the Available delta-v line.",
+    "message": "Δv que da el combustible de la nave con su masa actual"
+  },
+  "PLANNER_DV_PLAN": {
+    "description": "Orbit planner delta-v summary label: delta-v the remaining burns need.",
+    "message": "Plan"
+  },
+  "PLANNER_DV_PLAN_TIP": {
+    "description": "Tooltip of the Plan delta-v line.",
+    "message": "Δv que necesitan los encendidos pendientes"
+  },
+  "PLANNER_DV_SHORT": {
+    "description": "Orbit planner delta-v summary when the plan needs more than the ship has. %s = missing delta-v.",
+    "message": "Faltan %s"
+  },
+  "PLANNER_DV_SHORT_TIP": {
+    "description": "Tooltip of the After plan line when delta-v is short.",
+    "message": "El plan necesita más Δv del que da el combustible"
+  },
+  "PLANNER_EVENT_APOAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "apogeo"
+  },
+  "PLANNER_EVENT_ASCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "nodo ascendente"
+  },
+  "PLANNER_EVENT_DESCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "nodo descendente"
+  },
+  "PLANNER_EVENT_PERIAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "perigeo"
+  },
+  "PLANNER_REF_EQUATOR": {
+    "description": "Orbit planner reference plane for nodes: the body's equatorial plane. %s = body name.",
+    "message": "el ecuador de %s"
+  },
+  "PLANNER_REF_TARGET_ORBIT": {
+    "description": "Orbit planner reference plane for nodes: the target's orbital plane. %s = target name.",
+    "message": "la órbita de %s"
+  },
+  "PLANNER_REMAINING_DV": {
+    "description": "Orbit planner tooltip of a burn's remaining delta-v.",
+    "message": "Delta-v restante de este encendido"
+  },
+  "PLANNER_SNAP_NODE_NONE": {
+    "description": "Orbit planner AN/DN button tooltip when the node does not exist. 1st %s = node name, 2nd %s = reference plane.",
+    "message": "No hay %s por delante respecto a %s en la órbita anterior a este encendido"
+  },
+  "PLANNER_SNAP_NODE_TIP": {
+    "description": "Orbit planner AN/DN button tooltip. 1st %s = node name, 2nd %s = reference plane (PLANNER_REF_TARGET_ORBIT / PLANNER_REF_EQUATOR), 3rd %s = time until it.",
+    "message": "Mover este encendido al siguiente %s, respecto a %s, en %s.\nHaz clic de nuevo para la siguiente órbita."
+  },
+  "PLANNER_SNAP_NONE": {
+    "description": "Orbit planner Pe/Ap button tooltip when the event does not exist. %s = event name.",
+    "message": "No hay %s por delante en la órbita anterior a este encendido"
+  },
+  "PLANNER_SNAP_TIP": {
+    "description": "Orbit planner Pe/Ap button tooltip. 1st %s = event name (periapsis / apoapsis), 2nd %s = time until it.",
+    "message": "Mover este encendido al siguiente %s de la órbita anterior, en %s.\nHaz clic de nuevo para la siguiente órbita."
   },
   "PLEASE_DESIGN_NEW_PAINTJOB": {
     "description": "",
@@ -2291,6 +3031,30 @@
     "description": "For hyperjump planner",
     "message": "Saltos de Ruta"
   },
+  "ROVER_BAY": {
+    "description": "Used in ShipInfo view, followed by a yes/no depending on whether the ship has a vehicle bay for the surface rover",
+    "message": "Bodega de rover"
+  },
+  "ROVER_DEFAULT_VIEW": {
+    "description": "Game option: the view the surface rover starts in when the player gets in",
+    "message": "Vista del rover al subir"
+  },
+  "ROVER_DEFAULT_VIEW_DESC": {
+    "description": "The tooltip of the Rover View on Getting In option in the settings menu",
+    "message": "La vista al subir al rover o al sacarlo de la nave. La tecla de vista sigue cambiándola mientras conduces"
+  },
+  "ROVER_VIEW_CAB": {
+    "description": "Rover view option: from the driver's seat, with the cab drawn",
+    "message": "Desde la cabina"
+  },
+  "ROVER_VIEW_EXTERNAL": {
+    "description": "Rover view option: from outside, circling the rover",
+    "message": "Desde fuera"
+  },
+  "ROVER_VIEW_NO_MODEL": {
+    "description": "Rover view option: from the driver's eyes, without the rover drawn (as the ship's internal view)",
+    "message": "Ojos del conductor, sin rover"
+  },
   "SAFETY_LOCKOUT": {
     "description": "Ship jump status",
     "message": "Bloqueo de seguridad"
@@ -2387,6 +3151,22 @@
     "description": "UI option",
     "message": "Opciones"
   },
+  "SETTINGS_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box choosing sun shadow quality",
+    "message": "Sombras"
+  },
+  "SETTINGS_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadows' combo box",
+    "message": "Sombras del sol proyectadas por naves, estaciones, edificios de ciudades y el terreno, sobre el suelo y entre sí. El número es la resolución del mapa de sombras: más alto es más nítido y usa más memoria de vídeo (unos 12 / 48 / 192 MB). Las sombras nítidas alrededor de tu nave se redibujan cada fotograma; las más lejanas se reutilizan hasta que el sol o la cámara se han movido, así que cuestan poco."
+  },
+  "SETTINGS_WIND_HOWL": {
+    "description": "Settings window, The Last Frontier tab, Sound: label of the slider for the surface wind sound volume, in percent",
+    "message": "Aullido del viento (%)"
+  },
+  "SETTINGS_WIND_HOWL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Wind howl' slider",
+    "message": "Volumen del viento de superficie que se oye al flotar, aterrizado o volando despacio cerca del suelo de un planeta con atmósfera. 100 es el nivel previsto; también sigue el volumen de efectos."
+  },
   "SET_AS_TARGET": {
     "description": "",
     "message": "Set destination as navigation target"
@@ -2410,6 +3190,42 @@
   "SET_TO_ZERO": {
     "description": "For the speed limiter button",
     "message": "Establecer a cero"
+  },
+  "SHADOW_DARKNESS": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how dark shadows are, in percent",
+    "message": "Oscuridad de las sombras (%)"
+  },
+  "SHADOW_DARKNESS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow darkness' slider",
+    "message": "Cuánta luz solar quita una sombra bajo un cielo como el de la Tierra; el resto representa la luz del cielo, que sigue llegando a los lugares en sombra. Las atmósferas más tenues oscurecen las sombras, hasta la oscuridad total en el vacío."
+  },
+  "SHADOW_DEBUG_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox for a debug view tinting the scene by shadow map",
+    "message": "Mostrar mapas de sombras (depuración)"
+  },
+  "SHADOW_DEBUG_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Show shadow maps (debug)' checkbox",
+    "message": "Tiñe todo según el mapa de sombras que usa: rojo el mapa nítido alrededor de tu nave, verde el intermedio, azul el lejano."
+  },
+  "SHADOW_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how far shadows are drawn, in metres",
+    "message": "Distancia de sombras (m)"
+  },
+  "SHADOW_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow distance' slider",
+    "message": "Hasta qué distancia de la cámara proyectan sombras las estaciones, las ciudades y las naves estacionadas. Más lejos reparte el mismo mapa de sombras sobre un área mayor, así que las sombras lejanas se vuelven más bastas."
+  },
+  "SHADOW_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Alta (4096)"
+  },
+  "SHADOW_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Baja (1024)"
+  },
+  "SHADOW_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Media (2048)"
   },
   "SHIP": {
     "description": "",
@@ -2575,6 +3391,50 @@
     "description": "Tab item in the start game menu",
     "message": "Summary"
   },
+  "SURFACE_BOARD_SHIP": {
+    "description": "On-foot HUD prompt: the key and this board the ship",
+    "message": "Subir a la nave"
+  },
+  "SURFACE_ENTER_ROVER": {
+    "description": "On-foot HUD prompt: the key and this get into the surface rover",
+    "message": "Subir al rover"
+  },
+  "SURFACE_EVA_SHIP": {
+    "description": "EVA HUD: distance to the player's ship and the speed relative to it, e.g. 'Ship 35 m, 0.4 m/s'",
+    "message": "Nave {distance}, {speed}"
+  },
+  "SURFACE_EXIT_ROVER": {
+    "description": "Rover HUD prompt: the key and this get out of the surface rover",
+    "message": "Bajar"
+  },
+  "SURFACE_FREE_CURSOR": {
+    "description": "On-foot HUD hint: hold Alt to free the mouse cursor",
+    "message": "Mantén Alt para el cursor del ratón"
+  },
+  "SURFACE_JETPACK": {
+    "description": "On-foot HUD: label of the jetpack fuel bar",
+    "message": "Mochila propulsora"
+  },
+  "SURFACE_ROVER_SPEED": {
+    "description": "Rover HUD: the speed in kilometres per hour, e.g. '42 km/h'",
+    "message": "{speed} km/h"
+  },
+  "SURFACE_ROVER_VIEW": {
+    "description": "Rover HUD hint: the key and this change the view (from the cab, without the rover's model, from outside)",
+    "message": "Cambiar vista"
+  },
+  "SURFACE_STOW_ROVER": {
+    "description": "Rover HUD prompt next to the ship: the key and this drive the rover into the hold and board the ship",
+    "message": "Guardar el rover y embarcar"
+  },
+  "SURFACE_YOUR_ROVER": {
+    "description": "On-foot HUD: label of the marker of the player's surface rover on the compass",
+    "message": "Rover"
+  },
+  "SURFACE_YOUR_SHIP": {
+    "description": "On-foot HUD: label of the marker of the player's own ship on the compass",
+    "message": "Nave"
+  },
   "SYSTEM_BODY_INDEX_IS_OUT_OF_RANGE": {
     "description": "Message when restoring savegame",
     "message": "System body index is out of range"
@@ -2615,6 +3475,26 @@
     "description": "Tooltip introducing the system security rating",
     "message": "System safety rating"
   },
+  "SYSTEM_VIEW_FOLLOW_PLAN": {
+    "description": "System map button tooltip: follow the ship's planned position.",
+    "message": "Seguir donde el plan pone tu nave - desplaza el tiempo del mapa para recorrerlo"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_15": {
+    "description": "System map combo item: latitude/longitude lines every 15 degrees.",
+    "message": "Cada 15°"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_30": {
+    "description": "System map combo item: latitude/longitude lines every 30 degrees.",
+    "message": "Cada 30°"
+  },
+  "SYSTEM_VIEW_LATLONG_LINES": {
+    "description": "System map: button tooltip and settings label for latitude/longitude lines on planets and moons.",
+    "message": "Líneas de latitud y longitud"
+  },
+  "SYSTEM_VIEW_ZOOM_TO_SHIP": {
+    "description": "System map button tooltip: centre and zoom the map on the player's ship.",
+    "message": "Acercar a tu nave"
+  },
   "TECH_CERTIFIED": {
     "description": "Lobby screen shows the tech level (an integer number) of the station",
     "message": "Esta estación mantiene un certificado de tecnología de nivel {tech_level}."
@@ -2626,6 +3506,14 @@
   "TECH_LEVEL": {
     "description": "System view label for technology level",
     "message": "Tech Level"
+  },
+  "TERRAIN_DETAIL_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the slider for the planet terrain level-of-detail distance",
+    "message": "Distancia de detalle del terreno"
+  },
+  "TERRAIN_DETAIL_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Terrain detail distance' slider",
+    "message": "Hasta qué distancia el terreno de los planetas recibe todo el detalle de su malla: un parche de terreno se refina en cuanto estás más cerca que este número de anchos de parche. Más alto es más nítido desde lejos pero genera más terreno (CPU) y dibuja más triángulos. Este es el valor a altitud media (unos 200 a 2.000 km en la Tierra); se reduce automáticamente cerca del suelo y en órbita alta, donde cuesta más o se ve menos. 15 = predeterminado, 1 = comportamiento original de Pioneer."
   },
   "TEXTURE_COMPRESSION": {
     "description": "",

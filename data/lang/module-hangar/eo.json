@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "surŝipe"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "Sur “{ship}”"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "Pilotata"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Aldoni lokon"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "ĉion"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Ĉion, kio enlokiĝas"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Jam sur “{ship}”: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Ĝi jam estas survoje al alia stacio."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Vi jam luas hangaron ĉi tie."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Ĝi jam revenas."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Atendas ankaŭ aliloke:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "misio"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Lokoj"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Lokojn eblas aldoni aŭ forigi poste."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Mendi liveron"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Mendi vojaĝon"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "“{ship}” estas tenata en via hangaro ĉi tie."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "La kareno de “{ship}” estas vendita: {items} objekto(j) iris al la ekipaĵa magazeno, {tons} t da kargo al la kargomagazeno kaj {crew} skipano(j) al la atendejo."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Venigi surŝipen"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Ĝia ekipaĵo iras al la ekipaĵa magazeno de la hangaro kaj ĝia kargo al la kargomagazeno de la hangaro; nur la kareno estas vendata."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Ĝi restas kia ĝi estas, kun sia ekipaĵo kaj la tuta kargo; nenio transiras al la nova ŝipo. Vi pagas la plenan prezon."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Vendata kun la tuta ekipaĵo. La tuta kargo transiras al la nova ŝipo."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Interŝanĝi nur la nudan karenon de “{ship}”"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Teni “{ship}” en loko ĉi tie"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Interŝanĝi “{ship}”"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Ĉu aĉeti {ship}?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "pasaĝeroj surŝipe"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Nuligi liveron"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "{refund} (duono de la prezo) estas repagata, kaj ĝi revenas al {station}, alvenonte {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Ĉu nuligi la liveron de {what}?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "ne malmunteblas nun"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} estas surfaca kosmohaveno, kaj ĉi tiu ŝipo ne havas ingon por atmosfera ŝildo."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Vi ne povas ekflugi kun malpli ol {min} skipanoj."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Kargo"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Kargo surŝipe"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Kargejo"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "la kargo, kiun ĝi tenas, ne enlokiĝus sen ĝi"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Kargomagazeno ĉe {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "La kargomagazeno estas malplena."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Malŝarĝu varojn en la kargomagazenon de la hangaro kaj ŝarĝu ilin en la ŝipon, kiun vi pilotas. Senlima kaj senpaga; misia kargo konservas sian markon."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Kargo"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Alveno"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Loko"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Loka kotizo"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Kosto"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Distanco"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Loko"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Nomo"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Pagita ĝis"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Parkada kotizo"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Monate"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Ŝipo"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Plej bona lerto"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Stacio"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Stato"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Magazeno"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Tipo"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "venos surŝipen"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/semajne"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/nokte + {wage}/semajne"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Antaŭpagita: restas {credit} da kredito, komuna por ĉiuj lokoj. Je la nuna lupago ĝi daŭras ĝis ĉirkaŭ {date}; poste la lupago estas deprenata de via konto je la 1-a de ĉiu monato."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "La lupago, kiun vi antaŭpagis por via hangaro ĉe {station}, elĉerpiĝos je {date}. Poste ĝi estos fakturata je la 1-a de ĉiu monato."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Skipo"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} alvenis al la skipa atendejo ĉe {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Skipo por “{ship}” (akceptas {min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} skipano(j) (ĉi tiu ŝipo akceptas {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Skipa atendejo"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Skipo por la nova ŝipo"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Kiu ne estas markita, atendas en la atendejo ĉi tie."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Survoje oni pagas duonan salajron kaj neniun atendejan kotizon. Alveninte, ili atendas en la tiea atendejo."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Kio okazu al “{ship}”? Elektu unu:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Livera servo"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Liveri “{ship}”"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Vi ŝuldas al tiu {owed} da salajro. Tiu ne bone akceptos tion, kaj ŝuldo de pli ol {limit} validas kiel kontrakta fraŭdo."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} atendas en la atendejo ĉi tie. La kontrakto finiĝas kaj tiu forlasas vian skipon."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Ĉu maldungi {name}?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Ĉi tiu ŝipo ne enlokiĝas en la albordiĝejojn de {station}: post la foriro ĝi ne plu povos albordiĝi tie."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t da fuelo"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "malplena"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "malplena"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "malplena"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Fini luon"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Nur malplenan hangaron eblas rezigni: neniuj ŝipoj, ekipaĵo aŭ varoj, nenio survoje kaj neniu nepagita lupago."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Ekipaĵo"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} objekto(j) alvenis al la magazeno de via hangaro ĉe {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Ekipaĵo ĉi tie…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Ekipaĵo"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Ekipaĵa volumeno: uzataj {used} el {capacity} m³"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Muntita sur"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Munti sur “{ship}”"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Floto"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Skipo en atendejoj"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangaroj"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Ŝipoj"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Ekipaĵa magazeno: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Piloti ĉi tiun ŝipon"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Deprenata de via konto."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Pagata el via kredito."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Pagata el via kredito, la resto el via konto."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "De:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "De: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Fuelo"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "atendos en la atendejo"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Langeto Hangaro"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangaro"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Hangaro ĉe {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Ĉi tiu hangaro estas ŝlosita ĝis la nepagita lupago estos pagita."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} libera(j) loko(j))"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Dankon! Mi atendos en la skipa atendejo ĉi tie, ĝis vi bezonos min surŝipe."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "la kargejo estas plena"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Kargejo: uzataj {used} el {total} t"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Kareno"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "La tuta skipo krom vi atendas en la atendejo ĉi tie. Venigu ilin surŝipen el la langeto Hangaro, Skipa atendejo."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hiperpelilo"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "En liberan lokon ĉi tie ({free} liberaj)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "en hiperspaco"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "en la atendejo"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "En la atendejo ĉi tie"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "{count} ekipaĵero(j) estas tenataj en la magazeno de ĉi tiu hangaro."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "{count} ekipaĵero(j) ne plu enlokiĝis sur la ŝipo kaj estas tenataj en la magazeno de la hangaro."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} objekto(j) elektita(j)"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Lui hangaron"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "la kargo surŝipe bezonas ĝin"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} lj for"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Ŝarĝi surŝipen"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} skipano(j) atendas en la atendejo"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Via hangaro: {ships} el {bays} loko(j) uzataj, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "fakturata monate"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "pagita ĝis {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "lupago nepagita"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "En la atendejo ĉi tie post la ŝanĝo: {count}, {cost} por nokto, plus duona salajro."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Skipa atendejo ĉe {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Nepagitaj atendejaj kotizoj: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Vi ŝuldas {debt} da atendejaj kotizoj. Pagu ilin, antaŭ ol iu alia atendos en atendejo."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Atendejo: {rate} po persono por nokto (nun {now} por nokto), fakturata je la 1-a. Skipanoj atendantaj ĉi tie ricevas duonan salajron kiel retenpagon kaj lernas nenion novan."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "La atendejaj kotizoj ne povis esti plene pagitaj. Vi ŝuldas {debt}; ĝi estos deprenata de via mono, kiam vi havos ĝin."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Ili ricevas duonan salajron dum ili atendas. Movu ilin en la langeto Hangaro de stacio, Skipa atendejo."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "Stato de “{ship}”: {hull}% kareno, {fuel}% fuelo. Riparoj kaj fuelplenigo haveblas ĉi tie."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Hangaro havas maksimume 4 lokojn."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Misia kargo lasita malantaŭe devas esti liverita per la ŝipo, kiu portas ĝin."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "monatoj"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d monatoj"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "bezonas vivtenadon en la kargejo"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} bezonas vivtenadon en la kargejo, kiun la tenata ŝipo ne havas."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Sekva fakturo je {date}: ĉirkaŭ {amount}, la lupago por {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Sekva fakturo je {date}: ĉirkaŭ {amount}, la lupago por {from} – {to} (parto de monato). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Neniu atendas ĉi tie."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Neniu atendas en atendejo aŭ vojaĝas."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Neniu atendas ĉe alia stacio."
+  },
+  "NONE": {
+    "description": "",
+    "message": "neniu"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Marku, kion sendi."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Vi devas esti sur via ŝipo."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Tiu ŝipo estas tenata ĉe alia stacio."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Vi ne havas sufiĉe da mono."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "ne antaŭpagita"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Neniu libera loko ĉe {station} por reveni."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Neniu kargo surŝipe."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Nenio antaŭpagita: la lupago estas deprenata de via konto je la 1-a de ĉiu monato."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Elektu, kien ĝi iru."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "ne sufiĉa ekipaĵa volumeno"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Neniu libera loko ĉe {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Neniu libera loko ĉi tie. Unue aldonu lokon."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Vi luas neniun hangaron. Luu iun ĉe ajna stacio, en ĝia langeto Hangaro."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Vi ne havas hangaron ĉe {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "neniu, ĝi ne povas forlasi sian sistemon"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Vi ne havas alian hangaron."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "Neniu ŝipo estas tenata en viaj aliaj hangaroj."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Ankoraŭ neniuj ŝipoj estas tenataj ĉi tie."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "neniu ingo por ĝi sur ĉi tiu ŝipo"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} objekto(j)"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Proponi postenon, kun atendado en la skipa atendejo ĉi tie dume"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "survoje de {from}, alvenos {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "La hangaro, el kiu ĝi venis, ne plu estas via."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} lokoj)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "pagita ĝis ĉirkaŭ {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Pasaĝeroj surŝipe: unue plenumu viajn pasaĝerajn kontraktojn."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Pagi"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Pagi {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Nenion nun: la lupago estas fakturata je la 1-a de ĉiu monato."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Antaŭpagi"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Antaŭpagi…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Elektu ŝipon."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Nuna lupago: {rent} monate. Pagi por:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Antaŭpagi lupagon por {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, alvenos {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 m"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 j"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 j"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 m"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 m"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Forigi lokon"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Nur malplenan lokon eblas forigi, kaj hangaro tenas almenaŭ unu."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Renomi"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Malplena: {empty} monate. Kun “{ship}” ({tonnes} t) parkita: {rent} monate."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Monata lupago: {bay} po loko, plus {tonne} po tuno da parkita kareno."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "La lupago por via hangaro ĉe {station} ne povis esti pagita. Vi ŝuldas {debt}; la ŝipoj tie estas ŝlositaj ĝis ĝi estos pagita."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Nepagita lupago: {debt} ({months} monato(j), kun 10% krompago pro malfruo). La ŝipoj ĉi tie estas ŝlositaj ĝis ĝi estos pagita."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "La resto restas sur “{ship}”."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "revenas al {to}, alvenos {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "la veturilo estas parkita sur planedo"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Via veturilo estas parkita sur {planet}. Unue enŝipigu ĝin."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "sama sistemo"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Konservi"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Elektu tenatan ŝipon en la supra tabelo por vidi kaj piloti ĝin."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Vendi"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} pagas {price} por {item}, kiel la Ekipaĵa merkato pagus."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Ĉu vendi {item}?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Vendi al ĉi tiu stacio por {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Sendi skipanojn el la atendejo ĉe {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Sendi al la atendejo de alia stacio"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Sendi ekipaĵon…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Sendi ekipaĵon de {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Sendi objektojn el ĉi tiu magazeno al alia el viaj hangaroj"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "La livera servo portu ĉi tiun ŝipon al alia el viaj hangaroj"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Sendi al…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Atendi en la atendejo ĉi tie"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Ŝipoj"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Ŝipoj survoje kaj ŝipoj en hangaroj ŝlositaj pro nepagita lupago ne estas listigitaj."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "“{name}” (aktiva)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "“{ship}” alvenis al via hangaro ĉe {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · kareno {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "“{ship}” akceptas maksimume {max} skipanojn."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Survoje: ĝi ne pilotiĝas, sendiĝas aŭ reekipiĝas ĝis ĝi alvenos."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Prezo: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "“{ship}” revenis al via hangaro ĉe {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "“{name}” (tenata ĉi tie)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "La ŝipo vojaĝas kun sia kargo kaj ekipaĵo kaj okupas sian lokon ĉe la celo. Survoje ĝi ne pilotiĝas aŭ reekipiĝas. Parkado estas pagata ekde ĝia alveno."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Montri sur la sektora mapo"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Ekde"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "ĝiaj ingoj sur ĉi tiu ŝipo estas okupitaj"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "ĝia ingo sur ĉi tiu ŝipo havas malĝustan grandon"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Stacio"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "la ŝipo, kiun vi pilotas"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "Pilotata"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Tenata, ŝlosita: lupago nepagita"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "tenata ekde {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Tenata"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Hangara magazeno ĉe {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} objekto(j) · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "La magazeno estas malplena."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Malmuntu objektojn en la magazenon, poste muntu ilin sur la ŝipon elektitan maldekstre aŭ vendu ilin al ĉi tiu stacio. Reguloj kaj prezoj de la Ekipaĵa merkato, sen muntokotizo. Unue elektu malplenan ingon por munti objekton en tiun ingon."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "via hangaro ĉi tie ne havas liberan lokon."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "vi ne havas hangaron ĉi tie."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} objekto(j), {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "“{ship}” estos tenata en ĉi tiu loko. La skipo neniam restas sur tenata ŝipo: kiu ne estas markita sube, atendas en la atendejo ĉi tie."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Ŝanĝi ŝipon"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Ĉu ŝanĝi al “{ship}”?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Nenion"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Poste {rent} por ĉiu plena monato, fakturata je la 1-a."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Ĉi tio estas la ŝipo, kiun vi pilotas."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "“{ship}” bezonas almenaŭ {min} skipanojn, kaj nur {crew} estus surŝipe. Vi ne povas ekflugi, ĝis vi dungos pliajn aŭ prenos iun el la atendejo."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "“{ship}” akceptas maksimume {max} skipanojn, kaj {crew} estus surŝipe. Malmarku {over} por lasi ilin en la atendejo."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "“{ship}” havas spacon por {room} t. Prenu {over} t malpli."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Sume: {used} el {bays} lokoj uzataj"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Al:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "{ship} tenas {room} t, kaj vi havas {used} t surŝipe. Ĉe interŝanĝo la tuta kargo transiras al la nova ŝipo: unue vendu aŭ malŝarĝu {over} t, aŭ elektu alian eblon."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Vi havas {used} t da kargo, kaj {ship} tenas {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Venigi skipanojn al la atendejo ĉe {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Venigi al ĉi tiu atendejo skipanojn, kiuj atendas ĉe alia stacio"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Transigi ekipaĵon al {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Liverigi ĉi tien objektojn el la magazeno de alia hangaro"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Transigi de…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Transigi ĉi tien"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Liverigi ĝin al via hangaro ĉi tie"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Transigi ŝipon al {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Liverigi ĉi tien ŝipon tenatan en alia el viaj hangaroj"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "vojaĝas al {station}, alvenos {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Malmunti ĉion"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Movi en la magazenon ĉion, kio malmunteblas de ĉi tiu ŝipo"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "unue malmuntu la objektojn muntitajn sur ĝi"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Malmunti en la magazenon"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Malŝarĝi en la kargomagazenon"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "nepagita: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} semajne"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} ĉe {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} atendas"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Atendas en atendejoj"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "atendas ekde {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Bonvenon reen."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} skipano(j) atendas en la atendejo."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Via hangaro ĉi tie tenas {ships} ŝipo(j)n en {bays} loko(j)."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Muntita sen ingo"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "jaroj"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Viaj aliaj hangaroj:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Vi (komandanto)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(vi havas {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Vi pagas: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Vi ricevas: {amount}"
+  }
+}

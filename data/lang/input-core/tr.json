@@ -75,6 +75,14 @@
     "description": "Descriptive name for the IncreaseTimeAcceleration action.",
     "message": "Zamanı Hızlandır"
   },
+  "BIND_INTERACT": {
+    "description": "Descriptive name for the Interact action (on foot: board the ship)",
+    "message": "Etkileşim"
+  },
+  "BIND_JETPACK_UP": {
+    "description": "Descriptive name for the on-foot Jetpack Up / Down axis",
+    "message": "Jetpack Yukarı / Aşağı"
+  },
   "BIND_KILL_ROT": {
     "description": "Descriptive name for the KillRot action.",
     "message": "Dönüşü Sabitle"
@@ -171,6 +179,14 @@
     "description": "Descriptive name for the RightCamera action.",
     "message": "Sağ Kameraya Geç"
   },
+  "BIND_ROVER_CYCLE_VIEW": {
+    "description": "Descriptive name for the action that cycles the views while driving the surface rover: from the cab, without the rover's model, from outside",
+    "message": "Araç Görünümünü Değiştir"
+  },
+  "BIND_ROVER_LIGHTS": {
+    "description": "Descriptive name for the action that steps the surface rover's lamps through off and their brightness levels while driving",
+    "message": "Araç Farları"
+  },
   "BIND_SECONDARY_FIRE": {
     "description": "Descriptive name for the SecondaryFire action.",
     "message": "İkincil Atış"
@@ -223,6 +239,30 @@
     "description": "Descriptive name for the View Zoom axis",
     "message": "Görüntü Yakınlaştırma"
   },
+  "BIND_WALK_FORWARD": {
+    "description": "Descriptive name for the on-foot Walk Forward / Back axis",
+    "message": "İleri / Geri Yürü"
+  },
+  "BIND_WALK_JUMP": {
+    "description": "Descriptive name for the on-foot Jump action",
+    "message": "Zıpla"
+  },
+  "BIND_WALK_LOOK_PITCH": {
+    "description": "Descriptive name for the on-foot Look Up / Down axis",
+    "message": "Yukarı / Aşağı Bak"
+  },
+  "BIND_WALK_LOOK_YAW": {
+    "description": "Descriptive name for the on-foot Look Left / Right axis",
+    "message": "Sola / Sağa Bak"
+  },
+  "BIND_WALK_RIGHT": {
+    "description": "Descriptive name for the on-foot Strafe Right / Left axis",
+    "message": "Sağa / Sola Kay"
+  },
+  "BIND_WALK_RUN": {
+    "description": "Descriptive name for the on-foot Run action (hold)",
+    "message": "Koş"
+  },
   "BUTTON": {
     "description": "",
     "message": "\" Düğme \""
@@ -251,6 +291,10 @@
     "description": "Header for the GeneralViewControls input group.",
     "message": "Genel Görünüm Kontrolleri"
   },
+  "GROUP_INTERACTION": {
+    "description": "Header for the Interaction input group.",
+    "message": "Etkileşim"
+  },
   "GROUP_LANDING_CONTROL": {
     "description": "Group label for landing-related inputs",
     "message": "İniş Kontrol"
@@ -261,6 +305,10 @@
   },
   "GROUP_MISCELLANEOUS": {
     "message": "Çeşitli"
+  },
+  "GROUP_MOVEMENT": {
+    "description": "Header for the Movement input group.",
+    "message": "Hareket"
   },
   "GROUP_RADAR_CONTROL": {
     "description": "Group label for radar-related inputs",
@@ -337,6 +385,10 @@
   "PAGE_MAP_CONTROLS": {
     "description": "Header for the MapControls input page.",
     "message": "Harita Kontrolleri"
+  },
+  "PAGE_ON_FOOT": {
+    "description": "Header for the OnFoot input page.",
+    "message": "Yaya"
   },
   "PAGE_SHIP_CONTROLS": {
     "description": "Header for the ShipControls input page.",

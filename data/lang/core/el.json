@@ -1675,6 +1675,10 @@
     "description": "",
     "message": "Επιφανειακή ατμοσφαιρική πίεση"
   },
+  "SURFACE_ROVER": {
+    "description": "The name of the player's surface rover, on its marker in the world view and as the nav target",
+    "message": "Όχημα εδάφους"
+  },
   "SURFACE_TEMPERATURE": {
     "description": "",
     "message": "Θερμοκρασία στην επιφάνεια"

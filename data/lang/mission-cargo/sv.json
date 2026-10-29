@@ -1,0 +1,58 @@
+{
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "ett uppdrag"
+  },
+  "CARGO_LABEL": {
+    "description": "How a mission is named where cargo held for it is listed. {mission} is the mission type",
+    "message": "{mission}: {place}, senast {date}"
+  },
+  "HELD_ABOARD": {
+    "description": "Missions tab",
+    "message": "{amount} t {commodity} ombord på ”{ship}”"
+  },
+  "HELD_FOR_MISSIONS": {
+    "description": "Cargo sidebar tooltip",
+    "message": "{amount} t reserverat för uppdrag. Kasta överbord från lastskärmen."
+  },
+  "HELD_IN_HANGAR": {
+    "description": "Missions tab",
+    "message": "{amount} t {commodity} i lastförrådet i din hangar på {station}"
+  },
+  "HELD_MISSING": {
+    "description": "Missions tab",
+    "message": "{amount} t {commodity} saknas: kastat överbord, förlorat eller förstört"
+  },
+  "HELD_NOT_FOR_SALE": {
+    "description": "Commodity market tooltip on the In hold column",
+    "message": "{amount} t reserverat för uppdrag, inte till salu"
+  },
+  "HELD_ON_STORED_SHIP": {
+    "description": "Missions tab",
+    "message": "{amount} t {commodity} ombord på ”{ship}”, förvarat på {station}"
+  },
+  "JETTISON_ANYWAY": {
+    "description": "Button",
+    "message": "Kasta överbord"
+  },
+  "JETTISON_HELD": {
+    "description": "",
+    "message": "Detta ton {commodity} är reserverat för {mission}."
+  },
+  "JETTISON_MISSION_FAILS": {
+    "description": "",
+    "message": "Utan det kan uppdraget misslyckas."
+  },
+  "JETTISON_TITLE": {
+    "description": "Title of the window asking before mission cargo is jettisoned",
+    "message": "Kasta {commodity} överbord?"
+  },
+  "MISSION_CARGO": {
+    "description": "Missions tab: heading over where the mission's cargo is",
+    "message": "Uppdragslast"
+  },
+  "OF_WHICH_HELD": {
+    "description": "Cargo list: part of a commodity held for a mission. {icon} is the mission cargo mark",
+    "message": "varav {icon} {amount} t: {mission}"
+  }
+}

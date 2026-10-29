@@ -75,6 +75,14 @@
     "description": "Descriptive name for the IncreaseTimeAcceleration action.",
     "message": "Meudaich luathachadh an ama"
   },
+  "BIND_INTERACT": {
+    "description": "Descriptive name for the Interact action (on foot: board the ship)",
+    "message": "Eadar-ghnìomh"
+  },
+  "BIND_JETPACK_UP": {
+    "description": "Descriptive name for the on-foot Jetpack Up / Down axis",
+    "message": "Pacaid-sgaird suas / sìos"
+  },
   "BIND_KILL_ROT": {
     "description": "Descriptive name for the KillRot action.",
     "message": "Stad an cuairteachadh"
@@ -171,6 +179,14 @@
     "description": "Descriptive name for the RightCamera action.",
     "message": "Geàrr leum gun chamara deas"
   },
+  "BIND_ROVER_CYCLE_VIEW": {
+    "description": "Descriptive name for the action that cycles the views while driving the surface rover: from the cab, without the rover's model, from outside",
+    "message": "Atharraich sealladh a’ charbaid"
+  },
+  "BIND_ROVER_LIGHTS": {
+    "description": "Descriptive name for the action that steps the surface rover's lamps through off and their brightness levels while driving",
+    "message": "Solais a’ charbaid"
+  },
   "BIND_SECONDARY_FIRE": {
     "description": "Descriptive name for the SecondaryFire action.",
     "message": "Prìomh-losgadh"
@@ -223,6 +239,30 @@
     "description": "Descriptive name for the View Zoom axis",
     "message": "Sùm an t-seallaidh"
   },
+  "BIND_WALK_FORWARD": {
+    "description": "Descriptive name for the on-foot Walk Forward / Back axis",
+    "message": "Coisich air adhart / air ais"
+  },
+  "BIND_WALK_JUMP": {
+    "description": "Descriptive name for the on-foot Jump action",
+    "message": "Leum"
+  },
+  "BIND_WALK_LOOK_PITCH": {
+    "description": "Descriptive name for the on-foot Look Up / Down axis",
+    "message": "Coimhead suas / sìos"
+  },
+  "BIND_WALK_LOOK_YAW": {
+    "description": "Descriptive name for the on-foot Look Left / Right axis",
+    "message": "Coimhead gu clì / gu deas"
+  },
+  "BIND_WALK_RIGHT": {
+    "description": "Descriptive name for the on-foot Strafe Right / Left axis",
+    "message": "Ceum gu deas / gu clì"
+  },
+  "BIND_WALK_RUN": {
+    "description": "Descriptive name for the on-foot Run action (hold)",
+    "message": "Ruith"
+  },
   "BUTTON": {
     "description": "",
     "message": "\" Putan \""
@@ -251,6 +291,10 @@
     "description": "Header for the GeneralViewControls input group.",
     "message": "Uidheaman-smachd coitcheann"
   },
+  "GROUP_INTERACTION": {
+    "description": "Header for the Interaction input group.",
+    "message": "Eadar-ghnìomhachd"
+  },
   "GROUP_LANDING_CONTROL": {
     "description": "Group label for landing-related inputs",
     "message": "Landing Control"
@@ -261,6 +305,10 @@
   },
   "GROUP_MISCELLANEOUS": {
     "message": "Measgaichte"
+  },
+  "GROUP_MOVEMENT": {
+    "description": "Header for the Movement input group.",
+    "message": "Gluasad"
   },
   "GROUP_RADAR_CONTROL": {
     "description": "Group label for radar-related inputs",
@@ -337,6 +385,10 @@
   "PAGE_MAP_CONTROLS": {
     "description": "Header for the MapControls input page.",
     "message": "Stiùireadh a’ mhapa"
+  },
+  "PAGE_ON_FOOT": {
+    "description": "Header for the OnFoot input page.",
+    "message": "Air chois"
   },
   "PAGE_SHIP_CONTROLS": {
     "description": "Header for the ShipControls input page.",

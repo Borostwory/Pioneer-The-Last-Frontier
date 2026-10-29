@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "gemide"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "\"{ship}\" gemisinde"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "Uçuşta"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Bölme ekle"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "tümü"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Sığdığı kadar"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Zaten \"{ship}\" gemisinde: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Başka bir istasyona doğru yolda."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Burada zaten bir hangar kiralıyorsunuz."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Zaten geri dönüyor."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Başka yerlerde de bekleyenler:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "bir görev"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Bölmeler"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Bölmeler daha sonra eklenip çıkarılabilir."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Teslimat ayırt"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Yolculuk ayırt"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "\"{ship}\" buradaki hangarınızda depolanıyor."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "\"{ship}\" gemisinin gövdesi satıldı: {items} parça ekipman deposuna, {tons} t kargo kargo deposuna ve {crew} mürettebat salona gitti."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Gemiye al"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Ekipmanı hangarın ekipman deposuna, kargosu hangarın kargo deposuna gider; yalnızca gövde satılır."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Ekipmanı ve tüm kargosuyla olduğu gibi saklanır; yeni gemiye hiçbir şey geçmez. Tam fiyatı ödersiniz."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Tüm ekipmanıyla birlikte satılır. Tüm kargosu yeni gemiye geçer."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "\"{ship}\" gemisinin çıplak gövdesini takasla ver"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "\"{ship}\" gemisini buradaki bir bölmede depola"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "\"{ship}\" gemisini takasla ver"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Bir {ship} satın alınsın mı?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "gemide yolcu var"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Teslimatı iptal et"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "{refund} (fiyatın yarısı) iade edilir ve {station} istasyonuna geri döner; varış {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "{what} teslimatı iptal edilsin mi?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "şu anda çıkarılamaz"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} bir yüzey limanı ve bu geminin atmosfer kalkanı yuvası yok."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "{min} kişiden az mürettebatla kalkış yapamazsınız."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Kargo"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Gemideki kargo"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Kargo ambarı"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "içindeki kargo onsuz sığmaz"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "{station} kargo deposu"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Kargo deposu boş."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Malları hangarın kargo deposuna boşaltın ve uçtuğunuz gemiye yükleyin. Sınırsız ve ücretsiz; görev kargosu işaretini korur."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Kargo"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Varış"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Bölme"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Bölme ücreti"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Maliyet"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Mesafe"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Konum"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Ad"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Ödendiği tarih"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Park ücreti"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Aylık"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Gemi"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "En iyi beceri"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "İstasyon"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Durum"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Depo"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Tür"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "gemiye binecek"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/hafta"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/gece + {wage}/hafta"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Peşin ödendi: tüm bölmeler için ortak {credit} kredi kaldı. Bugünkü kirayla yaklaşık {date} tarihine kadar yeter; sonrasında kira her ayın 1'inde hesabınızdan alınır."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "{station} istasyonundaki hangarınız için peşin ödediğiniz kira {date} tarihinde bitiyor. Sonrasında her ayın 1'inde faturalandırılır."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Mürettebat"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name}, {station} istasyonundaki mürettebat salonuna ulaştı."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "\"{ship}\" için mürettebat ({min}–{max} kişi alır):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} mürettebat (bu gemi {min}–{max} kişi alır)"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Mürettebat salonu"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Yeni geminin mürettebatı"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "İşaretlenmeyenler buradaki salonda bekler."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Yolda yarım maaş ödenir, salon ücreti alınmaz. Varışta oradaki salonda beklerler."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "\"{ship}\" ne olacak? Birini seçin:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Teslimat hizmeti"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "\"{ship}\" gemisini teslim et"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Ona {owed} maaş borçlusunuz. Bunu iyi karşılamayacak ve {limit} üzerindeki borç sözleşme dolandırıcılığı sayılır."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} buradaki salonda bekliyor. Sözleşmesi sona erer ve mürettebatınızdan ayrılır."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "{name} işten çıkarılsın mı?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Bu gemi {station} istasyonunun yanaşma limanlarına sığmıyor: ayrıldıktan sonra oraya bir daha yanaşamaz."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t yakıt"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "boş"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "boş"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "boş"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Kirayı sonlandır"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Yalnızca boş bir hangar bırakılabilir: gemi, ekipman ya da mal olmamalı, yolda bir şey bulunmamalı ve ödenmemiş kira olmamalı."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Ekipman"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} parça, {station} istasyonundaki hangar deponuza ulaştı."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Buradaki ekipman…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Ekipman"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Ekipman hacmi: {used} / {capacity} m³ kullanılıyor"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Takılı olduğu gemi"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "\"{ship}\" gemisine tak"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Filo"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Salonlardaki mürettebat"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangarlar"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Gemiler"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Ekipman deposu: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Bu gemiyle uç"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Hesabınızdan alınır."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Kredinizden ödenir."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Kredinizden ödenir, kalanı hesabınızdan."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "Nereden:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "Nereden: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Yakıt"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "salonda bekleyecek"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Hangar sekmesi"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangar"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "{station} hangarı"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Bu hangar ödenmemiş kira ödenene kadar kilitli."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} boş bölme)"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Teşekkürler! Gemide bana ihtiyacınız olana kadar buradaki mürettebat salonunda bekleyeceğim."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "kargo ambarı dolu"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Kargo ambarı: {used} / {total} t kullanılıyor"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Gövde"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Siz hariç tüm mürettebat buradaki salonda bekliyor. Onları Hangar sekmesindeki Mürettebat salonundan gemiye alın."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hipersürücü"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "Buradaki boş bir bölmeye ({free} boş)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "üstuzayda"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "salonda"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "Buradaki salonda"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "Bu hangarın deposunda {count} parça ekipman tutuluyor."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "{count} parça ekipman gemiye geri sığmadı ve hangarın deposunda tutuluyor."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} parça seçildi"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Hangar kirala"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "gemideki kargonun buna ihtiyacı var"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} ly uzakta"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Gemiye yükle"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "Salonda {crew} mürettebat bekliyor"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Hangarınız: {bays} bölmeden {ships} tanesi kullanımda, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "aylık faturalandırılır"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "{date} tarihine kadar ödendi"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "kira ödenmedi"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "Değişimden sonra buradaki salonda: {count}, gecelik {cost}, artı yarım maaş."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "{station} mürettebat salonu"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Ödenmemiş salon ücretleri: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "{debt} salon ücreti borcunuz var. Başka biri bir salonda beklemeden önce bunu ödeyin."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Salon: kişi başı gecelik {rate} (şu an gecelik {now}), her ayın 1'inde faturalandırılır. Burada bekleyen mürettebata hazır bekleme ücreti olarak yarım maaş ödenir ve yeni bir şey öğrenmezler."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Salon ücretleri tam ödenemedi. {debt} borcunuz var; paranız olduğunda ondan alınır."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Beklerken yarım maaş alırlar. Onları bir istasyonun Hangar sekmesindeki Mürettebat salonundan taşıyın."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "\"{ship}\" gemisinin gövdesi %{hull}, yakıtı %{fuel}. Burada onarım ve yakıt ikmali yapılabilir."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Bir hangarda en fazla 4 bölme olabilir."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Geride kalan görev kargosu, onu taşıyan gemiyle teslim edilmelidir."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "ay"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d ay"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "kargo yaşam desteği gerekir"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} kargo yaşam desteği gerektirir ve depolanan gemide bu yok."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Sonraki fatura {date}: yaklaşık {amount}, {from} – {to} dönemi kirası. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Sonraki fatura {date}: yaklaşık {amount}, {from} – {to} dönemi kirası (ayın bir kısmı). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Burada bekleyen kimse yok."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Salonda bekleyen ya da yolda olan kimse yok."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Başka bir istasyonda bekleyen kimse yok."
+  },
+  "NONE": {
+    "description": "",
+    "message": "yok"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Gönderilecekleri işaretleyin."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Geminizde olmanız gerekiyor."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "O gemi başka bir istasyonda depolanıyor."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Yeterli paranız yok."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "peşin ödenmedi"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "{station} istasyonunda dönülecek boş bölme yok."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Gemide kargo yok."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Peşin ödeme yok: kira her ayın 1'inde hesabınızdan alınır."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Nereye gideceğini seçin."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "yeterli ekipman hacmi yok"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "{station} istasyonunda boş bölme yok."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Burada boş bölme yok. Önce bir bölme ekleyin."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Kiraladığınız bir hangar yok. Herhangi bir istasyonda, Hangar sekmesinden kiralayın."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "{station} istasyonunda hangarınız yok."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "yok, sisteminden ayrılamaz"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Başka hangarınız yok."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "Diğer hangarlarınızda depolanan gemi yok."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Burada henüz depolanan gemi yok."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "bu gemide onun için yuva yok"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} parça"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Şimdilik buradaki mürettebat salonunda beklemek üzere bir görev teklif et"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "{from} yolunda, varış {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "Geldiği hangar artık sizin değil."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} bölme)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "yaklaşık {date} tarihine kadar ödendi"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Gemide yolcu var: önce yolcu sözleşmelerinizi tamamlayın."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Öde"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "{amount} öde"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Şimdilik bir şey yok: kira her ayın 1'inde faturalandırılır."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Peşin öde"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Peşin öde…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Bir gemi seçin."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Şu anki kira: aylık {rent}. Ödenecek süre:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "{station} için kirayı peşin öde"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - %{discount} = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, varış {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 ay"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 yıl"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 yıl"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 ay"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 ay"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Bölmeyi kaldır"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Yalnızca boş bir bölme kaldırılabilir ve bir hangarda en az bir bölme kalır."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Yeniden adlandır"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Boş: aylık {empty}. \"{ship}\" ({tonnes} t) park edilmişken: aylık {rent}."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Aylık kira: bölme başına {bay}, artı park edilen gövdenin tonu başına {tonne}."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "{station} istasyonundaki hangarınızın kirası ödenemedi. {debt} borcunuz var; oradaki gemiler ödenene kadar kilitli."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Ödenmemiş kira: {debt} ({months} ay, %10 gecikme ücretiyle). Buradaki gemiler ödenene kadar kilitli."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Kalanı \"{ship}\" gemisinde kalır."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "{to} istasyonuna dönüyor, varış {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "arazi aracı bir gezegende park hâlinde"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Arazi aracınız {planet} üzerinde park hâlinde. Önce onu yerleştirin."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "aynı sistem"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Kaydet"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Görmek ve uçmak için yukarıdaki tablodan depolanan bir gemi seçin."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Sat"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station}, Ekipman Pazarı'nın ödeyeceği gibi {item} için {price} öder."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "{item} satılsın mı?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Bu istasyona {price} karşılığında sat"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "{station} salonundan mürettebat gönder"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Başka bir istasyonun salonuna gönder"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Ekipman gönder…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "{station} istasyonundan ekipman gönder"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Bu depodaki parçaları diğer hangarlarınızdan birine gönder"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Teslimat hizmeti bu gemiyi diğer hangarlarınızdan birine götürsün"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Gönder…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Buradaki salonda beklesin"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Gemiler"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Yoldaki gemiler ve ödenmemiş kira nedeniyle kilitli hangarlardaki gemiler listelenmez."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "\"{name}\" (etkin)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "\"{ship}\", {station} istasyonundaki hangarınıza ulaştı."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · gövde %{hull}"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "\"{ship}\" en fazla {max} mürettebat alır."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Yolda: varana kadar uçulamaz, gönderilemez ya da donatılamaz."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Fiyat: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "\"{ship}\", {station} istasyonundaki hangarınıza geri döndü."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "\"{name}\" (burada depolanıyor)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Gemi kargosu ve ekipmanıyla yolculuk eder ve varış noktasında bölmesini ayırır. Yolda uçulamaz ya da donatılamaz. Park ücreti varışından itibaren alınır."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Sektör haritasında göster"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Başlangıç"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "bu gemideki yuvaları dolu"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "bu gemideki yuvası yanlış boyutta"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "İstasyon"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "uçtuğunuz gemi"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "Uçuşta"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Depoda, kilitli: kira ödenmedi"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "{date} tarihinden beri depoda"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Depoda"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "{station} hangar deposu"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} parça · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Depo boş."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Parçaları sökerek depoya koyun, sonra soldan seçilen gemiye takın ya da bu istasyona satın. Ekipman Pazarı kuralları ve fiyatları geçerlidir, takma ücreti yoktur. Bir parçayı belirli bir yuvaya takmak için önce boş bir yuva seçin."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "buradaki hangarınızda boş bölme yok."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "burada hangarınız yok."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} parça, {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "\"{ship}\" bu bölmede depolanacak. Mürettebat depolanan bir gemide asla kalmaz: aşağıda işaretlenmeyenler buradaki salonda bekler."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Gemi değiştir"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "\"{ship}\" gemisine geçilsin mi?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Hiç"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Sonrasında her tam ay için {rent}, her ayın 1'inde faturalandırılır."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Bu, uçtuğunuz gemi."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "\"{ship}\" en az {min} mürettebat gerektirir, gemide ise yalnızca {crew} kişi olur. Daha fazla kişi işe alana ya da salondan birini alana kadar kalkış yapamazsınız."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "\"{ship}\" en fazla {max} mürettebat alır, gemide ise {crew} kişi olur. Salonda kalmaları için {over} kişinin işaretini kaldırın."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "\"{ship}\" gemisinde {room} t yer var. {over} t daha az alın."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Toplam: {bays} bölmeden {used} tanesi kullanımda"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Nereye:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "Bir {ship} {room} t taşır, gemide ise {used} t var. Takasta tüm kargo yeni gemiye geçer: önce {over} t satın ya da boşaltın veya başka bir seçenek seçin."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "{used} t kargonuz var ve bir {ship} {room} t taşır."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Mürettebatı {station} salonuna getir"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Başka bir istasyonda bekleyen mürettebatı bu salona getirt"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Ekipmanı {station} istasyonuna aktar"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Başka bir hangarın deposundaki parçaları buraya getirt"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Şuradan aktar…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Buraya aktar"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Buradaki hangarınıza teslim ettir"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Bir gemiyi {station} istasyonuna aktar"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Diğer hangarlarınızdan birinde depolanan bir gemiyi buraya getirt"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "{station} yolunda, varış {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Tümünü sök"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Bu gemiden sökülebilen her şeyi depoya taşı"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "önce üzerine takılı parçaları sökün"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Sök ve depoya koy"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Kargo deposuna boşalt"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "ödenmedi: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "haftalık {wage}"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{station}: {count}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} bekliyor"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Salonlarda bekleyenler"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "{date} tarihinden beri bekliyor"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Tekrar hoş geldiniz."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "Salonda {crew} mürettebat bekliyor."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Buradaki hangarınızda {bays} bölmede {ships} gemi var."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Yuvasız takılanlar"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "yıl"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Diğer hangarlarınız:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Siz (kaptan)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "({crew} kişiniz var)"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Ödeyeceğiniz: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Alacağınız: {amount}"
+  }
+}

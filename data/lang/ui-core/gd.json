@@ -119,6 +119,218 @@
     "description": "",
     "message": "Bòrd-brath"
   },
+  "BURN_ACCURACY": {
+    "description": "Flight HUD burn list label of the Auto Burn accuracy setting (in percent).",
+    "message": "Pongalachd an losgaidh"
+  },
+  "BURN_ACCURACY_TIP": {
+    "description": "Tooltip of the 'Burn accuracy' setting in the flight HUD burn list.",
+    "message": "Sgiathaidh Fèin-losgadh gach losgadh air an t-slighe phlanaichte, leis an tìmeadh phlanaichte, a’ lùghdachadh na smeòrach aig an deireadh. Ma tha am periapsis no an apoapsis a thig às fhathast nas fhaide air falbh na a’ chuibhreann seo dhen àirde aca (no ma tha an reul-chuairt taobh a-muigh a’ phlèana phlanaichte), tionndaidh e agus nì e losgadh ceartachaidh beag."
+  },
+  "BURN_APPROACH_NONE": {
+    "description": "Flight HUD burn list closest approach status when no approach target is set.",
+    "message": "Cha deach dlùthachadh a phlanadh"
+  },
+  "BURN_APPROACH_PASSED": {
+    "description": "Flight HUD burn list closest approach status after it has happened. %s = target name.",
+    "message": "%s: chaidh an dlùthachadh as fhaisge seachad"
+  },
+  "BURN_APPROACH_STATUS": {
+    "description": "Flight HUD burn list closest approach status. 1st %s = target name, 2nd %s = closest distance, 3rd %s = countdown to the closest approach.",
+    "message": "%s: %s an ceann %s"
+  },
+  "BURN_APPROACH_STOP": {
+    "description": "Flight HUD burn list checkbox: stop the clock before the closest approach to the planned target.",
+    "message": "Stad ron dlùthachadh as fhaisge"
+  },
+  "BURN_APPROACH_STOP_TIP": {
+    "description": "Tooltip of the 'Stop before closest approach' setting in the flight HUD burn list.",
+    "message": "Stad an gleoc an ùine seo ron dlùthachadh as fhaisge ri amas an dlùthachaidh a chaidh a phlanadh air a’ mhapa - a’ cur stad air, no a’ leantainn air adhart aig 1x, mar a chaidh a thaghadh dha na losgaidhean. Thèid luathachadh an ama a lùghdachadh ceum air cheum air an t-slighe ach nach tèid e seachad air."
+  },
+  "BURN_ARRIVE_NORMAL_TIP": {
+    "description": "Tooltip of the 1x button in the flight HUD burn list.",
+    "message": "Nuair a ruigeas an luathachadh, lean air adhart aig an luaths àbhaisteach (1x)"
+  },
+  "BURN_ARRIVE_PAUSE": {
+    "description": "Flight HUD burn list button: pause the game when the warp arrives.",
+    "message": "Cuir na stad"
+  },
+  "BURN_ARRIVE_PAUSE_TIP": {
+    "description": "Tooltip of the Pause button in the flight HUD burn list.",
+    "message": "Nuair a ruigeas an luathachadh, cuir an geama na stad"
+  },
+  "BURN_ARRIVE_THEN": {
+    "description": "Flight HUD burn list: short connecting word before the choice of what happens when a warp arrives ('then' Pause / 1x).",
+    "message": "an uairsin"
+  },
+  "BURN_AUTO_BURN": {
+    "description": "Name of the Auto Burn toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "Fèin-losgadh"
+  },
+  "BURN_AUTO_BURN_TIP": {
+    "description": "Tooltip of the Auto Burn toggle button in the flight HUD burn list.",
+    "message": "Fèin-losgadh: loisg am prìomh-einnsean airson an losgaidh ghnìomhaich, agus dìreach fhad ’s a tha an soitheach co-thaobhach ri comhair an losgaidh - mura h-eil, cha toir e putadh sam bith. Cleachd e còmhla ri Fèin-chomhair gus am bi an soitheach ’ga stiùireadh fhèin; cha atharraich e comhair an t-soithich idir"
+  },
+  "BURN_AUTO_ORIENTATION": {
+    "description": "Name of the Auto Orientation toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "Fèin-chomhair"
+  },
+  "BURN_AUTO_ORIENTATION_TIP": {
+    "description": "Tooltip of the Auto Orientation toggle button in the flight HUD burn list.",
+    "message": "Fèin-chomhair: cùm an soitheach air comhair an losgaidh ghnìomhaich. Comhair a-mhàin, cha loisg e am prìomh-einnsean idir"
+  },
+  "BURN_CANCEL_WARP": {
+    "description": "Tooltip of the button that cancels a warp to a burn (flight HUD).",
+    "message": "Sguir dhen luathachadh: till gun luathachadh ama a bh’ ann roimhe"
+  },
+  "BURN_CAPTION_BURN": {
+    "description": "Flight HUD burn list column caption: the burn number.",
+    "message": "Losgadh"
+  },
+  "BURN_CAPTION_DURATION": {
+    "description": "Flight HUD burn list column caption: burn duration.",
+    "message": "Ùine losgaidh"
+  },
+  "BURN_CAPTION_DURATION_TIP": {
+    "description": "Tooltip of the Burn time column caption in the flight HUD burn list.",
+    "message": "Ùine losgaidh air fhàgail leis a’ phutadh làithreach"
+  },
+  "BURN_CAPTION_DV": {
+    "description": "Flight HUD burn list column caption: delta-v of the burn.",
+    "message": "Δv"
+  },
+  "BURN_CAPTION_DV_TIP": {
+    "description": "Tooltip of the Δv column caption in the flight HUD burn list.",
+    "message": "Δv ri sgiathadh fhathast; ’s e am bàr foidhe am pàirt a chaidh a sgiathadh mu thràth"
+  },
+  "BURN_CAPTION_IGNITION": {
+    "description": "Flight HUD burn list column caption: time until engine start.",
+    "message": "Adhnadh"
+  },
+  "BURN_CAPTION_IGNITION_TIP": {
+    "description": "Tooltip of the Ignition column caption in the flight HUD burn list.",
+    "message": "Ùine gus an tòisich an t-einnsean: leth na h-ùine losgaidh ron nòd"
+  },
+  "BURN_CAPTION_NODE": {
+    "description": "Flight HUD burn list column caption: time until the planned maneuver node.",
+    "message": "Nòd"
+  },
+  "BURN_CAPTION_NODE_TIP": {
+    "description": "Tooltip of the Node column caption in the flight HUD burn list.",
+    "message": "Ùine gus an nòd phlanaichte, meadhan an losgaidh"
+  },
+  "BURN_DONE": {
+    "description": "Flight HUD burn list: shown in place of the countdown for a completed burn.",
+    "message": "Deiseil"
+  },
+  "BURN_DURATION_TIP": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list. 1st %s = total duration, 2nd %s = remaining duration.",
+    "message": "%s gu h-iomlan leis a’ phutadh làithreach, %s air fhàgail"
+  },
+  "BURN_DV_TIP": {
+    "description": "Tooltip of a burn's delta-v in the flight HUD burn list. The three %s are speeds: planned, already flown, left. Keep the line breaks.",
+    "message": "Planaichte %s\nSgiathte %s\nAir fhàgail %s"
+  },
+  "BURN_LIST_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the burn list panel.",
+    "message": "Falaich liosta nan losgaidhean"
+  },
+  "BURN_LIST_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the burn list panel.",
+    "message": "Seall liosta nan losgaidhean"
+  },
+  "BURN_MARK_COMPLETE": {
+    "description": "Tooltip of the button that marks a planned burn as flown (flight HUD burn list and map planner).",
+    "message": "Cuir comharra gu bheil an losgadh seo deiseil"
+  },
+  "BURN_NEEDS_AUTOPILOT": {
+    "description": "Tooltip of the greyed-out Auto Orientation / Auto Burn buttons when the ship has no autopilot.",
+    "message": "Feumaidh an soitheach uidheamachd fèin-stiùiridh"
+  },
+  "BURN_NO_THRUST": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list when the ship has no forward thrust.",
+    "message": "Gun phutadh air adhart: chan eil fios air an ùine losgaidh"
+  },
+  "BURN_NUMBER": {
+    "description": "Label of one planned burn (flight HUD burn list, map planner burn list, map and 3D orbit view burn markers). %d = burn number, starting at 1.",
+    "message": "Losgadh %d"
+  },
+  "BURN_OVERLAP": {
+    "description": "Flight HUD burn list tooltip when a burn starts before the previous one ends. %s = overlap duration, %d = number of the previous burn.",
+    "message": "Tòisichidh e %s mus crìochnaich Losgadh %d"
+  },
+  "BURN_PLAN_ALL_DONE": {
+    "description": "Flight HUD burn list summary when every planned burn has been flown.",
+    "message": "Na losgaidhean uile deiseil"
+  },
+  "BURN_PLAN_NO_BURNS": {
+    "description": "Flight HUD burn list when the plan is empty.",
+    "message": "Gun losgaidhean planaichte"
+  },
+  "BURN_PLAN_SUMMARY": {
+    "description": "Flight HUD burn list summary line. %d = burns left, 1st %s = delta-v they need, 2nd %s = delta-v the ship has, 3rd %s = their total burn time.",
+    "message": "%d air fhàgail  ·  %s à %s  ·  %s"
+  },
+  "BURN_PLAN_SUMMARY_TIP": {
+    "description": "Tooltip of the flight HUD burn list summary line.",
+    "message": "Na losgaidhean air fhàgail, an Δv a dh’fheumas iad fhathast às an Δv a th’ aig an t-soitheach, agus an ùine losgaidh aca leis a’ phutadh làithreach"
+  },
+  "BURN_PLAN_TITLE": {
+    "description": "Title of the flight HUD burn list panel.",
+    "message": "PLANA LOSGAIDH"
+  },
+  "BURN_PROGRESS": {
+    "description": "Below the flight HUD reticule: which planned burn is active. 1st %d = active burn number, 2nd %d = number of burns in the plan.",
+    "message": "Losgadh %d/%d"
+  },
+  "BURN_STATE_LINE": {
+    "description": "State line of a flight HUD burn list toggle. 1st %s = toggle name (Auto Orientation / Auto Burn), 2nd %s = ON / OFF.",
+    "message": "%s: %s"
+  },
+  "BURN_STATE_OFF": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched off.",
+    "message": "DHETH"
+  },
+  "BURN_STATE_ON": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched on.",
+    "message": "AIR"
+  },
+  "BURN_STATUS_ACTIVE": {
+    "description": "Tooltip of a burn's status: the burn the ship is to fly next (flight HUD burn list and map planner).",
+    "message": "Losgadh gnìomhach"
+  },
+  "BURN_STATUS_COMPLETED": {
+    "description": "Tooltip of a burn's status: already flown (flight HUD burn list and map planner).",
+    "message": "Losgadh deiseil"
+  },
+  "BURN_STATUS_PLANNED": {
+    "description": "Tooltip of a burn's status: not yet flown and not the active burn (flight HUD burn list and map planner).",
+    "message": "Losgadh planaichte"
+  },
+  "BURN_STOP_BEFORE_BURN": {
+    "description": "Flight HUD burn list label of the setting for how many seconds before the burn start the warp stops.",
+    "message": "Stad ron losgadh"
+  },
+  "BURN_STOP_BEFORE_BURN_TIP": {
+    "description": "Tooltip of the 'Stop before burn' setting in the flight HUD burn list.",
+    "message": "Stadaidh an luathachadh an ùine seo ro thoiseach an losgaidh (leth fad an losgaidh ron àm phlanaichte); co-roinnte leis na losgaidhean uile"
+  },
+  "BURN_WARP_REACHED": {
+    "description": "Tooltip of a greyed-out Warp button in the flight HUD burn list: the burn start is now or in the past.",
+    "message": "Chaidh an t-amas a ruigsinn mu thràth"
+  },
+  "BURN_WARP_STRIP": {
+    "description": "Flight HUD status line while warping to a burn. 1st %d = burn number, 2nd %d = seconds to stop before (the 's' after it means seconds), %s = time acceleration level such as 1000x.",
+    "message": "Luathachadh gu Losgadh %d - stad %ds roimhe, %s"
+  },
+  "BURN_WARP_STRIP_LIMITED": {
+    "description": "Same as BURN_WARP_STRIP, shown when the game is limiting the requested time acceleration. 1st %d = burn number, 2nd %d = seconds to stop before, %s = requested time acceleration level.",
+    "message": "Luathachadh gu Losgadh %d - stad %ds roimhe, %s (cuingichte)"
+  },
+  "BURN_WARP_TIP": {
+    "description": "Tooltip of a burn's Warp button in the flight HUD burn list. %d = configured number of seconds to stop before the burn (the 's' after it means seconds).",
+    "message": "Luathachadh: luathachadh ama gus stad %ds mus tòisich an losgadh seo (leth an fhaid aige ron àm phlanaichte)"
+  },
   "BUY": {
     "description": "Commodities and equipment prices",
     "message": "Ceannaich"
@@ -274,6 +486,230 @@
   "CLOSE": {
     "description": "",
     "message": "Dùin"
+  },
+  "CLOUD_CLUSTERING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud clustering sliders",
+    "message": "Còmhdach ionadail: na tha de neul air an speur far a bheil neòil aig a’ bhreath seo. Chan atharraich e an còmhdach cruinneil. 0 = neòil bhriste sgapte thar a’ mhòr-chuid dhen phlanaid (an speur taobh a-staigh dhiubh: ~40%), 100 = breathan cha mhòr dùinte le raointean mòra soilleir eatorra (~85-90%)."
+  },
+  "CLOUD_CLUSTERING_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud clustering sliders, in percent",
+    "message": "Cruinneachadh nan neul (%)"
+  },
+  "CLOUD_CLUSTERING_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud clustering slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Cruinneachadh, {layer}"
+  },
+  "CLOUD_COVER_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud cover sliders",
+    "message": "Còmhdach cruinneil: a’ chuibhreann dhen phlanaid gu lèir a tha a’ bhreath seo a’ còmhdachadh. 100 = air a stèidheachadh air fiosaigs (an Talamh: ìosal ~40%, meadhanach ~27%, àrd ~30%), 50 = mu leth dheth sin, 0 = breath dheth. Os cionn 100 thig e faisg air speur dùinte mean air mhean."
+  },
+  "CLOUD_COVER_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud cover sliders, in percent",
+    "message": "Iomadachair còmhdach nan neul (%)"
+  },
+  "CLOUD_COVER_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud cover slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Còmhdach, {layer}"
+  },
+  "CLOUD_LAYER_HIGH": {
+    "description": "Settings window, The Last Frontier tab: name of the high cloud layer, inserted as {layer} into the per-layer slider labels (e.g. CLOUD_COVER_LAYER); lower case in English because it follows a comma",
+    "message": "àirde mhòr (cirrus)"
+  },
+  "CLOUD_LAYER_LOW": {
+    "description": "Settings window, The Last Frontier tab: name of the low cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "àirde ìosal (stratus / stratocumulus)"
+  },
+  "CLOUD_LAYER_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: name of the medium cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "àirde mheadhanach (altocumulus)"
+  },
+  "CLOUD_QUALITY": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud ray-marching quality",
+    "message": "Càileachd nan neul"
+  },
+  "CLOUD_QUALITY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud quality' combo box",
+    "message": "Na sampaill a thèid a thogail air gach gath seallaidh tro na neòil faisg air an talamh agus san adhar. Tha nas lugha nas luaithe; tha an diofar sa mhion-fhiosrachadh faisg air na neòil sa mhòr-chuid."
+  },
+  "CLOUD_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Àrd (32 ceumannan)"
+  },
+  "CLOUD_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Ìosal (16 ceumannan)"
+  },
+  "CLOUD_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Meadhanach (24 ceumannan)"
+  },
+  "CLOUD_QUALITY_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Glè àrd (48 ceumannan)"
+  },
+  "CLOUD_RESOLUTION": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud rendering resolution near the ground. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "Dùmhlachd-bhreacaidh nan neul"
+  },
+  "CLOUD_RESOLUTION_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution' combo box",
+    "message": "An dùmhlachd-bhreacaidh aig an tèid na neòil a reandaradh faisg air an talamh agus san adhar (an tè as gairbhe), mus tèid an sgèileadh dhan sgrìn. Tha nas àirde nas gèire agus nas slaodaiche."
+  },
+  "CLOUD_RESOLUTION_FULL": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option, render clouds at the full screen resolution",
+    "message": "Dùmhlachd-bhreacaidh shlàn na sgrìn"
+  },
+  "CLOUD_RESOLUTION_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Àrd (720 loidhne)"
+  },
+  "CLOUD_RESOLUTION_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Ìosal (360 loidhne)"
+  },
+  "CLOUD_RESOLUTION_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Meadhanach (540 loidhne)"
+  },
+  "CLOUD_RESOLUTION_SPACE": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the finest cloud resolution, used from space. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "Dùmhlachd-bhreacaidh nan neul on fhànas"
+  },
+  "CLOUD_RESOLUTION_SPACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution from space' combo box",
+    "message": "An dùmhlachd-bhreacaidh as mìne a thèid a chleachdadh. Fada os cionn planaid, tha e saor na neòil a tharraing ach fàsaidh am mion-fhiosrachadh aca beag air an sgrìn, mar sin èiridh an dùmhlachd-bhreacaidh mean air mhean a dh’ionnsaigh na tè seo, cho fad ’s a tha feum aig a’ mhion-fhiosrachadh oirre. Air an Talamh tòisichidh i ag èirigh aig mu 100 km agus ruigidh i e aig mu 450 km a’ coimhead sìos; feumaidh planaidean le neòil nas motha (àileachan tana fuara, no roghainn meud nan neul nas motha) i nas anmoiche."
+  },
+  "CLOUD_RESOLUTION_ULTRA": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Ultra (1440 loidhne)"
+  },
+  "CLOUD_RESOLUTION_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Glè àrd (1080 loidhne)"
+  },
+  "CLOUD_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for shadows cast by clouds",
+    "message": "Sgàilean nan neul"
+  },
+  "CLOUD_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud shadows' combo box. 'Soft' and 'Detailed' should match CLOUD_SHADOWS_SOFT and CLOUD_SHADOWS_DETAILED",
+    "message": "Sgàilean nan neul air an talamh, air bailtean-mòra agus air soithichean. Bog: doirchead fo raointean neòil. Mionaideach: sgàil gach neòil. Thèid an dà chuid a choimpiutadh aig dùmhlachd-bhreacaidh nan neul, mar sin cha chosg iad mòran."
+  },
+  "CLOUD_SHADOWS_DETAILED": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, the shadow of each individual cloud",
+    "message": "Mionaideach"
+  },
+  "CLOUD_SHADOWS_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, dimming under whole cloud fields",
+    "message": "Bog"
+  },
+  "CLOUD_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud size sliders",
+    "message": "Meud nan neul fa leth sa bhreath seo. 100 = am meud bunasach, suas gu 16x. Chan atharraich e an còmhdach."
+  },
+  "CLOUD_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud size sliders, in percent",
+    "message": "Iomadachair meud nan neul (%)"
+  },
+  "CLOUD_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Meud, {layer}"
+  },
+  "CLOUD_SOFTENING": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for how much the cloud image is blurred when upscaled",
+    "message": "Bogachadh nan neul"
+  },
+  "CLOUD_SOFTENING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud softening' combo box",
+    "message": "Nì e dealbh nan neul neo-shoilleir fhad ’s a thèid a sgèileadh suas, a’ falach na dùmhlachd-bhreacaidh nas ìsle."
+  },
+  "CLOUD_SOFTENING_SHARP": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, no blur",
+    "message": "Geur"
+  },
+  "CLOUD_SOFTENING_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, moderate blur",
+    "message": "Bog"
+  },
+  "CLOUD_SOFTENING_VERY_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, strong blur",
+    "message": "Glè bhog"
+  },
+  "CLOUD_SPACE_DETAIL": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how soon cloud resolution rises when seen from space, in percent",
+    "message": "Mion-fhiosrachadh nan neul on fhànas (%)"
+  },
+  "CLOUD_SPACE_DETAIL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud detail from space' slider. The quoted names should match the translations of CLOUD_RESOLUTION and CLOUD_RESOLUTION_SPACE",
+    "message": "Dè cho luath ’s a dh’èireas dùmhlachd-bhreacaidh nan neul o ‘Dùmhlachd-bhreacaidh nan neul’ a dh’ionnsaigh ‘Dùmhlachd-bhreacaidh nan neul on fhànas’ mar a thèid na neòil nas fhaide air falbh agus am mion-fhiosrachadh aca nas lugha air an sgrìn. Obraichidh e san aon dòigh air gach planaid. Ma ghearras tu e na leth, dùblaichidh an t-astar aig an tèid a gheurachadh (nas saoire); 0 = na geuraich idir. Air an Talamh aig 4K a’ coimhead sìos: ruigidh 100 an dùmhlachd-bhreacaidh shlàn aig mu 450 km, 50 aig mu 900 km, 25 aig mu 1800 km."
+  },
+  "CLOUD_SPEED": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how fast clouds drift and evolve",
+    "message": "Luaths nan neul"
+  },
+  "CLOUD_SPEED_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud speed' slider",
+    "message": "Dè cho luath ’s a ghluaiseas na neòil agus a dh’atharraicheas iad an cruth, mar iomad de dh’fhìor-luaths na gaoithe."
+  },
+  "CLOUD_SYSTEM_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud system size sliders",
+    "message": "Meud nan siostaman neòil (buidhnean de neòil) agus nan raointean soilleir eatorra. Chan atharraich e an còmhdach."
+  },
+  "CLOUD_SYSTEM_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud system size sliders, in percent",
+    "message": "Iomadachair meud siostaman nan neul (%)"
+  },
+  "CLOUD_SYSTEM_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud system size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Meud siostaim, {layer}"
+  },
+  "CLOUD_TEMPORAL": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for temporal cloud reconstruction",
+    "message": "Ath-thogail ùineil nan neul"
+  },
+  "CLOUD_TEMPORAL_16X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 16 cloud pixels is traced each frame",
+    "message": "16x (1 à 16 piogsailean gach frèam)"
+  },
+  "CLOUD_TEMPORAL_4X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 4 cloud pixels is traced each frame",
+    "message": "4x (1 à 4 piogsailean gach frèam)"
+  },
+  "CLOUD_TEMPORAL_9X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 9 cloud pixels is traced each frame",
+    "message": "9x (1 à 9 piogsailean gach frèam)"
+  },
+  "CLOUD_TEMPORAL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Temporal cloud reconstruction' combo box. 'Off' refers to the OFF option",
+    "message": "Cha lorg gach frèam ach cuid de phiogsailean nan neul agus lìonaidh e an còrr o fhrèamaichean roimhe. 4x: cairteal, ùraichidh an dealbh gach 4 frèamaichean. 9x: naoidheamh, mu dhà uiread nas luaithe a-rithist, ag ùrachadh gach 9 frèamaichean (as fheàrr aig reataichean frèam àrda; faodaidh tionndaidhean luatha oirean nan neul a smeuradh greiseag). 16x: siathamh cuid deug, nas luaithe fhathast, ag ùrachadh gach 16 frèamaichean (airson 120+ fps; barrachd smeuraidh ann an tionndaidhean luatha agus aig fàire). Dheth: gach piogsail anns gach frèam, as slaodaiche."
+  },
+  "CLOUD_TRANSPARENCY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud transparency sliders",
+    "message": "Na tha de sholas a’ dol tro neòil na breatha seo. 100 = air a stèidheachadh air fiosaigs, 200 = leth cho tiugh, 50 = dà uiread cho tiugh. Chan atharraich e an còmhdach, ach le luachan glè àrd bidh e doirbh neòil tana (cirrus) fhaicinn."
+  },
+  "CLOUD_TRANSPARENCY_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud transparency sliders, in percent",
+    "message": "Iomadachair trìd-shoilleireachd nan neul (%)"
+  },
+  "CLOUD_TRANSPARENCY_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud transparency slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Trìd-shoilleireachd, {layer}"
+  },
+  "CLOUD_VOLUMETRIC": {
+    "description": "Settings window, The Last Frontier tab: checkbox enabling volumetric clouds",
+    "message": "Neòil tomhas-lìonaidh"
+  },
+  "CLOUD_VOLUMETRIC_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
+    "message": "Breathan neòil air planaidean le àile. Cha tèid an tarraing fhad ’s a tha ioma-shampladh (anti-aliasing) an comas."
+  },
+  "CLOUD_WEATHER_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",
+    "message": "Pàtranan sìde san tasgadan"
+  },
+  "CLOUD_WEATHER_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cached weather patterns' checkbox",
+    "message": "Coimpiutaichidh e pàtran sìde mòr-sgèile (stoirmean, aghaidhean) na planaid as fhaisge aon turas ann am mapa seach airson gach piogsail: mu 15-20% feabhas air luaths nan neul airson mu 38 MB de chuimhne video. Bidh coltas nan neul mar an ceudna."
   },
   "COLLAPSE": {
     "description": "Close / collapse an open folder or group",
@@ -895,6 +1331,14 @@
     "description": "Player combat rating",
     "message": "Neoichiontach"
   },
+  "HEAD_BOB": {
+    "description": "Game option: the view bobs up and down as the player walks on foot",
+    "message": "Gluasad a’ chinn air chois"
+  },
+  "HEAD_BOB_DESC": {
+    "description": "The tooltip of the Head Bob on Foot option in the settings menu",
+    "message": "Gluaisidh an sealladh gu socair le gach ceum fhad ’s a tha thu a’ coiseachd no a’ ruith taobh a-muigh an t-soithich"
+  },
   "HEAVY_CARGO_SHUTTLE": {
     "description": "",
     "message": "Aiseag carago trom"
@@ -971,6 +1415,10 @@
     "description": "Tooltip for button",
     "message": "Up cruise mode"
   },
+  "HUD_BUTTON_DEPLOY_ROVER": {
+    "description": "Tooltip: set the surface rover down beside the landed ship and drive it",
+    "message": "Dràibh an carbad"
+  },
   "HUD_BUTTON_DISABLE_AUTOPILOT": {
     "description": "Tooltip for button",
     "message": "Disable autopilot"
@@ -987,9 +1435,17 @@
     "description": "Tooltip for button",
     "message": "Disable follow mode"
   },
+  "HUD_BUTTON_DISEMBARK": {
+    "description": "Tooltip: get out of the landed ship on foot",
+    "message": "Rach air tìr"
+  },
   "HUD_BUTTON_EQUIPMENT": {
     "description": "Tooltip: Equipment",
     "message": "Uidheamachd"
+  },
+  "HUD_BUTTON_EVA": {
+    "description": "Tooltip: leave the ship in space, floating beside it with the jetpack (extravehicular activity)",
+    "message": "Cuairt-fhànais"
   },
   "HUD_BUTTON_EXTERNAL_VIEW": {
     "description": "Tooltip: External camera view",
@@ -1055,9 +1511,21 @@
     "description": "Tooltip: Landing gear is up",
     "message": "Tha an uidheamachd landaidh shuas"
   },
+  "HUD_BUTTON_LIGHTS_ARE_OFF": {
+    "description": "Tooltip: The ship's lamps, lighting the ground and everything around, are off; clicking switches them on",
+    "message": "Tha na solais dheth"
+  },
+  "HUD_BUTTON_LIGHTS_LEVEL": {
+    "description": "Tooltip: The ship's lamps are on at brightness level {level} of {max}; clicking steps to the next level, or off after the brightest",
+    "message": "Solais: ìre {level} à {max}"
+  },
   "HUD_BUTTON_MANUAL_CONTROL": {
     "description": "Tooltip: Manual control",
     "message": "Stiùireadh a làimh"
+  },
+  "HUD_BUTTON_PLAN_HEADING": {
+    "description": "Tooltip of the flight control state button while Auto Orientation holds the burn direction.",
+    "message": "Comhair a’ phlana: cùm an soitheach air comhair an losgaidh ghnìomhaich"
   },
   "HUD_BUTTON_ROTATION_DAMPING_IS_OFF": {
     "description": "Tooltip: Rotation damping is off",
@@ -1066,6 +1534,10 @@
   "HUD_BUTTON_ROTATION_DAMPING_IS_ON": {
     "description": "Tooltip: Rotation damping is on",
     "message": "Tha lasachadh a’ chuairteachaidh air"
+  },
+  "HUD_BUTTON_ROVER_PARKED": {
+    "description": "Tooltip of the disabled rover button while the surface rover is out of the ship, parked where the player left it: the planet (or moon) and the star system, e.g. 'The rover is parked on Mars, Sol'",
+    "message": "Tha an carbad air a phàirceadh air {planet}, {system}"
   },
   "HUD_BUTTON_SET_SPEED": {
     "description": "Tooltip: set speed",
@@ -1114,6 +1586,10 @@
   "HUD_BUTTON_UNDOCK": {
     "description": "Tooltip: Undock",
     "message": "Dì-dhocaich"
+  },
+  "HUD_BUTTON_UNKNOWN_FLIGHT_STATE": {
+    "description": "Tooltip of the flight control state button for an unrecognised state (fallback).",
+    "message": "Staid stiùireadh itealaich neo-aithnichte"
   },
   "HUD_CARGO_MASS": {
     "description": "Cargo Mass",
@@ -1755,6 +2231,22 @@
     "description": "3d model of the ship",
     "message": "Model"
   },
+  "MOD_GRAPHICS": {
+    "description": "Mod settings tab section",
+    "message": "Grafaigeachd"
+  },
+  "MOD_ON_FOOT": {
+    "description": "Mod settings tab section",
+    "message": "Air chois agus sa charbad"
+  },
+  "MOD_OPTIONS": {
+    "description": "Settings window tab with the settings The Last Frontier adds",
+    "message": "The Last Frontier (mod)"
+  },
+  "MOD_SOUND": {
+    "description": "Mod settings tab section",
+    "message": "Fuaim"
+  },
   "MONEY": {
     "description": "",
     "message": "Money"
@@ -1943,9 +2435,45 @@
     "description": "Label for the point of an orbit furthest from the orbited body",
     "message": "Apoapsis"
   },
+  "ORBIT_IMPACT_IN": {
+    "description": "Label next to the predicted impact point on an orbit (system map and 3D orbit view). %s = time until impact.",
+    "message": "Bualadh an ceann %s"
+  },
+  "ORBIT_MARKER_APOAPSIS": {
+    "description": "Short abbreviation for apoapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the apoapsis.",
+    "message": "Ap"
+  },
+  "ORBIT_MARKER_ASCENDING_NODE": {
+    "description": "Short abbreviation for ascending node: orbit marker label (followed by its altitude) and the button that moves a burn to the ascending node.",
+    "message": "AN"
+  },
+  "ORBIT_MARKER_DESCENDING_NODE": {
+    "description": "Short abbreviation for descending node: orbit marker label (followed by its altitude) and the button that moves a burn to the descending node.",
+    "message": "DN"
+  },
+  "ORBIT_MARKER_PERIAPSIS": {
+    "description": "Short abbreviation for periapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the periapsis.",
+    "message": "Pe"
+  },
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "Periapsis"
+  },
+  "ORBIT_VIEW_FOCUS_BODY": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",
+    "message": "Fòcas sealladh 3D na reul-chuairte: an rionnag-chruinne mun cuairt (briog airson fòcas air soitheach a’ chluicheadair)"
+  },
+  "ORBIT_VIEW_FOCUS_PLAYER": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the player's ship.",
+    "message": "Fòcas sealladh 3D na reul-chuairte: soitheach a’ chluicheadair (briog airson fòcas air an rionnag-chruinne mun cuairt)"
+  },
+  "ORBIT_VIEW_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the floating 3D orbit view.",
+    "message": "Falaich sealladh 3D na reul-chuairte"
+  },
+  "ORBIT_VIEW_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the floating 3D orbit view.",
+    "message": "Seall sealladh 3D na reul-chuairte"
   },
   "OUTER_ARM": {
     "description": "Arm of the Milky Way galaxy",
@@ -2062,6 +2590,218 @@
   "PLANET_TEXTURES": {
     "description": "",
     "message": "Innich nam planaidean"
+  },
+  "PLANNER_ADD_BURN": {
+    "description": "Orbit planner button that adds a burn to the plan.",
+    "message": "Cuir losgadh ris"
+  },
+  "PLANNER_APPROACH_ALTITUDE": {
+    "description": "Orbit planner closest approach distance over a planet or moon. %s = altitude.",
+    "message": "%s os cionn an uachdair"
+  },
+  "PLANNER_APPROACH_FLYBY": {
+    "description": "Orbit planner label: altitude to pass a planet or moon at.",
+    "message": "Àirde dol-seachad"
+  },
+  "PLANNER_APPROACH_FLYBY_TIP": {
+    "description": "Tooltip of the Flyby altitude setting.",
+    "message": "Gabh seachad air planaid no gealach aig an àirde seo os cionn an uachdair aice. Lùbaidh an iom-tharraing aice fhèin an dol-seachad nuair a bhios tu am broinn raon a buaidh; tha am plana ag amas ach am bi puing as ìsle an dol-seachaid lùbte aig an àirde seo."
+  },
+  "PLANNER_APPROACH_FROM_NAV": {
+    "description": "Orbit planner tooltip: the approach target is the navigation target.",
+    "message": "An t-amas seòladaireachd agad - tagh oibseact air a’ mhapa gus fear eile a thaghadh"
+  },
+  "PLANNER_APPROACH_FROM_SELECTION": {
+    "description": "Orbit planner tooltip: the approach target comes from the map selection.",
+    "message": "An t-oibseact a chaidh a thaghadh air a’ mhapa"
+  },
+  "PLANNER_APPROACH_IMPACT": {
+    "description": "Orbit planner closest approach result when the plan hits the target body. %s = time until impact.",
+    "message": "Bualadh ris an amas an ceann %s"
+  },
+  "PLANNER_APPROACH_INTERCEPT": {
+    "description": "Orbit planner button: plan a 1-burn intercept.",
+    "message": "Eadar-ghlacadh"
+  },
+  "PLANNER_APPROACH_INTERCEPT_BODY_TIP": {
+    "description": "Tooltip of the Intercept button for a planet or moon target.",
+    "message": "1 losgadh: sgiath seachad air a’ phlanaid no air a’ ghealach aig àirde an dol-seachaid"
+  },
+  "PLANNER_APPROACH_INTERCEPT_TIP": {
+    "description": "Tooltip of the Intercept button for a ship or station target.",
+    "message": "1 losgadh: gluasad a choinnicheas ris an amas"
+  },
+  "PLANNER_APPROACH_NO_TARGET": {
+    "description": "Orbit planner approach section when there is no target.",
+    "message": "Tagh oibseact air a’ mhapa, no suidhich amas seòladaireachd"
+  },
+  "PLANNER_APPROACH_ONE_BURN": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "1 losgadh"
+  },
+  "PLANNER_APPROACH_ORBIT": {
+    "description": "Orbit planner label: altitude of the circular orbit a rendezvous with a planet or moon ends in.",
+    "message": "Àirde na reul-chuairte"
+  },
+  "PLANNER_APPROACH_ORBIT_TIP": {
+    "description": "Tooltip of the Orbit altitude setting.",
+    "message": "Àirde na reul-chuairte cuairtiche san fhàg an losgadh-glacaidh thu. Thèid an dol-seachad amas ach am bi a phuing as ìsle, air a lùbadh le iom-tharraing na rionnaig-chruinne, aig an àirde seo, far an tèid an losgadh-glacaidh a dhèanamh."
+  },
+  "PLANNER_APPROACH_PLAN": {
+    "description": "Orbit planner button that computes the approach plan.",
+    "message": "Planaich dlùthachadh"
+  },
+  "PLANNER_APPROACH_PLAN_TIP": {
+    "description": "Tooltip of the 'Plan approach' button. %s = PLANNER_APPROACH_ONE_BURN or PLANNER_APPROACH_TWO_BURNS.",
+    "message": "Cuir %s on reul-chuairt làithreach agad an àite a’ phlana, air a thìmeadh airson an Δv as lugha. Ruigear amas mu rionnag-chruinne eile ann an ceumannan, a’ pàirceadh ann an reul-chuairt mu gach rionnag-chruinne air an t-slighe.\nMura lorgar gluasad, fanaidh am plana mar a bha e."
+  },
+  "PLANNER_APPROACH_RENDEZVOUS": {
+    "description": "Orbit planner button: plan a 2-burn rendezvous.",
+    "message": "Coinneachadh"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_BODY_TIP": {
+    "description": "Tooltip of the Rendezvous button for a planet or moon target.",
+    "message": "2 losgadh: sgiath seachad air a’ phlanaid no air a’ ghealach aig an àirde gu h-ìosal, an uairsin losgadh air ais aig a’ phuing as fhaisge, am broinn raon a buaidh, a dh’fhàgas thu ann an reul-chuairt chuairtiche timcheall oirre an sin"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_TIP": {
+    "description": "Tooltip of the Rendezvous button for a ship or station target.",
+    "message": "2 losgadh: coinnich ris an amas, an uairsin co-fhreagair a luaths nuair a ruigeas tu"
+  },
+  "PLANNER_APPROACH_RESULT": {
+    "description": "Orbit planner closest approach result. 1st %s = distance (or PLANNER_APPROACH_ALTITUDE), 2nd %s = time until it.",
+    "message": "%s an ceann %s"
+  },
+  "PLANNER_APPROACH_RESULT_TIP": {
+    "description": "Tooltip of the closest approach result.",
+    "message": "An dlùthachadh as fhaisge aig an t-slighe phlanaichte ris an amas, suas gu aon chuairt às dèidh an losgaidh mu dheireadh"
+  },
+  "PLANNER_APPROACH_SPEED": {
+    "description": "Orbit planner closest approach relative speed. %s = speed.",
+    "message": "Luaths dàimheach %s"
+  },
+  "PLANNER_APPROACH_STAND_OFF": {
+    "description": "Orbit planner label: distance behind a ship or station target to meet it at.",
+    "message": "Beàrn"
+  },
+  "PLANNER_APPROACH_STAND_OFF_FORMAT": {
+    "description": "Orbit planner drag field format for the stand-off distance. %.1f = kilometres (keep it exactly).",
+    "message": "%.1f km air dheireadh"
+  },
+  "PLANNER_APPROACH_STAND_OFF_TIP": {
+    "description": "Tooltip of the Stand-off setting.",
+    "message": "Coinnich ri soitheach no stèisean aig an astar seo air a chùlaibh, air an reul-chuairt aige fhèin, seach aig a mheadhan. Às dèidh coinneachaidh cumaidh an soitheach am beàrn seo, a chionn ’s gu bheil an dà chuid a’ sgiathadh air an aon reul-chuairt."
+  },
+  "PLANNER_APPROACH_TARGET": {
+    "description": "Orbit planner approach section. %s = target name.",
+    "message": "Amas: %s"
+  },
+  "PLANNER_APPROACH_TITLE": {
+    "description": "Orbit planner section header for planning an approach to a target.",
+    "message": "An dlùthachadh as fhaisge"
+  },
+  "PLANNER_APPROACH_TWO_BURNS": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "2 losgadh"
+  },
+  "PLANNER_BURN_IS_COMPLETE": {
+    "description": "Orbit planner tooltip of the snap and Circularize buttons for a burn that has been flown.",
+    "message": "Tha an losgadh seo deiseil"
+  },
+  "PLANNER_CIRCULARIZE": {
+    "description": "Orbit planner button that makes the orbit circular.",
+    "message": "Dèan cuairteach"
+  },
+  "PLANNER_CIRCULARIZE_AT_APSIS": {
+    "description": "Part of the Circularize tooltip. 1st %s = periapsis / apoapsis, 2nd %s = time until it.",
+    "message": "an %s, an ceann %s"
+  },
+  "PLANNER_CIRCULARIZE_AT_POINT": {
+    "description": "Part of the Circularize tooltip when no apsis lies ahead.",
+    "message": "puing an losgaidh seo (gun periapsis no apoapsis romhainn)"
+  },
+  "PLANNER_CIRCULARIZE_NONE": {
+    "description": "Orbit planner Circularize button tooltip when it is not possible.",
+    "message": "Cha ghabh reul-chuairt an losgaidh seo a dhèanamh cuairteach an seo"
+  },
+  "PLANNER_CIRCULARIZE_TIP": {
+    "description": "Orbit planner Circularize button tooltip. 1st %s = where (PLANNER_CIRCULARIZE_AT_APSIS or PLANNER_CIRCULARIZE_AT_POINT), 2nd %s = delta-v needed.",
+    "message": "Dèan cearcall dhen reul-chuairt aig %s: %s de Δv.\nGluaisidh seo an losgadh seo an sin agus cuiridh e luachan ùra air adhart, normalach is rèideal an àite an fheadhainn aige."
+  },
+  "PLANNER_DV_AFTER": {
+    "description": "Orbit planner delta-v summary label: delta-v left after the plan.",
+    "message": "Às dèidh a’ phlana"
+  },
+  "PLANNER_DV_AFTER_TIP": {
+    "description": "Tooltip of the After plan delta-v line.",
+    "message": "Δv air fhàgail nuair a bhios gach losgadh planaichte air a sgiathadh"
+  },
+  "PLANNER_DV_AVAILABLE": {
+    "description": "Orbit planner delta-v summary label: delta-v the ship has.",
+    "message": "Ri fhaighinn"
+  },
+  "PLANNER_DV_AVAILABLE_TIP": {
+    "description": "Tooltip of the Available delta-v line.",
+    "message": "An Δv a bheir connadh an t-soithich aig an tomad làithreach aige"
+  },
+  "PLANNER_DV_PLAN": {
+    "description": "Orbit planner delta-v summary label: delta-v the remaining burns need.",
+    "message": "Plana"
+  },
+  "PLANNER_DV_PLAN_TIP": {
+    "description": "Tooltip of the Plan delta-v line.",
+    "message": "An Δv a dh’fheumas na losgaidhean a tha ri sgiathadh fhathast"
+  },
+  "PLANNER_DV_SHORT": {
+    "description": "Orbit planner delta-v summary when the plan needs more than the ship has. %s = missing delta-v.",
+    "message": "Gann le %s"
+  },
+  "PLANNER_DV_SHORT_TIP": {
+    "description": "Tooltip of the After plan line when delta-v is short.",
+    "message": "Feumaidh am plana barrachd Δv na bheir an connadh"
+  },
+  "PLANNER_EVENT_APOAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "apoapsis"
+  },
+  "PLANNER_EVENT_ASCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "nòd èiridh"
+  },
+  "PLANNER_EVENT_DESCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "nòd teàrnaidh"
+  },
+  "PLANNER_EVENT_PERIAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "periapsis"
+  },
+  "PLANNER_REF_EQUATOR": {
+    "description": "Orbit planner reference plane for nodes: the body's equatorial plane. %s = body name.",
+    "message": "crios-meadhain %s"
+  },
+  "PLANNER_REF_TARGET_ORBIT": {
+    "description": "Orbit planner reference plane for nodes: the target's orbital plane. %s = target name.",
+    "message": "reul-chuairt %s"
+  },
+  "PLANNER_REMAINING_DV": {
+    "description": "Orbit planner tooltip of a burn's remaining delta-v.",
+    "message": "Delta-v air fhàgail dhen losgadh seo"
+  },
+  "PLANNER_SNAP_NODE_NONE": {
+    "description": "Orbit planner AN/DN button tooltip when the node does not exist. 1st %s = node name, 2nd %s = reference plane.",
+    "message": "Chan eil %s romhainn a thaobh %s air an reul-chuairt ron losgadh seo"
+  },
+  "PLANNER_SNAP_NODE_TIP": {
+    "description": "Orbit planner AN/DN button tooltip. 1st %s = node name, 2nd %s = reference plane (PLANNER_REF_TARGET_ORBIT / PLANNER_REF_EQUATOR), 3rd %s = time until it.",
+    "message": "Gluais an losgadh seo dhan ath %s, a thaobh %s, an ceann %s.\nBriog a-rithist airson na h-ath reul-chuairte."
+  },
+  "PLANNER_SNAP_NONE": {
+    "description": "Orbit planner Pe/Ap button tooltip when the event does not exist. %s = event name.",
+    "message": "Chan eil %s romhainn air an reul-chuairt ron losgadh seo"
+  },
+  "PLANNER_SNAP_TIP": {
+    "description": "Orbit planner Pe/Ap button tooltip. 1st %s = event name (periapsis / apoapsis), 2nd %s = time until it.",
+    "message": "Gluais an losgadh seo dhan ath %s air an reul-chuairt roimhe, an ceann %s.\nBriog a-rithist airson na h-ath reul-chuairte."
   },
   "PLEASE_DESIGN_NEW_PAINTJOB": {
     "description": "",
@@ -2291,6 +3031,30 @@
     "description": "For hyperjump planner",
     "message": "Leuman a’ chùrsa"
   },
+  "ROVER_BAY": {
+    "description": "Used in ShipInfo view, followed by a yes/no depending on whether the ship has a vehicle bay for the surface rover",
+    "message": "Bàgh carbaid"
+  },
+  "ROVER_DEFAULT_VIEW": {
+    "description": "Game option: the view the surface rover starts in when the player gets in",
+    "message": "Sealladh a’ charbaid nuair a thèid thu a-steach"
+  },
+  "ROVER_DEFAULT_VIEW_DESC": {
+    "description": "The tooltip of the Rover View on Getting In option in the settings menu",
+    "message": "An sealladh nuair a thèid thu a-steach dhan charbad no nuair a dhràibheas tu a-mach às an t-soitheach e. Atharraichidh iuchair an t-seallaidh e fhathast fhad ’s a tha thu a’ dràibheadh"
+  },
+  "ROVER_VIEW_CAB": {
+    "description": "Rover view option: from the driver's seat, with the cab drawn",
+    "message": "On chab"
+  },
+  "ROVER_VIEW_EXTERNAL": {
+    "description": "Rover view option: from outside, circling the rover",
+    "message": "On taobh a-muigh"
+  },
+  "ROVER_VIEW_NO_MODEL": {
+    "description": "Rover view option: from the driver's eyes, without the rover drawn (as the ship's internal view)",
+    "message": "Sùilean an dràibhear, gun charbad"
+  },
   "SAFETY_LOCKOUT": {
     "description": "Ship jump status",
     "message": "Glasadh a-mach sàbhailteachd"
@@ -2387,6 +3151,22 @@
     "description": "UI option",
     "message": "Roghainnean"
   },
+  "SETTINGS_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box choosing sun shadow quality",
+    "message": "Sgàilean"
+  },
+  "SETTINGS_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadows' combo box",
+    "message": "Sgàilean na grèine o shoithichean, stèiseanan, togalaichean baile agus an talamh, air an talamh agus air a chèile. ’S e an àireamh dùmhlachd-bhreacaidh mapa nan sgàilean: tha nas àirde nas gèire agus cleachdaidh e barrachd cuimhne video (mu 12 / 48 / 192 MB). Thèid sgàilean geura timcheall an t-soithich agad ath-tharraing gach frèam; thèid sgàilean nas fhaide air falbh ath-chleachdadh gus an gluais a’ ghrian no an camara, mar sin cha chosg iad mòran."
+  },
+  "SETTINGS_WIND_HOWL": {
+    "description": "Settings window, The Last Frontier tab, Sound: label of the slider for the surface wind sound volume, in percent",
+    "message": "Ulfhart na gaoithe (%)"
+  },
+  "SETTINGS_WIND_HOWL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Wind howl' slider",
+    "message": "Àirde fuaim gaoth an uachdair a chluinnear nuair a bhios tu ag itealaich nad stad, air tìr no a’ sgiathadh gu slaodach faisg air talamh planaid le àile. ’S e 100 an ìre a chaidh a dhealbhadh; leanaidh e àirde-fuaim nan èifeachdan cuideachd."
+  },
   "SET_AS_TARGET": {
     "description": "",
     "message": "Set destination as navigation target"
@@ -2410,6 +3190,42 @@
   "SET_TO_ZERO": {
     "description": "For the speed limiter button",
     "message": "Set to zero"
+  },
+  "SHADOW_DARKNESS": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how dark shadows are, in percent",
+    "message": "Doirchead nan sgàilean (%)"
+  },
+  "SHADOW_DARKNESS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow darkness' slider",
+    "message": "Na bheir sgàil air falbh de sholas na grèine fo speur coltach ri speur na Talmhainn; tha an còrr a’ seasamh airson solas na speur, a ruigeas àitichean fo sgàil fhathast. Nì àileachan nas taine sgàilean nas duirche, suas gu dorchadas iomlan ann am falamhachd."
+  },
+  "SHADOW_DEBUG_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox for a debug view tinting the scene by shadow map",
+    "message": "Seall mapaichean nan sgàilean (dì-bhugachadh)"
+  },
+  "SHADOW_DEBUG_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Show shadow maps (debug)' checkbox",
+    "message": "Cuiridh e dath air a h-uile rud a rèir mapa nan sgàilean a chleachdas e: dearg am mapa geur timcheall an t-soithich agad, uaine am fear meadhanach, gorm am fear fad às."
+  },
+  "SHADOW_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how far shadows are drawn, in metres",
+    "message": "Astar nan sgàilean (m)"
+  },
+  "SHADOW_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow distance' slider",
+    "message": "Dè cho fada on chamara a thilgeas stèiseanan, bailtean-mòra agus soithichean pàircte sgàilean. Sgaoilidh astar nas motha an aon mhapa sgàilean thar raon nas motha, mar sin fàsaidh sgàilean fad às nas gairbhe."
+  },
+  "SHADOW_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Àrd (4096)"
+  },
+  "SHADOW_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Ìosal (1024)"
+  },
+  "SHADOW_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Meadhanach (2048)"
   },
   "SHIP": {
     "description": "",
@@ -2575,6 +3391,50 @@
     "description": "Tab item in the start game menu",
     "message": "Summary"
   },
+  "SURFACE_BOARD_SHIP": {
+    "description": "On-foot HUD prompt: the key and this board the ship",
+    "message": "Rach air bòrd"
+  },
+  "SURFACE_ENTER_ROVER": {
+    "description": "On-foot HUD prompt: the key and this get into the surface rover",
+    "message": "Rach a-steach dhan charbad"
+  },
+  "SURFACE_EVA_SHIP": {
+    "description": "EVA HUD: distance to the player's ship and the speed relative to it, e.g. 'Ship 35 m, 0.4 m/s'",
+    "message": "Soitheach {distance}, {speed}"
+  },
+  "SURFACE_EXIT_ROVER": {
+    "description": "Rover HUD prompt: the key and this get out of the surface rover",
+    "message": "Thig a-mach"
+  },
+  "SURFACE_FREE_CURSOR": {
+    "description": "On-foot HUD hint: hold Alt to free the mouse cursor",
+    "message": "Cùm sìos Alt airson cùrsair na luchaige"
+  },
+  "SURFACE_JETPACK": {
+    "description": "On-foot HUD: label of the jetpack fuel bar",
+    "message": "Pacaid-sgaird"
+  },
+  "SURFACE_ROVER_SPEED": {
+    "description": "Rover HUD: the speed in kilometres per hour, e.g. '42 km/h'",
+    "message": "{speed} km/u"
+  },
+  "SURFACE_ROVER_VIEW": {
+    "description": "Rover HUD hint: the key and this change the view (from the cab, without the rover's model, from outside)",
+    "message": "Atharraich an sealladh"
+  },
+  "SURFACE_STOW_ROVER": {
+    "description": "Rover HUD prompt next to the ship: the key and this drive the rover into the hold and board the ship",
+    "message": "Cuir an carbad air falbh is rach air bòrd"
+  },
+  "SURFACE_YOUR_ROVER": {
+    "description": "On-foot HUD: label of the marker of the player's surface rover on the compass",
+    "message": "Carbad"
+  },
+  "SURFACE_YOUR_SHIP": {
+    "description": "On-foot HUD: label of the marker of the player's own ship on the compass",
+    "message": "Soitheach"
+  },
   "SYSTEM_BODY_INDEX_IS_OUT_OF_RANGE": {
     "description": "Message when restoring savegame",
     "message": "System body index is out of range"
@@ -2615,6 +3475,26 @@
     "description": "Tooltip introducing the system security rating",
     "message": "System safety rating"
   },
+  "SYSTEM_VIEW_FOLLOW_PLAN": {
+    "description": "System map button tooltip: follow the ship's planned position.",
+    "message": "Lean far an cuir am plana an soitheach agad - gluais àm a’ mhapa gus sgiathadh air a’ phlana"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_15": {
+    "description": "System map combo item: latitude/longitude lines every 15 degrees.",
+    "message": "Gach 15°"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_30": {
+    "description": "System map combo item: latitude/longitude lines every 30 degrees.",
+    "message": "Gach 30°"
+  },
+  "SYSTEM_VIEW_LATLONG_LINES": {
+    "description": "System map: button tooltip and settings label for latitude/longitude lines on planets and moons.",
+    "message": "Loidhnichean domhan-leud is domhan-fhad"
+  },
+  "SYSTEM_VIEW_ZOOM_TO_SHIP": {
+    "description": "System map button tooltip: centre and zoom the map on the player's ship.",
+    "message": "Sùm chun t-soithich agad"
+  },
   "TECH_CERTIFIED": {
     "description": "Lobby screen shows the tech level (an integer number) of the station",
     "message": "Tha teisteanas teicneolais ìre {tech_level} aig an stèisean seo."
@@ -2626,6 +3506,14 @@
   "TECH_LEVEL": {
     "description": "System view label for technology level",
     "message": "Tech Level"
+  },
+  "TERRAIN_DETAIL_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the slider for the planet terrain level-of-detail distance",
+    "message": "Astar mion-fhiosrachadh na talmhainn"
+  },
+  "TERRAIN_DETAIL_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Terrain detail distance' slider",
+    "message": "Dè cho fada air falbh a gheibh talamh planaid làn mhion-fhiosrachadh a’ mhogail aige: thèid pìos talmhainn a mhìneachadh nuair a bhios tu nas fhaisge na an àireamh seo de leud phìosan. Tha nas àirde nas gèire o fhad air falbh ach cruthaichidh e barrachd talmhainn (CPU) agus tarraingidh e barrachd thriantanan. Seo an luach aig àirde mheadhanach (mu 200 gu 2,000 km air an Talamh); thèid a lùghdachadh gu fèin-obrachail faisg air an talamh agus ann an reul-chuairt àrd, far an cosg e barrachd no far an seall e nas lugha. 15 = bun-roghainn, 1 = giùlan tùsail Pioneer."
   },
   "TEXTURE_COMPRESSION": {
     "description": "",

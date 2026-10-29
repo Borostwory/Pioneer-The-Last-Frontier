@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "на борда"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "На борда на „{ship}“"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "В полет"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Добави бокс"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "всичко"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Колкото се побира"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Вече на борда на „{ship}“: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Вече пътува към друга станция."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Вече наемате хангар тук."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Вече се връща."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Чакат и другаде:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "мисия"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Боксове"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Боксове могат да се добавят или премахват по-късно."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Поръчай доставка"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Купи билет"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "„{ship}“ е прибран в хангара ви тук."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "Корпусът на „{ship}“ е продаден: предмети към склада за оборудване — {items}, товар към склада за товари — {tons} т, членове на екипажа към салона — {crew}."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Качи на борда"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Оборудването му отива в склада за оборудване на хангара, а товарът — в склада за товари на хангара; продава се само корпусът."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Остава какъвто е, с оборудването и целия си товар; нищо не се мести на новия кораб. Плащате пълната цена."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Продава се с цялото оборудване. Целият товар се мести на новия кораб."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Замени само корпуса на „{ship}“"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Прибери „{ship}“ в бокс тук"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Замени „{ship}“ срещу отстъпка"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Купуване на {ship}?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "има пътници на борда"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Отмени доставката"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "Възстановяват се {refund} (половината от цената), а пратката се връща в {station}, пристига {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Отмяна на доставката: {what}?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "не може да се свали сега"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} е наземен космодрум, а този кораб няма слот за атмосферна защита."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Не можете да излетите с екипаж по-малък от {min}."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Товар"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Товар на борда"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Трюм"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "товарът в него не би се побрал без него"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Склад за товари в {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Складът за товари е празен."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Разтоварвайте стоки в склада за товари на хангара и ги товарете в кораба, с който летите. Неограничено и безплатно; товарът за мисии запазва маркировката си."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} т"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Товар"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Пристига"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Бокс"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Такса за бокс"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Разходи"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Разстояние"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Местоположение"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Име"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Платено до"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Паркиране"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "На месец"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Кораб"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Най-добро умение"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Станция"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Състояние"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Склад"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Тип"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "ще се качи на борда"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/седмица"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/нощ + {wage}/седмица"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Платено предварително: остават {credit}, общо за всички боксове. При сегашния наем стигат до около {date}; след това наемът се изтегля от сметката ви на 1-во число всеки месец."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "Предплатеният наем за хангара ви в {station} изтича на {date}. След това се таксува на 1-во число всеки месец."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Екипаж"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} пристигна в салона за екипажа в {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Екипаж за „{ship}“ (побира {min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "Екипаж: {crew} (този кораб побира {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Салон за екипажа"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Екипаж за новия кораб"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Който не е отметнат, чака в салона тук."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "По пътя се плащат половин заплати и няма такса за салон. При пристигане чакат в салона там."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Какво става с „{ship}“? Изберете:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Служба за доставки"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Доставка на „{ship}“"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Дължите им {owed} заплати. Няма да го приемат добре, а дълг над {limit} се смята за договорна измама."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} чака в салона тук. Договорът приключва и напуска екипажа ви."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Освобождаване на {name}?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Този кораб не пасва на доковете в {station}: щом отлети, не може да се скачи там отново."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "Гориво: {fuel} т"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "празен"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "празен"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "празен"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Прекрати наема"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Може да се освободи само празен хангар: без кораби, оборудване или стоки, нищо на път и без неплатен наем."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Оборудване"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "В склада на хангара ви в {station} пристигнаха предмети: {count}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Оборудване тук…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Оборудване"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Обем за оборудване: заети {used} от {capacity} м³"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Монтирано на"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Монтирай на „{ship}“"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Флот"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Екипаж в салоните"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Хангари"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Кораби"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Склад за оборудване: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Летете с този кораб"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Изтегля се от сметката ви."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Плаща се от предплатата."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Плаща се от предплатата, остатъкът — от сметката ви."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "От:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "От: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Гориво"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "ще чака в салона"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Раздел Хангар"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Хангар"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Хангар в {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Този хангар е заключен, докато не бъде платен дължимият наем."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} (свободни боксове: {free})"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Благодаря! Ще чакам в салона за екипажа тук, докато не ви потрябвам на борда."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "трюмът е пълен"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Трюм: заети {used} от {total} т"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Корпус"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Целият екипаж без вас чака в салона тук. Качете ги на борда от раздел Хангар, Салон за екипажа."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Хипердвигател"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "В свободен бокс тук (свободни: {free})"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "в хиперпространството"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "в салона"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "В салона тук"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "В склада на този хангар се пазят предмети оборудване: {count}."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "Предмети оборудване, които не се побраха обратно на кораба и се пазят в склада на хангара: {count}."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "Избрани предмети: {count}"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Наеми хангар"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "товарът на борда има нужда от нея"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "на {dist} св.г."
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Натовари на борда"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "Екипаж, чакащ в салона: {crew}"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Вашият хангар: заети {ships} от {bays} бокса, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "таксува се месечно"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "платено до {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "неплатен наем"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "В салона тук след смяната: {count}, {cost} на нощ, плюс половин заплати."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Салон за екипажа в {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Неплатени такси за салон: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Дължите {debt} такси за салон. Платете ги, преди някой друг да чака в салон."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Салон: {rate} на човек на нощ (сега {now} на нощ), таксува се на 1-во число. Чакащите тук получават половин заплата като възнаграждение за готовност и не научават нищо ново."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Таксите за салон не можаха да бъдат платени изцяло. Дължите {debt}; ще бъдат взети от парите ви, когато ги имате."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Получават половин заплата, докато чакат. Премествайте ги от раздел Хангар на станцията, Салон за екипажа."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "„{ship}“ е с {hull}% корпус и {fuel}% гориво. Тук има ремонт и зареждане."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Един хангар има най-много 4 бокса."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Оставеният товар за мисии трябва да бъде доставен с кораба, който го носи."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "месеца"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d мес."
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "изисква животоподдържаща система"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "Товарът „{commodity}“ изисква животоподдържаща система за трюма, каквато прибраният кораб няма."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Следваща сметка {date}: около {amount}, наемът за {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Следваща сметка {date}: около {amount}, наемът за {from} – {to} (част от месец). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Тук никой не чака."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Никой не чака в салон и никой не пътува."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Никой не чака на друга станция."
+  },
+  "NONE": {
+    "description": "",
+    "message": "няма"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Отметнете какво да се изпрати."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Трябва да сте на борда на кораба си."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Този кораб е прибран на друга станция."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Нямате достатъчно пари."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "без предплата"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Няма свободен бокс в {station} за връщане."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Няма товар на борда."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Нищо не е платено предварително: наемът се изтегля от сметката ви на 1-во число всеки месец."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Изберете накъде да отиде."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "няма достатъчно обем за оборудване"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Няма свободен бокс в {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Тук няма свободен бокс. Първо добавете бокс."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Не наемате хангар. Наемете на всяка станция, в раздел Хангар."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Нямате хангар в {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "няма, не може да напусне системата си"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Нямате друг хангар."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "В другите ви хангари няма прибрани кораби."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Тук още няма прибрани кораби."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "няма слот за него на този кораб"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "Предмети: {count}"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Предложи място, засега с чакане в салона за екипажа тук"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "на път от {from}, пристига {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "Хангарът, от който е дошъл, вече не е ваш."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} бокса)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "платено до около {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} т · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Има пътници на борда: първо изпълнете договорите си за пътници."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Плати"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Плати {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Нищо сега: наемът се таксува на 1-во число всеки месец."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Плащане напред"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Плащане напред…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Изберете кораб."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Наем сега: {rent} на месец. Плати за:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Предплата на наема за {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, пристига {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 м"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 г"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 г"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 м"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 м"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Премахни бокс"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Може да се премахне само празен бокс, а хангарът запазва поне един."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Преименувай"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Празен: {empty} на месец. С паркиран „{ship}“ ({tonnes} т): {rent} на месец."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Наем на месец: {bay} на бокс плюс {tonne} на тон паркиран корпус."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Наемът за хангара ви в {station} не можа да бъде платен. Дължите {debt}; корабите там са заключени, докато не се плати."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Неплатен наем: {debt} (месеци: {months}, с 10% неустойка). Корабите тук са заключени, докато не се плати."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Останалото остава на борда на „{ship}“."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "връща се в {to}, пристига {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "роувърът е паркиран на планета"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Роувърът ви е паркиран на {planet}. Първо го приберете."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "същата система"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Запази"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Изберете прибран кораб в таблицата по-горе, за да го разгледате и летите с него."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Продай"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} плаща {price} за „{item}“, както в пазара за оборудване."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Продаване на „{item}“?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Продай на тази станция за {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Изпращане на екипаж от салона в {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Изпрати в салона на друга станция"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Изпрати оборудване…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Изпращане на оборудване от {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Изпрати предмети от този склад до друг ваш хангар"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Службата за доставки да откара този кораб до друг ваш хангар"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Изпрати до…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Чакай в салона тук"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Кораби"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Корабите на път и корабите в хангари, заключени заради неплатен наем, не са показани."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "„{name}“ (активен)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "„{ship}“ пристигна в хангара ви в {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · корпус {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "„{ship}“ побира най-много {max} членове на екипажа."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "На път: не може да се лети, изпраща или преоборудва, докато не пристигне."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Цена: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "„{ship}“ се върна в хангара ви в {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "„{name}“ (прибран тук)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Корабът пътува с товара и оборудването си и заема бокса си в местоназначението. По пътя не може да се лети с него или да се преоборудва. Паркирането се таксува от пристигането му."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Покажи на секторната карта"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "От"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "слотовете му на този кораб са заети"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "слотът му на този кораб е с грешен размер"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Станция"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "корабът, с който летите"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "В полет"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Прибран, заключен: неплатен наем"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "прибран от {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Прибран"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Склад на хангара в {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "Предмети: {count} · {volume} м³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Складът е празен."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Демонтирайте предмети в склада, после ги монтирайте на кораба, избран вляво, или ги продайте на тази станция. Правила и цени като в пазара за оборудване, без такса за монтаж. Първо изберете празен слот, за да монтирате предмет в него."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "хангарът ви тук няма свободен бокс."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "нямате хангар тук."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "Предмети: {items}, {tons} т"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "„{ship}“ ще бъде прибран в този бокс. Екипажът никога не остава на прибран кораб: който не е отметнат по-долу, чака в салона тук."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Смени кораба"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Смяна с „{ship}“?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d т"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Нищо"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "След това {rent} за всеки цял месец, таксува се на 1-во число."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Това е корабът, с който летите."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "„{ship}“ изисква поне {min} членове на екипажа, а на борда ще има само {crew}. Не можете да излетите, докато не наемете още или не вземете някого от салона."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "„{ship}“ побира най-много {max} членове на екипажа, а на борда ще има {crew}. Махнете отметката на {over}, за да ги оставите в салона."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "„{ship}“ има място за {room} т. Вземете {over} т по-малко."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Общо: заети {used} от {bays} бокса"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "До:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "{ship} побира {room} т, а на борда имате {used} т. При замяна целият товар се мести на новия кораб: първо продайте или разтоварете {over} т или изберете друга възможност."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Имате {used} т товар, а {ship} побира {room} т."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Довеждане на екипаж в салона в {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Доведете в този салон екипаж, чакащ на друга станция"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Прехвърляне на оборудване в {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Доставете тук предмети от склада на друг хангар"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Прехвърли от…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Прехвърли тук"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Доставете го в хангара ви тук"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Прехвърляне на кораб в {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Доставете тук кораб, прибран в друг ваш хангар"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "пътува към {station}, пристига {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Демонтирай всичко"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Премести в склада всичко, което може да се свали от този кораб"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "първо демонтирайте монтираните на него предмети"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Демонтирай в склада"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Разтовари в склада за товари"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "неплатено: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} на седмица"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} в {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "чакат: {count}"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Чакащи в салоните"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "чака от {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Добре дошли отново."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "Членове на екипажа, чакащи в салона: {crew}."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Хангарът ви тук: кораби {ships}, боксове {bays}."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Монтирано без слот"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "години"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Другите ви хангари:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Вие (командир)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(имате {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Плащате: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Получавате: {amount}"
+  }
+}

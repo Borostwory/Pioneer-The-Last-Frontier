@@ -303,6 +303,10 @@
     "description": "Name for a generic utility hardpoint",
     "message": "Utility"
   },
+  "HARDPOINT_VEHICLE_BAY": {
+    "description": "Name for a hardpoint: a bay in the hull for a vehicle carried aboard (a shuttle or the surface rover)",
+    "message": "Ruang kendaraan"
+  },
   "HARDPOINT_WEAPON": {
     "description": "Name for a generic weapon hardpoint",
     "message": "Weapon"
@@ -827,6 +831,10 @@
     "description": "Generic name for secondary attitude or maneuvering thrusters",
     "message": "Thrusters"
   },
+  "SLOT_VEHICLE_BAY": {
+    "description": "Name for an equipment slot: a bay in the hold big enough for the surface rover",
+    "message": "Ruang kendaraan"
+  },
   "SMALL_PLASMA_ACCEL": {
     "description": "",
     "message": "Akselerator plasma kecil"
@@ -874,6 +882,14 @@
   "STAT_WEIGHT": {
     "description": "Stat label for equipment weight",
     "message": "Weight"
+  },
+  "SURFACE_ROVER": {
+    "description": "Ship equipment: a pressurised four-wheeled vehicle carried in the hold, driven out of the landed ship",
+    "message": "Rover permukaan"
+  },
+  "SURFACE_ROVER_DESCRIPTION": {
+    "description": "",
+    "message": "Rover beroda empat bertekanan untuk dua orang, dibawa di ruang kendaraan, yang hanya dimiliki kapal-kapal besar (Ruang rover, di galangan kapal). Mendaratlah, turunkan rover di samping kapal, lalu berkendara menjelajahi permukaan."
   },
   "SURFACE_SCANNER": {
     "description": "A ship equipment that records data of terrain, for cartography mapping/geological survey. Note: Scout Mission module reference and distinguishes between 'orbital' and 'surface' scanner types, the former scans planet from orbit, the latter from low altitude. Model manufacturer name is meant to sound like a cheap brand.",
@@ -970,6 +986,10 @@
   "UTILITY": {
     "description": "Category name of utility equipment",
     "message": "Utility"
+  },
+  "VEHICLES": {
+    "description": "Category name for the equipment slots of vehicles carried aboard (the surface rover)",
+    "message": "Kendaraan"
   },
   "WEAPONS": {
     "description": "Category name of weapon-related equipment",

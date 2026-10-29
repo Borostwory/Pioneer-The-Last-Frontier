@@ -119,6 +119,218 @@
     "description": "",
     "message": "掲示板"
   },
+  "BURN_ACCURACY": {
+    "description": "Flight HUD burn list label of the Auto Burn accuracy setting (in percent).",
+    "message": "噴射精度"
+  },
+  "BURN_ACCURACY_TIP": {
+    "description": "Tooltip of the 'Burn accuracy' setting in the flight HUD burn list.",
+    "message": "自動噴射は各噴射を計画どおりのタイミングで計画軌道に乗せ、最後にスロットルを絞ります。それでも近点や遠点のずれがその高度に対してこの割合を超える場合（または軌道が計画面から外れている場合）は、向きを変えて小さな修正噴射を行います。"
+  },
+  "BURN_APPROACH_NONE": {
+    "description": "Flight HUD burn list closest approach status when no approach target is set.",
+    "message": "接近計画なし"
+  },
+  "BURN_APPROACH_PASSED": {
+    "description": "Flight HUD burn list closest approach status after it has happened. %s = target name.",
+    "message": "%s：最接近を通過"
+  },
+  "BURN_APPROACH_STATUS": {
+    "description": "Flight HUD burn list closest approach status. 1st %s = target name, 2nd %s = closest distance, 3rd %s = countdown to the closest approach.",
+    "message": "%s：%s（あと%s）"
+  },
+  "BURN_APPROACH_STOP": {
+    "description": "Flight HUD burn list checkbox: stop the clock before the closest approach to the planned target.",
+    "message": "最接近の前に停止"
+  },
+  "BURN_APPROACH_STOP_TIP": {
+    "description": "Tooltip of the 'Stop before closest approach' setting in the flight HUD burn list.",
+    "message": "マップで計画した接近目標への最接近のこの時間前に時計を止めます。噴射用の設定に従い、一時停止するか1倍速で続行します。通り過ぎないよう、途中で時間加速を段階的に下げます。"
+  },
+  "BURN_ARRIVE_NORMAL_TIP": {
+    "description": "Tooltip of the 1x button in the flight HUD burn list.",
+    "message": "ワープ到達時、通常速度（1倍）で続行"
+  },
+  "BURN_ARRIVE_PAUSE": {
+    "description": "Flight HUD burn list button: pause the game when the warp arrives.",
+    "message": "一時停止"
+  },
+  "BURN_ARRIVE_PAUSE_TIP": {
+    "description": "Tooltip of the Pause button in the flight HUD burn list.",
+    "message": "ワープ到達時、ゲームを一時停止"
+  },
+  "BURN_ARRIVE_THEN": {
+    "description": "Flight HUD burn list: short connecting word before the choice of what happens when a warp arrives ('then' Pause / 1x).",
+    "message": "その後"
+  },
+  "BURN_AUTO_BURN": {
+    "description": "Name of the Auto Burn toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "自動噴射"
+  },
+  "BURN_AUTO_BURN_TIP": {
+    "description": "Tooltip of the Auto Burn toggle button in the flight HUD burn list.",
+    "message": "自動噴射：アクティブな噴射のためにメインエンジンを点火します。船が噴射方向に向いている間だけで、向いていなければ推力は出ません。自動姿勢制御と併用すると船が自ら向きを合わせます。自動噴射自体は船の向きを変えません"
+  },
+  "BURN_AUTO_ORIENTATION": {
+    "description": "Name of the Auto Orientation toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "自動姿勢制御"
+  },
+  "BURN_AUTO_ORIENTATION_TIP": {
+    "description": "Tooltip of the Auto Orientation toggle button in the flight HUD burn list.",
+    "message": "自動姿勢制御：船をアクティブな噴射の方向に保ちます。姿勢のみで、メインエンジンは点火しません"
+  },
+  "BURN_CANCEL_WARP": {
+    "description": "Tooltip of the button that cancels a warp to a burn (flight HUD).",
+    "message": "ワープ取り消し：元の時間加速に戻す"
+  },
+  "BURN_CAPTION_BURN": {
+    "description": "Flight HUD burn list column caption: the burn number.",
+    "message": "噴射"
+  },
+  "BURN_CAPTION_DURATION": {
+    "description": "Flight HUD burn list column caption: burn duration.",
+    "message": "噴射時間"
+  },
+  "BURN_CAPTION_DURATION_TIP": {
+    "description": "Tooltip of the Burn time column caption in the flight HUD burn list.",
+    "message": "現在の推力での残り噴射時間"
+  },
+  "BURN_CAPTION_DV": {
+    "description": "Flight HUD burn list column caption: delta-v of the burn.",
+    "message": "Δv"
+  },
+  "BURN_CAPTION_DV_TIP": {
+    "description": "Tooltip of the Δv column caption in the flight HUD burn list.",
+    "message": "残りのΔv。下のバーは消化済みの分"
+  },
+  "BURN_CAPTION_IGNITION": {
+    "description": "Flight HUD burn list column caption: time until engine start.",
+    "message": "点火"
+  },
+  "BURN_CAPTION_IGNITION_TIP": {
+    "description": "Tooltip of the Ignition column caption in the flight HUD burn list.",
+    "message": "エンジン始動までの時間：ノードの噴射時間の半分前"
+  },
+  "BURN_CAPTION_NODE": {
+    "description": "Flight HUD burn list column caption: time until the planned maneuver node.",
+    "message": "ノード"
+  },
+  "BURN_CAPTION_NODE_TIP": {
+    "description": "Tooltip of the Node column caption in the flight HUD burn list.",
+    "message": "計画ノード（噴射の中間点）までの時間"
+  },
+  "BURN_DONE": {
+    "description": "Flight HUD burn list: shown in place of the countdown for a completed burn.",
+    "message": "完了"
+  },
+  "BURN_DURATION_TIP": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list. 1st %s = total duration, 2nd %s = remaining duration.",
+    "message": "現在の推力で合計%s、残り%s"
+  },
+  "BURN_DV_TIP": {
+    "description": "Tooltip of a burn's delta-v in the flight HUD burn list. The three %s are speeds: planned, already flown, left. Keep the line breaks.",
+    "message": "計画 %s\n消化 %s\n残り %s"
+  },
+  "BURN_LIST_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the burn list panel.",
+    "message": "複数噴射リストを隠す"
+  },
+  "BURN_LIST_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the burn list panel.",
+    "message": "複数噴射リストを表示"
+  },
+  "BURN_MARK_COMPLETE": {
+    "description": "Tooltip of the button that marks a planned burn as flown (flight HUD burn list and map planner).",
+    "message": "この噴射を完了にする"
+  },
+  "BURN_NEEDS_AUTOPILOT": {
+    "description": "Tooltip of the greyed-out Auto Orientation / Auto Burn buttons when the ship has no autopilot.",
+    "message": "自動操縦装置が必要です"
+  },
+  "BURN_NO_THRUST": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list when the ship has no forward thrust.",
+    "message": "前進推力なし：噴射時間は不明"
+  },
+  "BURN_NUMBER": {
+    "description": "Label of one planned burn (flight HUD burn list, map planner burn list, map and 3D orbit view burn markers). %d = burn number, starting at 1.",
+    "message": "噴射 %d"
+  },
+  "BURN_OVERLAP": {
+    "description": "Flight HUD burn list tooltip when a burn starts before the previous one ends. %s = overlap duration, %d = number of the previous burn.",
+    "message": "%s早く開始（噴射 %d の終了前）"
+  },
+  "BURN_PLAN_ALL_DONE": {
+    "description": "Flight HUD burn list summary when every planned burn has been flown.",
+    "message": "全噴射完了"
+  },
+  "BURN_PLAN_NO_BURNS": {
+    "description": "Flight HUD burn list when the plan is empty.",
+    "message": "計画された噴射なし"
+  },
+  "BURN_PLAN_SUMMARY": {
+    "description": "Flight HUD burn list summary line. %d = burns left, 1st %s = delta-v they need, 2nd %s = delta-v the ship has, 3rd %s = their total burn time.",
+    "message": "残り%d  ·  %s / %s  ·  %s"
+  },
+  "BURN_PLAN_SUMMARY_TIP": {
+    "description": "Tooltip of the flight HUD burn list summary line.",
+    "message": "残りの噴射数、船の持つΔvのうちそれらに必要なΔv、現在の推力での噴射時間"
+  },
+  "BURN_PLAN_TITLE": {
+    "description": "Title of the flight HUD burn list panel.",
+    "message": "噴射計画"
+  },
+  "BURN_PROGRESS": {
+    "description": "Below the flight HUD reticule: which planned burn is active. 1st %d = active burn number, 2nd %d = number of burns in the plan.",
+    "message": "噴射 %d/%d"
+  },
+  "BURN_STATE_LINE": {
+    "description": "State line of a flight HUD burn list toggle. 1st %s = toggle name (Auto Orientation / Auto Burn), 2nd %s = ON / OFF.",
+    "message": "%s：%s"
+  },
+  "BURN_STATE_OFF": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched off.",
+    "message": "オフ"
+  },
+  "BURN_STATE_ON": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched on.",
+    "message": "オン"
+  },
+  "BURN_STATUS_ACTIVE": {
+    "description": "Tooltip of a burn's status: the burn the ship is to fly next (flight HUD burn list and map planner).",
+    "message": "アクティブな噴射"
+  },
+  "BURN_STATUS_COMPLETED": {
+    "description": "Tooltip of a burn's status: already flown (flight HUD burn list and map planner).",
+    "message": "完了した噴射"
+  },
+  "BURN_STATUS_PLANNED": {
+    "description": "Tooltip of a burn's status: not yet flown and not the active burn (flight HUD burn list and map planner).",
+    "message": "計画中の噴射"
+  },
+  "BURN_STOP_BEFORE_BURN": {
+    "description": "Flight HUD burn list label of the setting for how many seconds before the burn start the warp stops.",
+    "message": "噴射前に停止"
+  },
+  "BURN_STOP_BEFORE_BURN_TIP": {
+    "description": "Tooltip of the 'Stop before burn' setting in the flight HUD burn list.",
+    "message": "噴射開始（計画時刻の噴射時間の半分前）のこの時間前にワープを停止します。全噴射で共通"
+  },
+  "BURN_WARP_REACHED": {
+    "description": "Tooltip of a greyed-out Warp button in the flight HUD burn list: the burn start is now or in the past.",
+    "message": "目標時刻に到達済み"
+  },
+  "BURN_WARP_STRIP": {
+    "description": "Flight HUD status line while warping to a burn. 1st %d = burn number, 2nd %d = seconds to stop before (the 's' after it means seconds), %s = time acceleration level such as 1000x.",
+    "message": "噴射 %d へワープ - %d秒前に停止、%s"
+  },
+  "BURN_WARP_STRIP_LIMITED": {
+    "description": "Same as BURN_WARP_STRIP, shown when the game is limiting the requested time acceleration. 1st %d = burn number, 2nd %d = seconds to stop before, %s = requested time acceleration level.",
+    "message": "噴射 %d へワープ - %d秒前に停止、%s（制限中）"
+  },
+  "BURN_WARP_TIP": {
+    "description": "Tooltip of a burn's Warp button in the flight HUD burn list. %d = configured number of seconds to stop before the burn (the 's' after it means seconds).",
+    "message": "ワープ：この噴射の開始（計画時刻の噴射時間の半分前）の%d秒前まで時間加速"
+  },
   "BUY": {
     "description": "Commodities and equipment prices",
     "message": "買う"
@@ -274,6 +486,230 @@
   "CLOSE": {
     "description": "",
     "message": "閉じる"
+  },
+  "CLOUD_CLUSTERING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud clustering sliders",
+    "message": "局所被覆率：この層に雲がある場所で空のどれだけが雲に覆われるか。全体の被覆率は変わりません。0 = 惑星の大部分に広がるちぎれ雲（その中で空の約40%）、100 = 間に大きな晴れ間がある、ほぼ全天を覆う雲層（約85～90%）。"
+  },
+  "CLOUD_CLUSTERING_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud clustering sliders, in percent",
+    "message": "雲の集中度（%）"
+  },
+  "CLOUD_CLUSTERING_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud clustering slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "集中度、{layer}"
+  },
+  "CLOUD_COVER_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud cover sliders",
+    "message": "全体被覆率：この層が惑星全体のどれだけを覆うか。100 = 物理的に算出した値（地球：下層 約40%、中層 約27%、上層 約30%）、50 = その約半分、0 = 層なし。100を超えると徐々に全天曇りに近づきます。"
+  },
+  "CLOUD_COVER_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud cover sliders, in percent",
+    "message": "雲量倍率（%）"
+  },
+  "CLOUD_COVER_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud cover slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "雲量、{layer}"
+  },
+  "CLOUD_LAYER_HIGH": {
+    "description": "Settings window, The Last Frontier tab: name of the high cloud layer, inserted as {layer} into the per-layer slider labels (e.g. CLOUD_COVER_LAYER); lower case in English because it follows a comma",
+    "message": "上層（巻雲）"
+  },
+  "CLOUD_LAYER_LOW": {
+    "description": "Settings window, The Last Frontier tab: name of the low cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "下層（層雲／層積雲）"
+  },
+  "CLOUD_LAYER_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: name of the medium cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "中層（高積雲）"
+  },
+  "CLOUD_QUALITY": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud ray-marching quality",
+    "message": "雲の品質"
+  },
+  "CLOUD_QUALITY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud quality' combo box",
+    "message": "地表付近や空中で、雲を通る各視線に沿って取るサンプル数。少ないほど高速で、差は主に雲に近いときの細部に出ます。"
+  },
+  "CLOUD_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "高（32ステップ）"
+  },
+  "CLOUD_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "低（16ステップ）"
+  },
+  "CLOUD_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "中（24ステップ）"
+  },
+  "CLOUD_QUALITY_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "最高（48ステップ）"
+  },
+  "CLOUD_RESOLUTION": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud rendering resolution near the ground. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "雲の解像度"
+  },
+  "CLOUD_RESOLUTION_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution' combo box",
+    "message": "地表付近や空中で雲を描画する解像度（使用される最も粗い解像度）。その後画面に合わせて拡大されます。高いほど鮮明で重くなります。"
+  },
+  "CLOUD_RESOLUTION_FULL": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option, render clouds at the full screen resolution",
+    "message": "画面解像度と同じ"
+  },
+  "CLOUD_RESOLUTION_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "高（720ライン）"
+  },
+  "CLOUD_RESOLUTION_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "低（360ライン）"
+  },
+  "CLOUD_RESOLUTION_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "中（540ライン）"
+  },
+  "CLOUD_RESOLUTION_SPACE": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the finest cloud resolution, used from space. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "宇宙からの雲の解像度"
+  },
+  "CLOUD_RESOLUTION_SPACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution from space' combo box",
+    "message": "使用される最も細かい解像度。惑星の上空高くでは雲の描画は軽くなりますが、細部が画面上で小さくなるため、細部が必要とする分だけ解像度が徐々にこの値まで上がります。地球では見下ろした場合、高度約100 kmで上がり始め、約450 kmで到達します。雲が大きい惑星（薄く冷たい大気、または雲のサイズ設定が大きい場合）ではもっと後になります。"
+  },
+  "CLOUD_RESOLUTION_ULTRA": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "ウルトラ（1440ライン）"
+  },
+  "CLOUD_RESOLUTION_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "最高（1080ライン）"
+  },
+  "CLOUD_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for shadows cast by clouds",
+    "message": "雲の影"
+  },
+  "CLOUD_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud shadows' combo box. 'Soft' and 'Detailed' should match CLOUD_SHADOWS_SOFT and CLOUD_SHADOWS_DETAILED",
+    "message": "地面、都市、船に落ちる雲の影。ソフト：雲域の下を暗くします。詳細：雲一つひとつの影。どちらも雲の解像度で計算されるため、負荷はわずかです。"
+  },
+  "CLOUD_SHADOWS_DETAILED": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, the shadow of each individual cloud",
+    "message": "詳細"
+  },
+  "CLOUD_SHADOWS_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, dimming under whole cloud fields",
+    "message": "ソフト"
+  },
+  "CLOUD_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud size sliders",
+    "message": "この層の個々の雲の大きさ。100 = 基本サイズ、最大16倍。被覆率は変わりません。"
+  },
+  "CLOUD_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud size sliders, in percent",
+    "message": "雲のサイズ倍率（%）"
+  },
+  "CLOUD_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "サイズ、{layer}"
+  },
+  "CLOUD_SOFTENING": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for how much the cloud image is blurred when upscaled",
+    "message": "雲のぼかし"
+  },
+  "CLOUD_SOFTENING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud softening' combo box",
+    "message": "雲の画像を拡大するときにぼかし、低い解像度を目立たなくします。"
+  },
+  "CLOUD_SOFTENING_SHARP": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, no blur",
+    "message": "シャープ"
+  },
+  "CLOUD_SOFTENING_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, moderate blur",
+    "message": "ソフト"
+  },
+  "CLOUD_SOFTENING_VERY_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, strong blur",
+    "message": "とてもソフト"
+  },
+  "CLOUD_SPACE_DETAIL": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how soon cloud resolution rises when seen from space, in percent",
+    "message": "宇宙からの雲の詳細度（%）"
+  },
+  "CLOUD_SPACE_DETAIL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud detail from space' slider. The quoted names should match the translations of CLOUD_RESOLUTION and CLOUD_RESOLUTION_SPACE",
+    "message": "雲が遠ざかって画面上の細部が小さくなるにつれ、雲の解像度が「雲の解像度」から「宇宙からの雲の解像度」へどれだけ早く上がるか。どの惑星でも同じように働きます。半分にすると鮮明化が起こる距離が2倍になります（軽くなる）。0 = 鮮明化しない。地球で4K、見下ろした場合：100なら約450 km、50なら約900 km、25なら約1800 kmで最大解像度に達します。"
+  },
+  "CLOUD_SPEED": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how fast clouds drift and evolve",
+    "message": "雲の速度"
+  },
+  "CLOUD_SPEED_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud speed' slider",
+    "message": "雲が流れ、形を変える速さ。実際の風速に対する倍率です。"
+  },
+  "CLOUD_SYSTEM_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud system size sliders",
+    "message": "雲系（雲の集まり）とその間の晴れ間の大きさ。被覆率は変わりません。"
+  },
+  "CLOUD_SYSTEM_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud system size sliders, in percent",
+    "message": "雲系サイズ倍率（%）"
+  },
+  "CLOUD_SYSTEM_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud system size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "雲系サイズ、{layer}"
+  },
+  "CLOUD_TEMPORAL": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for temporal cloud reconstruction",
+    "message": "雲の時間的再構成"
+  },
+  "CLOUD_TEMPORAL_16X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 16 cloud pixels is traced each frame",
+    "message": "16x（1フレームに16ピクセル中1）"
+  },
+  "CLOUD_TEMPORAL_4X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 4 cloud pixels is traced each frame",
+    "message": "4x（1フレームに4ピクセル中1）"
+  },
+  "CLOUD_TEMPORAL_9X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 9 cloud pixels is traced each frame",
+    "message": "9x（1フレームに9ピクセル中1）"
+  },
+  "CLOUD_TEMPORAL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Temporal cloud reconstruction' combo box. 'Off' refers to the OFF option",
+    "message": "各フレームで雲のピクセルの一部だけを計算し、残りは前のフレームから補います。4x：4分の1、画像は4フレームごとに更新。9x：9分の1、さらに約2倍速く、9フレームごとに更新（高フレームレート向け。素早く旋回すると雲の縁が一瞬にじむことがあります）。16x：16分の1、さらに速く、16フレームごとに更新（120 fps以上向け。素早い旋回時や地平線付近でにじみが増えます）。オフ：毎フレーム全ピクセル、最も重い。"
+  },
+  "CLOUD_TRANSPARENCY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud transparency sliders",
+    "message": "この層の雲を通過する光の量。100 = 物理的に算出した値、200 = 厚さ半分、50 = 厚さ2倍。被覆率は変わりませんが、非常に高い値では薄い雲（巻雲）が見えにくくなります。"
+  },
+  "CLOUD_TRANSPARENCY_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud transparency sliders, in percent",
+    "message": "雲の透明度倍率（%）"
+  },
+  "CLOUD_TRANSPARENCY_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud transparency slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "透明度、{layer}"
+  },
+  "CLOUD_VOLUMETRIC": {
+    "description": "Settings window, The Last Frontier tab: checkbox enabling volumetric clouds",
+    "message": "ボリュメトリック雲"
+  },
+  "CLOUD_VOLUMETRIC_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
+    "message": "大気のある惑星の雲層。マルチサンプリング（アンチエイリアス）有効時は描画されません。"
+  },
+  "CLOUD_WEATHER_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",
+    "message": "気象パターンをキャッシュ"
+  },
+  "CLOUD_WEATHER_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cached weather patterns' checkbox",
+    "message": "最も近い惑星の大規模な気象パターン（嵐、前線）をピクセルごとではなく一度だけマップに計算します。ビデオメモリ約38 MBで雲が約15～20%高速になります。見た目は変わりません。"
   },
   "COLLAPSE": {
     "description": "Close / collapse an open folder or group",
@@ -895,6 +1331,14 @@
     "description": "Player combat rating",
     "message": "Harmless"
   },
+  "HEAD_BOB": {
+    "description": "Game option: the view bobs up and down as the player walks on foot",
+    "message": "徒歩時の視点の揺れ"
+  },
+  "HEAD_BOB_DESC": {
+    "description": "The tooltip of the Head Bob on Foot option in the settings menu",
+    "message": "船外で歩いたり走ったりするとき、一歩ごとに視点が軽く揺れます"
+  },
   "HEAVY_CARGO_SHUTTLE": {
     "description": "",
     "message": "大型貨物シャトル"
@@ -971,6 +1415,10 @@
     "description": "Tooltip for button",
     "message": "Up cruise mode"
   },
+  "HUD_BUTTON_DEPLOY_ROVER": {
+    "description": "Tooltip: set the surface rover down beside the landed ship and drive it",
+    "message": "ローバーを運転"
+  },
   "HUD_BUTTON_DISABLE_AUTOPILOT": {
     "description": "Tooltip for button",
     "message": "Disable autopilot"
@@ -987,9 +1435,17 @@
     "description": "Tooltip for button",
     "message": "Disable follow mode"
   },
+  "HUD_BUTTON_DISEMBARK": {
+    "description": "Tooltip: get out of the landed ship on foot",
+    "message": "降船"
+  },
   "HUD_BUTTON_EQUIPMENT": {
     "description": "Tooltip: Equipment",
     "message": "装備"
+  },
+  "HUD_BUTTON_EVA": {
+    "description": "Tooltip: leave the ship in space, floating beside it with the jetpack (extravehicular activity)",
+    "message": "船外活動"
   },
   "HUD_BUTTON_EXTERNAL_VIEW": {
     "description": "Tooltip: External camera view",
@@ -1055,9 +1511,21 @@
     "description": "Tooltip: Landing gear is up",
     "message": "ランディングギア格納状態"
   },
+  "HUD_BUTTON_LIGHTS_ARE_OFF": {
+    "description": "Tooltip: The ship's lamps, lighting the ground and everything around, are off; clicking switches them on",
+    "message": "ライトはオフ"
+  },
+  "HUD_BUTTON_LIGHTS_LEVEL": {
+    "description": "Tooltip: The ship's lamps are on at brightness level {level} of {max}; clicking steps to the next level, or off after the brightest",
+    "message": "ライト：レベル {level}/{max}"
+  },
   "HUD_BUTTON_MANUAL_CONTROL": {
     "description": "Tooltip: Manual control",
     "message": "手動コントロール"
+  },
+  "HUD_BUTTON_PLAN_HEADING": {
+    "description": "Tooltip of the flight control state button while Auto Orientation holds the burn direction.",
+    "message": "計画方向：船をアクティブな噴射の方向に保持"
   },
   "HUD_BUTTON_ROTATION_DAMPING_IS_OFF": {
     "description": "Tooltip: Rotation damping is off",
@@ -1066,6 +1534,10 @@
   "HUD_BUTTON_ROTATION_DAMPING_IS_ON": {
     "description": "Tooltip: Rotation damping is on",
     "message": "回転減衰機能オン"
+  },
+  "HUD_BUTTON_ROVER_PARKED": {
+    "description": "Tooltip of the disabled rover button while the surface rover is out of the ship, parked where the player left it: the planet (or moon) and the star system, e.g. 'The rover is parked on Mars, Sol'",
+    "message": "ローバーは{system}の{planet}に駐車中"
   },
   "HUD_BUTTON_SET_SPEED": {
     "description": "Tooltip: set speed",
@@ -1114,6 +1586,10 @@
   "HUD_BUTTON_UNDOCK": {
     "description": "Tooltip: Undock",
     "message": "ドッキング解除"
+  },
+  "HUD_BUTTON_UNKNOWN_FLIGHT_STATE": {
+    "description": "Tooltip of the flight control state button for an unrecognised state (fallback).",
+    "message": "不明な飛行制御状態"
   },
   "HUD_CARGO_MASS": {
     "description": "Cargo Mass",
@@ -1755,6 +2231,22 @@
     "description": "3d model of the ship",
     "message": "Model"
   },
+  "MOD_GRAPHICS": {
+    "description": "Mod settings tab section",
+    "message": "グラフィック"
+  },
+  "MOD_ON_FOOT": {
+    "description": "Mod settings tab section",
+    "message": "徒歩とローバー"
+  },
+  "MOD_OPTIONS": {
+    "description": "Settings window tab with the settings The Last Frontier adds",
+    "message": "The Last Frontier（MOD）"
+  },
+  "MOD_SOUND": {
+    "description": "Mod settings tab section",
+    "message": "サウンド"
+  },
   "MONEY": {
     "description": "",
     "message": "Money"
@@ -1943,9 +2435,45 @@
     "description": "Label for the point of an orbit furthest from the orbited body",
     "message": "Apoapsis"
   },
+  "ORBIT_IMPACT_IN": {
+    "description": "Label next to the predicted impact point on an orbit (system map and 3D orbit view). %s = time until impact.",
+    "message": "衝突まで %s"
+  },
+  "ORBIT_MARKER_APOAPSIS": {
+    "description": "Short abbreviation for apoapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the apoapsis.",
+    "message": "遠点"
+  },
+  "ORBIT_MARKER_ASCENDING_NODE": {
+    "description": "Short abbreviation for ascending node: orbit marker label (followed by its altitude) and the button that moves a burn to the ascending node.",
+    "message": "昇交点"
+  },
+  "ORBIT_MARKER_DESCENDING_NODE": {
+    "description": "Short abbreviation for descending node: orbit marker label (followed by its altitude) and the button that moves a burn to the descending node.",
+    "message": "降交点"
+  },
+  "ORBIT_MARKER_PERIAPSIS": {
+    "description": "Short abbreviation for periapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the periapsis.",
+    "message": "近点"
+  },
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "Periapsis"
+  },
+  "ORBIT_VIEW_FOCUS_BODY": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",
+    "message": "3D軌道ビューの中心：周回天体（クリックで自機を中心に）"
+  },
+  "ORBIT_VIEW_FOCUS_PLAYER": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the player's ship.",
+    "message": "3D軌道ビューの中心：自機（クリックで周回天体を中心に）"
+  },
+  "ORBIT_VIEW_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the floating 3D orbit view.",
+    "message": "3D軌道ビューを隠す"
+  },
+  "ORBIT_VIEW_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the floating 3D orbit view.",
+    "message": "3D軌道ビューを表示"
   },
   "OUTER_ARM": {
     "description": "Arm of the Milky Way galaxy",
@@ -2062,6 +2590,218 @@
   "PLANET_TEXTURES": {
     "description": "",
     "message": "惑星テクスチャ"
+  },
+  "PLANNER_ADD_BURN": {
+    "description": "Orbit planner button that adds a burn to the plan.",
+    "message": "噴射を追加"
+  },
+  "PLANNER_APPROACH_ALTITUDE": {
+    "description": "Orbit planner closest approach distance over a planet or moon. %s = altitude.",
+    "message": "地表から%s"
+  },
+  "PLANNER_APPROACH_FLYBY": {
+    "description": "Orbit planner label: altitude to pass a planet or moon at.",
+    "message": "フライバイ高度"
+  },
+  "PLANNER_APPROACH_FLYBY_TIP": {
+    "description": "Tooltip of the Flyby altitude setting.",
+    "message": "惑星や衛星の地表からこの高さを通過します。影響圏に入るとその天体の重力で軌道が曲がるため、曲がった軌道の最低点がこの高度になるよう狙います。"
+  },
+  "PLANNER_APPROACH_FROM_NAV": {
+    "description": "Orbit planner tooltip: the approach target is the navigation target.",
+    "message": "航法目標 - 別のものにするにはマップで天体を選択"
+  },
+  "PLANNER_APPROACH_FROM_SELECTION": {
+    "description": "Orbit planner tooltip: the approach target comes from the map selection.",
+    "message": "マップで選択した天体"
+  },
+  "PLANNER_APPROACH_IMPACT": {
+    "description": "Orbit planner closest approach result when the plan hits the target body. %s = time until impact.",
+    "message": "目標と衝突まで %s"
+  },
+  "PLANNER_APPROACH_INTERCEPT": {
+    "description": "Orbit planner button: plan a 1-burn intercept.",
+    "message": "インターセプト"
+  },
+  "PLANNER_APPROACH_INTERCEPT_BODY_TIP": {
+    "description": "Tooltip of the Intercept button for a planet or moon target.",
+    "message": "1回噴射：フライバイ高度で惑星や衛星を通過"
+  },
+  "PLANNER_APPROACH_INTERCEPT_TIP": {
+    "description": "Tooltip of the Intercept button for a ship or station target.",
+    "message": "1回噴射：目標と会合する遷移軌道"
+  },
+  "PLANNER_APPROACH_NO_TARGET": {
+    "description": "Orbit planner approach section when there is no target.",
+    "message": "マップで天体を選択するか、航法目標を設定してください"
+  },
+  "PLANNER_APPROACH_ONE_BURN": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "1回の噴射"
+  },
+  "PLANNER_APPROACH_ORBIT": {
+    "description": "Orbit planner label: altitude of the circular orbit a rendezvous with a planet or moon ends in.",
+    "message": "軌道高度"
+  },
+  "PLANNER_APPROACH_ORBIT_TIP": {
+    "description": "Tooltip of the Orbit altitude setting.",
+    "message": "捕獲噴射後の円軌道の高度。天体の重力で曲がった軌道の最低点がこの高度になるよう狙い、そこで捕獲噴射を行います。"
+  },
+  "PLANNER_APPROACH_PLAN": {
+    "description": "Orbit planner button that computes the approach plan.",
+    "message": "接近を計画"
+  },
+  "PLANNER_APPROACH_PLAN_TIP": {
+    "description": "Tooltip of the 'Plan approach' button. %s = PLANNER_APPROACH_ONE_BURN or PLANNER_APPROACH_TWO_BURNS.",
+    "message": "計画を、現在の軌道からΔvが最小になるタイミングの%sに置き換えます。別の天体を回る目標へは段階的に向かい、途中の各天体の周回軌道に一旦入ります。\n遷移軌道が見つからない場合、計画は変わりません。"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS": {
+    "description": "Orbit planner button: plan a 2-burn rendezvous.",
+    "message": "ランデブー"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_BODY_TIP": {
+    "description": "Tooltip of the Rendezvous button for a planet or moon target.",
+    "message": "2回噴射：下記の高度で惑星や衛星を通過し、影響圏内の最接近点で逆噴射して、その高度の円軌道に入る"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_TIP": {
+    "description": "Tooltip of the Rendezvous button for a ship or station target.",
+    "message": "2回噴射：目標と会合し、到着時に速度を合わせる"
+  },
+  "PLANNER_APPROACH_RESULT": {
+    "description": "Orbit planner closest approach result. 1st %s = distance (or PLANNER_APPROACH_ALTITUDE), 2nd %s = time until it.",
+    "message": "%s（あと%s）"
+  },
+  "PLANNER_APPROACH_RESULT_TIP": {
+    "description": "Tooltip of the closest approach result.",
+    "message": "最後の噴射から1周までの、計画軌道と目標の最接近"
+  },
+  "PLANNER_APPROACH_SPEED": {
+    "description": "Orbit planner closest approach relative speed. %s = speed.",
+    "message": "相対速度 %s"
+  },
+  "PLANNER_APPROACH_STAND_OFF": {
+    "description": "Orbit planner label: distance behind a ship or station target to meet it at.",
+    "message": "離隔距離"
+  },
+  "PLANNER_APPROACH_STAND_OFF_FORMAT": {
+    "description": "Orbit planner drag field format for the stand-off distance. %.1f = kilometres (keep it exactly).",
+    "message": "%.1f km後方"
+  },
+  "PLANNER_APPROACH_STAND_OFF_TIP": {
+    "description": "Tooltip of the Stand-off setting.",
+    "message": "船やステーションと、その中心ではなく同じ軌道上でこの距離だけ後方で会合します。ランデブー後は両者が同じ軌道を飛ぶため、この間隔が保たれます。"
+  },
+  "PLANNER_APPROACH_TARGET": {
+    "description": "Orbit planner approach section. %s = target name.",
+    "message": "目標：%s"
+  },
+  "PLANNER_APPROACH_TITLE": {
+    "description": "Orbit planner section header for planning an approach to a target.",
+    "message": "最接近"
+  },
+  "PLANNER_APPROACH_TWO_BURNS": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "2回の噴射"
+  },
+  "PLANNER_BURN_IS_COMPLETE": {
+    "description": "Orbit planner tooltip of the snap and Circularize buttons for a burn that has been flown.",
+    "message": "この噴射は完了しています"
+  },
+  "PLANNER_CIRCULARIZE": {
+    "description": "Orbit planner button that makes the orbit circular.",
+    "message": "円軌道化"
+  },
+  "PLANNER_CIRCULARIZE_AT_APSIS": {
+    "description": "Part of the Circularize tooltip. 1st %s = periapsis / apoapsis, 2nd %s = time until it.",
+    "message": "%s（あと%s）"
+  },
+  "PLANNER_CIRCULARIZE_AT_POINT": {
+    "description": "Part of the Circularize tooltip when no apsis lies ahead.",
+    "message": "この噴射の地点（前方に近点も遠点もない）"
+  },
+  "PLANNER_CIRCULARIZE_NONE": {
+    "description": "Orbit planner Circularize button tooltip when it is not possible.",
+    "message": "この噴射の軌道はここでは円軌道化できません"
+  },
+  "PLANNER_CIRCULARIZE_TIP": {
+    "description": "Orbit planner Circularize button tooltip. 1st %s = where (PLANNER_CIRCULARIZE_AT_APSIS or PLANNER_CIRCULARIZE_AT_POINT), 2nd %s = delta-v needed.",
+    "message": "%sで軌道を円にします：Δv %s。\nこの噴射をそこへ移し、順行・法線・動径の値を置き換えます。"
+  },
+  "PLANNER_DV_AFTER": {
+    "description": "Orbit planner delta-v summary label: delta-v left after the plan.",
+    "message": "計画後"
+  },
+  "PLANNER_DV_AFTER_TIP": {
+    "description": "Tooltip of the After plan delta-v line.",
+    "message": "計画した全噴射を終えた後に残るΔv"
+  },
+  "PLANNER_DV_AVAILABLE": {
+    "description": "Orbit planner delta-v summary label: delta-v the ship has.",
+    "message": "使用可能"
+  },
+  "PLANNER_DV_AVAILABLE_TIP": {
+    "description": "Tooltip of the Available delta-v line.",
+    "message": "現在の質量で船の燃料が生むΔv"
+  },
+  "PLANNER_DV_PLAN": {
+    "description": "Orbit planner delta-v summary label: delta-v the remaining burns need.",
+    "message": "計画"
+  },
+  "PLANNER_DV_PLAN_TIP": {
+    "description": "Tooltip of the Plan delta-v line.",
+    "message": "残りの噴射に必要なΔv"
+  },
+  "PLANNER_DV_SHORT": {
+    "description": "Orbit planner delta-v summary when the plan needs more than the ship has. %s = missing delta-v.",
+    "message": "%s不足"
+  },
+  "PLANNER_DV_SHORT_TIP": {
+    "description": "Tooltip of the After plan line when delta-v is short.",
+    "message": "計画に必要なΔvが燃料で得られる量を超えています"
+  },
+  "PLANNER_EVENT_APOAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "遠点"
+  },
+  "PLANNER_EVENT_ASCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "昇交点"
+  },
+  "PLANNER_EVENT_DESCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "降交点"
+  },
+  "PLANNER_EVENT_PERIAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "近点"
+  },
+  "PLANNER_REF_EQUATOR": {
+    "description": "Orbit planner reference plane for nodes: the body's equatorial plane. %s = body name.",
+    "message": "%sの赤道"
+  },
+  "PLANNER_REF_TARGET_ORBIT": {
+    "description": "Orbit planner reference plane for nodes: the target's orbital plane. %s = target name.",
+    "message": "%sの軌道"
+  },
+  "PLANNER_REMAINING_DV": {
+    "description": "Orbit planner tooltip of a burn's remaining delta-v.",
+    "message": "この噴射の残りΔv"
+  },
+  "PLANNER_SNAP_NODE_NONE": {
+    "description": "Orbit planner AN/DN button tooltip when the node does not exist. 1st %s = node name, 2nd %s = reference plane.",
+    "message": "この噴射の前の軌道上、前方に%s（基準：%s）はありません"
+  },
+  "PLANNER_SNAP_NODE_TIP": {
+    "description": "Orbit planner AN/DN button tooltip. 1st %s = node name, 2nd %s = reference plane (PLANNER_REF_TARGET_ORBIT / PLANNER_REF_EQUATOR), 3rd %s = time until it.",
+    "message": "この噴射を次の%s（基準：%s）へ移します（あと%s）。\nもう一度クリックで次の周回へ。"
+  },
+  "PLANNER_SNAP_NONE": {
+    "description": "Orbit planner Pe/Ap button tooltip when the event does not exist. %s = event name.",
+    "message": "この噴射の前の軌道上、前方に%sはありません"
+  },
+  "PLANNER_SNAP_TIP": {
+    "description": "Orbit planner Pe/Ap button tooltip. 1st %s = event name (periapsis / apoapsis), 2nd %s = time until it.",
+    "message": "この噴射を、その前の軌道の次の%sへ移します（あと%s）。\nもう一度クリックで次の周回へ。"
   },
   "PLEASE_DESIGN_NEW_PAINTJOB": {
     "description": "",
@@ -2291,6 +3031,30 @@
     "description": "For hyperjump planner",
     "message": "ジャンプのルート"
   },
+  "ROVER_BAY": {
+    "description": "Used in ShipInfo view, followed by a yes/no depending on whether the ship has a vehicle bay for the surface rover",
+    "message": "ローバーベイ"
+  },
+  "ROVER_DEFAULT_VIEW": {
+    "description": "Game option: the view the surface rover starts in when the player gets in",
+    "message": "乗車時のローバー視点"
+  },
+  "ROVER_DEFAULT_VIEW_DESC": {
+    "description": "The tooltip of the Rover View on Getting In option in the settings menu",
+    "message": "ローバーに乗り込むとき、または船から運転して出るときの視点。運転中も視点キーで切り替えられます"
+  },
+  "ROVER_VIEW_CAB": {
+    "description": "Rover view option: from the driver's seat, with the cab drawn",
+    "message": "運転席から"
+  },
+  "ROVER_VIEW_EXTERNAL": {
+    "description": "Rover view option: from outside, circling the rover",
+    "message": "外から"
+  },
+  "ROVER_VIEW_NO_MODEL": {
+    "description": "Rover view option: from the driver's eyes, without the rover drawn (as the ship's internal view)",
+    "message": "運転者の目線（ローバー非表示）"
+  },
   "SAFETY_LOCKOUT": {
     "description": "Ship jump status",
     "message": "Safety lockout"
@@ -2387,6 +3151,22 @@
     "description": "UI option",
     "message": "設定"
   },
+  "SETTINGS_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box choosing sun shadow quality",
+    "message": "影"
+  },
+  "SETTINGS_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadows' combo box",
+    "message": "船、ステーション、都市の建物、地形が地面や互いに落とす太陽の影。数値はシャドウマップの解像度で、高いほど鮮明になりビデオメモリを多く使います（約12 / 48 / 192 MB）。自機周辺のくっきりした影は毎フレーム描き直され、遠くの影は太陽かカメラが動くまで再利用されるため、負荷はわずかです。"
+  },
+  "SETTINGS_WIND_HOWL": {
+    "description": "Settings window, The Last Frontier tab, Sound: label of the slider for the surface wind sound volume, in percent",
+    "message": "風のうなり（%）"
+  },
+  "SETTINGS_WIND_HOWL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Wind howl' slider",
+    "message": "大気のある惑星でホバリング中、着陸中、地表近くを低速飛行中に聞こえる地表の風の音量。100が設計上の標準で、効果音の音量にも連動します。"
+  },
   "SET_AS_TARGET": {
     "description": "",
     "message": "Set destination as navigation target"
@@ -2410,6 +3190,42 @@
   "SET_TO_ZERO": {
     "description": "For the speed limiter button",
     "message": "Set to zero"
+  },
+  "SHADOW_DARKNESS": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how dark shadows are, in percent",
+    "message": "影の濃さ（%）"
+  },
+  "SHADOW_DARKNESS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow darkness' slider",
+    "message": "地球のような空の下で、影が日光をどれだけ遮るか。残りは影の中にも届く空からの光を表します。大気が薄いほど影は濃くなり、真空では完全に真っ暗になります。"
+  },
+  "SHADOW_DEBUG_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox for a debug view tinting the scene by shadow map",
+    "message": "シャドウマップを表示（デバッグ）"
+  },
+  "SHADOW_DEBUG_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Show shadow maps (debug)' checkbox",
+    "message": "使用するシャドウマップに応じてすべてを着色します：赤は自機周辺の精細なマップ、緑は中間、青は遠方のマップ。"
+  },
+  "SHADOW_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how far shadows are drawn, in metres",
+    "message": "影の距離（m）"
+  },
+  "SHADOW_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow distance' slider",
+    "message": "カメラからどこまでステーション、都市、駐機中の船が影を落とすか。遠くするほど同じシャドウマップを広い範囲に引き伸ばすため、遠くの影は粗くなります。"
+  },
+  "SHADOW_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "高（4096）"
+  },
+  "SHADOW_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "低（1024）"
+  },
+  "SHADOW_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "中（2048）"
   },
   "SHIP": {
     "description": "",
@@ -2575,6 +3391,50 @@
     "description": "Tab item in the start game menu",
     "message": "Summary"
   },
+  "SURFACE_BOARD_SHIP": {
+    "description": "On-foot HUD prompt: the key and this board the ship",
+    "message": "乗船"
+  },
+  "SURFACE_ENTER_ROVER": {
+    "description": "On-foot HUD prompt: the key and this get into the surface rover",
+    "message": "ローバーに乗る"
+  },
+  "SURFACE_EVA_SHIP": {
+    "description": "EVA HUD: distance to the player's ship and the speed relative to it, e.g. 'Ship 35 m, 0.4 m/s'",
+    "message": "船 {distance}、{speed}"
+  },
+  "SURFACE_EXIT_ROVER": {
+    "description": "Rover HUD prompt: the key and this get out of the surface rover",
+    "message": "降りる"
+  },
+  "SURFACE_FREE_CURSOR": {
+    "description": "On-foot HUD hint: hold Alt to free the mouse cursor",
+    "message": "Altを押している間マウスカーソル"
+  },
+  "SURFACE_JETPACK": {
+    "description": "On-foot HUD: label of the jetpack fuel bar",
+    "message": "ジェットパック"
+  },
+  "SURFACE_ROVER_SPEED": {
+    "description": "Rover HUD: the speed in kilometres per hour, e.g. '42 km/h'",
+    "message": "{speed} km/h"
+  },
+  "SURFACE_ROVER_VIEW": {
+    "description": "Rover HUD hint: the key and this change the view (from the cab, without the rover's model, from outside)",
+    "message": "視点切り替え"
+  },
+  "SURFACE_STOW_ROVER": {
+    "description": "Rover HUD prompt next to the ship: the key and this drive the rover into the hold and board the ship",
+    "message": "ローバーを収納して乗船"
+  },
+  "SURFACE_YOUR_ROVER": {
+    "description": "On-foot HUD: label of the marker of the player's surface rover on the compass",
+    "message": "ローバー"
+  },
+  "SURFACE_YOUR_SHIP": {
+    "description": "On-foot HUD: label of the marker of the player's own ship on the compass",
+    "message": "船"
+  },
   "SYSTEM_BODY_INDEX_IS_OUT_OF_RANGE": {
     "description": "Message when restoring savegame",
     "message": "System body index is out of range"
@@ -2615,6 +3475,26 @@
     "description": "Tooltip introducing the system security rating",
     "message": "System safety rating"
   },
+  "SYSTEM_VIEW_FOLLOW_PLAN": {
+    "description": "System map button tooltip: follow the ship's planned position.",
+    "message": "計画上の自機の位置を追う - マップの時刻を動かすと計画に沿って移動"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_15": {
+    "description": "System map combo item: latitude/longitude lines every 15 degrees.",
+    "message": "15°ごと"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_30": {
+    "description": "System map combo item: latitude/longitude lines every 30 degrees.",
+    "message": "30°ごと"
+  },
+  "SYSTEM_VIEW_LATLONG_LINES": {
+    "description": "System map: button tooltip and settings label for latitude/longitude lines on planets and moons.",
+    "message": "緯線と経線"
+  },
+  "SYSTEM_VIEW_ZOOM_TO_SHIP": {
+    "description": "System map button tooltip: centre and zoom the map on the player's ship.",
+    "message": "自機にズーム"
+  },
   "TECH_CERTIFIED": {
     "description": "Lobby screen shows the tech level (an integer number) of the station",
     "message": "このステーションはレベル{tech_level}テクノロジー証明を受けています。"
@@ -2626,6 +3506,14 @@
   "TECH_LEVEL": {
     "description": "System view label for technology level",
     "message": "Tech Level"
+  },
+  "TERRAIN_DETAIL_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the slider for the planet terrain level-of-detail distance",
+    "message": "地形の詳細距離"
+  },
+  "TERRAIN_DETAIL_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Terrain detail distance' slider",
+    "message": "惑星の地形がどこまで完全なメッシュ詳細を持つか：パッチ幅のこの倍数より近づくと地形パッチが細分化されます。高いほど遠くからも鮮明ですが、生成する地形（CPU）と描画する三角形が増えます。これは中高度（地球で約200～2,000 km）での値で、負荷が大きいか効果が小さい地表付近と高軌道では自動的に下げられます。15 = 既定値、1 = 元のPioneerの動作。"
   },
   "TEXTURE_COMPRESSION": {
     "description": "",

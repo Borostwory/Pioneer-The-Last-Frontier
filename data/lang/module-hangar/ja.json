@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "搭乗中"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "「{ship}」に搭乗中"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "飛行中"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "ベイを追加"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "全部"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "積めるだけ"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "「{ship}」に搭載済み：{cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "別のステーションへ輸送中です。"
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "ここではすでにハンガーをリースしています。"
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "すでに返送中です。"
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "他の場所で待機中："
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "ミッション"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "ベイ数"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "ベイは後から追加・削除できます。"
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "配送を予約"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "移動を予約"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "「{ship}」はここのハンガーに保管されています。"
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "「{ship}」の船体を売却しました：装備品{items}個は装備倉庫へ、貨物{tons} tは貨物倉庫へ、クルー{crew}人はラウンジへ移りました。"
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "乗船させる"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "装備はハンガーの装備倉庫へ、貨物はハンガーの貨物倉庫へ移り、船体だけを売却します。"
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "装備も貨物もそのまま保管し、新しい船には何も移しません。代金は全額支払います。"
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "装備ごと売却します。貨物はすべて新しい船に移ります。"
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "「{ship}」の船体だけを下取りに出す"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "「{ship}」をここのベイに保管する"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "「{ship}」を下取りに出す"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "{ship}を購入しますか？"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "乗客が搭乗中"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "配送をキャンセル"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "{refund}（代金の半額）が返金され、{station}へ戻ります。到着は{date}です。"
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "{what}の配送をキャンセルしますか？"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "現在は取り外せません"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station}は地上宇宙港ですが、この船には大気シールドのスロットがありません。"
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "クルーが{min}人未満では発進できません。"
+  },
+  "CARGO": {
+    "description": "",
+    "message": "貨物"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "搭載貨物"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "貨物室"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "これがないと積んでいる貨物が収まりません"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "{station}の貨物倉庫"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "貨物倉庫は空です。"
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "ハンガーの貨物倉庫に荷を降ろしたり、操縦中の船に積み込んだりできます。容量無制限・無料で、ミッション貨物は印が付いたままです。"
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "貨物"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "到着"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "ベイ"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "ベイ料金"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "費用"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "距離"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "場所"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "名前"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "支払済み期限"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "駐機料"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "月額"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "船"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "最高スキル"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "ステーション"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "状態"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "倉庫"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "種類"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "乗船する"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/週"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/泊 + {wage}/週"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "前払い残高：{credit}（全ベイ共通）。現在の賃料なら{date}頃まで持ちます。その後は毎月1日に口座から賃料が引き落とされます。"
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "{station}のハンガーの前払い賃料は{date}に切れます。その後は毎月1日に請求されます。"
+  },
+  "CREW": {
+    "description": "",
+    "message": "クルー"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name}が{station}のクルーラウンジに到着しました。"
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "「{ship}」のクルー（{min}～{max}人）："
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "クルー{crew}人（この船の定員は{min}～{max}人）"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "クルーラウンジ"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "新しい船のクルー"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "チェックを入れなかった者はここのラウンジで待機します。"
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "移動中は賃金の半額を支払い、ラウンジ料金はかかりません。到着後は現地のラウンジで待機します。"
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "「{ship}」をどうしますか？ 1つ選んでください："
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "配送サービス"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "「{ship}」を配送"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "未払い賃金が{owed}あります。相手は快く思わないでしょう。{limit}を超える未払いは契約詐欺とみなされます。"
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name}はここのラウンジで待機中です。契約が終了し、クルーから外れます。"
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "{name}を解雇しますか？"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "この船は{station}のドッキングポートに合いません。一度出発すると、そこには再びドッキングできません。"
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "燃料 {fuel} t"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "空き"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "空"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "空き"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "リースを終了"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "手放せるのは空のハンガーだけです：船・装備・物品がなく、輸送中のものも未払い賃料もないこと。"
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "装備"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "装備品{count}個が{station}のハンガー倉庫に到着しました。"
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "ここの装備…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "装備"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "装備容積：{capacity} m³ 中 {used} m³ 使用"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "取り付け先"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "「{ship}」に取り付ける"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "艦隊"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "ラウンジのクルー"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "ハンガー"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "船"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "装備倉庫：{items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "この船で飛ぶ"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "口座から引き落とされます。"
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "前払い残高から支払われます。"
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "前払い残高から支払い、不足分は口座から引き落とされます。"
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "発送元："
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "発送元：{station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "燃料"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "ラウンジで待機する"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "ハンガータブ"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "ハンガー"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "{station}のハンガー"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "未払い賃料が支払われるまで、このハンガーはロックされています。"
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station}（空きベイ {free}）"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "ありがとう！ 乗船が必要になるまで、ここのクルーラウンジで待っています。"
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "貨物室が満杯です"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "貨物室：{total} t 中 {used} t 使用"
+  },
+  "HULL": {
+    "description": "",
+    "message": "船体"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "あなた以外のクルーは全員ここのラウンジで待機します。ハンガータブの「クルーラウンジ」から乗船させてください。"
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "ハイパードライブ"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "ここの空きベイへ（空き {free}）"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "ハイパースペース内"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "ラウンジ"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "ここのラウンジで待機中"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "装備品{count}個がこのハンガーの倉庫に保管されています。"
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "装備品{count}個は船に戻せなかったため、ハンガーの倉庫に保管されています。"
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count}個選択"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "ハンガーをリース"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "搭載貨物に必要です"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} 光年先"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "積み込む"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "ラウンジで待機中のクルー：{crew}人"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "あなたのハンガー：{bays}ベイ中{ships}使用、{paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "月払い"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "{date}まで支払済み"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "賃料未払い"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "交代後にここのラウンジで待機：{count}人、1泊{cost}、加えて賃金の半額。"
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "{station}のクルーラウンジ"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "ラウンジ料金未払い：{debt}"
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "ラウンジ料金が{debt}未払いです。誰かをラウンジで待機させる前に支払ってください。"
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "ラウンジ：1人1泊{rate}（現在1泊{now}）、毎月1日に請求。ここで待機するクルーには保持料として賃金の半額が支払われ、新しいことは何も学びません。"
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "ラウンジ料金を全額支払えませんでした。未払い額は{debt}で、所持金ができ次第差し引かれます。"
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "待機中は賃金の半額が支払われます。移動はステーションのハンガータブ「クルーラウンジ」から。"
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "「{ship}」の船体は{hull}%、燃料は{fuel}%です。ここで修理と燃料補給ができます。"
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "ハンガーのベイは最大4つです。"
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "残していくミッション貨物は、それを積んでいる船で届ける必要があります。"
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "か月"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d か月"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "貨物生命維持装置が必要"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity}には貨物生命維持装置が必要ですが、保管中の船にはありません。"
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "次回請求 {date}：約{amount}、{from}～{to}の賃料。{source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "次回請求 {date}：約{amount}、{from}～{to}の賃料（月の一部）。{source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "ここで待機している人はいません。"
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "ラウンジで待機中・移動中の人はいません。"
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "他のステーションで待機している人はいません。"
+  },
+  "NONE": {
+    "description": "",
+    "message": "なし"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "送るものにチェックを入れてください。"
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "自分の船に乗っている必要があります。"
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "その船は別のステーションに保管されています。"
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "所持金が足りません。"
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "前払いなし"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "{station}に戻れる空きベイがありません。"
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "貨物は積んでいません。"
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "前払いなし：賃料は毎月1日に口座から引き落とされます。"
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "送り先を選んでください。"
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "装備容積が足りません"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "{station}に空きベイがありません。"
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "ここに空きベイがありません。先にベイを追加してください。"
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "ハンガーをリースしていません。どのステーションでもハンガータブからリースできます。"
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "{station}にハンガーがありません。"
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "なし（星系の外に出られません）"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "他のハンガーはありません。"
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "他のハンガーに保管されている船はありません。"
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "ここにはまだ船が保管されていません。"
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "この船に対応するスロットがありません"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count}個"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "職を提示する（当面はここのクルーラウンジで待機）"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "{from}から輸送中、{date}到着"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "発送元のハンガーはもうあなたのものではありません。"
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station}（{used}/{bays}ベイ）"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "{date}頃まで支払済み"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "乗客が搭乗中です。先に乗客契約を完了してください。"
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "支払う"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "{amount}を支払う"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "今は支払い不要：賃料は毎月1日に請求されます。"
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "前払い期間"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "前払い…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "船を選んでください。"
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "現在の賃料：月{rent}。支払期間："
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "{station}の賃料を前払い"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}、{date}到着 · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1か月"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1年"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2年"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3か月"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6か月"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "ベイを削除"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "削除できるのは空のベイだけで、ハンガーには最低1つ残ります。"
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "名前を変更"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "空の場合：月{empty}。「{ship}」（{tonnes} t）を駐機した場合：月{rent}。"
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "月額賃料：ベイ1つにつき{bay}、加えて駐機中の船体1トンにつき{tonne}。"
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "{station}のハンガーの賃料を支払えませんでした。未払い額は{debt}で、支払われるまでそこにある船はロックされます。"
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "賃料未払い：{debt}（{months}か月分、10%の延滞料込み）。支払われるまでここの船はロックされます。"
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "残りは「{ship}」に積んだままになります。"
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "{to}へ返送中、{date}到着"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "ローバーが惑星上に駐車されています"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "ローバーが{planet}に駐車されています。先に収納してください。"
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "同じ星系"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "保存"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "上の表で保管中の船を選ぶと、確認したり操縦したりできます。"
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "売却"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station}は{item}に{price}を支払います（装備品マーケットと同じ）。"
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "{item}を売却しますか？"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "このステーションに{price}で売却"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "{station}のラウンジからクルーを送る"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "別のステーションのラウンジへ送る"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "装備を送る…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "{station}から装備を送る"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "この倉庫の品を別のハンガーへ送る"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "配送サービスにこの船を別のハンガーまで運んでもらう"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "送り先…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "ここのラウンジで待機"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "船"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "輸送中の船と、賃料未払いでロックされたハンガーの船は表示されません。"
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "「{name}」（使用中）"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "「{ship}」が{station}のハンガーに到着しました。"
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name}（{type}） · 船体 {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "「{ship}」のクルー定員は最大{max}人です。"
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "輸送中：到着するまで操縦・発送・改装はできません。"
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "価格：{price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "「{ship}」が{station}のハンガーに戻りました。"
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "「{name}」（ここに保管中）"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "船は貨物と装備を載せたまま移動し、到着先のベイを確保します。移動中は操縦も改装もできません。駐機料は到着時から発生します。"
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "セクターマップに表示"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "開始日"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "この船の対応スロットは埋まっています"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "この船の対応スロットはサイズが合いません"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "ステーション"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "操縦中の船"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "飛行中"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "保管中・ロック：賃料未払い"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "{date}から保管中"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "保管中"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "{station}のハンガー倉庫"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count}個 · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "倉庫は空です。"
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "装備を取り外して倉庫に入れ、左で選んだ船に取り付けたり、このステーションに売却したりできます。ルールと価格は装備品マーケットと同じで、取り付け料はかかりません。特定のスロットに取り付けるには、先に空きスロットを選んでください。"
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "ここのハンガーに空きベイがありません。"
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "ここにハンガーがありません。"
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items}個、{tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "「{ship}」はこのベイに保管されます。保管中の船にクルーは残りません。下でチェックを入れなかった者はここのラウンジで待機します。"
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "船を乗り換える"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "「{ship}」に乗り換えますか？"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "なし"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "その後は丸1か月ごとに{rent}、毎月1日に請求。"
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "現在操縦中の船です。"
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "「{ship}」には最低{min}人のクルーが必要ですが、搭乗するのは{crew}人だけです。追加で雇うかラウンジから連れてくるまで発進できません。"
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "「{ship}」のクルー定員は最大{max}人ですが、{crew}人が搭乗することになります。{over}人のチェックを外してラウンジに残してください。"
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "「{ship}」の空きは{room} tです。{over} t減らしてください。"
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "合計：{bays}ベイ中{used}使用"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "送り先："
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "{ship}の積載量は{room} tですが、現在{used} t積んでいます。下取りでは貨物がすべて新しい船に移るため、先に{over} tを売却するか降ろすか、別の選択肢を選んでください。"
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "貨物は{used} t、{ship}の積載量は{room} tです。"
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "{station}のラウンジにクルーを呼び寄せる"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "別のステーションで待機中のクルーをこのラウンジに呼び寄せる"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "{station}へ装備を移送"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "別のハンガーの倉庫から品をここへ配送してもらう"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "移送元…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "ここへ移送"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "ここのハンガーへ配送してもらう"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "{station}へ船を移送"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "別のハンガーに保管中の船をここへ配送してもらう"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "{station}へ移動中、{date}到着"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "すべて取り外す"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "この船から外せるものをすべて倉庫へ移す"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "先にこれに取り付けられた品を外してください"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "取り外して倉庫へ"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "貨物倉庫へ降ろす"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "未払い：{debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "週{wage}"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{station}に{count}人"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count}人待機中"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "ラウンジで待機中"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "{date}から待機中"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "お帰りなさい。"
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "クルー{crew}人がラウンジで待機しています。"
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "ここのハンガーには{bays}ベイに{ships}隻の船があります。"
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "スロットなしで取り付け"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "年"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "他のハンガー："
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "あなた（コマンダー）"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "（現在{crew}人）"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "支払額：{cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "受取額：{amount}"
+  }
+}

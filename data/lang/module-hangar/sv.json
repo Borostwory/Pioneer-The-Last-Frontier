@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "ombord"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "Ombord på ”{ship}”"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "Flyger"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Lägg till hangarplats"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "allt"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Allt som får plats"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Redan ombord på ”{ship}”: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Den är redan på väg till en annan station."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Du hyr redan en hangar här."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Den är redan på väg tillbaka."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Väntar även på andra ställen:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "ett uppdrag"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Hangarplatser"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Hangarplatser kan läggas till eller tas bort senare."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Boka leverans"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Boka resa"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "”{ship}” står i din hangar här."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "Skrovet på ”{ship}” är sålt: {items} föremål gick till utrustningsförrådet, {tons} t last till lastförrådet och {crew} besättningsmedlem(mar) till loungen."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Ta ombord"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Utrustningen går till hangarens utrustningsförråd och lasten till hangarens lastförråd; bara skrovet säljs."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Behålls som det är, med utrustning och all last; inget flyttas till det nya skeppet. Du betalar hela priset."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Säljs med all utrustning. All last flyttas till det nya skeppet."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Byt in det tomma skrovet på ”{ship}”"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Ställ ”{ship}” på en hangarplats här"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Byt in ”{ship}”"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Köpa en {ship}?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "passagerare ombord"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Avbryt leverans"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "{refund} (halva priset) återbetalas, och den skickas tillbaka till {station} med ankomst {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Avbryta leveransen av {what}?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "kan inte tas bort nu"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} är en rymdhamn på ytan, och det här skeppet har ingen plats för atmosfärisk avskärmning."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Du kan inte lyfta med färre än {min} i besättningen."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Last"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Last ombord"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Lastutrymme"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "lasten i den skulle inte få plats utan den"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Lastförråd på {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Lastförrådet är tomt."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Lasta av varor till hangarens lastförråd och lasta in dem i skeppet du flyger. Obegränsat och gratis; uppdragslast behåller sin märkning."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Last"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Ankommer"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Hangarplats"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Platsavgift"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Kostnad"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Avstånd"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Plats"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Namn"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Betalt till"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Parkeringsavgift"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Per månad"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Skepp"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Bästa färdighet"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Station"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Status"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Förråd"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Typ"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "kommer ombord"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/vecka"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/natt + {wage}/vecka"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Förskottsbetalt: {credit} i tillgodohavande kvar, gemensamt för alla hangarplatser. Med dagens hyra räcker det till omkring {date}; därefter dras hyran från ditt konto den 1:a varje månad."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "Den förskottsbetalda hyran för din hangar på {station} tar slut den {date}. Därefter debiteras den den 1:a varje månad."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Besättning"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} har anlänt till besättningsloungen på {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Besättning för ”{ship}” ({min}–{max} personer):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} i besättningen (det här skeppet tar {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Besättningslounge"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Besättning för det nya skeppet"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Den som inte är markerad väntar i loungen här."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Halv lön betalas under resan, och ingen loungeavgift. Vid ankomst väntar de i loungen där."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Vad händer med ”{ship}”? Välj ett alternativ:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Leveranstjänst"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Leverera ”{ship}”"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Du är skyldig dem {owed} i lön. De kommer inte att ta det väl, och en skuld över {limit} räknas som kontraktsbedrägeri."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} väntar i loungen här. Kontraktet upphör och personen lämnar din besättning."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Avskeda {name}?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Det här skeppet passar inte i dockningsportarna på {station}: när det väl har lämnat kan det inte docka där igen."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t bränsle"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "tom"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "tomt"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "tom"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Säg upp hyran"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Bara en tom hangar kan sägas upp: inga skepp, ingen utrustning eller varor, inget på väg och ingen obetald hyra."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Utrustning"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} föremål har anlänt till ditt hangarförråd på {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Utrustning här…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Utrustning"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Utrustningsvolym: {used} av {capacity} m³ använt"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Monterad på"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Montera på ”{ship}”"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Flotta"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Besättning i lounger"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangarer"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Skepp"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Utrustningsförråd: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Flyg det här skeppet"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Dras från ditt konto."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Betalas från ditt tillgodohavande."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Betalas från ditt tillgodohavande, resten från ditt konto."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "Från:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "Från: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Bränsle"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "väntar i loungen"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Hangarfliken"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangar"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Hangar på {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Den här hangaren är låst tills den obetalda hyran är betald."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} lediga hangarplats(er))"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Tack! Jag väntar i besättningsloungen här tills du behöver mig ombord."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "lastutrymmet är fullt"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Lastutrymme: {used} av {total} t använt"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Skrov"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Hela besättningen utom du väntar i loungen här. Ta dem ombord från Hangarfliken, Besättningslounge."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hypermotor"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "Till en ledig hangarplats här ({free} lediga)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "i hyperrymden"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "i loungen"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "I loungen här"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "{count} utrustningsföremål förvaras i den här hangarens förråd."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "{count} utrustningsföremål fick inte plats på skeppet igen och förvaras i hangarens förråd."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} föremål valda"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Hyr hangar"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "lasten ombord behöver det"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} ljusår bort"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Lasta ombord"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} i besättningen väntar i loungen"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Din hangar: {ships} av {bays} hangarplats(er) används, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "debiteras månadsvis"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "betalt till {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "hyran obetald"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "I loungen här efter bytet: {count}, {cost} per natt, plus halv lön."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Besättningslounge på {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Obetalda loungeavgifter: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Du är skyldig {debt} i loungeavgifter. Betala dem innan någon mer väntar i en lounge."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Lounge: {rate} per person och natt ({now} per natt just nu), debiteras den 1:a. Besättning som väntar här får halv lön som väntelön och lär sig inget nytt."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Loungeavgifterna kunde inte betalas fullt ut. Du är skyldig {debt}; det dras från dina pengar när du har dem."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Får halv lön medan de väntar. Flytta dem under en stations Hangarflik, Besättningslounge."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "”{ship}” har {hull}% kvar av skrovet och tanken är {fuel}% full. Reparation och tankning finns här."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "En hangar har högst 4 hangarplatser."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Uppdragslast som lämnas kvar måste levereras med det skepp som har den ombord."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "månader"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d månader"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "kräver livsuppehållande lastrum"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} kräver livsuppehållande lastrum, vilket det förvarade skeppet saknar."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Nästa faktura {date}: omkring {amount}, hyran för {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Nästa faktura {date}: omkring {amount}, hyran för {from} – {to} (del av månad). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Ingen väntar här."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Ingen väntar i en lounge eller är på resande fot."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Ingen väntar på en annan station."
+  },
+  "NONE": {
+    "description": "",
+    "message": "inget"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Markera vad som ska skickas."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Du måste vara ombord på ditt skepp."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Det skeppet förvaras på en annan station."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Du har inte tillräckligt med pengar."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "inte förskottsbetalt"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Ingen ledig hangarplats på {station} att återvända till."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Ingen last ombord."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Inget förskottsbetalt: hyran dras från ditt konto den 1:a varje månad."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Välj vart den ska."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "inte tillräcklig utrustningsvolym"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Ingen ledig hangarplats på {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Ingen ledig hangarplats här. Lägg till en först."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Du hyr ingen hangar. Hyr en på valfri station, under dess Hangarflik."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Du har ingen hangar på {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "ingen, det kan inte lämna sitt system"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Du har ingen annan hangar."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "Inget skepp står i dina andra hangarer."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Inga skepp står här än."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "ingen plats för den på det här skeppet"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} föremål"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Erbjud en tjänst, med väntan i besättningsloungen här tills vidare"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "på väg från {from}, ankommer {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "Hangaren den kom från är inte längre din."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} hangarplatser)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "betalt till omkring {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Passagerare ombord: slutför dina passagerarkontrakt först."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Betala"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Betala {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Inget nu: hyran debiteras den 1:a varje månad."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Förskottsbetala"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Förskottsbetala…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Välj ett skepp."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Hyra nu: {rent} per månad. Betala för:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Förskottsbetala hyra för {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, ankommer {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 mån"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 år"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 år"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 mån"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 mån"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Ta bort hangarplats"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Bara en tom hangarplats kan tas bort, och en hangar behåller minst en."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Byt namn"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Tom: {empty} per månad. Med ”{ship}” ({tonnes} t) parkerat: {rent} per månad."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Hyra per månad: {bay} per hangarplats, plus {tonne} per ton parkerat skrov."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Hyran för din hangar på {station} kunde inte betalas. Du är skyldig {debt}; skeppen där är låsta tills den är betald."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Hyran obetald: {debt} ({months} månad(er), med 10% påslag för sen betalning). Skeppen här är låsta tills den är betald."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Resten blir kvar ombord på ”{ship}”."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "på väg tillbaka till {to}, ankommer {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "rovern står parkerad ute på en planet"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Din rover står parkerad på {planet}. Stuva den först."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "samma system"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Spara"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Välj ett förvarat skepp i tabellen ovan för att se det och flyga det."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Sälj"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} betalar {price} för {item}, precis som utrustningsmarknaden."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Sälja {item}?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Sälj till den här stationen för {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Skicka besättning från loungen på {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Skicka till loungen på en annan station"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Skicka utrustning…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Skicka utrustning från {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Skicka föremål från det här förrådet till en av dina andra hangarer"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Låt leveranstjänsten ta det här skeppet till en av dina andra hangarer"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Skicka till…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Vänta i loungen här"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Skepp"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Skepp som är på väg, och skepp i hangarer som är låsta på grund av obetald hyra, visas inte."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "”{name}” (aktivt)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "”{ship}” har anlänt till din hangar på {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · skrov {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "”{ship}” tar högst {max} i besättningen."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "På väg: det kan inte flygas, skickas eller byggas om förrän det har anlänt."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Pris: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "”{ship}” är tillbaka i din hangar på {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "”{name}” (förvarat här)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Skeppet reser med sin last och utrustning och behåller sin hangarplats på destinationen. Det kan inte flygas eller byggas om under resan. Parkeringsavgift tas ut från ankomsten."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Visa på sektorkartan"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Sedan"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "dess platser på det här skeppet är upptagna"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "dess plats på det här skeppet har fel storlek"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Station"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "skeppet du flyger"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "Flyger"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Förvarat, låst: hyran obetald"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "förvarat sedan {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Förvarat"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Hangarförråd på {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} föremål · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Förrådet är tomt."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Demontera föremål till förrådet, och montera dem sedan på skeppet som är valt till vänster, eller sälj dem till den här stationen. Utrustningsmarknadens regler och priser, ingen avgift för montering. Välj först en tom plats för att montera ett föremål just där."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "din hangar här har ingen ledig hangarplats."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "du har ingen hangar här."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} föremål, {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "”{ship}” förvaras på den här hangarplatsen. Besättningen stannar aldrig på ett förvarat skepp: den som inte är markerad nedan väntar i loungen här."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Byt skepp"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Byta till ”{ship}”?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Inget"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Därefter {rent} för varje hel månad, debiteras den 1:a."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Det här är skeppet du flyger."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "”{ship}” behöver minst {min} i besättningen, och bara {crew} skulle vara ombord. Du kan inte lyfta förrän du anställer fler eller tar någon från loungen."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "”{ship}” tar högst {max} i besättningen, och {crew} skulle vara ombord. Avmarkera {over} för att lämna dem i loungen."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "”{ship}” har plats för {room} t. Ta {over} t mindre."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Totalt: {used} av {bays} hangarplatser används"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Till:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "En {ship} rymmer {room} t, och du har {used} t ombord. Vid inbyte flyttas all last till det nya skeppet: sälj eller lasta av {over} t först, eller välj ett annat alternativ."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Du har {used} t last och en {ship} rymmer {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Hämta besättning till loungen på {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Låt besättning som väntar på en annan station föras till den här loungen"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Överför utrustning till {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Låt föremål från en annan hangars förråd levereras hit"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Överför från…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Överför hit"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Låt den levereras till din hangar här"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Överför ett skepp till {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Låt ett skepp som förvaras i en av dina andra hangarer levereras hit"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "på väg till {station}, ankommer {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Demontera allt"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Flytta allt som kan tas av det här skeppet till förrådet"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "demontera först föremålen som sitter monterade på den"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Demontera till förrådet"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Lasta av till lastförrådet"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "obetalt: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} i veckan"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} på {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} väntar"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Väntar i lounger"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "väntar sedan {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Välkommen tillbaka."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} i besättningen väntar i loungen."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Din hangar här rymmer {ships} skepp på {bays} hangarplats(er)."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Monterad utan plats"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "år"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Dina andra hangarer:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Du (befälhavare)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(du har {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Du betalar: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Du får: {amount}"
+  }
+}

@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "a fedélzeten"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "A(z) \"{ship}\" fedélzetén"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "Repül"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Új beálló"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "mind"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Amennyi befér"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Már a(z) \"{ship}\" fedélzetén: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Már úton van egy másik állomásra."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Itt már bérelsz hangárt."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Már visszafelé tart."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Máshol is várnak:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "egy küldetés"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Beállók"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Beállókat később is hozzáadhatsz vagy megszüntethetsz."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Szállítás megrendelése"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Utazás foglalása"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "A(z) \"{ship}\" az itteni hangárodban van tárolva."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "A(z) \"{ship}\" hajóteste eladva: {items} tárgy a felszerelésraktárba, {tons} t rakomány az áruraktárba, {crew} fő legénység a társalgóba került."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Fedélzetre hívás"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "A felszerelése a hangár felszerelésraktárába, a rakománya a hangár áruraktárába kerül; csak a hajótestet adod el."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Változatlanul megmarad, a felszerelésével és teljes rakományával; semmi sem kerül át az új hajóra. A teljes árat fizeted."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Teljes felszerelésével együtt eladod. A teljes rakomány átkerül az új hajóra."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "A(z) \"{ship}\" csupasz hajótestének beszámítása"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "A(z) \"{ship}\" tárolása egy itteni beállóban"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "A(z) \"{ship}\" beszámítása"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Megveszed: {ship}?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "utasok a fedélzeten"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Szállítás lemondása"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "{refund} (az ár fele) visszatérítésre kerül, és visszamegy ide: {station}, érkezés: {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Lemondod a szállítást: {what}?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "most nem szerelhető le"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} felszíni űrkikötő, ennek a hajónak pedig nincs helye atmoszférapajzs számára."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Nem indulhatsz {min} főnél kisebb legénységgel."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Rakomány"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Rakomány a fedélzeten"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Raktér"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "a benne lévő rakomány nem férne el nélküle"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Áruraktár: {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Az áruraktár üres."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Rakd ki az árut a hangár áruraktárába, és rakd be abba a hajóba, amellyel repülsz. Korlátlan és ingyenes; a küldetés rakománya megtartja a jelölését."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Rakomány"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Érkezik"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Beálló"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Beállódíj"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Költség"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Távolság"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Helyzet"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Név"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Fizetve eddig"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Parkolási díj"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Havonta"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Hajó"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Legjobb képesség"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Állomás"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Státusz"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Raktár"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Típus"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "fedélzetre jön"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/hét"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/éj + {wage}/hét"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Előre fizetve: {credit} keret maradt, minden beállóra közösen. A mai bérleti díjjal nagyjából eddig tart: {date}; utána a bérleti díjat minden hónap 1-jén a számládról vonjuk le."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "A hangárodra ({station}) előre kifizetett bérleti díj ekkor jár le: {date}. Utána minden hónap 1-jén számlázzuk."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Legénység"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} megérkezett a személyzeti társalgóba: {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Legénység a(z) \"{ship}\" hajóra ({min}–{max} fő):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} fő legénység (ez a hajó {min}–{max} főt fogad)"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Személyzeti társalgó"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Legénység az új hajóra"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Akit nem jelölsz be, az itt vár a társalgóban."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Útközben fél bért kapnak, társalgódíj nincs. Érkezéskor az ottani társalgóban várnak."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Mi legyen a(z) \"{ship}\" hajóval? Válassz egyet:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Szállítószolgálat"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "A(z) \"{ship}\" szállítása"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "{owed} bérrel tartozol nekik. Nem fogják jól fogadni, és {limit} feletti tartozás szerződéses csalásnak számít."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} itt vár a társalgóban. A szerződése megszűnik, és elhagyja a legénységedet."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Elbocsátod: {name}?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Ez a hajó nem fér a dokkolóportokba itt: {station}. Ha egyszer elmegy, nem dokkolhat ott újra."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t hajtóanyag"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "üres"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "üres"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "üres"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Bérlet megszüntetése"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Csak üres hangárt adhatsz fel: se hajó, se felszerelés, se áru, semmi sincs úton, és nincs kifizetetlen bérleti díj."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Felszerelés"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} tárgy megérkezett a hangárod raktárába: {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Felszerelés itt…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Felszerelés"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Felszerelés térfogata: {used} / {capacity} m³ foglalt"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Felszerelve erre:"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Felszerelés a(z) \"{ship}\" hajóra"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Flotta"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Legénység a társalgókban"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangárok"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Hajók"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Felszerelésraktár: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Repülés ezzel a hajóval"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "A számládról levonva."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Az előre fizetett keretből."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Az előre fizetett keretből, a többi a számládról."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "Honnan:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "Honnan: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Hajtóanyag"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "a társalgóban vár"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Hangár fül"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangár"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Hangár: {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Ez a hangár zárolva van, amíg a hátralékos bérleti díjat ki nem fizeted."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} szabad beálló)"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Köszönöm! Itt várok a személyzeti társalgóban, amíg szükséged nem lesz rám a fedélzeten."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "a raktér tele van"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Raktér: {used} / {total} t foglalt"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Hajótest"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Rajtad kívül az egész legénység itt vár a társalgóban. A Hangár fül Személyzeti társalgó részén hívhatod őket a fedélzetre."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hipermotor"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "Egy itteni szabad beállóba ({free} szabad)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "hipertérben"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "a társalgóban"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "Itt a társalgóban"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "{count} felszerelési tárgyat őriznek ennek a hangárnak a raktárában."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "{count} felszerelési tárgy nem fért vissza a hajóra, ezeket a hangár raktárában őrzik."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} tárgy kiválasztva"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Hangár bérlése"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "a fedélzeti rakománynak szüksége van rá"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} fényévre"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Berakodás a fedélzetre"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} fő legénység vár a társalgóban"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Hangárod: {ships} / {bays} beálló foglalt, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "havi számlázás"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "fizetve eddig: {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "bérleti díj kifizetetlen"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "A csere után itt a társalgóban: {count} fő, éjjelente {cost}, plusz fél bér."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Személyzeti társalgó: {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Kifizetetlen társalgódíj: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "{debt} társalgódíjjal tartozol. Fizesd ki, mielőtt bárki más egy társalgóban várakozna."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Társalgó: {rate} fejenként éjjelente (jelenleg {now} éjjelente), számlázás minden hónap 1-jén. Az itt várakozó legénység fél bért kap rendelkezésre állási díjként, és nem tanul semmi újat."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "A társalgódíjat nem sikerült teljesen kifizetni. Tartozásod: {debt}; levonjuk a pénzedből, amint lesz rá fedezet."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Várakozás alatt fél bért kapnak. Egy állomás Hangár fülének Személyzeti társalgó részén mozgathatod őket."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "\"{ship}\": hajótest {hull}%, hajtóanyag {fuel}%. Javítás és tankolás itt elérhető."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Egy hangárnak legfeljebb 4 beállója lehet."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "A hátrahagyott küldetésrakományt azzal a hajóval kell leszállítani, amelyik szállítja."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "hónap"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d hónap"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "raktéri életfenntartó kell hozzá"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} raktéri életfenntartót igényel, ami a tárolt hajón nincs."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Következő számla {date}: kb. {amount}, bérleti díj: {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Következő számla {date}: kb. {amount}, bérleti díj: {from} – {to} (hónap egy része). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Itt senki sem vár."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Senki sem vár társalgóban, és senki sincs úton."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Más állomáson senki sem vár."
+  },
+  "NONE": {
+    "description": "",
+    "message": "nincs"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Jelöld be, mit küldesz."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "A hajód fedélzetén kell lenned."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Az a hajó egy másik állomáson van tárolva."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Nincs elég pénzed."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "nincs előre fizetve"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Nincs szabad beálló a visszatéréshez itt: {station}."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Nincs rakomány a fedélzeten."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Nincs előre fizetés: a bérleti díjat minden hónap 1-jén a számládról vonjuk le."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Válaszd ki, hova menjen."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "nincs elég felszerelési térfogat"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Nincs szabad beálló itt: {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Itt nincs szabad beálló. Előbb adj hozzá egyet."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Nem bérelsz hangárt. Bármelyik állomáson bérelhetsz egyet, a Hangár fülön."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Nincs hangárod itt: {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "nincs, nem hagyhatja el a rendszerét"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Nincs másik hangárod."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "A többi hangárodban nincs tárolt hajó."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Itt még nincs tárolt hajó."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "nincs neki foglalat ezen a hajón"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} tárgy"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Állás felajánlása, egyelőre az itteni személyzeti társalgóban várakozva"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "úton innen: {from}, érkezik: {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "A hangár, ahonnan jött, már nem a tiéd."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} beálló)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "fizetve nagyjából eddig: {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Utasok a fedélzeten: előbb teljesítsd az utasszállítási szerződéseidet."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Fizetés"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Fizetés: {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Most semmi: a bérleti díjat minden hónap 1-jén számlázzuk."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Előre fizetés"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Előre fizetés…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Válassz egy hajót."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Jelenlegi bérleti díj: {rent} havonta. Fizetés erre az időre:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Bérleti díj előre fizetése: {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, érkezés: {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 hó"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 év"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 év"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 hó"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 hó"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Beálló megszüntetése"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Csak üres beálló szüntethető meg, és egy hangárnak legalább egy kell."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Átnevezés"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Üresen: {empty} havonta. Ha a(z) \"{ship}\" ({tonnes} t) parkol itt: {rent} havonta."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Havi bérleti díj: beállónként {bay}, plusz a parkoló hajótest tonnánként {tonne}."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "A hangárod bérleti díját ({station}) nem sikerült kifizetni. Tartozásod: {debt}; az ottani hajók zárolva vannak, amíg ki nem fizeted."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Kifizetetlen bérleti díj: {debt} ({months} hónap, 10% késedelmi pótlékkal). Az itteni hajók zárolva vannak, amíg ki nem fizeted."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "A többi a(z) \"{ship}\" fedélzetén marad."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "visszatér ide: {to}, érkezik: {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "a terepjáró kint parkol egy bolygón"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "A terepjáród itt parkol: {planet}. Előbb pakold be."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "ugyanaz a rendszer"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Mentés"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Válassz ki egy tárolt hajót a fenti táblázatban, hogy megnézd és repülj vele."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Eladás"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} {price} összeget fizet ezért: {item}, ugyanannyit, mint a Felszerelés piac."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Eladod: {item}?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Eladás ennek az állomásnak {price} összegért"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Legénység küldése a társalgóból: {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Küldés egy másik állomás társalgójába"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Felszerelés küldése…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Felszerelés küldése innen: {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Tárgyak küldése ebből a raktárból egy másik hangárodba"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "A szállítószolgálat vigye ezt a hajót egy másik hangárodba"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Küldés ide…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Várjon itt a társalgóban"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Hajók"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Az úton lévő hajók és a kifizetetlen bérleti díj miatt zárolt hangárokban lévő hajók nem szerepelnek a listán."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "\"{name}\" (aktív)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "A(z) \"{ship}\" megérkezett a hangárodba: {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · hajótest {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "A(z) \"{ship}\" legfeljebb {max} fős legénységet fogad."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Úton van: amíg meg nem érkezik, nem lehet vele repülni, elküldeni vagy átszerelni."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Ár: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "A(z) \"{ship}\" visszaért a hangárodba: {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "\"{name}\" (itt tárolva)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "A hajó a rakományával és felszerelésével utazik, és a célállomáson elfoglalja a beállóját. Útközben nem lehet vele repülni vagy átszerelni. A parkolási díjat az érkezésétől számítjuk."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Megjelenítés a szektortérképen"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Mióta"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "a foglalatai ezen a hajón foglaltak"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "a foglalata ezen a hajón rossz méretű"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Állomás"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "a hajó, amellyel repülsz"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "Repül"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Tárolva, zárolva: bérleti díj kifizetetlen"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "tárolva {date} óta"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Tárolva"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Hangárraktár: {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} tárgy · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "A raktár üres."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Szereld le a tárgyakat a raktárba, majd szereld fel őket a bal oldalon kiválasztott hajóra, vagy add el őket ennek az állomásnak. A Felszerelés piac szabályai és árai érvényesek, felszerelési díj nincs. Ha egy adott foglalatba akarsz szerelni, előbb válassz ki egy üres foglalatot."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "az itteni hangárodban nincs szabad beálló."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "itt nincs hangárod."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} tárgy, {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "A(z) \"{ship}\" ebben a beállóban lesz tárolva. Tárolt hajón soha nem marad legénység: akit lent nem jelölsz be, az itt vár a társalgóban."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Hajócsere"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Átszállsz ide: \"{ship}\"?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Semmi"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Utána minden teljes hónapra {rent}, számlázás minden hónap 1-jén."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Ez az a hajó, amellyel repülsz."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "A(z) \"{ship}\" legalább {min} fős legénységet igényel, de csak {crew} fő lenne a fedélzeten. Nem indulhatsz, amíg nem veszel fel többet, vagy nem hozol valakit a társalgóból."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "A(z) \"{ship}\" legfeljebb {max} fős legénységet fogad, de {crew} fő lenne a fedélzeten. Vedd ki a jelölést {over} főnél, hogy a társalgóban maradjanak."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "A(z) \"{ship}\" hajón {room} t hely van. Vigyél {over} t-val kevesebbet."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Összesen: {used} / {bays} beálló foglalt"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Hova:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "Egy {ship} {room} t rakományt fogad, a fedélzeten pedig {used} t van. Beszámításkor a teljes rakomány átkerül az új hajóra: előbb adj el vagy rakj ki {over} t-t, vagy válassz másik lehetőséget."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "{used} t rakományod van, egy {ship} pedig {room} t-t fogad."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Legénység hozatala a társalgóba: {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Más állomáson várakozó legénység áthozatala ebbe a társalgóba"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Felszerelés átszállítása ide: {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Tárgyak hozatala egy másik hangár raktárából ide"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Áthozatal innen…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Áthozatal ide"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Szállítsák az itteni hangárodba"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Hajó átszállítása ide: {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Egy másik hangárodban tárolt hajó idehozatala"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "úton ide: {station}, érkezik: {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Mindent leszerel"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Minden leszerelhető tárgy áthelyezése erről a hajóról a raktárba"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "előbb szereld le a rá szerelt tárgyakat"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Leszerelés a raktárba"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Kirakodás az áruraktárba"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "kifizetetlen: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} hetente"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} fő itt: {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} fő vár"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Várakozók a társalgókban"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "vár {date} óta"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Üdv újra itt."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} fő legénység vár a társalgóban."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Az itteni hangárodban {ships} hajó van {bays} beállóban."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Foglalat nélkül felszerelve"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "év"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "A többi hangárod:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Te (parancsnok)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(neked {crew} van)"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Fizetsz: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Kapsz: {amount}"
+  }
+}

@@ -119,6 +119,218 @@
     "description": "",
     "message": "Prikbord"
   },
+  "BURN_ACCURACY": {
+    "description": "Flight HUD burn list label of the Auto Burn accuracy setting (in percent).",
+    "message": "Stuwnauwkeurigheid"
+  },
+  "BURN_ACCURACY_TIP": {
+    "description": "Tooltip of the 'Burn accuracy' setting in the flight HUD burn list.",
+    "message": "Auto-stuwen vliegt elke stuwfase naar de geplande baan, met de geplande timing, en neemt aan het eind gas terug. Wijkt het resulterende perifocus of apofocus daarna nog meer af dan dit deel van hun hoogte (of ligt de baan buiten het geplande vlak), dan draait het en voert een kleine correctiestuwfase uit."
+  },
+  "BURN_APPROACH_NONE": {
+    "description": "Flight HUD burn list closest approach status when no approach target is set.",
+    "message": "Geen nadering gepland"
+  },
+  "BURN_APPROACH_PASSED": {
+    "description": "Flight HUD burn list closest approach status after it has happened. %s = target name.",
+    "message": "%s: dichtste nadering voorbij"
+  },
+  "BURN_APPROACH_STATUS": {
+    "description": "Flight HUD burn list closest approach status. 1st %s = target name, 2nd %s = closest distance, 3rd %s = countdown to the closest approach.",
+    "message": "%s: %s over %s"
+  },
+  "BURN_APPROACH_STOP": {
+    "description": "Flight HUD burn list checkbox: stop the clock before the closest approach to the planned target.",
+    "message": "Stoppen voor dichtste nadering"
+  },
+  "BURN_APPROACH_STOP_TIP": {
+    "description": "Tooltip of the 'Stop before closest approach' setting in the flight HUD burn list.",
+    "message": "De klok zo lang voor de dichtste nadering tot het doel van de op de kaart geplande nadering stoppen – pauzeren of doorgaan op 1x, zoals gekozen voor de stuwfases. De tijdversnelling wordt onderweg stapsgewijs verlaagd, zodat ze er niet voorbij kan schieten."
+  },
+  "BURN_ARRIVE_NORMAL_TIP": {
+    "description": "Tooltip of the 1x button in the flight HUD burn list.",
+    "message": "Als de warp aankomt, doorgaan op normale snelheid (1x)"
+  },
+  "BURN_ARRIVE_PAUSE": {
+    "description": "Flight HUD burn list button: pause the game when the warp arrives.",
+    "message": "Pauze"
+  },
+  "BURN_ARRIVE_PAUSE_TIP": {
+    "description": "Tooltip of the Pause button in the flight HUD burn list.",
+    "message": "Als de warp aankomt, het spel pauzeren"
+  },
+  "BURN_ARRIVE_THEN": {
+    "description": "Flight HUD burn list: short connecting word before the choice of what happens when a warp arrives ('then' Pause / 1x).",
+    "message": "dan"
+  },
+  "BURN_AUTO_BURN": {
+    "description": "Name of the Auto Burn toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "Auto-stuwen"
+  },
+  "BURN_AUTO_BURN_TIP": {
+    "description": "Tooltip of the Auto Burn toggle button in the flight HUD burn list.",
+    "message": "Auto-stuwen: de hoofdmotor ontsteken voor de actieve stuwfase, en alleen zolang het schip in de stuwrichting gericht is – niet gericht levert hij geen stuwkracht. Gebruik het samen met Auto-oriëntatie zodat het schip zichzelf richt; het verandert nooit de oriëntatie van het schip"
+  },
+  "BURN_AUTO_ORIENTATION": {
+    "description": "Name of the Auto Orientation toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "Auto-oriëntatie"
+  },
+  "BURN_AUTO_ORIENTATION_TIP": {
+    "description": "Tooltip of the Auto Orientation toggle button in the flight HUD burn list.",
+    "message": "Auto-oriëntatie: het schip in de richting van de actieve stuwfase houden. Alleen oriëntatie, het ontsteekt nooit de hoofdmotor"
+  },
+  "BURN_CANCEL_WARP": {
+    "description": "Tooltip of the button that cancels a warp to a burn (flight HUD).",
+    "message": "Warp annuleren: vorige tijdversnelling herstellen"
+  },
+  "BURN_CAPTION_BURN": {
+    "description": "Flight HUD burn list column caption: the burn number.",
+    "message": "Fase"
+  },
+  "BURN_CAPTION_DURATION": {
+    "description": "Flight HUD burn list column caption: burn duration.",
+    "message": "Stuwduur"
+  },
+  "BURN_CAPTION_DURATION_TIP": {
+    "description": "Tooltip of the Burn time column caption in the flight HUD burn list.",
+    "message": "Resterende stuwduur bij de huidige stuwkracht"
+  },
+  "BURN_CAPTION_DV": {
+    "description": "Flight HUD burn list column caption: delta-v of the burn.",
+    "message": "Δv"
+  },
+  "BURN_CAPTION_DV_TIP": {
+    "description": "Tooltip of the Δv column caption in the flight HUD burn list.",
+    "message": "Nog te vliegen Δv; de balk eronder is het al gevlogen deel"
+  },
+  "BURN_CAPTION_IGNITION": {
+    "description": "Flight HUD burn list column caption: time until engine start.",
+    "message": "Ontsteking"
+  },
+  "BURN_CAPTION_IGNITION_TIP": {
+    "description": "Tooltip of the Ignition column caption in the flight HUD burn list.",
+    "message": "Tijd tot motorstart: de halve stuwduur voor de knoop"
+  },
+  "BURN_CAPTION_NODE": {
+    "description": "Flight HUD burn list column caption: time until the planned maneuver node.",
+    "message": "Knoop"
+  },
+  "BURN_CAPTION_NODE_TIP": {
+    "description": "Tooltip of the Node column caption in the flight HUD burn list.",
+    "message": "Tijd tot de geplande knoop, het midden van de stuwfase"
+  },
+  "BURN_DONE": {
+    "description": "Flight HUD burn list: shown in place of the countdown for a completed burn.",
+    "message": "Klaar"
+  },
+  "BURN_DURATION_TIP": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list. 1st %s = total duration, 2nd %s = remaining duration.",
+    "message": "%s in totaal bij de huidige stuwkracht, nog %s"
+  },
+  "BURN_DV_TIP": {
+    "description": "Tooltip of a burn's delta-v in the flight HUD burn list. The three %s are speeds: planned, already flown, left. Keep the line breaks.",
+    "message": "Gepland %s\nGevlogen %s\nResterend %s"
+  },
+  "BURN_LIST_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the burn list panel.",
+    "message": "Lijst met stuwfases verbergen"
+  },
+  "BURN_LIST_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the burn list panel.",
+    "message": "Lijst met stuwfases tonen"
+  },
+  "BURN_MARK_COMPLETE": {
+    "description": "Tooltip of the button that marks a planned burn as flown (flight HUD burn list and map planner).",
+    "message": "Deze stuwfase als voltooid markeren"
+  },
+  "BURN_NEEDS_AUTOPILOT": {
+    "description": "Tooltip of the greyed-out Auto Orientation / Auto Burn buttons when the ship has no autopilot.",
+    "message": "Vereist een automatische piloot in het schip"
+  },
+  "BURN_NO_THRUST": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list when the ship has no forward thrust.",
+    "message": "Geen voorwaartse stuwkracht: de stuwduur is onbekend"
+  },
+  "BURN_NUMBER": {
+    "description": "Label of one planned burn (flight HUD burn list, map planner burn list, map and 3D orbit view burn markers). %d = burn number, starting at 1.",
+    "message": "Stuwfase %d"
+  },
+  "BURN_OVERLAP": {
+    "description": "Flight HUD burn list tooltip when a burn starts before the previous one ends. %s = overlap duration, %d = number of the previous burn.",
+    "message": "Begint %s voordat stuwfase %d eindigt"
+  },
+  "BURN_PLAN_ALL_DONE": {
+    "description": "Flight HUD burn list summary when every planned burn has been flown.",
+    "message": "Alle stuwfases voltooid"
+  },
+  "BURN_PLAN_NO_BURNS": {
+    "description": "Flight HUD burn list when the plan is empty.",
+    "message": "Geen geplande stuwfases"
+  },
+  "BURN_PLAN_SUMMARY": {
+    "description": "Flight HUD burn list summary line. %d = burns left, 1st %s = delta-v they need, 2nd %s = delta-v the ship has, 3rd %s = their total burn time.",
+    "message": "nog %d  ·  %s van %s  ·  %s"
+  },
+  "BURN_PLAN_SUMMARY_TIP": {
+    "description": "Tooltip of the flight HUD burn list summary line.",
+    "message": "Resterende stuwfases, de Δv die ze nog nodig hebben van de Δv die het schip heeft, en hun stuwduur bij de huidige stuwkracht"
+  },
+  "BURN_PLAN_TITLE": {
+    "description": "Title of the flight HUD burn list panel.",
+    "message": "STUWPLAN"
+  },
+  "BURN_PROGRESS": {
+    "description": "Below the flight HUD reticule: which planned burn is active. 1st %d = active burn number, 2nd %d = number of burns in the plan.",
+    "message": "Stuwfase %d/%d"
+  },
+  "BURN_STATE_LINE": {
+    "description": "State line of a flight HUD burn list toggle. 1st %s = toggle name (Auto Orientation / Auto Burn), 2nd %s = ON / OFF.",
+    "message": "%s: %s"
+  },
+  "BURN_STATE_OFF": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched off.",
+    "message": "UIT"
+  },
+  "BURN_STATE_ON": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched on.",
+    "message": "AAN"
+  },
+  "BURN_STATUS_ACTIVE": {
+    "description": "Tooltip of a burn's status: the burn the ship is to fly next (flight HUD burn list and map planner).",
+    "message": "Actieve stuwfase"
+  },
+  "BURN_STATUS_COMPLETED": {
+    "description": "Tooltip of a burn's status: already flown (flight HUD burn list and map planner).",
+    "message": "Voltooide stuwfase"
+  },
+  "BURN_STATUS_PLANNED": {
+    "description": "Tooltip of a burn's status: not yet flown and not the active burn (flight HUD burn list and map planner).",
+    "message": "Geplande stuwfase"
+  },
+  "BURN_STOP_BEFORE_BURN": {
+    "description": "Flight HUD burn list label of the setting for how many seconds before the burn start the warp stops.",
+    "message": "Stoppen voor stuwfase"
+  },
+  "BURN_STOP_BEFORE_BURN_TIP": {
+    "description": "Tooltip of the 'Stop before burn' setting in the flight HUD burn list.",
+    "message": "De warp stopt zo lang voor de start van de stuwfase (de halve stuwduur voor het geplande tijdstip); geldt voor alle stuwfases"
+  },
+  "BURN_WARP_REACHED": {
+    "description": "Tooltip of a greyed-out Warp button in the flight HUD burn list: the burn start is now or in the past.",
+    "message": "Doel is al bereikt"
+  },
+  "BURN_WARP_STRIP": {
+    "description": "Flight HUD status line while warping to a burn. 1st %d = burn number, 2nd %d = seconds to stop before (the 's' after it means seconds), %s = time acceleration level such as 1000x.",
+    "message": "Warp naar stuwfase %d – stop %d s ervoor, %s"
+  },
+  "BURN_WARP_STRIP_LIMITED": {
+    "description": "Same as BURN_WARP_STRIP, shown when the game is limiting the requested time acceleration. 1st %d = burn number, 2nd %d = seconds to stop before, %s = requested time acceleration level.",
+    "message": "Warp naar stuwfase %d – stop %d s ervoor, %s (beperkt)"
+  },
+  "BURN_WARP_TIP": {
+    "description": "Tooltip of a burn's Warp button in the flight HUD burn list. %d = configured number of seconds to stop before the burn (the 's' after it means seconds).",
+    "message": "Warp: tijdversnelling tot %d s voor de start van deze stuwfase (de halve duur voor het geplande tijdstip)"
+  },
   "BUY": {
     "description": "Commodities and equipment prices",
     "message": "Koop"
@@ -274,6 +486,230 @@
   "CLOSE": {
     "description": "",
     "message": "Sluiten"
+  },
+  "CLOUD_CLUSTERING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud clustering sliders",
+    "message": "Lokale bedekking: hoeveel van de lucht bewolkt is waar deze laag wolken heeft. Verandert de globale bedekking niet. 0 = gebroken bewolking verspreid over het grootste deel van de planeet (~40% bewolkt daarbinnen), 100 = bijna gesloten wolkendekken met grote heldere gebieden ertussen (~85-90%)."
+  },
+  "CLOUD_CLUSTERING_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud clustering sliders, in percent",
+    "message": "Wolkenclustering (%)"
+  },
+  "CLOUD_CLUSTERING_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud clustering slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Clustering, {layer}"
+  },
+  "CLOUD_COVER_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud cover sliders",
+    "message": "Globale bedekking: het deel van de hele planeet dat deze laag bedekt. 100 = fysisch afgeleid (Aarde: laag ~40%, middel ~27%, hoog ~30%), 50 = ongeveer de helft daarvan, 0 = laag uit. Boven 100 nadert het geleidelijk volledige bewolking."
+  },
+  "CLOUD_COVER_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud cover sliders, in percent",
+    "message": "Factor wolkenbedekking (%)"
+  },
+  "CLOUD_COVER_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud cover slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Bedekking, {layer}"
+  },
+  "CLOUD_LAYER_HIGH": {
+    "description": "Settings window, The Last Frontier tab: name of the high cloud layer, inserted as {layer} into the per-layer slider labels (e.g. CLOUD_COVER_LAYER); lower case in English because it follows a comma",
+    "message": "grote hoogte (cirrus)"
+  },
+  "CLOUD_LAYER_LOW": {
+    "description": "Settings window, The Last Frontier tab: name of the low cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "lage hoogte (stratus / stratocumulus)"
+  },
+  "CLOUD_LAYER_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: name of the medium cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "middelhoogte (altocumulus)"
+  },
+  "CLOUD_QUALITY": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud ray-marching quality",
+    "message": "Wolkenkwaliteit"
+  },
+  "CLOUD_QUALITY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud quality' combo box",
+    "message": "Monsters genomen langs elke kijkstraal door de wolken dicht bij de grond en in de lucht. Minder is sneller; het verschil zit vooral in fijne details dicht bij de wolken."
+  },
+  "CLOUD_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Hoog (32 stappen)"
+  },
+  "CLOUD_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Laag (16 stappen)"
+  },
+  "CLOUD_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Midden (24 stappen)"
+  },
+  "CLOUD_QUALITY_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Zeer hoog (48 stappen)"
+  },
+  "CLOUD_RESOLUTION": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud rendering resolution near the ground. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "Wolkenresolutie"
+  },
+  "CLOUD_RESOLUTION_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution' combo box",
+    "message": "Resolutie waarin de wolken dicht bij de grond en in de lucht worden gerenderd (de grofste die gebruikt wordt), voordat ze naar het scherm worden geschaald. Hoger is scherper en trager."
+  },
+  "CLOUD_RESOLUTION_FULL": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option, render clouds at the full screen resolution",
+    "message": "Volledige schermresolutie"
+  },
+  "CLOUD_RESOLUTION_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Hoog (720 lijnen)"
+  },
+  "CLOUD_RESOLUTION_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Laag (360 lijnen)"
+  },
+  "CLOUD_RESOLUTION_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Midden (540 lijnen)"
+  },
+  "CLOUD_RESOLUTION_SPACE": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the finest cloud resolution, used from space. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "Wolkenresolutie vanuit de ruimte"
+  },
+  "CLOUD_RESOLUTION_SPACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution from space' combo box",
+    "message": "De fijnste resolutie die gebruikt wordt. Hoog boven een planeet zijn de wolken goedkoop te tekenen maar worden hun details klein op het scherm, dus stijgt de resolutie geleidelijk naar deze, voor zover de details dat vragen. Op Aarde begint dat op ongeveer 100 km en wordt ze bereikt op ongeveer 450 km bij neerwaarts kijken; planeten met grotere wolken (dunne, koude atmosferen, of een grotere wolkengrootte-instelling) hebben haar later nodig."
+  },
+  "CLOUD_RESOLUTION_ULTRA": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Ultra (1440 lijnen)"
+  },
+  "CLOUD_RESOLUTION_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Zeer hoog (1080 lijnen)"
+  },
+  "CLOUD_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for shadows cast by clouds",
+    "message": "Wolkenschaduwen"
+  },
+  "CLOUD_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud shadows' combo box. 'Soft' and 'Detailed' should match CLOUD_SHADOWS_SOFT and CLOUD_SHADOWS_DETAILED",
+    "message": "Schaduwen van de wolken op de grond, steden en schepen. Zacht: verduistering onder wolkenvelden. Gedetailleerd: de schaduw van elke wolk. Beide worden berekend op de wolkenresolutie en kosten dus weinig."
+  },
+  "CLOUD_SHADOWS_DETAILED": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, the shadow of each individual cloud",
+    "message": "Gedetailleerd"
+  },
+  "CLOUD_SHADOWS_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, dimming under whole cloud fields",
+    "message": "Zacht"
+  },
+  "CLOUD_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud size sliders",
+    "message": "Grootte van de afzonderlijke wolken in deze laag. 100 = basisgrootte, tot 16x. Verandert de bedekking niet."
+  },
+  "CLOUD_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud size sliders, in percent",
+    "message": "Factor wolkengrootte (%)"
+  },
+  "CLOUD_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Grootte, {layer}"
+  },
+  "CLOUD_SOFTENING": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for how much the cloud image is blurred when upscaled",
+    "message": "Wolkenverzachting"
+  },
+  "CLOUD_SOFTENING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud softening' combo box",
+    "message": "Vervaagt het wolkenbeeld bij het opschalen, zodat de lagere resolutie verborgen blijft."
+  },
+  "CLOUD_SOFTENING_SHARP": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, no blur",
+    "message": "Scherp"
+  },
+  "CLOUD_SOFTENING_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, moderate blur",
+    "message": "Zacht"
+  },
+  "CLOUD_SOFTENING_VERY_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, strong blur",
+    "message": "Zeer zacht"
+  },
+  "CLOUD_SPACE_DETAIL": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how soon cloud resolution rises when seen from space, in percent",
+    "message": "Wolkendetail vanuit de ruimte (%)"
+  },
+  "CLOUD_SPACE_DETAIL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud detail from space' slider. The quoted names should match the translations of CLOUD_RESOLUTION and CLOUD_RESOLUTION_SPACE",
+    "message": "Hoe snel de wolkenresolutie stijgt van 'Wolkenresolutie' naar 'Wolkenresolutie vanuit de ruimte' naarmate de wolken verder weg zijn en hun details kleiner op het scherm. Werkt op elke planeet hetzelfde. Halveren verdubbelt de afstand waarop verscherpt wordt (goedkoper); 0 = nooit verscherpen. Op Aarde in 4K bij neerwaarts kijken: 100 bereikt volledige resolutie op ongeveer 450 km, 50 op ongeveer 900 km, 25 op ongeveer 1800 km."
+  },
+  "CLOUD_SPEED": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how fast clouds drift and evolve",
+    "message": "Wolkensnelheid"
+  },
+  "CLOUD_SPEED_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud speed' slider",
+    "message": "Hoe snel wolken drijven en van vorm veranderen, als veelvoud van de echte windsnelheid."
+  },
+  "CLOUD_SYSTEM_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud system size sliders",
+    "message": "Grootte van de wolkensystemen (groepen wolken) en van de heldere gebieden ertussen. Verandert de bedekking niet."
+  },
+  "CLOUD_SYSTEM_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud system size sliders, in percent",
+    "message": "Factor wolkensysteemgrootte (%)"
+  },
+  "CLOUD_SYSTEM_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud system size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Systeemgrootte, {layer}"
+  },
+  "CLOUD_TEMPORAL": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for temporal cloud reconstruction",
+    "message": "Temporele wolkenreconstructie"
+  },
+  "CLOUD_TEMPORAL_16X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 16 cloud pixels is traced each frame",
+    "message": "16x (1 op 16 pixels per frame)"
+  },
+  "CLOUD_TEMPORAL_4X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 4 cloud pixels is traced each frame",
+    "message": "4x (1 op 4 pixels per frame)"
+  },
+  "CLOUD_TEMPORAL_9X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 9 cloud pixels is traced each frame",
+    "message": "9x (1 op 9 pixels per frame)"
+  },
+  "CLOUD_TEMPORAL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Temporal cloud reconstruction' combo box. 'Off' refers to the OFF option",
+    "message": "Elk frame berekent maar een deel van de wolkenpixels en vult de rest aan uit vorige frames. 4x: een kwart, het beeld ververst elke 4 frames. 9x: een negende, ongeveer nog eens twee keer zo snel, ververst elke 9 frames (het best bij hoge framerates; snelle draaien kunnen wolkenranden kort uitsmeren). 16x: een zestiende, nog sneller, ververst elke 16 frames (voor 120+ fps; meer uitsmeren bij snelle draaien en aan de horizon). Uit: elke pixel elk frame, het traagst."
+  },
+  "CLOUD_TRANSPARENCY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud transparency sliders",
+    "message": "Hoeveel licht door de wolken van deze laag gaat. 100 = fysisch afgeleid, 200 = half zo dik, 50 = twee keer zo dik. Verandert de bedekking niet, maar zeer hoge waarden maken dunne wolken (cirrus) moeilijk zichtbaar."
+  },
+  "CLOUD_TRANSPARENCY_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud transparency sliders, in percent",
+    "message": "Factor wolkentransparantie (%)"
+  },
+  "CLOUD_TRANSPARENCY_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud transparency slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Transparantie, {layer}"
+  },
+  "CLOUD_VOLUMETRIC": {
+    "description": "Settings window, The Last Frontier tab: checkbox enabling volumetric clouds",
+    "message": "Volumetrische wolken"
+  },
+  "CLOUD_VOLUMETRIC_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
+    "message": "Wolkenlagen op planeten met een atmosfeer. Worden niet getekend zolang multisampling (anti-aliasing) aan staat."
+  },
+  "CLOUD_WEATHER_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",
+    "message": "Weerpatronen in cache"
+  },
+  "CLOUD_WEATHER_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cached weather patterns' checkbox",
+    "message": "Berekent het grootschalige weerpatroon (stormen, fronten) van de dichtstbijzijnde planeet één keer in een kaart in plaats van voor elke pixel: ongeveer 15-20% snellere wolken voor ongeveer 38 MB videogeheugen. De wolken zien er hetzelfde uit."
   },
   "COLLAPSE": {
     "description": "Close / collapse an open folder or group",
@@ -895,6 +1331,14 @@
     "description": "Player combat rating",
     "message": "Ongevaarlijk"
   },
+  "HEAD_BOB": {
+    "description": "Game option: the view bobs up and down as the player walks on foot",
+    "message": "Hoofdbeweging te voet"
+  },
+  "HEAD_BOB_DESC": {
+    "description": "The tooltip of the Head Bob on Foot option in the settings menu",
+    "message": "Het beeld deint zacht mee met elke stap bij lopen of rennen buiten het schip"
+  },
   "HEAVY_CARGO_SHUTTLE": {
     "description": "",
     "message": "Grote vrachtshuttle"
@@ -971,6 +1415,10 @@
     "description": "Tooltip for button",
     "message": "Opwaardse cruisemodus"
   },
+  "HUD_BUTTON_DEPLOY_ROVER": {
+    "description": "Tooltip: set the surface rover down beside the landed ship and drive it",
+    "message": "Met de rover rijden"
+  },
   "HUD_BUTTON_DISABLE_AUTOPILOT": {
     "description": "Tooltip for button",
     "message": "Uitschakelen automatische piloot"
@@ -987,9 +1435,17 @@
     "description": "Tooltip for button",
     "message": "Uitschakelen volgmodus"
   },
+  "HUD_BUTTON_DISEMBARK": {
+    "description": "Tooltip: get out of the landed ship on foot",
+    "message": "Uitstappen"
+  },
   "HUD_BUTTON_EQUIPMENT": {
     "description": "Tooltip: Equipment",
     "message": "Uitrusting"
+  },
+  "HUD_BUTTON_EVA": {
+    "description": "Tooltip: leave the ship in space, floating beside it with the jetpack (extravehicular activity)",
+    "message": "Ruimtewandeling (EVA)"
   },
   "HUD_BUTTON_EXTERNAL_VIEW": {
     "description": "Tooltip: External camera view",
@@ -1055,9 +1511,21 @@
     "description": "Tooltip: Landing gear is up",
     "message": "Landingsgestel is in"
   },
+  "HUD_BUTTON_LIGHTS_ARE_OFF": {
+    "description": "Tooltip: The ship's lamps, lighting the ground and everything around, are off; clicking switches them on",
+    "message": "Lampen zijn uit"
+  },
+  "HUD_BUTTON_LIGHTS_LEVEL": {
+    "description": "Tooltip: The ship's lamps are on at brightness level {level} of {max}; clicking steps to the next level, or off after the brightest",
+    "message": "Lampen: stand {level} van {max}"
+  },
   "HUD_BUTTON_MANUAL_CONTROL": {
     "description": "Tooltip: Manual control",
     "message": "Handmatige besturing"
+  },
+  "HUD_BUTTON_PLAN_HEADING": {
+    "description": "Tooltip of the flight control state button while Auto Orientation holds the burn direction.",
+    "message": "Plankoers: het schip in de richting van de actieve stuwfase houden"
   },
   "HUD_BUTTON_ROTATION_DAMPING_IS_OFF": {
     "description": "Tooltip: Rotation damping is off",
@@ -1066,6 +1534,10 @@
   "HUD_BUTTON_ROTATION_DAMPING_IS_ON": {
     "description": "Tooltip: Rotation damping is on",
     "message": "Draaiingsdemping is aan"
+  },
+  "HUD_BUTTON_ROVER_PARKED": {
+    "description": "Tooltip of the disabled rover button while the surface rover is out of the ship, parked where the player left it: the planet (or moon) and the star system, e.g. 'The rover is parked on Mars, Sol'",
+    "message": "De rover staat geparkeerd op {planet}, {system}"
   },
   "HUD_BUTTON_SET_SPEED": {
     "description": "Tooltip: set speed",
@@ -1114,6 +1586,10 @@
   "HUD_BUTTON_UNDOCK": {
     "description": "Tooltip: Undock",
     "message": "Vertrek"
+  },
+  "HUD_BUTTON_UNKNOWN_FLIGHT_STATE": {
+    "description": "Tooltip of the flight control state button for an unrecognised state (fallback).",
+    "message": "Onbekende vluchtbesturingsstatus"
   },
   "HUD_CARGO_MASS": {
     "description": "Cargo Mass",
@@ -1755,6 +2231,22 @@
     "description": "3d model of the ship",
     "message": "Model"
   },
+  "MOD_GRAPHICS": {
+    "description": "Mod settings tab section",
+    "message": "Graphics"
+  },
+  "MOD_ON_FOOT": {
+    "description": "Mod settings tab section",
+    "message": "Te voet en in de rover"
+  },
+  "MOD_OPTIONS": {
+    "description": "Settings window tab with the settings The Last Frontier adds",
+    "message": "The Last Frontier (mod)"
+  },
+  "MOD_SOUND": {
+    "description": "Mod settings tab section",
+    "message": "Geluid"
+  },
   "MONEY": {
     "description": "",
     "message": "Money"
@@ -1943,9 +2435,45 @@
     "description": "Label for the point of an orbit furthest from the orbited body",
     "message": "Apofocus"
   },
+  "ORBIT_IMPACT_IN": {
+    "description": "Label next to the predicted impact point on an orbit (system map and 3D orbit view). %s = time until impact.",
+    "message": "Inslag over %s"
+  },
+  "ORBIT_MARKER_APOAPSIS": {
+    "description": "Short abbreviation for apoapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the apoapsis.",
+    "message": "Ap"
+  },
+  "ORBIT_MARKER_ASCENDING_NODE": {
+    "description": "Short abbreviation for ascending node: orbit marker label (followed by its altitude) and the button that moves a burn to the ascending node.",
+    "message": "KK"
+  },
+  "ORBIT_MARKER_DESCENDING_NODE": {
+    "description": "Short abbreviation for descending node: orbit marker label (followed by its altitude) and the button that moves a burn to the descending node.",
+    "message": "DK"
+  },
+  "ORBIT_MARKER_PERIAPSIS": {
+    "description": "Short abbreviation for periapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the periapsis.",
+    "message": "Pe"
+  },
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "Perifocus"
+  },
+  "ORBIT_VIEW_FOCUS_BODY": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",
+    "message": "Focus 3D-baanweergave: omcirkeld hemellichaam (klik voor focus op spelerschip)"
+  },
+  "ORBIT_VIEW_FOCUS_PLAYER": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the player's ship.",
+    "message": "Focus 3D-baanweergave: spelerschip (klik voor focus op omcirkeld hemellichaam)"
+  },
+  "ORBIT_VIEW_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the floating 3D orbit view.",
+    "message": "3D-baanweergave verbergen"
+  },
+  "ORBIT_VIEW_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the floating 3D orbit view.",
+    "message": "3D-baanweergave tonen"
   },
   "OUTER_ARM": {
     "description": "Arm of the Milky Way galaxy",
@@ -2062,6 +2590,218 @@
   "PLANET_TEXTURES": {
     "description": "",
     "message": "Planeettexturen"
+  },
+  "PLANNER_ADD_BURN": {
+    "description": "Orbit planner button that adds a burn to the plan.",
+    "message": "Stuwfase toevoegen"
+  },
+  "PLANNER_APPROACH_ALTITUDE": {
+    "description": "Orbit planner closest approach distance over a planet or moon. %s = altitude.",
+    "message": "%s boven het oppervlak"
+  },
+  "PLANNER_APPROACH_FLYBY": {
+    "description": "Orbit planner label: altitude to pass a planet or moon at.",
+    "message": "Scheerhoogte"
+  },
+  "PLANNER_APPROACH_FLYBY_TIP": {
+    "description": "Tooltip of the Flyby altitude setting.",
+    "message": "Een planeet of maan op deze hoogte boven het oppervlak passeren. Zijn eigen zwaartekracht buigt de passage af zodra u binnen zijn invloedssfeer bent; het plan mikt zo dat het laagste punt van de afgebogen passage op deze hoogte ligt."
+  },
+  "PLANNER_APPROACH_FROM_NAV": {
+    "description": "Orbit planner tooltip: the approach target is the navigation target.",
+    "message": "Uw navigatiedoel – selecteer een object op de kaart om een ander te kiezen"
+  },
+  "PLANNER_APPROACH_FROM_SELECTION": {
+    "description": "Orbit planner tooltip: the approach target comes from the map selection.",
+    "message": "Het op de kaart geselecteerde object"
+  },
+  "PLANNER_APPROACH_IMPACT": {
+    "description": "Orbit planner closest approach result when the plan hits the target body. %s = time until impact.",
+    "message": "Inslag op het doel over %s"
+  },
+  "PLANNER_APPROACH_INTERCEPT": {
+    "description": "Orbit planner button: plan a 1-burn intercept.",
+    "message": "Onderscheppen"
+  },
+  "PLANNER_APPROACH_INTERCEPT_BODY_TIP": {
+    "description": "Tooltip of the Intercept button for a planet or moon target.",
+    "message": "1 stuwfase: langs de planeet of maan vliegen op de scheerhoogte"
+  },
+  "PLANNER_APPROACH_INTERCEPT_TIP": {
+    "description": "Tooltip of the Intercept button for a ship or station target.",
+    "message": "1 stuwfase: een transfer die het doel ontmoet"
+  },
+  "PLANNER_APPROACH_NO_TARGET": {
+    "description": "Orbit planner approach section when there is no target.",
+    "message": "Selecteer een object op de kaart of stel een navigatiedoel in"
+  },
+  "PLANNER_APPROACH_ONE_BURN": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "1 stuwfase"
+  },
+  "PLANNER_APPROACH_ORBIT": {
+    "description": "Orbit planner label: altitude of the circular orbit a rendezvous with a planet or moon ends in.",
+    "message": "Baanhoogte"
+  },
+  "PLANNER_APPROACH_ORBIT_TIP": {
+    "description": "Tooltip of the Orbit altitude setting.",
+    "message": "De hoogte van de cirkelbaan waarin de vangstuwfase u achterlaat. De passage wordt zo gemikt dat het laagste punt ervan, afgebogen door de zwaartekracht van het hemellichaam, op deze hoogte ligt, waar de vangstuwfase plaatsvindt."
+  },
+  "PLANNER_APPROACH_PLAN": {
+    "description": "Orbit planner button that computes the approach plan.",
+    "message": "Nadering plannen"
+  },
+  "PLANNER_APPROACH_PLAN_TIP": {
+    "description": "Tooltip of the 'Plan approach' button. %s = PLANNER_APPROACH_ONE_BURN or PLANNER_APPROACH_TWO_BURNS.",
+    "message": "Het plan vervangen door %s vanuit uw huidige baan, getimed voor de minste Δv. Een doel rond een ander hemellichaam wordt in etappes bereikt, met onderweg een parkeerbaan rond elk hemellichaam.\nAls er geen transfer wordt gevonden, blijft het plan zoals het was."
+  },
+  "PLANNER_APPROACH_RENDEZVOUS": {
+    "description": "Orbit planner button: plan a 2-burn rendezvous.",
+    "message": "Rendez-vous"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_BODY_TIP": {
+    "description": "Tooltip of the Rendezvous button for a planet or moon target.",
+    "message": "2 stuwfases: langs de planeet of maan vliegen op de hoogte hieronder, daarna een remstuwfase op het dichtste punt, binnen zijn invloedssfeer, die u daar in een cirkelbaan eromheen achterlaat"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_TIP": {
+    "description": "Tooltip of the Rendezvous button for a ship or station target.",
+    "message": "2 stuwfases: het doel ontmoeten en bij aankomst zijn snelheid evenaren"
+  },
+  "PLANNER_APPROACH_RESULT": {
+    "description": "Orbit planner closest approach result. 1st %s = distance (or PLANNER_APPROACH_ALTITUDE), 2nd %s = time until it.",
+    "message": "%s over %s"
+  },
+  "PLANNER_APPROACH_RESULT_TIP": {
+    "description": "Tooltip of the closest approach result.",
+    "message": "Dichtste nadering van de geplande baan tot het doel, tot een omloop na de laatste stuwfase"
+  },
+  "PLANNER_APPROACH_SPEED": {
+    "description": "Orbit planner closest approach relative speed. %s = speed.",
+    "message": "Relatieve snelheid %s"
+  },
+  "PLANNER_APPROACH_STAND_OFF": {
+    "description": "Orbit planner label: distance behind a ship or station target to meet it at.",
+    "message": "Afstand"
+  },
+  "PLANNER_APPROACH_STAND_OFF_FORMAT": {
+    "description": "Orbit planner drag field format for the stand-off distance. %.1f = kilometres (keep it exactly).",
+    "message": "%.1f km erachter"
+  },
+  "PLANNER_APPROACH_STAND_OFF_TIP": {
+    "description": "Tooltip of the Stand-off setting.",
+    "message": "Een schip of station zo ver erachter ontmoeten, op zijn eigen baan, in plaats van in zijn middelpunt. Na een rendez-vous houdt het schip deze afstand, omdat beide dezelfde baan vliegen."
+  },
+  "PLANNER_APPROACH_TARGET": {
+    "description": "Orbit planner approach section. %s = target name.",
+    "message": "Doel: %s"
+  },
+  "PLANNER_APPROACH_TITLE": {
+    "description": "Orbit planner section header for planning an approach to a target.",
+    "message": "Dichtste nadering"
+  },
+  "PLANNER_APPROACH_TWO_BURNS": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "2 stuwfases"
+  },
+  "PLANNER_BURN_IS_COMPLETE": {
+    "description": "Orbit planner tooltip of the snap and Circularize buttons for a burn that has been flown.",
+    "message": "Deze stuwfase is voltooid"
+  },
+  "PLANNER_CIRCULARIZE": {
+    "description": "Orbit planner button that makes the orbit circular.",
+    "message": "Circulariseren"
+  },
+  "PLANNER_CIRCULARIZE_AT_APSIS": {
+    "description": "Part of the Circularize tooltip. 1st %s = periapsis / apoapsis, 2nd %s = time until it.",
+    "message": "het %s, over %s"
+  },
+  "PLANNER_CIRCULARIZE_AT_POINT": {
+    "description": "Part of the Circularize tooltip when no apsis lies ahead.",
+    "message": "het punt van deze stuwfase (geen perifocus of apofocus vooruit)"
+  },
+  "PLANNER_CIRCULARIZE_NONE": {
+    "description": "Orbit planner Circularize button tooltip when it is not possible.",
+    "message": "De baan van deze stuwfase kan hier niet cirkelvormig worden gemaakt"
+  },
+  "PLANNER_CIRCULARIZE_TIP": {
+    "description": "Orbit planner Circularize button tooltip. 1st %s = where (PLANNER_CIRCULARIZE_AT_APSIS or PLANNER_CIRCULARIZE_AT_POINT), 2nd %s = delta-v needed.",
+    "message": "De baan cirkelvormig maken bij %s: %s Δv.\nVerplaatst deze stuwfase daarheen en vervangt haar prograde, normale en radiale waarden."
+  },
+  "PLANNER_DV_AFTER": {
+    "description": "Orbit planner delta-v summary label: delta-v left after the plan.",
+    "message": "Na plan"
+  },
+  "PLANNER_DV_AFTER_TIP": {
+    "description": "Tooltip of the After plan delta-v line.",
+    "message": "Δv die overblijft als alle geplande stuwfases gevlogen zijn"
+  },
+  "PLANNER_DV_AVAILABLE": {
+    "description": "Orbit planner delta-v summary label: delta-v the ship has.",
+    "message": "Beschikbaar"
+  },
+  "PLANNER_DV_AVAILABLE_TIP": {
+    "description": "Tooltip of the Available delta-v line.",
+    "message": "Δv die de brandstof van het schip geeft bij zijn huidige massa"
+  },
+  "PLANNER_DV_PLAN": {
+    "description": "Orbit planner delta-v summary label: delta-v the remaining burns need.",
+    "message": "Plan"
+  },
+  "PLANNER_DV_PLAN_TIP": {
+    "description": "Tooltip of the Plan delta-v line.",
+    "message": "Δv die de nog te vliegen stuwfases nodig hebben"
+  },
+  "PLANNER_DV_SHORT": {
+    "description": "Orbit planner delta-v summary when the plan needs more than the ship has. %s = missing delta-v.",
+    "message": "Tekort: %s"
+  },
+  "PLANNER_DV_SHORT_TIP": {
+    "description": "Tooltip of the After plan line when delta-v is short.",
+    "message": "Het plan heeft meer Δv nodig dan de brandstof geeft"
+  },
+  "PLANNER_EVENT_APOAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "apofocus"
+  },
+  "PLANNER_EVENT_ASCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "klimmende knoop"
+  },
+  "PLANNER_EVENT_DESCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "dalende knoop"
+  },
+  "PLANNER_EVENT_PERIAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "perifocus"
+  },
+  "PLANNER_REF_EQUATOR": {
+    "description": "Orbit planner reference plane for nodes: the body's equatorial plane. %s = body name.",
+    "message": "evenaar van %s"
+  },
+  "PLANNER_REF_TARGET_ORBIT": {
+    "description": "Orbit planner reference plane for nodes: the target's orbital plane. %s = target name.",
+    "message": "baan van %s"
+  },
+  "PLANNER_REMAINING_DV": {
+    "description": "Orbit planner tooltip of a burn's remaining delta-v.",
+    "message": "Resterende delta-v van deze stuwfase"
+  },
+  "PLANNER_SNAP_NODE_NONE": {
+    "description": "Orbit planner AN/DN button tooltip when the node does not exist. 1st %s = node name, 2nd %s = reference plane.",
+    "message": "Geen %s vooruit ten opzichte van %s op de baan voor deze stuwfase"
+  },
+  "PLANNER_SNAP_NODE_TIP": {
+    "description": "Orbit planner AN/DN button tooltip. 1st %s = node name, 2nd %s = reference plane (PLANNER_REF_TARGET_ORBIT / PLANNER_REF_EQUATOR), 3rd %s = time until it.",
+    "message": "Deze stuwfase naar de volgende %s verplaatsen, ten opzichte van %s, over %s.\nKlik opnieuw voor de volgende omloop."
+  },
+  "PLANNER_SNAP_NONE": {
+    "description": "Orbit planner Pe/Ap button tooltip when the event does not exist. %s = event name.",
+    "message": "Geen %s vooruit op de baan voor deze stuwfase"
+  },
+  "PLANNER_SNAP_TIP": {
+    "description": "Orbit planner Pe/Ap button tooltip. 1st %s = event name (periapsis / apoapsis), 2nd %s = time until it.",
+    "message": "Deze stuwfase naar het volgende %s van de baan ervoor verplaatsen, over %s.\nKlik opnieuw voor de volgende omloop."
   },
   "PLEASE_DESIGN_NEW_PAINTJOB": {
     "description": "",
@@ -2291,6 +3031,30 @@
     "description": "For hyperjump planner",
     "message": "Route-sprongen"
   },
+  "ROVER_BAY": {
+    "description": "Used in ShipInfo view, followed by a yes/no depending on whether the ship has a vehicle bay for the surface rover",
+    "message": "Roverruim"
+  },
+  "ROVER_DEFAULT_VIEW": {
+    "description": "Game option: the view the surface rover starts in when the player gets in",
+    "message": "Roverweergave bij instappen"
+  },
+  "ROVER_DEFAULT_VIEW_DESC": {
+    "description": "The tooltip of the Rover View on Getting In option in the settings menu",
+    "message": "Het beeld bij het instappen in de rover of het naar buiten rijden uit het schip. De weergavetoets wisselt het nog steeds tijdens het rijden"
+  },
+  "ROVER_VIEW_CAB": {
+    "description": "Rover view option: from the driver's seat, with the cab drawn",
+    "message": "Vanuit de cabine"
+  },
+  "ROVER_VIEW_EXTERNAL": {
+    "description": "Rover view option: from outside, circling the rover",
+    "message": "Van buitenaf"
+  },
+  "ROVER_VIEW_NO_MODEL": {
+    "description": "Rover view option: from the driver's eyes, without the rover drawn (as the ship's internal view)",
+    "message": "Ogen van de bestuurder, zonder rover"
+  },
   "SAFETY_LOCKOUT": {
     "description": "Ship jump status",
     "message": "Veiligheidsuitsluiting"
@@ -2387,6 +3151,22 @@
     "description": "UI option",
     "message": "Instellingen"
   },
+  "SETTINGS_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box choosing sun shadow quality",
+    "message": "Schaduwen"
+  },
+  "SETTINGS_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadows' combo box",
+    "message": "Zonneschaduwen van schepen, stations, stadsgebouwen en het terrein, op de grond en op elkaar. Het getal is de resolutie van de shadow map: hoger is scherper en gebruikt meer videogeheugen (ongeveer 12 / 48 / 192 MB). Scherpe schaduwen rond uw schip worden elk frame opnieuw getekend; schaduwen verder weg worden hergebruikt tot de zon of de camera bewogen heeft, dus ze kosten weinig."
+  },
+  "SETTINGS_WIND_HOWL": {
+    "description": "Settings window, The Last Frontier tab, Sound: label of the slider for the surface wind sound volume, in percent",
+    "message": "Windgehuil (%)"
+  },
+  "SETTINGS_WIND_HOWL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Wind howl' slider",
+    "message": "Luidheid van de oppervlaktewind die u hoort bij zweven, geland staan of langzaam vliegen dicht bij de grond van een planeet met een atmosfeer. 100 is het ontworpen niveau; het volgt ook het effectvolume."
+  },
   "SET_AS_TARGET": {
     "description": "",
     "message": "Set destination as navigation target"
@@ -2410,6 +3190,42 @@
   "SET_TO_ZERO": {
     "description": "For the speed limiter button",
     "message": "Stel op nul in"
+  },
+  "SHADOW_DARKNESS": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how dark shadows are, in percent",
+    "message": "Schaduwdonkerte (%)"
+  },
+  "SHADOW_DARKNESS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow darkness' slider",
+    "message": "Hoeveel van het zonlicht een schaduw wegneemt onder een hemel zoals die van de Aarde; de rest staat voor het licht van de hemel, dat beschaduwde plekken nog bereikt. Dunnere atmosferen maken schaduwen donkerder, tot volledig donker in vacuüm."
+  },
+  "SHADOW_DEBUG_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox for a debug view tinting the scene by shadow map",
+    "message": "Shadow maps tonen (debug)"
+  },
+  "SHADOW_DEBUG_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Show shadow maps (debug)' checkbox",
+    "message": "Kleurt alles naar de shadow map die het gebruikt: rood de scherpe map rond uw schip, groen de middelste, blauw de verre."
+  },
+  "SHADOW_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how far shadows are drawn, in metres",
+    "message": "Schaduwafstand (m)"
+  },
+  "SHADOW_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow distance' slider",
+    "message": "Hoe ver van de camera stations, steden en geparkeerde schepen schaduw werpen. Verder spreidt dezelfde shadow map over een groter gebied, dus verre schaduwen worden grover."
+  },
+  "SHADOW_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Hoog (4096)"
+  },
+  "SHADOW_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Laag (1024)"
+  },
+  "SHADOW_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Midden (2048)"
   },
   "SHIP": {
     "description": "",
@@ -2575,6 +3391,50 @@
     "description": "Tab item in the start game menu",
     "message": "Summary"
   },
+  "SURFACE_BOARD_SHIP": {
+    "description": "On-foot HUD prompt: the key and this board the ship",
+    "message": "Aan boord gaan"
+  },
+  "SURFACE_ENTER_ROVER": {
+    "description": "On-foot HUD prompt: the key and this get into the surface rover",
+    "message": "In de rover stappen"
+  },
+  "SURFACE_EVA_SHIP": {
+    "description": "EVA HUD: distance to the player's ship and the speed relative to it, e.g. 'Ship 35 m, 0.4 m/s'",
+    "message": "Schip {distance}, {speed}"
+  },
+  "SURFACE_EXIT_ROVER": {
+    "description": "Rover HUD prompt: the key and this get out of the surface rover",
+    "message": "Uitstappen"
+  },
+  "SURFACE_FREE_CURSOR": {
+    "description": "On-foot HUD hint: hold Alt to free the mouse cursor",
+    "message": "Houd Alt ingedrukt voor de muiscursor"
+  },
+  "SURFACE_JETPACK": {
+    "description": "On-foot HUD: label of the jetpack fuel bar",
+    "message": "Jetpack"
+  },
+  "SURFACE_ROVER_SPEED": {
+    "description": "Rover HUD: the speed in kilometres per hour, e.g. '42 km/h'",
+    "message": "{speed} km/u"
+  },
+  "SURFACE_ROVER_VIEW": {
+    "description": "Rover HUD hint: the key and this change the view (from the cab, without the rover's model, from outside)",
+    "message": "Weergave wisselen"
+  },
+  "SURFACE_STOW_ROVER": {
+    "description": "Rover HUD prompt next to the ship: the key and this drive the rover into the hold and board the ship",
+    "message": "Rover opbergen en aan boord gaan"
+  },
+  "SURFACE_YOUR_ROVER": {
+    "description": "On-foot HUD: label of the marker of the player's surface rover on the compass",
+    "message": "Rover"
+  },
+  "SURFACE_YOUR_SHIP": {
+    "description": "On-foot HUD: label of the marker of the player's own ship on the compass",
+    "message": "Schip"
+  },
   "SYSTEM_BODY_INDEX_IS_OUT_OF_RANGE": {
     "description": "Message when restoring savegame",
     "message": "System body index is out of range"
@@ -2615,6 +3475,26 @@
     "description": "Tooltip introducing the system security rating",
     "message": "System safety rating"
   },
+  "SYSTEM_VIEW_FOLLOW_PLAN": {
+    "description": "System map button tooltip: follow the ship's planned position.",
+    "message": "Volgen waar het plan uw schip brengt – verschuif de kaarttijd om het plan te volgen"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_15": {
+    "description": "System map combo item: latitude/longitude lines every 15 degrees.",
+    "message": "Elke 15°"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_30": {
+    "description": "System map combo item: latitude/longitude lines every 30 degrees.",
+    "message": "Elke 30°"
+  },
+  "SYSTEM_VIEW_LATLONG_LINES": {
+    "description": "System map: button tooltip and settings label for latitude/longitude lines on planets and moons.",
+    "message": "Breedte- en lengtelijnen"
+  },
+  "SYSTEM_VIEW_ZOOM_TO_SHIP": {
+    "description": "System map button tooltip: centre and zoom the map on the player's ship.",
+    "message": "Inzoomen op uw schip"
+  },
   "TECH_CERTIFIED": {
     "description": "Lobby screen shows the tech level (an integer number) of the station",
     "message": "Dit station heeft een  niveau {tech_level} technologie-certificaat."
@@ -2626,6 +3506,14 @@
   "TECH_LEVEL": {
     "description": "System view label for technology level",
     "message": "Tech Level"
+  },
+  "TERRAIN_DETAIL_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the slider for the planet terrain level-of-detail distance",
+    "message": "Terreindetailafstand"
+  },
+  "TERRAIN_DETAIL_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Terrain detail distance' slider",
+    "message": "Hoe ver weg planeetterrein zijn volledige meshdetail krijgt: een terreinstuk wordt verfijnd zodra u dichterbij bent dan dit aantal stukbreedtes. Hoger is scherper van ver weg, maar genereert meer terrein (CPU) en tekent meer driehoeken. Dit is de waarde op middelhoogte (ongeveer 200 tot 2.000 km op Aarde); dicht bij de grond en in een hoge baan, waar het meer kost of minder toont, wordt het automatisch verlaagd. 15 = standaard, 1 = oorspronkelijk Pioneer-gedrag."
   },
   "TEXTURE_COMPRESSION": {
     "description": "",

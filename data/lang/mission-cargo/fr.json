@@ -1,0 +1,58 @@
+{
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "une mission"
+  },
+  "CARGO_LABEL": {
+    "description": "How a mission is named where cargo held for it is listed. {mission} is the mission type",
+    "message": "{mission} : {place}, échéance {date}"
+  },
+  "HELD_ABOARD": {
+    "description": "Missions tab",
+    "message": "{amount} t de {commodity} à bord de « {ship} »"
+  },
+  "HELD_FOR_MISSIONS": {
+    "description": "Cargo sidebar tooltip",
+    "message": "{amount} t réservées pour des missions. Larguez-les depuis l'écran de cargaison."
+  },
+  "HELD_IN_HANGAR": {
+    "description": "Missions tab",
+    "message": "{amount} t de {commodity} dans le dépôt de cargaison de votre hangar à {station}"
+  },
+  "HELD_MISSING": {
+    "description": "Missions tab",
+    "message": "{amount} t de {commodity} manquantes : larguées, perdues ou avariées"
+  },
+  "HELD_NOT_FOR_SALE": {
+    "description": "Commodity market tooltip on the In hold column",
+    "message": "{amount} t réservées pour des missions, pas à vendre"
+  },
+  "HELD_ON_STORED_SHIP": {
+    "description": "Missions tab",
+    "message": "{amount} t de {commodity} à bord de « {ship} », garé à {station}"
+  },
+  "JETTISON_ANYWAY": {
+    "description": "Button",
+    "message": "Larguer"
+  },
+  "JETTISON_HELD": {
+    "description": "",
+    "message": "Cette tonne de {commodity} est réservée pour {mission}."
+  },
+  "JETTISON_MISSION_FAILS": {
+    "description": "",
+    "message": "Sans elle, la mission risque d'échouer."
+  },
+  "JETTISON_TITLE": {
+    "description": "Title of the window asking before mission cargo is jettisoned",
+    "message": "Larguer {commodity} ?"
+  },
+  "MISSION_CARGO": {
+    "description": "Missions tab: heading over where the mission's cargo is",
+    "message": "Cargaison de mission"
+  },
+  "OF_WHICH_HELD": {
+    "description": "Cargo list: part of a commodity held for a mission. {icon} is the mission cargo mark",
+    "message": "dont {icon} {amount} t : {mission}"
+  }
+}

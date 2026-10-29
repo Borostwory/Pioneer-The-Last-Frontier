@@ -75,6 +75,14 @@
     "description": "Descriptive name for the IncreaseTimeAcceleration action.",
     "message": "加快时间流逝"
   },
+  "BIND_INTERACT": {
+    "description": "Descriptive name for the Interact action (on foot: board the ship)",
+    "message": "交互"
+  },
+  "BIND_JETPACK_UP": {
+    "description": "Descriptive name for the on-foot Jetpack Up / Down axis",
+    "message": "喷气背包 上升/下降"
+  },
   "BIND_KILL_ROT": {
     "description": "Descriptive name for the KillRot action.",
     "message": "杀伤旋转"
@@ -171,6 +179,14 @@
     "description": "Descriptive name for the RightCamera action.",
     "message": "切换到右侧摄像机"
   },
+  "BIND_ROVER_CYCLE_VIEW": {
+    "description": "Descriptive name for the action that cycles the views while driving the surface rover: from the cab, without the rover's model, from outside",
+    "message": "切换漫游车视角"
+  },
+  "BIND_ROVER_LIGHTS": {
+    "description": "Descriptive name for the action that steps the surface rover's lamps through off and their brightness levels while driving",
+    "message": "漫游车灯光"
+  },
   "BIND_SECONDARY_FIRE": {
     "description": "Descriptive name for the SecondaryFire action.",
     "message": "次要火力"
@@ -223,6 +239,30 @@
     "description": "Descriptive name for the View Zoom axis",
     "message": "视图缩放"
   },
+  "BIND_WALK_FORWARD": {
+    "description": "Descriptive name for the on-foot Walk Forward / Back axis",
+    "message": "前进/后退"
+  },
+  "BIND_WALK_JUMP": {
+    "description": "Descriptive name for the on-foot Jump action",
+    "message": "跳跃"
+  },
+  "BIND_WALK_LOOK_PITCH": {
+    "description": "Descriptive name for the on-foot Look Up / Down axis",
+    "message": "向上/向下看"
+  },
+  "BIND_WALK_LOOK_YAW": {
+    "description": "Descriptive name for the on-foot Look Left / Right axis",
+    "message": "向左/向右看"
+  },
+  "BIND_WALK_RIGHT": {
+    "description": "Descriptive name for the on-foot Strafe Right / Left axis",
+    "message": "向右/向左平移"
+  },
+  "BIND_WALK_RUN": {
+    "description": "Descriptive name for the on-foot Run action (hold)",
+    "message": "奔跑"
+  },
   "BUTTON": {
     "description": "",
     "message": "\"按钮\""
@@ -251,6 +291,10 @@
     "description": "Header for the GeneralViewControls input group.",
     "message": "通用视角控制"
   },
+  "GROUP_INTERACTION": {
+    "description": "Header for the Interaction input group.",
+    "message": "交互"
+  },
   "GROUP_LANDING_CONTROL": {
     "description": "Group label for landing-related inputs",
     "message": "着陆控制"
@@ -261,6 +305,10 @@
   },
   "GROUP_MISCELLANEOUS": {
     "message": "杂项"
+  },
+  "GROUP_MOVEMENT": {
+    "description": "Header for the Movement input group.",
+    "message": "移动"
   },
   "GROUP_RADAR_CONTROL": {
     "description": "Group label for radar-related inputs",
@@ -337,6 +385,10 @@
   "PAGE_MAP_CONTROLS": {
     "description": "Header for the MapControls input page.",
     "message": "地图控制"
+  },
+  "PAGE_ON_FOOT": {
+    "description": "Header for the OnFoot input page.",
+    "message": "步行"
   },
   "PAGE_SHIP_CONTROLS": {
     "description": "Header for the ShipControls input page.",

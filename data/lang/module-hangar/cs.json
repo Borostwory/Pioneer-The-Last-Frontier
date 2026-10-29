@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "na palubě"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "Na palubě „{ship}“"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "V letu"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Přidat stání"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "vše"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Kolik se vejde"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Už na palubě „{ship}“: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Už je na cestě na jinou stanici."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Už si tu pronajímáte hangár."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Už je na cestě zpět."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Čekají i jinde:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "mise"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Stání"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Stání lze později přidat nebo odebrat."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Objednat doručení"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Koupit přepravu"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "„{ship}“ je uložena ve vašem hangáru zde."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "Trup „{ship}“ je prodán: předměty do skladu vybavení: {items}, náklad do skladu nákladu: {tons} t, členové posádky do salonku: {crew}."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Vzít na palubu"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Její vybavení jde do skladu vybavení hangáru a náklad do skladu nákladu hangáru; prodá se jen trup."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Zůstane, jak je, s vybavením a veškerým nákladem; nic se nepřesouvá na novou loď. Platíte plnou cenu."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Prodá se s veškerým vybavením. Veškerý náklad se přesune na novou loď."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Dát na protiúčet holý trup „{ship}“"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Uložit „{ship}“ na stání zde"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Dát „{ship}“ na protiúčet"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Koupit {ship}?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "pasažéři na palubě"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Zrušit doručení"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "Vrací se {refund} (polovina ceny) a zásilka jde zpět na {station}, příjezd {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Zrušit doručení: {what}?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "teď nelze odebrat"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} je povrchový kosmodrom a tato loď nemá slot pro atmosférický štít."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Nemůžete odstartovat s posádkou menší než {min}."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Náklad"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Náklad na palubě"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Nákladový prostor"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "náklad v něm by se bez něj nevešel"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Sklad nákladu: {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Sklad nákladu je prázdný."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Vykládejte zboží do skladu nákladu hangáru a nakládejte je do lodi, kterou letíte. Bez omezení a zdarma; náklad misí si ponechá své označení."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Náklad"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Příjezd"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Stání"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Poplatek za stání"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Náklady"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Vzdálenost"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Umístění"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Jméno"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Zaplaceno do"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Parkovné"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Za měsíc"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Loď"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Nejlepší dovednost"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Stanice"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Stav"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Sklad"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Typ"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "nastoupí na palubu"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/týden"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/noc + {wage}/týden"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Zaplaceno předem: zbývá {credit}, společně pro všechna stání. Při dnešním nájmu vystačí zhruba do {date}; potom se nájem strhává z vašeho účtu vždy 1. dne v měsíci."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "Předplacený nájem vašeho hangáru na {station} vyprší {date}. Potom se účtuje vždy 1. dne v měsíci."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Posádka"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} — příjezd do salonku posádky na {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Posádka pro „{ship}“ (pojme {min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "Posádka: {crew} (tato loď pojme {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Salonek posádky"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Posádka nové lodi"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Kdo není zaškrtnut, čeká zde v salonku."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Na cestě se platí poloviční mzda a žádný poplatek za salonek. Po příjezdu čekají v tamním salonku."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Co se stane s „{ship}“? Vyberte:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Doručovací služba"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Doručení „{ship}“"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Dlužíte jim {owed} na mzdách. Nevezmou to dobře a dluh nad {limit} se považuje za smluvní podvod."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} čeká zde v salonku. Smlouva končí a odchází z vaší posádky."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Propustit: {name}?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Tato loď se nevejde do dokovacích portů na {station}: jakmile odletí, nebude tam moci znovu přistát."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "Palivo: {fuel} t"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "prázdné"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "prázdný"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "prázdný"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Ukončit nájem"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Vzdát se lze jen prázdného hangáru: bez lodí, vybavení a zboží, nic na cestě a žádný nezaplacený nájem."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Vybavení"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "Do skladu vašeho hangáru na {station} dorazily předměty: {count}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Vybavení zde…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Vybavení"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Objem vybavení: využito {used} z {capacity} m³"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Namontováno na"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Namontovat na „{ship}“"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Flotila"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Posádka v salonkách"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangáry"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Lodě"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Sklad vybavení: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Letět touto lodí"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Strhává se z vašeho účtu."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Hradí se z předplatku."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Hradí se z předplatku, zbytek z vašeho účtu."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "Odkud:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "Odkud: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Palivo"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "počká v salonku"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Karta Hangár"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangár"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Hangár: {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Tento hangár je zablokován, dokud nebude zaplacen dlužný nájem."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} (volná stání: {free})"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Díky! Počkám zde v salonku posádky, dokud mě nebudete potřebovat na palubě."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "nákladový prostor je plný"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Nákladový prostor: využito {used} z {total} t"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Trup"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Celá posádka kromě vás čeká zde v salonku. Vezměte je na palubu na kartě Hangár, Salonek posádky."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hypermotor"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "Na volné stání zde (volná: {free})"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "v hyperprostoru"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "v salonku"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "Zde v salonku"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "Předměty vybavení uložené ve skladu tohoto hangáru: {count}."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "Předměty vybavení, které se nevešly zpět na loď a jsou uloženy ve skladu hangáru: {count}."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "Vybrané předměty: {count}"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Pronajmout hangár"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "potřebuje ji náklad na palubě"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} sv. l. daleko"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Naložit na palubu"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "Posádka čekající v salonku: {crew}"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Váš hangár: obsazeno {ships} z {bays} stání, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "účtováno měsíčně"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "zaplaceno do {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "nájem nezaplacen"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "Zde v salonku po výměně: {count}, {cost} za noc plus poloviční mzdy."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Salonek posádky: {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Nezaplacené poplatky za salonek: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Dlužíte {debt} na poplatcích za salonek. Zaplaťte je, než bude v salonku čekat někdo další."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Salonek: {rate} za osobu a noc (nyní {now} za noc), účtováno 1. dne v měsíci. Posádka čekající zde dostává jako odměnu za pohotovost poloviční mzdu a nic nového se nenaučí."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Poplatky za salonek se nepodařilo zaplatit celé. Dlužíte {debt}; strhne se z vašich peněz, až je budete mít."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Během čekání dostávají poloviční mzdu. Přesouvejte je na kartě stanice Hangár, Salonek posádky."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "„{ship}“ má trup na {hull}% a palivo na {fuel}%. Opravy a doplnění paliva jsou k dispozici zde."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Hangár má nejvýše 4 stání."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Ponechaný náklad misí musí být doručen lodí, která ho veze."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "měsíců"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d měs."
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "potřebuje podporu života v nákladovém prostoru"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "Náklad „{commodity}“ potřebuje podporu života v nákladovém prostoru, kterou uložená loď nemá."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Další účet {date}: zhruba {amount}, nájem za {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Další účet {date}: zhruba {amount}, nájem za {from} – {to} (část měsíce). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Nikdo tu nečeká."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Nikdo nečeká v salonku ani necestuje."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Na jiné stanici nikdo nečeká."
+  },
+  "NONE": {
+    "description": "",
+    "message": "žádné"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Zaškrtněte, co poslat."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Musíte být na palubě své lodi."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Tato loď je uložena na jiné stanici."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Nemáte dost peněz."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "nepředplaceno"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Na {station} není volné stání pro návrat."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Na palubě není žádný náklad."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Nic není zaplaceno předem: nájem se strhává z vašeho účtu vždy 1. dne v měsíci."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Vyberte, kam to má jít."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "nedostatek objemu pro vybavení"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Na {station} není volné stání."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Zde není volné stání. Nejprve přidejte stání."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Nemáte pronajatý žádný hangár. Pronajmout si ho můžete na libovolné stanici, na kartě Hangár."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Na {station} nemáte hangár."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "žádný, nemůže opustit svůj systém"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Jiný hangár nemáte."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "Ve vašich ostatních hangárech nejsou uloženy žádné lodě."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Zatím tu nejsou uloženy žádné lodě."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "na této lodi pro to není slot"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "Předměty: {count}"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Nabídnout místo, zatím s čekáním zde v salonku posádky"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "na cestě z {from}, příjezd {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "Hangár, odkud přišla, už není váš."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} stání)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "zaplaceno zhruba do {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Na palubě jsou pasažéři: nejprve dokončete své smlouvy na přepravu pasažérů."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Zaplatit"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Zaplatit {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Teď nic: nájem se účtuje vždy 1. dne v měsíci."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Zaplatit předem"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Zaplatit předem…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Vyberte loď."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Nájem nyní: {rent} měsíčně. Zaplatit za:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Předplatit nájem: {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, příjezd {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 měs."
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 rok"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 roky"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 měs."
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 měs."
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Odebrat stání"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Odebrat lze jen prázdné stání a hangár si ponechá alespoň jedno."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Přejmenovat"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Prázdný: {empty} měsíčně. Se zaparkovanou „{ship}“ ({tonnes} t): {rent} měsíčně."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Nájem za měsíc: {bay} za stání plus {tonne} za tunu zaparkovaného trupu."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Nájem za váš hangár na {station} se nepodařilo zaplatit. Dlužíte {debt}; lodě tam jsou zablokované, dokud nebude zaplaceno."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Nezaplacený nájem: {debt} (měsíce: {months}, včetně 10% penále). Lodě zde jsou zablokované, dokud nebude zaplaceno."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Zbytek zůstává na palubě „{ship}“."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "vrací se na {to}, příjezd {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "rover stojí zaparkovaný na planetě"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Váš rover stojí na: {planet}. Nejprve ho uložte."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "stejný systém"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Uložit"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Vyberte uloženou loď v tabulce výše, abyste ji viděli a mohli s ní letět."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Prodat"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} zaplatí {price} za „{item}“, stejně jako obchod s vybavením."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Prodat „{item}“?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Prodat této stanici za {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Poslat posádku ze salonku: {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Poslat do salonku na jiné stanici"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Poslat vybavení…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Poslat vybavení z {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Poslat předměty z tohoto skladu do jiného vašeho hangáru"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Nechat doručovací službu přepravit tuto loď do jiného vašeho hangáru"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Poslat do…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Čekat zde v salonku"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Lodě"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Lodě na cestě a lodě v hangárech zablokovaných kvůli nezaplacenému nájmu nejsou uvedeny."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "„{name}“ (aktivní)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "„{ship}“ dorazila do vašeho hangáru na {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · trup {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "„{ship}“ pojme nejvýše {max} členů posádky."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Na cestě: dokud nedorazí, nelze s ní letět, poslat ji ani přezbrojit."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Cena: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "„{ship}“ je zpět ve vašem hangáru na {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "„{name}“ (uložena zde)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Loď cestuje se svým nákladem a vybavením a v cíli zabírá své stání. Na cestě s ní nelze letět ani ji přezbrojit. Parkovné se účtuje od jejího příjezdu."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Zobrazit na mapě sektoru"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Od"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "jeho sloty na této lodi jsou obsazené"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "jeho slot na této lodi má špatnou velikost"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Stanice"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "loď, kterou letíte"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "V letu"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Uložena, zablokována: nezaplacený nájem"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "uložena od {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Uložena"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Sklad hangáru: {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "Předměty: {count} · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Sklad je prázdný."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Odmontujte předměty do skladu, pak je namontujte na loď vybranou vlevo, nebo je prodejte této stanici. Pravidla a ceny obchodu s vybavením, montáž zdarma. Chcete-li předmět namontovat do určitého slotu, nejprve vyberte prázdný slot."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "váš hangár zde nemá volné stání."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "nemáte tu hangár."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "Předměty: {items}, {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "„{ship}“ bude uložena na toto stání. Posádka nikdy nezůstává na uložené lodi: kdo není níže zaškrtnut, čeká zde v salonku."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Vyměnit lodě"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Přestoupit na „{ship}“?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Nic"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Potom {rent} za každý celý měsíc, účtováno 1. dne v měsíci."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Toto je loď, kterou letíte."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "„{ship}“ potřebuje alespoň {min} členů posádky a na palubě by byl jen {crew}. Neodstartujete, dokud nenajmete další nebo nevezmete někoho ze salonku."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "„{ship}“ pojme nejvýše {max} členů posádky a na palubě by jich bylo {crew}. Odškrtněte {over}, abyste je nechali v salonku."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "„{ship}“ má místo na {room} t. Vezměte o {over} t méně."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Celkem: obsazeno {used} z {bays} stání"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Kam:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "{ship} pojme {room} t a vy máte na palubě {used} t. Při protiúčtu se veškerý náklad přesune na novou loď: nejprve prodejte nebo vyložte {over} t, nebo zvolte jinou možnost."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Máte {used} t nákladu a {ship} pojme {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Přivést posádku do salonku: {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Nechat sem do salonku přivézt posádku čekající na jiné stanici"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Převézt vybavení na {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Nechat sem doručit předměty ze skladu jiného hangáru"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Převézt z…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Převézt sem"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Nechat doručit do vašeho hangáru zde"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Převézt loď na {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Nechat sem doručit loď uloženou v jiném vašem hangáru"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "cestuje na {station}, příjezd {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Odmontovat vše"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Přesunout do skladu vše, co lze z této lodi sundat"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "nejprve odmontujte předměty namontované na něm"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Odmontovat do skladu"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Vyložit do skladu nákladu"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "nezaplaceno: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} týdně"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} na {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "čeká: {count}"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Čekající v salonkách"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "čeká od {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Vítejte zpět."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "Členové posádky čekající v salonku: {crew}."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Váš hangár zde: lodě: {ships}, stání: {bays}."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Namontováno bez slotu"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "let"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Vaše další hangáry:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Vy (velitel)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(máte {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Platíte: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Obdržíte: {amount}"
+  }
+}

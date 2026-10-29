@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "la bord"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "La bordul „{ship}”"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "În zbor"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Adaugă loc"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "tot"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Tot ce încape"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Deja la bordul „{ship}”: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Este deja pe drum spre altă stație."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Închiriezi deja un hangar aici."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Este deja pe drumul de întoarcere."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "În așteptare și în alte locuri:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "o misiune"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Locuri"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Locurile pot fi adăugate sau eliminate mai târziu."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Comandă livrarea"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Rezervă călătoria"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "„{ship}” este parcată în hangarul tău de aici."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "Fuzelajul „{ship}” a fost vândut: {items} obiect(e) au mers în magazia de echipamente, {tons} t de marfă în depozitul de marfă și {crew} membri ai echipajului în salon."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Adu la bord"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Echipamentele merg în magazia de echipamente a hangarului, iar marfa în depozitul de marfă al hangarului; se vinde doar fuzelajul."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Rămâne așa cum este, cu echipamentele și toată marfa; nimic nu trece pe noua navă. Plătești prețul întreg."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Vândută cu toate echipamentele. Toată marfa trece pe noua navă."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Dă la schimb doar fuzelajul „{ship}”"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Parchează „{ship}” într-un loc de aici"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Dă la schimb „{ship}”"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Cumperi o {ship}?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "pasageri la bord"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Anulează livrarea"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "Ți se rambursează {refund} (jumătate din preț), iar ea se întoarce la {station}, cu sosire pe {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Anulezi livrarea pentru {what}?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "nu poate fi demontat acum"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} este un port stelar de suprafață, iar această navă nu are slot pentru scut atmosferic."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Nu poți decola cu mai puțin de {min} membri ai echipajului."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Marfă"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Marfă la bord"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Cală"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "marfa pe care o ține n-ar încăpea fără el"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Depozit de marfă la {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Depozitul de marfă este gol."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Descarcă mărfuri în depozitul de marfă al hangarului și încarcă-le pe nava pe care o pilotezi. Nelimitat și gratuit; marfa de misiune își păstrează marcajul."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Marfă"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Sosire"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Loc"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Taxa locului"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Cost"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Distanță"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Locație"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Nume"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Plătit până la"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Taxa de parcare"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Pe lună"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Navă"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Cea mai bună abilitate"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Stație"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Stare"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Magazie"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Tip"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "va veni la bord"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/săpt."
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/noapte + {wage}/săpt."
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Plătit în avans: {credit} credit rămas, comun pentru toate locurile. La chiria de azi ajunge până în jur de {date}; după aceea, chiria se ia din contul tău pe 1 ale fiecărei luni."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "Chiria plătită în avans pentru hangarul tău de la {station} se termină pe {date}. După aceea, se facturează pe 1 ale fiecărei luni."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Echipaj"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} a sosit în salonul echipajului de la {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Echipaj pentru „{ship}” (acceptă {min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} membri ai echipajului (această navă acceptă {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Salonul echipajului"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Echipaj pentru noua navă"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Cine nu e bifat așteaptă în salonul de aici."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Pe drum se plătește jumătate din salariu și nicio taxă de salon. La sosire așteaptă în salonul de acolo."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Ce se întâmplă cu „{ship}”? Alege una:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Serviciul de livrare"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Livrează „{ship}”"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Le datorezi {owed} în salarii. Nu vor lua bine asta, iar o datorie mai mare de {limit} contează drept fraudă contractuală."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} așteaptă în salonul de aici. Contractul se încheie și părăsește echipajul tău."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Concediezi pe {name}?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Această navă nu încape în porturile de andocare de la {station}: odată plecată, nu mai poate andoca acolo."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t combustibil"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "liber"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "goală"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "gol"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Încheie închirierea"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Poți renunța doar la un hangar gol: fără nave, echipamente sau mărfuri, nimic pe drum și nicio chirie neplătită."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Echipamente"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} obiect(e) au sosit în magazia hangarului tău de la {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Echipamente aici…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Echipamente"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Volum echipamente: {used} din {capacity} m³ folosiți"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Montat pe"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Montează pe „{ship}”"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Flotă"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Echipaj în saloane"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangare"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Nave"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Magazie de echipamente: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Pilotează această navă"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Se ia din contul tău."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Plătit din creditul tău."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Plătit din creditul tău, restul din contul tău."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "De la:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "De la: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Combustibil"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "va aștepta în salon"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Fila Hangar"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangar"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Hangar la {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Acest hangar este blocat până la plata chiriei restante."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} loc(uri) liber(e))"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Mulțumesc! Voi aștepta în salonul echipajului de aici până ai nevoie de mine la bord."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "cala este plină"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Cală: {used} din {total} t folosite"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Fuzelaj"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Tot echipajul în afară de tine așteaptă în salonul de aici. Adu-i la bord din fila Hangar, Salonul echipajului."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hiperpropulsor"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "Într-un loc liber de aici ({free} libere)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "în hiperspațiu"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "în salon"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "În salonul de aici"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "{count} echipament(e) sunt păstrate în magazia acestui hangar."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "{count} echipament(e) nu au mai încăput pe navă și sunt păstrate în magazia hangarului."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} obiect(e) selectate"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Închiriază hangar"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "marfa de la bord are nevoie de el"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "la {dist} al"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Încarcă la bord"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} membri ai echipajului așteaptă în salon"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Hangarul tău: {ships} din {bays} loc(uri) ocupate, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "facturat lunar"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "plătit până pe {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "chirie neplătită"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "În salonul de aici după schimb: {count}, {cost} pe noapte, plus jumătate din salariu."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Salonul echipajului la {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Taxe de salon neplătite: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Datorezi {debt} în taxe de salon. Plătește-le înainte ca altcineva să aștepte într-un salon."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Salon: {rate} de persoană pe noapte ({now} pe noapte acum), facturat pe 1 ale lunii. Echipajul care așteaptă aici primește jumătate din salariu ca reținere și nu învață nimic nou."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Taxele de salon nu au putut fi plătite integral. Datorezi {debt}; suma se ia din banii tăi când îi ai."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Primesc jumătate din salariu cât timp așteaptă. Mută-i din fila Hangar a unei stații, Salonul echipajului."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "„{ship}”: carenă {hull}%, combustibil {fuel}%. Reparații și realimentare sunt disponibile aici."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Un hangar are cel mult 4 locuri."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Marfa de misiune lăsată în urmă trebuie livrată cu nava care o transportă."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "luni"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d luni"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "necesită susținerea vieții în hală"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} necesită susținerea vieții în hală, pe care nava parcată nu o are."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Următoarea factură pe {date}: în jur de {amount}, chiria pentru {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Următoarea factură pe {date}: în jur de {amount}, chiria pentru {from} – {to} (o parte de lună). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Nu așteaptă nimeni aici."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Nimeni nu așteaptă într-un salon și nimeni nu călătorește."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Nimeni nu așteaptă la altă stație."
+  },
+  "NONE": {
+    "description": "",
+    "message": "niciunul"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Bifează ce trimiți."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Trebuie să fii la bordul navei tale."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Acea navă este parcată la altă stație."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Nu ai destui bani."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "neplătit în avans"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Niciun loc liber la {station} pentru întoarcere."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Nicio marfă la bord."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Nimic plătit în avans: chiria se ia din contul tău pe 1 ale fiecărei luni."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Alege destinația."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "volum de echipamente insuficient"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Niciun loc liber la {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Niciun loc liber aici. Adaugă mai întâi un loc."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Nu închiriezi niciun hangar. Închiriază unul la orice stație, în fila Hangar."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Nu ai hangar la {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "niciunul, nu își poate părăsi sistemul"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Nu ai alt hangar."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "Nicio navă nu e parcată în celelalte hangare ale tale."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Încă nu e parcată nicio navă aici."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "niciun slot pentru el pe această navă"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} obiect(e)"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Oferă un post, deocamdată cu așteptare în salonul echipajului de aici"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "pe drum de la {from}, sosește pe {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "Hangarul din care a venit nu mai este al tău."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} locuri)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "plătit până în jur de {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Pasageri la bord: încheie mai întâi contractele cu pasagerii."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Plătește"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Plătește {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Nimic acum: chiria se facturează pe 1 ale fiecărei luni."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Plată în avans"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Plată în avans…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Alege o navă."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Chiria acum: {rent} pe lună. Plătește pentru:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Plătește în avans chiria la {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, sosește pe {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 l"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 an"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 ani"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 l"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 l"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Elimină loc"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Doar un loc liber poate fi eliminat, iar un hangar păstrează cel puțin unul."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Redenumește"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Gol: {empty} pe lună. Cu „{ship}” ({tonnes} t) parcată: {rent} pe lună."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Chirie lunară: {bay} pe loc, plus {tonne} pe tonă de fuzelaj parcat."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Chiria pentru hangarul tău de la {station} nu a putut fi plătită. Datorezi {debt}; navele de acolo sunt blocate până la plată."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Chirie neplătită: {debt} ({months} lun(i), cu o penalizare de întârziere de 10%). Navele de aici sunt blocate până la plată."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Restul rămâne la bordul „{ship}”."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "se întoarce la {to}, sosește pe {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "roverul este parcat pe o planetă"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Roverul tău este parcat pe {planet}. Pune-l mai întâi la loc."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "același sistem"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Salvează"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Selectează o navă parcată în tabelul de mai sus ca s-o vezi și s-o pilotezi."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Vinde"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} plătește {price} pentru {item}, cum ar plăti Piața Echipamente."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Vinzi {item}?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Vinde acestei stații pentru {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Trimite echipaj din salonul de la {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Trimite în salonul altei stații"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Trimite echipamente…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Trimite echipamente de la {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Trimite obiecte din această magazie la alt hangar al tău"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Serviciul de livrare duce această navă la alt hangar al tău"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Trimite la…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Așteaptă în salonul de aici"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Nave"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Navele aflate pe drum și cele din hangare blocate pentru chirie neplătită nu sunt listate."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "„{name}” (activă)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "„{ship}” a sosit la hangarul tău de la {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · fuzelaj {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "„{ship}” acceptă cel mult {max} membri ai echipajului."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Pe drum: nu poate fi pilotată, trimisă sau reechipată până nu sosește."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Preț: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "„{ship}” s-a întors la hangarul tău de la {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "„{name}” (parcată aici)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Nava călătorește cu marfa și echipamentele sale și își ocupă locul la destinație. Nu poate fi pilotată sau reechipată pe drum. Parcarea se taxează de la sosire."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Arată pe harta sectorului"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "De la"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "sloturile sale pe această navă sunt ocupate"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "slotul său pe această navă are o mărime greșită"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Stație"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "nava pe care o pilotezi"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "În zbor"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Parcată, blocată: chirie neplătită"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "parcată din {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Parcată"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Magazia hangarului la {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} obiect(e) · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Magazia este goală."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Demontează obiecte în magazie, apoi montează-le pe nava aleasă în stânga sau vinde-le acestei stații. Regulile și prețurile Pieței Echipamente, fără taxă de montare. Alege mai întâi un slot gol pentru a monta un obiect în acel slot."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "hangarul tău de aici nu are niciun loc liber."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "nu ai hangar aici."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} obiect(e), {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "„{ship}” va fi parcată în acest loc. Echipajul nu rămâne niciodată pe o navă parcată: cine nu e bifat mai jos așteaptă în salonul de aici."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Schimbă nava"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Treci pe „{ship}”?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Nimic"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "După aceea, {rent} pentru fiecare lună întreagă, facturat pe 1."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Aceasta este nava pe care o pilotezi."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "„{ship}” are nevoie de cel puțin {min} membri ai echipajului, iar la bord ar fi doar {crew}. Nu poți decola până nu angajezi mai mulți sau nu iei pe cineva din salon."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "„{ship}” acceptă cel mult {max} membri ai echipajului, iar la bord ar fi {crew}. Debifează {over} ca să rămână în salon."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "„{ship}” are loc pentru {room} t. Ia cu {over} t mai puțin."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Total: {used} din {bays} locuri ocupate"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "La:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "O {ship} are loc pentru {room} t, iar tu ai {used} t la bord. La schimb, toată marfa trece pe noua navă: vinde sau descarcă mai întâi {over} t, ori alege altă opțiune."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Ai {used} t de marfă, iar o {ship} are loc pentru {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Adu echipaj în salonul de la {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Adu în acest salon echipajul care așteaptă la altă stație"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Transferă echipamente la {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Adu aici obiecte din magazia altui hangar"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Transferă de la…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Transferă aici"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Livrează-l la hangarul tău de aici"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Transferă o navă la {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Adu aici o navă parcată în alt hangar al tău"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "călătorește spre {station}, sosește pe {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Demontează tot"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Mută în magazie tot ce se poate demonta de pe această navă"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "demontează mai întâi obiectele montate pe el"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Demontează în magazie"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Descarcă în depozitul de marfă"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "neplătit: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} pe săptămână"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} la {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} în așteptare"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "În așteptare în saloane"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "așteaptă din {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Bine ai revenit."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} membri ai echipajului așteaptă în salon."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Hangarul tău de aici adăpostește {ships} nav(e) în {bays} loc(uri)."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Montat fără slot"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "ani"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Celelalte hangare ale tale:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Tu (comandant)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(ai {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Plătești: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Primești: {amount}"
+  }
+}

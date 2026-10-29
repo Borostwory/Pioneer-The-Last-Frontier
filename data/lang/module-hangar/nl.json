@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "aan boord"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "Aan boord van \"{ship}\""
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "In vlucht"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Ligplaats erbij"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "alles"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Alles wat past"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Al aan boord van \"{ship}\": {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Het is al onderweg naar een ander station."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "U huurt hier al een hangar."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Het is al op de terugweg."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Wacht ook elders:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "een missie"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Ligplaatsen"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Ligplaatsen kunnen later worden toegevoegd of verwijderd."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Levering boeken"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Overtocht boeken"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "\"{ship}\" staat gestald in uw hangar hier."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "De romp van \"{ship}\" is verkocht: {items} uitrustingsstuk(ken) naar de uitrustingsopslag, {tons} t lading naar de ladingopslag en {crew} bemanningslid/-leden naar de lounge."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Aan boord halen"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "De uitrusting gaat naar de uitrustingsopslag van de hangar en de lading naar de ladingopslag; alleen de romp wordt verkocht."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Blijft zoals het is, met uitrusting en alle lading; niets gaat naar het nieuwe schip. U betaalt de volle prijs."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Verkocht met alle uitrusting. Alle lading gaat naar het nieuwe schip."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Alleen de kale romp van \"{ship}\" inruilen"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "\"{ship}\" hier in een ligplaats stallen"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "\"{ship}\" inruilen"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Een {ship} kopen?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "passagiers aan boord"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Levering annuleren"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "{refund} (de halve prijs) wordt terugbetaald, en het gaat terug naar {station}, aankomst {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Levering van {what} annuleren?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "kan nu niet verwijderd worden"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} is een oppervlakte-ruimtehaven, en dit schip heeft geen slot voor atmosfeerschilden."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "U kunt niet vertrekken met minder dan {min} bemanningsleden."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Lading"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Lading aan boord"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Laadruim"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "de lading erin zou zonder niet passen"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Ladingopslag op {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "De ladingopslag is leeg."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Los goederen in de ladingopslag van de hangar en laad ze in het schip waarmee u vliegt. Onbeperkt en gratis; missielading houdt haar markering."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Lading"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Aankomst"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Ligplaats"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Plaatskosten"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Kosten"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Afstand"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Locatie"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Naam"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Betaald tot"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Parkeerkosten"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Per maand"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Schip"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Beste vaardigheid"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Station"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Status"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Opslag"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Type"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "komt aan boord"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/week"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/nacht + {wage}/week"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Vooruitbetaald: nog {credit} tegoed, gedeeld door alle ligplaatsen. Bij de huidige huur volstaat het tot ongeveer {date}; daarna wordt de huur op de 1e van elke maand van uw rekening afgeschreven."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "De vooruitbetaalde huur voor uw hangar op {station} loopt af op {date}. Daarna wordt ze op de 1e van elke maand gefactureerd."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Bemanning"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} is aangekomen in de bemanningslounge op {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Bemanning voor \"{ship}\" ({min}–{max} personen):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} bemanningsleden (dit schip neemt {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Bemanningslounge"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Bemanning voor het nieuwe schip"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Wie niet is aangevinkt, wacht hier in de lounge."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Onderweg wordt half loon betaald en geen loungekosten. Na aankomst wachten ze daar in de lounge."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Wat gebeurt er met \"{ship}\"? Kies een optie:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Leveringsdienst"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "\"{ship}\" laten leveren"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "U bent ze {owed} aan loon verschuldigd. Dat zullen ze niet goed opnemen, en een schuld van meer dan {limit} geldt als contractfraude."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} wacht hier in de lounge. Het contract eindigt en deze persoon verlaat uw bemanning."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "{name} ontslaan?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Dit schip past op geen enkele aanlegpoort van {station}: zodra het vertrekt, kan het daar niet meer aanmeren."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t brandstof"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "leeg"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "leeg"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "leeg"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Huur opzeggen"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Alleen een lege hangar kan worden opgezegd: geen schepen, uitrusting of goederen, niets onderweg en geen onbetaalde huur."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Uitrusting"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} uitrustingsstuk(ken) aangekomen in uw hangaropslag op {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Uitrusting hier…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Uitrusting"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Uitrustingsvolume: {used} van {capacity} m³ gebruikt"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Ingebouwd in"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Inbouwen in \"{ship}\""
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Vloot"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Bemanning in lounges"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangars"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Schepen"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Uitrustingsopslag: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Met dit schip vliegen"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Afgeschreven van uw rekening."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Betaald uit uw tegoed."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Betaald uit uw tegoed, de rest van uw rekening."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "Van:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "Van: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Brandstof"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "wacht in de lounge"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Tabblad Hangar"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangar"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Hangar op {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Deze hangar is vergrendeld tot de achterstallige huur is betaald."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} vrije ligplaats(en))"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Bedankt! Ik wacht hier in de bemanningslounge tot u me aan boord nodig hebt."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "het laadruim is vol"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Laadruim: {used} van {total} t gebruikt"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Romp"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "De hele bemanning behalve u wacht hier in de lounge. Haal ze aan boord via het tabblad Hangar, Bemanningslounge."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hyper-aandrijving"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "In een vrije ligplaats hier ({free} vrij)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "in de hyperruimte"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "in de lounge"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "Hier in de lounge"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "{count} uitrustingsstuk(ken) worden in de opslag van deze hangar bewaard."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "{count} uitrustingsstuk(ken) pasten niet terug op het schip en worden in de opslag van de hangar bewaard."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} stuk(s) gekozen"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Hangar huren"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "lading aan boord heeft het nodig"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} lj verderop"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Aan boord laden"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} bemanningsleden wachten in de lounge"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Uw hangar: {ships} van {bays} ligplaats(en) in gebruik, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "maandelijks gefactureerd"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "betaald tot {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "huur onbetaald"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "Na de wissel hier in de lounge: {count}, {cost} per nacht, plus half loon."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Bemanningslounge op {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Onbetaalde loungekosten: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "U bent {debt} aan loungekosten verschuldigd. Betaal die voordat er nog iemand in een lounge wacht."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Lounge: {rate} per persoon per nacht (nu {now} per nacht), gefactureerd op de 1e. Wachtende bemanning krijgt half loon als bereidheidsvergoeding en leert niets nieuws."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "De loungekosten konden niet volledig worden betaald. U bent {debt} verschuldigd; het wordt afgeschreven zodra u geld hebt."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Krijgt half loon tijdens het wachten. Verplaatsen via het tabblad Hangar van een station, Bemanningslounge."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "\"{ship}\" heeft {hull}% romp en {fuel}% brandstof. Reparaties en tanken zijn hier mogelijk."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Een hangar heeft hoogstens 4 ligplaatsen."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Achtergelaten missielading moet worden afgeleverd met het schip dat haar vervoert."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "maanden"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d maanden"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "heeft Laadruim Life Support nodig"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} heeft Laadruim Life Support nodig, en dat heeft het gestalde schip niet."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Volgende factuur {date}: ongeveer {amount}, de huur voor {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Volgende factuur {date}: ongeveer {amount}, de huur voor {from} – {to} (deel van een maand). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Hier wacht niemand."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Niemand wacht in een lounge of is onderweg."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Niemand wacht op een ander station."
+  },
+  "NONE": {
+    "description": "",
+    "message": "geen"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Vink aan wat u wilt versturen."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "U moet aan boord van uw schip zijn."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Dat schip staat op een ander station."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "U heeft niet genoeg geld."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "niet vooruitbetaald"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Geen vrije ligplaats op {station} om naar terug te keren."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Geen lading aan boord."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Niets vooruitbetaald: de huur wordt op de 1e van elke maand van uw rekening afgeschreven."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Kies de bestemming."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "onvoldoende uitrustingsvolume"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Geen vrije ligplaats op {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Hier is geen ligplaats vrij. Voeg er eerst een toe."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "U huurt geen hangar. Huur er een op een willekeurig station, in het tabblad Hangar."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "U heeft geen hangar op {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "geen, het kan zijn stelsel niet verlaten"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "U heeft geen andere hangar."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "In uw andere hangars staat geen schip."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Hier staan nog geen schepen."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "geen slot ervoor op dit schip"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} stuk(s)"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Bied een functie aan, voorlopig wachtend in de bemanningslounge hier"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "onderweg vanaf {from}, aankomst {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "De hangar waar het vandaan kwam is niet langer van u."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} ligplaatsen)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "betaald tot ongeveer {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Passagiers aan boord: rond eerst uw passagierscontracten af."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Betalen"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "{amount} betalen"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Nu niets: de huur wordt op de 1e van elke maand gefactureerd."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Vooruitbetalen"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Vooruitbetalen…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Kies een schip."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Huur nu: {rent} per maand. Betalen voor:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Huur voor {station} vooruitbetalen"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, aankomst {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 mnd"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 jr"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 jr"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 mnd"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 mnd"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Ligplaats weg"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Alleen een lege ligplaats kan worden verwijderd, en een hangar houdt er minstens één."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Hernoemen"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Leeg: {empty} per maand. Met \"{ship}\" ({tonnes} t) gestald: {rent} per maand."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Huur per maand: {bay} per ligplaats, plus {tonne} per ton gestalde romp."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "De huur voor uw hangar op {station} kon niet worden betaald. U bent {debt} verschuldigd; de schepen daar zijn vergrendeld tot het betaald is."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Huur onbetaald: {debt} ({months} maand(en), met 10% boete). De schepen hier zijn vergrendeld tot het betaald is."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "De rest blijft aan boord van \"{ship}\"."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "terug naar {to}, aankomst {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "de rover staat buiten op een planeet"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Uw rover staat op {planet}. Berg hem eerst op."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "zelfde stelsel"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Opslaan"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Selecteer een gestald schip in de tabel hierboven om het te bekijken en ermee te vliegen."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Verkopen"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} betaalt {price} voor {item}, net als de uitrustingmarkt."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "{item} verkopen?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Aan dit station verkopen voor {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Bemanning uit de lounge op {station} sturen"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Naar de lounge van een ander station sturen"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Uitrusting sturen…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Uitrusting sturen vanaf {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Stukken uit deze opslag naar een van uw andere hangars sturen"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Dit schip door de leveringsdienst naar een van uw andere hangars laten brengen"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Sturen naar…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Hier in de lounge wachten"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Schepen"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Schepen die onderweg zijn, en schepen in hangars die wegens onbetaalde huur vergrendeld zijn, staan niet in de lijst."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "\"{name}\" (actief)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "\"{ship}\" is aangekomen in uw hangar op {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · romp {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "\"{ship}\" neemt hoogstens {max} bemanningsleden."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Onderweg: het kan pas na aankomst worden gevlogen, verstuurd of omgebouwd."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Prijs: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "\"{ship}\" is terug in uw hangar op {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "\"{name}\" (hier gestald)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Het schip reist met zijn lading en uitrusting en houdt zijn ligplaats op de bestemming bezet. Onderweg kan het niet worden gevlogen of omgebouwd. Parkeerkosten gelden vanaf aankomst."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Tonen op de sectorkaart"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Sinds"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "de slots ervoor op dit schip zijn bezet"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "het slot ervoor op dit schip heeft de verkeerde maat"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Station"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "het schip waarmee u vliegt"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "In vlucht"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Gestald, vergrendeld: huur onbetaald"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "gestald sinds {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Gestald"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Hangaropslag op {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} stuk(s) · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "De opslag is leeg."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Bouw stukken uit naar de opslag en bouw ze daarna in het links gekozen schip in, of verkoop ze aan dit station. Regels en prijzen van de uitrustingmarkt, geen kosten voor inbouwen. Kies eerst een leeg slot om een stuk in precies dat slot in te bouwen."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "uw hangar hier heeft geen vrije ligplaats."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "u heeft hier geen hangar."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} stuk(s), {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "\"{ship}\" wordt in deze ligplaats gestald. Op een gestald schip blijft nooit bemanning: wie hieronder niet is aangevinkt, wacht hier in de lounge."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Schip wisselen"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Wisselen naar \"{ship}\"?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Niets"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Daarna {rent} per volle maand, gefactureerd op de 1e."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Dit is het schip waarmee u vliegt."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "\"{ship}\" heeft minstens {min} bemanningsleden nodig, en er zouden er maar {crew} aan boord zijn. U kunt pas vertrekken als u meer inhuurt of iemand uit de lounge haalt."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "\"{ship}\" neemt hoogstens {max} bemanningsleden, en er zouden er {crew} aan boord zijn. Vink {over} uit om ze in de lounge te laten."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "\"{ship}\" heeft ruimte voor {room} t. Neem {over} t minder mee."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Totaal: {used} van {bays} ligplaatsen in gebruik"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Naar:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "Een {ship} kan {room} t laden, en u heeft {used} t aan boord. Bij inruil gaat alle lading naar het nieuwe schip: verkoop of los eerst {over} t, of kies een andere optie."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "U heeft {used} t lading en een {ship} kan {room} t laden."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Bemanning naar de lounge op {station} halen"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Bemanning die op een ander station wacht naar deze lounge laten brengen"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Uitrusting naar {station} halen"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Stukken uit de opslag van een andere hangar hierheen laten leveren"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Halen van…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Hierheen halen"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Laten leveren aan uw hangar hier"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Een schip naar {station} halen"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Een schip uit een van uw andere hangars hierheen laten leveren"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "onderweg naar {station}, aankomst {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Alles uitbouwen"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Alles wat van dit schip af kan naar de opslag verplaatsen"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "bouw eerst de stukken uit die erop gemonteerd zijn"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Uitbouwen naar de opslag"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Lossen in de ladingopslag"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "onbetaald: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} per week"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} op {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} wachtend"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Wachtend in lounges"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "wacht sinds {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Welkom terug."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} bemanningsleden wachten in de lounge."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Uw hangar hier bevat {ships} schip/schepen in {bays} ligplaats(en)."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Ingebouwd zonder slot"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "jaar"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Uw andere hangars:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "U (commandant)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(u heeft {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "U betaalt: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "U ontvangt: {amount}"
+  }
+}

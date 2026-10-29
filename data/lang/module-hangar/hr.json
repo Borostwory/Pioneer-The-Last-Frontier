@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "na brodu"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "Na brodu \"{ship}\""
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "U letu"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Dodaj boks"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "sve"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Sve što stane"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Već na brodu \"{ship}\": {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Već je na putu prema drugoj stanici."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Ovdje već unajmljujete hangar."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Već je na povratku."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Čekaju i drugdje:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "misiju"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Boksovi"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Boksove možete kasnije dodati ili ukloniti."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Naruči dostavu"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Rezerviraj prijevoz"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "\"{ship}\" je spremljen u vaš hangar ovdje."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "Trup broda \"{ship}\" je prodan: {items} predmet(a) otišlo je u skladište opreme, {tons} t tereta u skladište tereta i {crew} član(ova) posade u salon."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Dovedi na brod"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Njegova oprema ide u skladište opreme hangara, a teret u skladište tereta hangara; prodaje se samo trup."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Ostaje kakav jest, s opremom i svim teretom; ništa ne prelazi na novi brod. Plaćate punu cijenu."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Prodaje se sa svom opremom. Sav teret prelazi na novi brod."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Zamijeni samo goli trup broda \"{ship}\""
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Spremi \"{ship}\" u boks ovdje"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Zamijeni \"{ship}\""
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Kupiti {ship}?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "putnici na brodu"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Otkaži dostavu"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "{refund} (pola cijene) se vraća, a ono se vraća na {station}, s dolaskom {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Otkazati dostavu: {what}?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "sada se ne može ukloniti"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} je površinska zvjezdana luka, a ovaj brod nema mjesto za atmosferski štit."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Ne možete poletjeti s manje od {min} članova posade."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Teret"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Teret na brodu"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Teretni prostor"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "teret u njemu ne bi stao bez toga"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Skladište tereta na {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Skladište tereta je prazno."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Istovarite robu u skladište tereta hangara i utovarite je u brod kojim letite. Neograničeno i besplatno; teret misije zadržava svoju oznaku."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Teret"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Dolazak"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Boks"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Naknada za boks"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Trošak"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Udaljenost"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Mjesto"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Ime"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Plaćeno do"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Parkiranje"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Mjesečno"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Brod"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Najbolja vještina"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Stanica"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Status"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Skladište"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Tip"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "dolazi na brod"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/tjedan"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/noć + {wage}/tjedan"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Plaćeno unaprijed: preostalo {credit} kredita, zajedničkog za sve boksove. Uz današnju najamninu traje otprilike do {date}; nakon toga najamnina se naplaćuje s vašeg računa 1. u mjesecu."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "Najamnina plaćena unaprijed za vaš hangar na {station} istječe {date}. Nakon toga naplaćuje se 1. u mjesecu."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Posada"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} je stigao/la u salon posade na {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Posada za \"{ship}\" (prima {min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} članova posade (ovaj brod prima {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Salon posade"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Posada za novi brod"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Tko nije označen, čeka ovdje u salonu."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Tijekom puta isplaćuje se pola plaće, bez naknade za salon. Po dolasku čekaju u tamošnjem salonu."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Što će biti s brodom \"{ship}\"? Odaberite:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Služba dostave"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Dostava broda \"{ship}\""
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Dugujete im {owed} plaće. Neće to dobro primiti, a dug veći od {limit} smatra se ugovornom prijevarom."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} čeka ovdje u salonu. Ugovor mu/joj prestaje i napušta vašu posadu."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Otpustiti: {name}?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Ovaj brod ne odgovara pristanišnim lukama na {station}: kad jednom ode, ne može ondje ponovno pristati."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t goriva"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "prazno"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "prazno"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "prazno"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Prekini najam"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Odreći se možete samo praznog hangara: bez brodova, opreme i robe, bez ičega na putu i bez neplaćene najamnine."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Oprema"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} predmet(a) stiglo je u skladište vašeg hangara na {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Oprema ovdje…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Oprema"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Volumen opreme: iskorišteno {used} od {capacity} m³"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Ugrađeno na"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Ugradi na \"{ship}\""
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Flota"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Posada u salonima"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangari"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Brodovi"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Skladište opreme: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Leti ovim brodom"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Naplaćuje se s vašeg računa."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Plaća se iz vašeg kredita."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Plaća se iz vašeg kredita, ostatak s vašeg računa."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "Od:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "Od: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Gorivo"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "čekat će u salonu"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Kartica Hangar"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangar"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Hangar na {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Ovaj hangar je zaključan dok se ne plati dugovana najamnina."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} (slobodnih boksova: {free})"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Hvala! Čekat ću ovdje u salonu posade dok me ne zatrebate na brodu."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "teretni prostor je pun"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Teretni prostor: iskorišteno {used} od {total} t"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Trup"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Sva posada osim vas čeka ovdje u salonu. Dovedite ih na brod iz kartice Hangar, Salon posade."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hiperpogon"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "U slobodan boks ovdje (slobodno: {free})"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "u hiperprostoru"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "u salonu"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "Ovdje u salonu"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "U skladištu ovog hangara čuva se {count} predmet(a) opreme."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "{count} predmet(a) opreme nije se moglo vratiti na brod i čuva se u skladištu hangara."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "Odabrano predmeta: {count}"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Unajmi hangar"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "potreban je teretu na brodu"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "udaljeno {dist} sg"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Utovari na brod"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} članova posade čeka u salonu"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Vaš hangar: zauzeto {ships} od {bays} boksova, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "naplaćuje se mjesečno"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "plaćeno do {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "najamnina neplaćena"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "Ovdje u salonu nakon zamjene: {count}, {cost} po noći, plus pola plaće."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Salon posade na {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Neplaćene naknade za salon: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Dugujete {debt} za naknade salona. Platite ih prije nego što itko drugi čeka u salonu."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Salon: {rate} po osobi po noći (trenutno {now} po noći), naplaćuje se 1. u mjesecu. Posada koja ovdje čeka prima pola plaće kao naknadu za pripravnost i ne uči ništa novo."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Naknade za salon nisu mogle biti plaćene u cijelosti. Dugujete {debt}; naplatit će se od vašeg novca kad ga budete imali."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Primaju pola plaće dok čekaju. Premjestite ih u kartici Hangar neke stanice, Salon posade."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "\"{ship}\": trup {hull}%, gorivo {fuel}%. Popravci i dopuna goriva dostupni su ovdje."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Hangar ima najviše 4 boksa."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Teret misije koji ostaje mora se dostaviti brodom koji ga nosi."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "mjeseci"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d mj."
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "treba održavanje života u teretnom prostoru"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} treba održavanje života u teretnom prostoru, a spremljeni brod ga nema."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Sljedeći račun {date}: oko {amount}, najamnina za {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Sljedeći račun {date}: oko {amount}, najamnina za {from} – {to} (dio mjeseca). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Ovdje nitko ne čeka."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Nitko ne čeka u salonu niti putuje."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Nitko ne čeka na drugoj stanici."
+  },
+  "NONE": {
+    "description": "",
+    "message": "ništa"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Označite što želite poslati."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Morate biti na svom brodu."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Taj brod je spremljen na drugoj stanici."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Nemate dovoljno novca."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "nije plaćeno unaprijed"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Na {station} nema slobodnog boksa za povratak."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Nema tereta na brodu."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Ništa nije plaćeno unaprijed: najamnina se naplaćuje s vašeg računa 1. u mjesecu."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Odaberite odredište."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "nema dovoljno volumena za opremu"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Na {station} nema slobodnog boksa."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Ovdje nema slobodnog boksa. Najprije dodajte boks."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Ne unajmljujete nijedan hangar. Unajmite ga na bilo kojoj stanici, u njezinoj kartici Hangar."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Nemate hangar na {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "nema, ne može napustiti svoj sustav"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Nemate drugi hangar."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "U vašim drugim hangarima nema spremljenih brodova."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Ovdje još nema spremljenih brodova."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "na ovom brodu nema mjesta za to"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} predmet(a)"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Ponudi mjesto, a zasad neka čeka ovdje u salonu posade"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "na putu iz {from}, dolazi {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "Hangar iz kojeg je došlo više nije vaš."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} boksova)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "plaćeno otprilike do {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Putnici na brodu: najprije završite ugovore s putnicima."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Plati"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Plati {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Zasad ništa: najamnina se naplaćuje 1. u mjesecu."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Plati unaprijed"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Plati unaprijed…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Odaberite brod."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Trenutna najamnina: {rent} mjesečno. Plati za:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Plaćanje najamnine unaprijed za {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, dolazak {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 mj."
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 g."
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 g."
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 mj."
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 mj."
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Ukloni boks"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Ukloniti se može samo prazan boks, a hangar zadržava barem jedan."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Preimenuj"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Prazan: {empty} mjesečno. S parkiranim brodom \"{ship}\" ({tonnes} t): {rent} mjesečno."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Mjesečna najamnina: {bay} po boksu, plus {tonne} po toni parkiranog trupa."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Najamnina za vaš hangar na {station} nije mogla biti plaćena. Dugujete {debt}; brodovi ondje su zaključani dok se ne plati."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Neplaćena najamnina: {debt} ({months} mj., uz 10% zatezne naknade). Brodovi ovdje su zaključani dok se ne plati."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Ostatak ostaje na brodu \"{ship}\"."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "vraća se na {to}, dolazi {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "rover je parkiran vani na planetu"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Vaš rover je parkiran na {planet}. Najprije ga spremite."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "isti sustav"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Spremi"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Odaberite spremljeni brod u tablici iznad da ga vidite i letite njime."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Prodaj"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} plaća {price} za {item}, kao što bi platila Tržnica opreme."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Prodati {item}?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Prodaj ovoj stanici za {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Pošalji posadu iz salona na {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Pošalji u salon na drugoj stanici"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Pošalji opremu…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Pošalji opremu s {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Pošalji predmete iz ovog skladišta u neki drugi vaš hangar"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Neka služba dostave odveze ovaj brod u neki drugi vaš hangar"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Pošalji na…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Čekaj ovdje u salonu"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Brodovi"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Brodovi na putu i brodovi u hangarima zaključanima zbog neplaćene najamnine nisu navedeni."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "\"{name}\" (aktivan)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "\"{ship}\" je stigao u vaš hangar na {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · trup {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "\"{ship}\" prima najviše {max} članova posade."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Na putu: ne može se njime letjeti, slati ga ni preopremati dok ne stigne."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Cijena: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "\"{ship}\" se vratio u vaš hangar na {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "\"{name}\" (spremljen ovdje)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Brod putuje sa svojim teretom i opremom i zadržava svoj boks na odredištu. Na putu se njime ne može letjeti niti ga preopremati. Parkiranje se naplaćuje od dolaska."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Prikaži na karti sektora"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Od"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "njegova mjesta na ovom brodu su zauzeta"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "njegovo mjesto na ovom brodu je pogrešne veličine"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Stanica"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "brod kojim letite"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "U letu"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Spremljen, zaključan: najamnina neplaćena"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "spremljen od {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Spremljen"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Skladište hangara na {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} predmet(a) · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Skladište je prazno."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Skinite predmete u skladište, zatim ih ugradite na brod odabran lijevo ili ih prodajte ovoj stanici. Pravila i cijene Tržnice opreme, bez naknade za ugradnju. Najprije odaberite prazno mjesto da biste u njega ugradili predmet."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "vaš hangar ovdje nema slobodnog boksa."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "ovdje nemate hangar."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} predmet(a), {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "\"{ship}\" bit će spremljen u ovaj boks. Posada nikad ne ostaje na spremljenom brodu: tko nije označen ispod, čeka ovdje u salonu."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Zamijeni brodove"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Prijeći na \"{ship}\"?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Ništa"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Nakon toga {rent} za svaki puni mjesec, naplaćuje se 1. u mjesecu."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Ovo je brod kojim letite."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "\"{ship}\" treba najmanje {min} članova posade, a na brodu bi ih bilo samo {crew}. Ne možete poletjeti dok ne zaposlite još ljudi ili nekoga ne dovedete iz salona."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "\"{ship}\" prima najviše {max} članova posade, a na brodu bi ih bilo {crew}. Odznačite {over} da ostanu u salonu."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "\"{ship}\" ima mjesta za {room} t. Uzmite {over} t manje."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Ukupno: zauzeto {used} od {bays} boksova"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Za:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "{ship} prima {room} t, a na brodu imate {used} t. Pri zamjeni sav teret prelazi na novi brod: najprije prodajte ili istovarite {over} t, ili odaberite drugu mogućnost."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Imate {used} t tereta, a {ship} prima {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Dovedi posadu u salon na {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Neka posada koja čeka na drugoj stanici bude dovedena u ovaj salon"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Prijenos opreme na {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Neka predmeti iz skladišta drugog hangara budu dostavljeni ovamo"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Prenesi iz…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Prenesi ovamo"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Neka bude dostavljeno u vaš hangar ovdje"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Prijenos broda na {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Neka brod spremljen u drugom vašem hangaru bude dostavljen ovamo"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "putuje na {station}, dolazi {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Skini sve"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Premjesti u skladište sve što se može skinuti s ovog broda"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "najprije skinite predmete montirane na njega"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Skini u skladište"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Istovari u skladište tereta"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "neplaćeno: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} tjedno"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} na {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} čeka"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Čekaju u salonima"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "čeka od {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Dobro došli natrag."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} članova posade čeka u salonu."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Vaš hangar ovdje ima {ships} brod(ova) u {bays} boks(ova)."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Ugrađeno bez mjesta"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "godina"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Vaši drugi hangari:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Vi (zapovjednik)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(imate {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Plaćate: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Primate: {amount}"
+  }
+}

@@ -75,6 +75,14 @@
     "description": "Descriptive name for the IncreaseTimeAcceleration action.",
     "message": "Increase Time Acceleration"
   },
+  "BIND_INTERACT": {
+    "description": "Descriptive name for the Interact action (on foot: board the ship)",
+    "message": "تفاعل"
+  },
+  "BIND_JETPACK_UP": {
+    "description": "Descriptive name for the on-foot Jetpack Up / Down axis",
+    "message": "حقيبة الدفع لأعلى / لأسفل"
+  },
   "BIND_KILL_ROT": {
     "description": "Descriptive name for the KillRot action.",
     "message": "Kill Rotation"
@@ -171,6 +179,14 @@
     "description": "Descriptive name for the RightCamera action.",
     "message": "Switch to Right Camera"
   },
+  "BIND_ROVER_CYCLE_VIEW": {
+    "description": "Descriptive name for the action that cycles the views while driving the surface rover: from the cab, without the rover's model, from outside",
+    "message": "تبديل منظور المركبة"
+  },
+  "BIND_ROVER_LIGHTS": {
+    "description": "Descriptive name for the action that steps the surface rover's lamps through off and their brightness levels while driving",
+    "message": "أضواء المركبة"
+  },
   "BIND_SECONDARY_FIRE": {
     "description": "Descriptive name for the SecondaryFire action.",
     "message": "Secondary Fire"
@@ -223,6 +239,30 @@
     "description": "Descriptive name for the View Zoom axis",
     "message": "View Zoom"
   },
+  "BIND_WALK_FORWARD": {
+    "description": "Descriptive name for the on-foot Walk Forward / Back axis",
+    "message": "المشي للأمام / للخلف"
+  },
+  "BIND_WALK_JUMP": {
+    "description": "Descriptive name for the on-foot Jump action",
+    "message": "قفز"
+  },
+  "BIND_WALK_LOOK_PITCH": {
+    "description": "Descriptive name for the on-foot Look Up / Down axis",
+    "message": "النظر لأعلى / لأسفل"
+  },
+  "BIND_WALK_LOOK_YAW": {
+    "description": "Descriptive name for the on-foot Look Left / Right axis",
+    "message": "النظر يسارًا / يمينًا"
+  },
+  "BIND_WALK_RIGHT": {
+    "description": "Descriptive name for the on-foot Strafe Right / Left axis",
+    "message": "التحرك جانبيًا يمينًا / يسارًا"
+  },
+  "BIND_WALK_RUN": {
+    "description": "Descriptive name for the on-foot Run action (hold)",
+    "message": "ركض"
+  },
   "BUTTON": {
     "description": "",
     "message": "\" زر \""
@@ -251,6 +291,10 @@
     "description": "Header for the GeneralViewControls input group.",
     "message": "تحكم الروئية الرئيسي"
   },
+  "GROUP_INTERACTION": {
+    "description": "Header for the Interaction input group.",
+    "message": "التفاعل"
+  },
   "GROUP_LANDING_CONTROL": {
     "description": "Group label for landing-related inputs",
     "message": "Landing Control"
@@ -261,6 +305,10 @@
   },
   "GROUP_MISCELLANEOUS": {
     "message": "متفرقات"
+  },
+  "GROUP_MOVEMENT": {
+    "description": "Header for the Movement input group.",
+    "message": "الحركة"
   },
   "GROUP_RADAR_CONTROL": {
     "description": "Group label for radar-related inputs",
@@ -337,6 +385,10 @@
   "PAGE_MAP_CONTROLS": {
     "description": "Header for the MapControls input page.",
     "message": "Map Controls"
+  },
+  "PAGE_ON_FOOT": {
+    "description": "Header for the OnFoot input page.",
+    "message": "سيرًا على الأقدام"
   },
   "PAGE_SHIP_CONTROLS": {
     "description": "Header for the ShipControls input page.",

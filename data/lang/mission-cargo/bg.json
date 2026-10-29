@@ -1,0 +1,58 @@
+{
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "мисия"
+  },
+  "CARGO_LABEL": {
+    "description": "How a mission is named where cargo held for it is listed. {mission} is the mission type",
+    "message": "{mission}: {place}, срок {date}"
+  },
+  "HELD_ABOARD": {
+    "description": "Missions tab",
+    "message": "{amount} т {commodity} на борда на „{ship}“"
+  },
+  "HELD_FOR_MISSIONS": {
+    "description": "Cargo sidebar tooltip",
+    "message": "{amount} т са запазени за мисии. Изхвърлете ги от екрана за товари."
+  },
+  "HELD_IN_HANGAR": {
+    "description": "Missions tab",
+    "message": "{amount} т {commodity} в склада за товари на хангара ви в {station}"
+  },
+  "HELD_MISSING": {
+    "description": "Missions tab",
+    "message": "{amount} т {commodity} липсват: изхвърлени, загубени или развалени"
+  },
+  "HELD_NOT_FOR_SALE": {
+    "description": "Commodity market tooltip on the In hold column",
+    "message": "{amount} т са запазени за мисии, не се продават"
+  },
+  "HELD_ON_STORED_SHIP": {
+    "description": "Missions tab",
+    "message": "{amount} т {commodity} на борда на „{ship}“, прибран в {station}"
+  },
+  "JETTISON_ANYWAY": {
+    "description": "Button",
+    "message": "Изхвърли го"
+  },
+  "JETTISON_HELD": {
+    "description": "",
+    "message": "Този тон {commodity} е запазен за: {mission}."
+  },
+  "JETTISON_MISSION_FAILS": {
+    "description": "",
+    "message": "Без него мисията може да се провали."
+  },
+  "JETTISON_TITLE": {
+    "description": "Title of the window asking before mission cargo is jettisoned",
+    "message": "Изхвърляне на {commodity}?"
+  },
+  "MISSION_CARGO": {
+    "description": "Missions tab: heading over where the mission's cargo is",
+    "message": "Товар за мисията"
+  },
+  "OF_WHICH_HELD": {
+    "description": "Cargo list: part of a commodity held for a mission. {icon} is the mission cargo mark",
+    "message": "от тях {icon} {amount} т: {mission}"
+  }
+}

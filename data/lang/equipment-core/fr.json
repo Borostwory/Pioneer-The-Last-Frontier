@@ -303,6 +303,10 @@
     "description": "Name for a generic utility hardpoint",
     "message": "Utilitaire"
   },
+  "HARDPOINT_VEHICLE_BAY": {
+    "description": "Name for a hardpoint: a bay in the hull for a vehicle carried aboard (a shuttle or the surface rover)",
+    "message": "Soute à véhicule"
+  },
   "HARDPOINT_WEAPON": {
     "description": "Name for a generic weapon hardpoint",
     "message": "Arme"
@@ -827,6 +831,10 @@
     "description": "Generic name for secondary attitude or maneuvering thrusters",
     "message": "Propulseurs"
   },
+  "SLOT_VEHICLE_BAY": {
+    "description": "Name for an equipment slot: a bay in the hold big enough for the surface rover",
+    "message": "Soute à véhicule"
+  },
   "SMALL_PLASMA_ACCEL": {
     "description": "",
     "message": "Petit accélérateur à plasma"
@@ -874,6 +882,14 @@
   "STAT_WEIGHT": {
     "description": "Stat label for equipment weight",
     "message": "Poids"
+  },
+  "SURFACE_ROVER": {
+    "description": "Ship equipment: a pressurised four-wheeled vehicle carried in the hold, driven out of the landed ship",
+    "message": "Rover de surface"
+  },
+  "SURFACE_ROVER_DESCRIPTION": {
+    "description": "",
+    "message": "Un rover pressurisé à quatre roues pour deux personnes, transporté dans une soute à véhicule, dont seuls les plus grands vaisseaux sont équipés (Soute à rover, au chantier naval). Posez-vous, déposez-le à côté du vaisseau et partez explorer la surface."
   },
   "SURFACE_SCANNER": {
     "description": "A ship equipment that records data of terrain, for cartography mapping/geological survey. Note: Scout Mission module reference and distinguishes between 'orbital' and 'surface' scanner types, the former scans planet from orbit, the latter from low altitude. Model manufacturer name is meant to sound like a cheap brand.",
@@ -970,6 +986,10 @@
   "UTILITY": {
     "description": "Category name of utility equipment",
     "message": "Utilitaire"
+  },
+  "VEHICLES": {
+    "description": "Category name for the equipment slots of vehicles carried aboard (the surface rover)",
+    "message": "Véhicules"
   },
   "WEAPONS": {
     "description": "Category name of weapon-related equipment",

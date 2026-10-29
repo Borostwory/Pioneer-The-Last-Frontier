@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "탑승 중"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "'{ship}' 탑승 중"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "비행 중"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "베이 추가"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "전부"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "실을 수 있는 만큼"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "이미 '{ship}'에 적재됨: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "다른 스테이션으로 이동 중입니다."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "이미 이곳에 격납고를 임대했습니다."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "이미 돌아오는 중입니다."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "다른 곳에서도 대기 중:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "임무"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "베이"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "베이는 나중에 추가하거나 제거할 수 있습니다."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "배송 예약"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "이동 예약"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "'{ship}'이(가) 이곳 격납고에 보관되었습니다."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "'{ship}'의 선체를 판매했습니다: 장비 {items}개는 장비 창고로, 화물 {tons} t은 화물 창고로, 승무원 {crew}명은 라운지로 이동했습니다."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "탑승시키기"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "장비는 격납고의 장비 창고로, 화물은 격납고의 화물 창고로 옮겨지고 선체만 판매됩니다."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "장비와 화물을 모두 그대로 보관하며, 새 함선으로는 아무것도 옮기지 않습니다. 전액을 지불합니다."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "모든 장비와 함께 판매됩니다. 화물은 모두 새 함선으로 옮겨집니다."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "'{ship}'의 빈 선체만 보상 판매"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "'{ship}'을(를) 이곳 베이에 보관"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "'{ship}' 보상 판매"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "{ship}을(를) 구매하시겠습니까?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "승객 탑승 중"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "배송 취소"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "{refund}(가격의 절반)이 환불되며, {station}(으)로 돌아가 {date}에 도착합니다."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "{what}의 배송을 취소하시겠습니까?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "지금은 제거할 수 없음"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station}은(는) 지상 우주항인데, 이 함선에는 대기 차폐막 슬롯이 없습니다."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "승무원이 {min}명 미만이면 출항할 수 없습니다."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "화물"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "적재 화물"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "화물칸"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "이것이 없으면 실린 화물이 들어가지 않음"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "{station} 화물 창고"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "화물 창고가 비어 있습니다."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "격납고의 화물 창고에 물품을 내리거나, 조종 중인 함선에 싣습니다. 용량 무제한에 무료이며, 임무 화물은 표시가 유지됩니다."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "화물"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "도착"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "베이"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "베이 요금"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "비용"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "거리"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "위치"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "이름"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "납부 기한"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "주기료"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "월 요금"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "함선"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "최고 기술"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "스테이션"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "상태"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "창고"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "종류"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "탑승 예정"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/주"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/박 + {wage}/주"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "선납 잔액: {credit} 남음, 모든 베이 공용. 현재 임대료로 약 {date}까지 유지되며, 그 후에는 매월 1일 계좌에서 임대료가 빠져나갑니다."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "{station} 격납고의 선납 임대료가 {date}에 소진됩니다. 그 후에는 매월 1일에 청구됩니다."
+  },
+  "CREW": {
+    "description": "",
+    "message": "승무원"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name}이(가) {station}의 승무원 라운지에 도착했습니다."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "'{ship}'의 승무원({min}–{max}명):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "승무원 {crew}명(이 함선 정원 {min}–{max}명)"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "승무원 라운지"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "새 함선의 승무원"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "체크하지 않은 사람은 이곳 라운지에서 대기합니다."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "이동 중에는 급여의 절반이 지급되며 라운지 요금은 없습니다. 도착하면 그곳 라운지에서 대기합니다."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "'{ship}'을(를) 어떻게 하시겠습니까? 하나를 선택하세요:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "배송 서비스"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "'{ship}' 배송"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "밀린 급여가 {owed}입니다. 좋게 받아들이지 않을 것이며, {limit} 이상을 체불하면 계약 사기로 간주됩니다."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name}은(는) 이곳 라운지에서 대기 중입니다. 계약이 종료되고 승무원에서 빠집니다."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "{name}을(를) 해고하시겠습니까?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "이 함선은 {station}의 도킹 포트에 맞지 않습니다. 한번 떠나면 다시 그곳에 도킹할 수 없습니다."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "연료 {fuel} t"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "비어 있음"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "비어 있음"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "비어 있음"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "임대 종료"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "빈 격납고만 반납할 수 있습니다: 함선, 장비, 물품이 없고, 이동 중인 것도 미납 임대료도 없어야 합니다."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "장비"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "장비 {count}개가 {station}의 격납고 창고에 도착했습니다."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "이곳 장비…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "장비"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "장비 용적: {capacity} m³ 중 {used} m³ 사용"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "장착 대상"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "'{ship}'에 장착"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "함대"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "라운지의 승무원"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "격납고"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "함선"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "장비 창고: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "이 함선 조종"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "계좌에서 인출됩니다."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "선납 잔액에서 지불됩니다."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "선납 잔액에서 지불하고, 나머지는 계좌에서 인출됩니다."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "출발지:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "출발지: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "연료"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "라운지에서 대기 예정"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "격납고 탭"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "격납고"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "{station} 격납고"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "미납 임대료를 낼 때까지 이 격납고는 잠겨 있습니다."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station}(빈 베이 {free}개)"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "고맙습니다! 승선이 필요할 때까지 이곳 승무원 라운지에서 기다리겠습니다."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "화물칸이 가득 참"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "화물칸: {total} t 중 {used} t 사용"
+  },
+  "HULL": {
+    "description": "",
+    "message": "선체"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "당신을 제외한 모든 승무원은 이곳 라운지에서 대기합니다. 격납고 탭의 승무원 라운지에서 탑승시키세요."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "하이퍼드라이브"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "이곳 빈 베이로(빈 베이 {free}개)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "초공간에 있음"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "라운지에 있음"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "이곳 라운지에서 대기 중"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "장비 {count}개가 이 격납고 창고에 보관되어 있습니다."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "장비 {count}개가 함선에 다시 장착되지 않아 격납고 창고에 보관되었습니다."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count}개 선택됨"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "격납고 임대"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "실린 화물에 필요함"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} 광년 거리"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "싣기"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "승무원 {crew}명이 라운지에서 대기 중"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "내 격납고: 베이 {bays}개 중 {ships}개 사용, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "월별 청구"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "{date}까지 납부됨"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "임대료 미납"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "교체 후 이곳 라운지 대기: {count}명, 1박 {cost}, 급여의 절반 별도."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "{station} 승무원 라운지"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "라운지 요금 미납: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "라운지 요금 {debt}이(가) 밀려 있습니다. 누구든 라운지에서 대기시키려면 먼저 납부하세요."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "라운지: 1인 1박 {rate}(현재 1박 {now}), 매월 1일 청구. 이곳에서 대기하는 승무원은 유지비로 급여의 절반을 받으며 새로 배우는 것은 없습니다."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "라운지 요금을 전액 납부하지 못했습니다. 미납액은 {debt}이며, 돈이 생기면 차감됩니다."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "대기하는 동안 급여의 절반이 지급됩니다. 스테이션의 격납고 탭, 승무원 라운지에서 이동시킬 수 있습니다."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "'{ship}'의 선체는 {hull}%, 연료는 {fuel}%입니다. 이곳에서 수리와 연료 보급을 할 수 있습니다."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "격납고에는 베이를 최대 4개까지 둘 수 있습니다."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "남겨 둔 임무 화물은 그것을 실은 함선으로 배달해야 합니다."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "개월"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d개월"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "화물 생명 유지 장치 필요"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity}에는 화물 생명 유지 장치가 필요한데, 보관된 함선에는 없습니다."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "다음 청구 {date}: 약 {amount}, {from} – {to} 임대료. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "다음 청구 {date}: 약 {amount}, {from} – {to} 임대료(한 달 미만). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "이곳에서 대기 중인 사람이 없습니다."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "라운지에서 대기 중이거나 이동 중인 사람이 없습니다."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "다른 스테이션에서 대기 중인 사람이 없습니다."
+  },
+  "NONE": {
+    "description": "",
+    "message": "없음"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "보낼 것을 체크하세요."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "함선에 탑승해 있어야 합니다."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "그 함선은 다른 스테이션에 보관되어 있습니다."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "돈이 부족합니다."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "선납 없음"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "{station}에 돌아갈 빈 베이가 없습니다."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "실린 화물이 없습니다."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "선납 없음: 임대료는 매월 1일 계좌에서 빠져나갑니다."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "목적지를 선택하세요."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "장비 용적 부족"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "{station}에 빈 베이가 없습니다."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "이곳에 빈 베이가 없습니다. 먼저 베이를 추가하세요."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "임대한 격납고가 없습니다. 아무 스테이션의 격납고 탭에서 임대할 수 있습니다."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "{station}에 격납고가 없습니다."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "없음, 항성계를 벗어날 수 없음"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "다른 격납고가 없습니다."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "다른 격납고에 보관된 함선이 없습니다."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "아직 이곳에 보관된 함선이 없습니다."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "이 함선에 맞는 슬롯이 없음"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count}개"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "자리를 제안하고, 당분간 이곳 승무원 라운지에서 대기"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "{from}에서 오는 중, {date} 도착"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "출발한 격납고가 더 이상 당신의 것이 아닙니다."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station}({used}/{bays} 베이)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "약 {date}까지 납부됨"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "승객 탑승 중: 먼저 승객 계약을 완료하세요."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "납부"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "{amount} 납부"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "지금은 납부 없음: 임대료는 매월 1일에 청구됩니다."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "선납 기간"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "선납…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "함선을 선택하세요."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "현재 임대료: 월 {rent}. 납부 기간:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "{station} 임대료 선납"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, {date} 도착 · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1개월"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1년"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2년"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3개월"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6개월"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "베이 제거"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "빈 베이만 제거할 수 있으며, 격납고에는 최소 하나가 남습니다."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "이름 변경"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "비어 있을 때: 월 {empty}. '{ship}'({tonnes} t) 주기 시: 월 {rent}."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "월 임대료: 베이당 {bay}, 여기에 주기 중인 선체 톤당 {tonne}."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "{station} 격납고의 임대료를 납부하지 못했습니다. 미납액은 {debt}이며, 납부할 때까지 그곳의 함선은 잠깁니다."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "임대료 미납: {debt}({months}개월분, 연체료 10% 포함). 납부할 때까지 이곳의 함선은 잠깁니다."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "나머지는 '{ship}'에 남습니다."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "{to}(으)로 돌아가는 중, {date} 도착"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "로버가 행성에 주차되어 있음"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "로버가 {planet}에 주차되어 있습니다. 먼저 수납하세요."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "같은 항성계"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "저장"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "위 표에서 보관된 함선을 선택하면 확인하고 조종할 수 있습니다."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "판매"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station}은(는) {item}에 대해 장비 시장과 같은 {price}을(를) 지불합니다."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "{item}을(를) 판매하시겠습니까?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "이 스테이션에 {price}에 판매"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "{station} 라운지에서 승무원 보내기"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "다른 스테이션의 라운지로 보내기"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "장비 보내기…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "{station}에서 장비 보내기"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "이 창고의 물품을 다른 격납고로 보내기"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "배송 서비스로 이 함선을 다른 격납고로 보내기"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "보내기…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "이곳 라운지에서 대기"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "함선"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "이동 중인 함선과 임대료 미납으로 잠긴 격납고의 함선은 표시되지 않습니다."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "'{name}'(조종 중)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "'{ship}'이(가) {station}의 격납고에 도착했습니다."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name}({type}) · 선체 {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "'{ship}'의 승무원 정원은 최대 {max}명입니다."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "이동 중: 도착할 때까지 조종, 발송, 개조할 수 없습니다."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "가격: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "'{ship}'이(가) {station}의 격납고로 돌아왔습니다."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "'{name}'(이곳에 보관)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "함선은 화물과 장비를 실은 채 이동하며 목적지의 베이를 차지합니다. 이동 중에는 조종하거나 개조할 수 없습니다. 주기료는 도착 시점부터 부과됩니다."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "섹터 지도에 표시"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "시작일"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "이 함선의 해당 슬롯이 사용 중"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "이 함선의 해당 슬롯 크기가 맞지 않음"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "스테이션"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "조종 중인 함선"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "비행 중"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "보관, 잠김: 임대료 미납"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "{date}부터 보관 중"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "보관 중"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "{station} 격납고 창고"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count}개 · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "창고가 비어 있습니다."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "장비를 해제해 창고에 넣은 뒤, 왼쪽에서 선택한 함선에 장착하거나 이 스테이션에 판매하세요. 장비 시장과 같은 규칙과 가격이며, 장착 수수료는 없습니다. 특정 슬롯에 장착하려면 먼저 빈 슬롯을 선택하세요."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "이곳 격납고에 빈 베이가 없습니다."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "이곳에 격납고가 없습니다."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items}개, {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "'{ship}'은(는) 이 베이에 보관됩니다. 보관된 함선에는 승무원이 남지 않습니다: 아래에서 체크하지 않은 사람은 이곳 라운지에서 대기합니다."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "함선 교체"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "'{ship}'(으)로 교체하시겠습니까?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "없음"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "그 후에는 한 달마다 {rent}, 매월 1일 청구."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "현재 조종 중인 함선입니다."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "'{ship}'에는 승무원이 최소 {min}명 필요한데, 탑승 인원은 {crew}명뿐입니다. 더 고용하거나 라운지에서 데려올 때까지 출항할 수 없습니다."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "'{ship}'의 승무원 정원은 최대 {max}명인데, {crew}명이 탑승하게 됩니다. {over}명의 체크를 해제해 라운지에 남기세요."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "'{ship}'의 여유 공간은 {room} t입니다. {over} t을 줄이세요."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "합계: 베이 {bays}개 중 {used}개 사용"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "목적지:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "{ship}의 적재량은 {room} t인데, 현재 {used} t을 싣고 있습니다. 보상 판매 시 모든 화물이 새 함선으로 옮겨지므로, 먼저 {over} t을 판매하거나 내리거나, 다른 옵션을 선택하세요."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "화물 {used} t, {ship}의 적재량 {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "{station} 라운지로 승무원 데려오기"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "다른 스테이션에서 대기 중인 승무원을 이 라운지로 데려오기"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "{station}(으)로 장비 이송"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "다른 격납고 창고의 물품을 이곳으로 배송"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "가져오기…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "이곳으로 이송"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "이곳 격납고로 배송"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "{station}(으)로 함선 이송"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "다른 격납고에 보관된 함선을 이곳으로 배송"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "{station}(으)로 이동 중, {date} 도착"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "모두 해제"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "이 함선에서 떼어낼 수 있는 모든 것을 창고로 옮기기"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "먼저 이 위에 장착된 물품을 해제하세요"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "해제하여 창고로"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "화물 창고로 내리기"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "미납: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "주당 {wage}"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{station}에 {count}명"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count}명 대기 중"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "라운지에서 대기 중"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "{date}부터 대기 중"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "돌아오신 것을 환영합니다."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "승무원 {crew}명이 라운지에서 대기 중입니다."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "이곳 격납고의 베이 {bays}개에 함선 {ships}척이 있습니다."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "슬롯 없이 장착됨"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "년"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "다른 격납고:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "당신(지휘관)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(현재 {crew}명)"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "지불액: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "수령액: {amount}"
+  }
+}

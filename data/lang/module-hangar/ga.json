@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "ar bord"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "Ar bord “{ship}”"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "Á heitilt"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Cuir bá leis"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "uile"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Gach a luíonn isteach"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Ar bord “{ship}” cheana: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "Tá sé ar an mbealach chuig stáisiún eile."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Tá haingear ar léas agat anseo cheana."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "Tá sé ar an mbealach ar ais cheana."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Ag fanacht in áiteanna eile freisin:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "misean"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Bánna"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "Is féidir bánna a chur leis nó a bhaint níos déanaí."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Cuir seachadadh in áirithe"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Cuir pasáiste in áirithe"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "Tá “{ship}” i stóras i do haingear anseo."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "Díoladh cabhail “{ship}”: chuaigh {items} earra chuig an stór trealaimh, {tons} t lasta chuig an stór lasta agus {crew} den fhoireann chuig an tolglann."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Tabhair ar bord"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Téann a threalamh chuig stór trealaimh an haingir agus a lasta chuig stór lasta an haingir; ní dhíoltar ach an chabhail."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Coinnítear mar atá sé, lena threalamh agus a lasta ar fad; ní aistrítear aon rud chuig an long nua. Íocann tú an praghas iomlán."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Díoltar é lena threalamh ar fad. Aistrítear a lasta ar fad chuig an long nua."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Trádáil isteach cabhail lom “{ship}”"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Stóráil “{ship}” i mbá anseo"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Trádáil isteach “{ship}”"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "{ship} a cheannach?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "paisinéirí ar bord"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Cealaigh an seachadadh"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "Aisíoctar {refund} (leath an phraghais), agus téann sé ar ais chuig {station}, ag teacht ar {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Seachadadh {what} a chealú?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "ní féidir é a bhaint anois"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "Is spásphort dromchla é {station}, agus níl sliotán sciathaithe atmaisféaraigh ag an long seo."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Ní féidir leat lainseáil le níos lú ná {min} den fhoireann."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Lasta"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Lasta ar bord"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Bolg lasta"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "ní luífeadh an lasta atá ann isteach gan é"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Stór lasta ag {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Tá an stór lasta folamh."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Díluchtaigh earraí isteach i stór lasta an haingir agus luchtaigh iad isteach sa long atá á heitilt agat. Gan teorainn agus saor in aisce; coinníonn lasta misin a mharc."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Lasta"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Teacht"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Bá"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Táille bá"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Costas"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Fad"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Suíomh"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Ainm"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Íoctha go dtí"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Táille pháirceála"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "In aghaidh na míosa"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Long"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Scil is fearr"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Stáisiún"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Stádas"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Stór"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Cineál"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "tiocfaidh ar bord"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/seachtain"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/oíche + {wage}/seachtain"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Íoctha roimh ré: {credit} de chreidmheas fágtha, roinnte ar na bánna go léir. Ag an gcíos reatha maireann sé go dtí thart ar {date}; ina dhiaidh sin, bainfear an cíos de do chuntas ar an 1ú lá de gach mí."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "Rithfidh an cíos a d’íoc tú roimh ré as do haingear ag {station} amach ar {date}. Ina dhiaidh sin, gearrfar é ar an 1ú lá de gach mí."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Foireann"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "Tá {name} tagtha chuig tolglann na foirne ag {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Foireann do “{ship}” ({min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} den fhoireann (glacann an long seo {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Tolglann na foirne"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Foireann don long nua"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Fanfaidh gach duine nach bhfuil tic leo sa tolglann anseo."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Íoctar leathphá ar an mbealach, gan táille tolglainne. Nuair a shroicheann siad, fanann siad sa tolglann ansin."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Cad a tharlóidh do “{ship}”? Roghnaigh ceann amháin:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Seirbhís seachadta"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Seachaid “{ship}”"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Tá {owed} de phá dlite agat dóibh. Ní ghlacfaidh siad go maith leis, agus is calaois chonartha é níos mó ná {limit} a bheith dlite."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "Tá {name} ag fanacht sa tolglann anseo. Críochnaíonn a c(h)onradh agus fágann sé/sí d’fhoireann."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "{name} a scaoileadh?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Ní luíonn an long seo le calafoirt dugaithe {station}: nuair a fhágfaidh sí, ní féidir léi dugú ansin arís."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t breosla"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "folamh"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "folamh"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "folamh"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Cuir deireadh leis an léas"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Ní féidir ach haingear folamh a thabhairt suas: gan longa, trealamh ná earraí, gan aon rud ar an mbealach, agus gan cíos gan íoc."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Trealamh"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "Tá {count} earra tagtha chuig stór do haingir ag {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Trealamh anseo…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Trealamh"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Toirt trealaimh: {used} as {capacity} m³ in úsáid"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Feistithe ar"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Feistigh ar “{ship}”"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Cabhlach"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Foireann sna tolglanna"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Haingir"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Longa"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Stór trealaimh: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Eitil an long seo"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Bainte de do chuntas."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Íoctha as do chreidmheas."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Íoctha as do chreidmheas, an chuid eile as do chuntas."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "Ó:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "Ó: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Breosla"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "fanfaidh sa tolglann"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Cluaisín an haingir"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Haingear"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Haingear ag {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Tá an haingear seo faoi ghlas go n-íocfar an cíos atá dlite."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} bá saor)"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Go raibh maith agat! Fanfaidh mé i dtolglann na foirne anseo go dtí go mbeidh gá agat liom ar bord."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "tá an bolg lasta lán"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Bolg lasta: {used} as {total} t in úsáid"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Cabhail"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Fanann an fhoireann ar fad seachas tú féin sa tolglann anseo. Tabhair ar bord iad ó chluaisín an Haingir, Tolglann na foirne."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Hipirthiomáint"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "Isteach i mbá saor anseo ({free} saor)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "sa hipearspás"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "sa tolglann"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "Sa tolglann anseo"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "Tá {count} earra trealaimh á gcoinneáil i stór an haingir seo."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "Níor luigh {count} earra trealaimh ar ais ar an long agus tá siad á gcoinneáil i stór an haingir."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} earra roghnaithe"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Tóg haingear ar léas"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "tá sé de dhíth ar lasta ar bord"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} sb uait"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Luchtaigh ar bord"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} den fhoireann ag fanacht sa tolglann"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Do haingear: {ships} as {bays} bá in úsáid, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "gearrtha in aghaidh na míosa"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "íoctha go dtí {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "cíos gan íoc"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "Sa tolglann anseo tar éis na malartaithe: {count}, {cost} san oíche, móide leathphá."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Tolglann na foirne ag {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Táillí tolglainne gan íoc: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Tá {debt} dlite agat i dtáillí tolglainne. Íoc iad sula bhfanann duine ar bith eile i dtolglann."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Tolglann: {rate} an duine san oíche ({now} san oíche anois), gearrtha ar an 1ú. Faigheann an fhoireann atá ag fanacht anseo leathphá mar choinneálaí agus ní fhoghlaimíonn siad aon rud nua."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Níorbh fhéidir na táillí tolglainne a íoc go hiomlán. Tá {debt} dlite agat; bainfear é de d’airgead nuair a bheidh sé agat."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Faigheann siad leathphá agus iad ag fanacht. Bog iad i gcluaisín Haingir stáisiúin, Tolglann na foirne."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "Tá cabhail “{ship}” ag {hull}% agus tá {fuel}% fágtha den bhreosla. Tá deisiúcháin agus athbhreoslú ar fáil anseo."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Tá 4 bhá ar a mhéad i haingear."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Caithfear lasta misin a fhágtar ina dhiaidh a sheachadadh leis an long a iompraíonn é."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "míonna"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d mí"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "teastaíonn córas cothaithe beatha don bhá lasta"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "Teastaíonn córas cothaithe beatha don bhá lasta ó {commodity}, agus níl sé ag an long i stóras."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "An chéad bhille eile {date}: thart ar {amount}, an cíos do {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "An chéad bhille eile {date}: thart ar {amount}, an cíos do {from} – {to} (cuid de mhí). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Níl aon duine ag fanacht anseo."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Níl aon duine ag fanacht i dtolglann ná ag taisteal."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Níl aon duine ag fanacht ag stáisiún eile."
+  },
+  "NONE": {
+    "description": "",
+    "message": "dada"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Cuir tic leis an méid atá le seoladh."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Caithfidh tú a bheith ar bord do loinge."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Tá an long sin i stóras ag stáisiún eile."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Níl go leor airgid agat."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "gan réamhíoc"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Níl bá saor ag {station} le filleadh air."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Níl lasta ar bord."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Níor íocadh aon rud roimh ré: bainfear an cíos de do chuntas ar an 1ú lá de gach mí."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Roghnaigh cá dtéann sé."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "níl go leor toirte trealaimh"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Níl bá saor ag {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Níl bá saor anseo. Cuir bá leis ar dtús."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Níl haingear ar léas agat. Tóg ceann ar léas ag stáisiún ar bith, ina chluaisín Haingir."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Níl haingear agat ag {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "dada, ní féidir léi a córas a fhágáil"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Níl haingear eile agat."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "Níl long ar bith i stóras i do haingir eile."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Níl long ar bith i stóras anseo fós."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "níl sliotán dó ar an long seo"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} earra"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Tairg post, ag fanacht i dtolglann na foirne anseo faoi láthair"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "ar an mbealach ó {from}, ag teacht ar {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "Ní leatsa a thuilleadh an haingear ónar tháinig sé."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} bá)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "íoctha go dtí thart ar {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Paisinéirí ar bord: críochnaigh do chonarthaí paisinéirí ar dtús."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Íoc"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Íoc {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Dada anois: gearrtar an cíos ar an 1ú lá de gach mí."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Íoc roimh ré"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Íoc roimh ré…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Roghnaigh long."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Cíos anois: {rent} sa mhí. Íoc as:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Íoc cíos roimh ré do {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, ag teacht ar {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 mh"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 bl"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 bl"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 mh"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 mh"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Bain bá"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Ní féidir ach bá folamh a bhaint, agus coinníonn haingear bá amháin ar a laghad."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Athainmnigh"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Folamh: {empty} sa mhí. Le “{ship}” ({tonnes} t) páirceáilte: {rent} sa mhí."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Cíos sa mhí: {bay} an bá, móide {tonne} an tona cabhlach páirceáilte."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Níorbh fhéidir an cíos do do haingear ag {station} a íoc. Tá {debt} dlite agat; tá na longa ansin faoi ghlas go n-íocfar é."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Cíos gan íoc: {debt} ({months} mí, le táille déanach 10%). Tá na longa anseo faoi ghlas go n-íocfar é."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Fanann an chuid eile ar bord “{ship}”."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "ag filleadh ar {to}, ag teacht ar {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "tá an róbhar páirceáilte amuigh ar phláinéad"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Tá do róbhar páirceáilte ar {planet}. Cuir i dtaisce é ar dtús."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "an córas céanna"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Sábháil"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Roghnaigh long i stóras sa tábla thuas chun í a fheiceáil agus a eitilt."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Díol"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "Íocann {station} {price} as an {item}, mar a dhéanfadh an Margadh Trealaimh."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "{item} a dhíol?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Díol leis an stáisiún seo ar {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Seol foireann ón tolglann ag {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Seol chuig an tolglann ag stáisiún eile"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Seol trealamh…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Seol trealamh ó {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Seol earraí ón stór seo chuig ceann eile de do haingir"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Iarr ar an tseirbhís seachadta an long seo a thabhairt chuig ceann eile de do haingir"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Seol chuig…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Fan sa tolglann anseo"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Longa"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Ní liostaítear longa atá ar an mbealach, ná longa i haingir atá faoi ghlas mar gheall ar chíos gan íoc."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "“{name}” (gníomhach)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "Tá “{ship}” tagtha chuig do haingear ag {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · cabhail {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "Glacann “{ship}” {max} den fhoireann ar a mhéad."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "Ar an mbealach: ní féidir í a eitilt, a sheoladh ná a athfheistiú go dtí go sroicheann sí."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Praghas: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "Tá “{ship}” ar ais i do haingear ag {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "“{name}” (i stóras anseo)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "Taistealaíonn an long lena lasta agus a trealamh agus coinníonn sí a bá ag an gceann scríbe. Ní féidir í a eitilt ná a athfheistiú ar an mbealach. Gearrtar páirceáil ón am a shroicheann sí."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Taispeáin ar léarscáil na rannóige"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Ó"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "tá a shliotáin ar an long seo tógtha"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "tá a shliotán ar an long seo den mhéid mhícheart"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Stáisiún"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "an long atá á heitilt agat"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "Á heitilt"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "I stóras, faoi ghlas: cíos gan íoc"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "i stóras ó {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "I stóras"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Stór an haingir ag {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} earra · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Tá an stór folamh."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Bain earraí den long isteach sa stór, ansin feistigh iad ar an long a roghnaíodh ar chlé, nó díol iad leis an stáisiún seo. Rialacha agus praghsanna an Mhargaidh Trealaimh, gan táille feistithe. Roghnaigh sliotán folamh ar dtús chun earra a fheistiú sa sliotán sin."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "níl bá saor i do haingear anseo."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "níl haingear agat anseo."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} earra, {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "Stórálfar “{ship}” sa bhá seo. Ní fhanann foireann riamh ar long i stóras: fanfaidh gach duine nach bhfuil tic leo thíos sa tolglann anseo."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Malartaigh longa"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Malartú go “{ship}”?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Dada"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Ina dhiaidh sin, {rent} do gach mí iomlán, gearrtha ar an 1ú."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Seo í an long atá á heitilt agat."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "Teastaíonn {min} den fhoireann ar a laghad ó “{ship}”, agus ní bheadh ach {crew} ar bord. Ní féidir leat lainseáil go bhfostóidh tú tuilleadh nó go dtógfaidh tú duine ón tolglann."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "Glacann “{ship}” {max} den fhoireann ar a mhéad, agus bheadh {crew} ar bord. Bain an tic de {over} chun iad a fhágáil sa tolglann."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "Tá spás do {room} t ag “{ship}”. Tóg {over} t níos lú."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Iomlán: {used} as {bays} bá in úsáid"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "Chuig:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "Iompraíonn {ship} {room} t, agus tá {used} t ar bord agat. Agus tú ag trádáil isteach, aistrítear an lasta ar fad chuig an long nua: díol nó díluchtaigh {over} t ar dtús, nó roghnaigh rogha eile."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Tá {used} t lasta agat agus iompraíonn {ship} {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Tabhair foireann chuig an tolglann ag {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Tabhair foireann atá ag fanacht ag stáisiún eile chuig an tolglann seo"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Aistrigh trealamh chuig {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Seachadtar earraí ó stór haingir eile anseo"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Aistrigh ó…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Aistrigh anseo"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Seachadtar é chuig do haingear anseo"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Aistrigh long chuig {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Seachadtar anseo long atá i stóras i gceann eile de do haingir"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "ag taisteal chuig {station}, ag teacht ar {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Bain gach rud"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Bog gach rud is féidir a bhaint den long seo isteach sa stór"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "bain na hearraí atá suite air ar dtús"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Bain de agus cuir sa stór"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Díluchtaigh isteach sa stór lasta"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "gan íoc: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} sa tseachtain"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} ag {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} ag fanacht"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "Ag fanacht i dtolglanna"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "ag fanacht ó {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Fáilte ar ais."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "Tá {crew} den fhoireann ag fanacht sa tolglann."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Tá {ships} long i {bays} bá i do haingear anseo."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Feistithe gan sliotán"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "blianta"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "Do haingir eile:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Tusa (ceannasaí)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(tá {crew} agat)"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Íocann tú: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Faigheann tú: {amount}"
+  }
+}

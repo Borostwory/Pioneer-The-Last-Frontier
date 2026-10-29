@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "a bordo"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "A bordo di “{ship}”"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "In volo"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "Aggiungi posto"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "tutto"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "Tutto ciò che entra"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "Già a bordo di “{ship}”: {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "È già in viaggio verso un'altra stazione."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "Affitti già un hangar qui."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "È già sulla via del ritorno."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "In attesa anche altrove:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "una missione"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "Posti"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "I posti si possono aggiungere o togliere in seguito."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "Prenota consegna"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "Prenota viaggio"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "“{ship}” è rimessata nel tuo hangar qui."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "Lo scafo di “{ship}” è stato venduto: {items} oggetto/i al magazzino attrezzature, {tons} t di carico al deposito merci e {crew} membro/i dell'equipaggio in sala."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "Porta a bordo"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "Le attrezzature vanno nel magazzino attrezzature dell'hangar e il carico nel deposito merci dell'hangar; si vende solo lo scafo."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "Resta com'è, con le attrezzature e tutto il carico; nulla passa alla nuova nave. Paghi il prezzo pieno."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "Venduta con tutte le attrezzature. Tutto il carico passa alla nuova nave."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "Permuta solo lo scafo di “{ship}”"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "Rimessa “{ship}” in un posto qui"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "Permuta “{ship}”"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "Acquistare una {ship}?"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "passeggeri a bordo"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "Annulla consegna"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "Ti vengono rimborsati {refund} (metà del prezzo), e torna a {station}, con arrivo il {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "Annullare la consegna di {what}?"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "non si può smontare ora"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} è un astroporto di superficie, e questa nave non ha uno slot per gli scudi atmosferici."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "Non puoi decollare con meno di {min} membri d'equipaggio."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "Carico"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "Carico a bordo"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "Stiva"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "il carico che contiene non entrerebbe senza"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "Deposito merci a {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "Il deposito merci è vuoto."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "Scarica le merci nel deposito merci dell'hangar e caricale sulla nave che stai pilotando. Illimitato e gratuito; il carico delle missioni conserva il suo contrassegno."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} t"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Carico"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "Arrivo"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "Posto"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "Canone posto"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "Costo"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "Distanza"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "Posizione"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "Nome"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "Pagato fino al"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "Sosta"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "Al mese"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "Nave"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "Abilità migliore"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "Stazione"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "Stato"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "Magazzino"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "Tipo"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "salirà a bordo"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/settimana"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/notte + {wage}/settimana"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Pagato in anticipo: {credit} di credito residuo, condiviso da tutti i posti. Con l'affitto attuale dura fino a circa il {date}; dopo, l'affitto viene addebitato sul tuo conto il 1° di ogni mese."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "L'affitto che hai pagato in anticipo per il tuo hangar a {station} scade il {date}. Dopo, viene addebitato il 1° di ogni mese."
+  },
+  "CREW": {
+    "description": "",
+    "message": "Equipaggio"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} è arrivato/a nella sala equipaggio di {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "Equipaggio per “{ship}” (ne accoglie {min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} membri d'equipaggio (questa nave ne accoglie {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "Sala equipaggio"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "Equipaggio per la nuova nave"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "Chi non è spuntato aspetta nella sala qui."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "Durante il viaggio si paga metà stipendio e nessuna tariffa di sala. All'arrivo aspettano nella sala di destinazione."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "Che ne sarà di “{ship}”? Scegli un'opzione:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "Servizio consegne"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "Consegna “{ship}”"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "Gli devi {owed} di stipendi. Non la prenderà bene, e un debito superiore a {limit} è considerato frode contrattuale."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} è in attesa nella sala qui. Il contratto termina e lascia il tuo equipaggio."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "Congedare {name}?"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "Questa nave non entra nei moli di attracco di {station}: una volta partita, non potrà più attraccarvi."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} t di carburante"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "vuoto"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "vuota"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "vuoto"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "Termina affitto"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "Si può rinunciare solo a un hangar vuoto: niente navi, attrezzature o merci, nulla in viaggio e nessun affitto arretrato."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "Attrezzature"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} oggetto/i sono arrivati al magazzino del tuo hangar a {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "Attrezzature qui…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "Attrezzature"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "Volume attrezzature: {used} di {capacity} m³ usati"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "Montato su"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "Monta su “{ship}”"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "Flotta"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "Equipaggio nelle sale"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "Hangar"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "Navi"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "Magazzino attrezzature: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "Pilota questa nave"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Addebitato sul tuo conto."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "Pagato dal tuo credito."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "Pagato dal tuo credito, il resto dal tuo conto."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "Da:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "Da: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "Carburante"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "aspetterà nella sala"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "Scheda Hangar"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "Hangar"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "Hangar a {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "Questo hangar è bloccato finché l'affitto arretrato non viene pagato."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} posto/i libero/i)"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Grazie! Aspetterò nella sala equipaggio qui finché non avrai bisogno di me a bordo."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "la stiva è piena"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "Stiva: {used} di {total} t usate"
+  },
+  "HULL": {
+    "description": "",
+    "message": "Scafo"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "Tutto l'equipaggio tranne te aspetta nella sala qui. Portalo a bordo dalla scheda Hangar, Sala equipaggio."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "Iper-propulsore"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "In un posto libero qui ({free} liberi)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "nell'iperspazio"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "in sala"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "Nella sala qui"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "Attrezzature conservate nel magazzino di questo hangar: {count}."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "Attrezzature non rientrate sulla nave e conservate nel magazzino dell'hangar: {count}."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "{count} oggetto/i selezionato/i"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "Affitta hangar"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "serve al carico a bordo"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "a {dist} al"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "Carica a bordo"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} membri d'equipaggio in attesa nella sala"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "Il tuo hangar: {ships} di {bays} posto/i in uso, {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "addebito mensile"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "pagato fino al {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "affitto non pagato"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "Nella sala qui dopo il cambio: {count}, {cost} a notte, più metà stipendio."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "Sala equipaggio a {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "Tariffe di sala non pagate: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "Devi {debt} di tariffe di sala. Pagale prima che qualcun altro aspetti in una sala."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "Sala: {rate} a persona a notte ({now} a notte ora), addebitato il 1° del mese. L'equipaggio in attesa qui riceve metà stipendio come compenso di disponibilità e non impara nulla di nuovo."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "Le tariffe di sala non sono state pagate per intero. Devi {debt}; verranno prelevati dal tuo denaro quando ne avrai."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "Ricevono metà stipendio mentre aspettano. Spostali dalla scheda Hangar di una stazione, Sala equipaggio."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "“{ship}” ha lo scafo al {hull}% e il carburante al {fuel}%. Qui sono disponibili riparazioni e rifornimento."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "Un hangar ha al massimo 4 posti."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "Il carico di missione lasciato indietro deve essere consegnato con la nave che lo trasporta."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "mesi"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d mesi"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "richiede supporti vitali per la stiva"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} richiede supporti vitali per la stiva, che la nave rimessata non ha."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "Prossimo addebito il {date}: circa {amount}, l'affitto dal {from} al {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "Prossimo addebito il {date}: circa {amount}, l'affitto dal {from} al {to} (parte di un mese). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "Nessuno è in attesa qui."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "Nessuno è in attesa in una sala o in viaggio."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "Nessuno è in attesa in un'altra stazione."
+  },
+  "NONE": {
+    "description": "",
+    "message": "nessuno"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "Spunta cosa inviare."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "Devi essere a bordo della tua nave."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "Quella nave è rimessata in un'altra stazione."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "Non hai abbastanza denaro."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "non prepagato"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "Nessun posto libero a {station} in cui tornare."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "Nessun carico a bordo."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "Nulla pagato in anticipo: l'affitto viene addebitato sul tuo conto il 1° di ogni mese."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "Scegli la destinazione."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "volume attrezzature insufficiente"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "Nessun posto libero a {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "Nessun posto libero qui. Aggiungi prima un posto."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "Non affitti nessun hangar. Affittane uno in qualsiasi stazione, nella sua scheda Hangar."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "Non hai un hangar a {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "nessuno, non può lasciare il suo sistema"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "Non hai altri hangar."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "Nessuna nave è rimessata nei tuoi altri hangar."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "Ancora nessuna nave rimessata qui."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "nessuno slot adatto su questa nave"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} oggetto/i"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "Offri un posto, per ora in attesa nella sala equipaggio qui"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "in viaggio da {from}, arriva il {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "L'hangar da cui proviene non è più tuo."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} posti)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "pagato fino a circa il {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} t · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "Passeggeri a bordo: completa prima i contratti dei passeggeri."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "Paga"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "Paga {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "Niente ora: l'affitto viene addebitato il 1° di ogni mese."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "Paga in anticipo"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "Paga in anticipo…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "Scegli una nave."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "Affitto attuale: {rent} al mese. Paga per:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "Paga in anticipo l'affitto a {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}, arriva il {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 m"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 a"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 a"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 m"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 m"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "Togli posto"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "Si può togliere solo un posto vuoto, e un hangar ne mantiene almeno uno."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "Rinomina"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "Vuoto: {empty} al mese. Con “{ship}” ({tonnes} t) in sosta: {rent} al mese."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "Affitto mensile: {bay} per posto, più {tonne} per tonnellata di scafo in sosta."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "Non è stato possibile pagare l'affitto del tuo hangar a {station}. Devi {debt}; le navi lì sono bloccate finché non viene pagato."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "Affitto non pagato: {debt} ({months} mese/i, con una mora del 10%). Le navi qui sono bloccate finché non viene pagato."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "Il resto rimane a bordo di “{ship}”."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "di ritorno a {to}, arriva il {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "il rover è parcheggiato su un pianeta"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "Il tuo rover è parcheggiato su {planet}. Riponilo prima."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "stesso sistema"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "Salva"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "Seleziona una nave rimessata nella tabella sopra per vederla e pilotarla."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "Vendi"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station} paga {price} per {item}, come farebbe il Mercato delle apparecchiature."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "Vendere {item}?"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "Vendi a questa stazione per {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "Invia equipaggio dalla sala di {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Invia alla sala di un'altra stazione"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "Invia attrezzature…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Invia attrezzature da {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Invia oggetti da questo magazzino a un altro dei tuoi hangar"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Fai portare questa nave dal servizio consegne a un altro dei tuoi hangar"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "Invia a…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "Aspetta nella sala qui"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "Navi"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "Le navi in viaggio e quelle negli hangar bloccati per affitto non pagato non sono elencate."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "“{name}” (attiva)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "“{ship}” è arrivata al tuo hangar a {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · scafo {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "“{ship}” accoglie al massimo {max} membri d'equipaggio."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "In viaggio: non si può pilotare, inviare o riallestire finché non arriva."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "Prezzo: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "“{ship}” è tornata al tuo hangar a {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "“{name}” (rimessata qui)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "La nave viaggia con il suo carico e le sue attrezzature e occupa il suo posto a destinazione. Non si può pilotare né riallestire durante il viaggio. La sosta si paga dal suo arrivo."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "Mostra sulla mappa del settore"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "Dal"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "i suoi slot su questa nave sono occupati"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "il suo slot su questa nave ha la dimensione sbagliata"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "Stazione"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "la nave che stai pilotando"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "In volo"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "Rimessata, bloccata: affitto non pagato"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "rimessata dal {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "Rimessata"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "Magazzino dell'hangar a {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} oggetto/i · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "Il magazzino è vuoto."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "Smonta gli oggetti nel magazzino, poi montali sulla nave scelta a sinistra o vendili a questa stazione. Regole e prezzi del Mercato delle apparecchiature, nessun costo di montaggio. Scegli prima uno slot vuoto per montarvi un oggetto."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "il tuo hangar qui non ha posti liberi."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "non hai un hangar qui."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} oggetto/i, {tons} t"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "“{ship}” sarà rimessata in questo posto. L'equipaggio non resta mai su una nave rimessata: chi non è spuntato qui sotto aspetta nella sala qui."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "Cambia nave"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "Passare a “{ship}”?"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d t"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "Niente"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "Dopo, {rent} per ogni mese intero, addebitato il 1°."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "Questa è la nave che stai pilotando."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "“{ship}” richiede almeno {min} membri d'equipaggio, e a bordo ce ne sarebbero solo {crew}. Non puoi decollare finché non ne assumi altri o prendi qualcuno dalla sala."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "“{ship}” accoglie al massimo {max} membri d'equipaggio, e a bordo ce ne sarebbero {crew}. Togli la spunta a {over} per lasciarli nella sala."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "“{ship}” ha spazio per {room} t. Prendi {over} t in meno."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "Totale: {used} di {bays} posti in uso"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "A:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "Una {ship} contiene {room} t, e hai {used} t a bordo. Con la permuta, tutto il carico passa alla nuova nave: vendi o scarica prima {over} t, o scegli un'altra opzione."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "Hai {used} t di carico e una {ship} ne contiene {room} t."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "Porta equipaggio nella sala di {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "Fai portare in questa sala l'equipaggio in attesa in un'altra stazione"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "Trasferisci attrezzature a {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "Fai consegnare qui oggetti dal magazzino di un altro hangar"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "Trasferisci da…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "Trasferisci qui"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "Fallo consegnare al tuo hangar qui"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "Trasferisci una nave a {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "Fai consegnare qui una nave rimessata in un altro dei tuoi hangar"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "in viaggio verso {station}, arriva il {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "Smonta tutto"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "Sposta nel magazzino tutto ciò che si può smontare da questa nave"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "smonta prima gli oggetti montati su di esso"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "Smonta nel magazzino"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "Scarica nel deposito merci"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "non pagato: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} a settimana"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} a {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} in attesa"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "In attesa nelle sale"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "in attesa dal {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "Bentornato."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} membri d'equipaggio sono in attesa nella sala."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "Il tuo hangar qui ospita {ships} nave/i in {bays} posto/i."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "Montato senza slot"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "anni"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "I tuoi altri hangar:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "Tu (comandante)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(ne hai {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "Paghi: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "Ricevi: {amount}"
+  }
+}

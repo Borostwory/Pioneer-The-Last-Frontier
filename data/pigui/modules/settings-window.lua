@@ -704,180 +704,177 @@ local function showModOptions()
 	local c
 
 	modSection(lui.MOD_GRAPHICS)
-	-- TODO: move the label into the language files
 	local lodDistance = Engine.SettingsGetFloat("PlanetLodDistance")
 	local newLodDistance
-	newLodDistance, c = ui.sliderFloat("Terrain detail distance", lodDistance, 1.0, 30.0, "%.0f")
+	newLodDistance, c = ui.sliderFloat(lui.TERRAIN_DETAIL_DISTANCE, lodDistance, 1.0, 30.0, "%.0f")
 	if ui.isItemHovered() then
-		Engine.pigui.SetTooltip("How far away planet terrain gets its full mesh detail: a terrain patch is refined once you are closer than this many patch widths. Higher is sharper from far away but generates more terrain (CPU) and draws more triangles. This is the value at mid altitude (about 200 to 2,000 km on Earth); it is reduced automatically near the ground and in high orbit, where it costs more or shows less. 15 = default, 1 = original Pioneer behaviour.")
+		Engine.pigui.SetTooltip(lui.TERRAIN_DETAIL_DISTANCE_DESC)
 	end
 	if c then
 		Engine.SettingsSetFloat("PlanetLodDistance", newLodDistance)
 	end
 
 	-- Sun shadows of ships, stations and buildings (src/SceneShadows.cpp); applied immediately
-	-- TODO: move the labels into the language files
 	ui.separator()
-	local shadowQualityLabels = { "Off", "Low (1024)", "Medium (2048)", "High (4096)" }
+	local shadowQualityLabels = { lui.OFF, lui.SHADOW_QUALITY_LOW, lui.SHADOW_QUALITY_MEDIUM, lui.SHADOW_QUALITY_HIGH }
 	local shadowQuality = Engine.SettingsGetInt("ShadowQuality")
-	c,shadowQuality = combo("Shadows", shadowQuality, shadowQualityLabels,
-		"Sun shadows cast by ships, stations, city buildings and the terrain, on the ground and on each other. The number is the shadow map resolution: higher is sharper and uses more video memory (about 12 / 48 / 192 MB). Sharp shadows around your ship are redrawn every frame; shadows further away are reused until the sun or the camera has moved, so they cost little.")
+	c,shadowQuality = combo(lui.SETTINGS_SHADOWS, shadowQuality, shadowQualityLabels,
+		lui.SETTINGS_SHADOWS_DESC)
 	if c then
 		Engine.SettingsSetInt("ShadowQuality", shadowQuality)
 	end
 	if shadowQuality > 0 then
 		local shadowDistance = Engine.SettingsGetInt("ShadowDistance")
-		c,shadowDistance = slider("Shadow distance (m)", shadowDistance, 500, 10000,
-			"How far from the camera stations, cities and parked ships cast shadows. Further spreads the same shadow map over a larger area, so distant shadows get coarser.")
+		c,shadowDistance = slider(lui.SHADOW_DISTANCE, shadowDistance, 500, 10000,
+			lui.SHADOW_DISTANCE_DESC)
 		if c then
 			Engine.SettingsSetInt("ShadowDistance", shadowDistance)
 		end
 
 		local shadowStrength = Engine.SettingsGetInt("ShadowStrength")
-		c,shadowStrength = slider("Shadow darkness (%)", shadowStrength, 0, 100,
-			"How much of the sunlight a shadow takes away under a sky like Earth's; the rest stands for the light of the sky, which still reaches shadowed places. Thinner atmospheres make shadows darker, up to completely dark in vacuum.")
+		c,shadowStrength = slider(lui.SHADOW_DARKNESS, shadowStrength, 0, 100,
+			lui.SHADOW_DARKNESS_DESC)
 		if c then
 			Engine.SettingsSetInt("ShadowStrength", shadowStrength)
 		end
 
 		local shadowDebug = Engine.SettingsGetInt("ShadowDebug") ~= 0
-		c,shadowDebug = checkbox("Show shadow maps (debug)", shadowDebug,
-			"Tints everything by the shadow map it uses: red the sharp map around your ship, green the middle one, blue the far one.")
+		c,shadowDebug = checkbox(lui.SHADOW_DEBUG_MAPS, shadowDebug,
+			lui.SHADOW_DEBUG_MAPS_DESC)
 		if c then
 			Engine.SettingsSetInt("ShadowDebug", shadowDebug and 1 or 0)
 		end
 	end
 
 	-- Volumetric clouds (src/PlanetClouds.cpp); applied immediately
-	-- TODO: move the labels into the language files
 	ui.separator()
 	local cloudsEnabled = Engine.SettingsGetInt("CloudsEnabled") ~= 0
-	c,cloudsEnabled = checkbox("Volumetric clouds", cloudsEnabled,
-		"Cloud layers on planets with an atmosphere. Not drawn while multisampling (anti-aliasing) is enabled.")
+	c,cloudsEnabled = checkbox(lui.CLOUD_VOLUMETRIC, cloudsEnabled,
+		lui.CLOUD_VOLUMETRIC_DESC)
 	if c then
 		Engine.SettingsSetInt("CloudsEnabled", cloudsEnabled and 1 or 0)
 	end
 	if cloudsEnabled then
-		local cloudResolutionLabels = { "Low (360 lines)", "Medium (540 lines)", "High (720 lines)", "Very high (1080 lines)", "Ultra (1440 lines)", "Full screen resolution" }
+		local cloudResolutionLabels = { lui.CLOUD_RESOLUTION_LOW, lui.CLOUD_RESOLUTION_MEDIUM, lui.CLOUD_RESOLUTION_HIGH, lui.CLOUD_RESOLUTION_VERY_HIGH, lui.CLOUD_RESOLUTION_ULTRA, lui.CLOUD_RESOLUTION_FULL }
 		local cloudResolution = Engine.SettingsGetInt("CloudResolution")
-		c,cloudResolution = combo("Cloud resolution", cloudResolution, cloudResolutionLabels,
-			"Resolution the clouds are rendered at near the ground and in the air (the coarsest used), before being scaled to the screen. Higher is sharper and slower.")
+		c,cloudResolution = combo(lui.CLOUD_RESOLUTION, cloudResolution, cloudResolutionLabels,
+			lui.CLOUD_RESOLUTION_DESC)
 		if c then
 			Engine.SettingsSetInt("CloudResolution", cloudResolution)
 		end
 
 		local cloudResolutionSpace = Engine.SettingsGetInt("CloudResolutionSpace")
-		c,cloudResolutionSpace = combo("Cloud resolution from space", cloudResolutionSpace, cloudResolutionLabels,
-			"The finest resolution used. High above a planet the clouds are cheap to draw but their detail becomes small on screen, so the resolution rises gradually toward this one, as far as the detail needs it. On Earth it starts rising at about 100 km and reaches it at about 450 km looking down; planets with larger clouds (thin, cold atmospheres, or a larger cloud size setting) need it later.")
+		c,cloudResolutionSpace = combo(lui.CLOUD_RESOLUTION_SPACE, cloudResolutionSpace, cloudResolutionLabels,
+			lui.CLOUD_RESOLUTION_SPACE_DESC)
 		if c then
 			Engine.SettingsSetInt("CloudResolutionSpace", cloudResolutionSpace)
 		end
 
 		local cloudSpaceDetail = Engine.SettingsGetInt("CloudSpaceDetail")
-		c,cloudSpaceDetail = slider("Cloud detail from space (%)", cloudSpaceDetail, 0, 200,
-			"How soon the cloud resolution rises from 'Cloud resolution' toward 'Cloud resolution from space' as the clouds get further away and their detail smaller on screen. It works the same on every planet. Halving it doubles the distance at which sharpening happens (cheaper); 0 = never sharpen. On Earth at 4K looking down: 100 reaches full resolution at about 450 km, 50 at about 900 km, 25 at about 1800 km.")
+		c,cloudSpaceDetail = slider(lui.CLOUD_SPACE_DETAIL, cloudSpaceDetail, 0, 200,
+			lui.CLOUD_SPACE_DETAIL_DESC)
 		if c then
 			Engine.SettingsSetInt("CloudSpaceDetail", cloudSpaceDetail)
 		end
 
-		local cloudQualityLabels = { "Low (16 steps)", "Medium (24 steps)", "High (32 steps)", "Very high (48 steps)" }
+		local cloudQualityLabels = { lui.CLOUD_QUALITY_LOW, lui.CLOUD_QUALITY_MEDIUM, lui.CLOUD_QUALITY_HIGH, lui.CLOUD_QUALITY_VERY_HIGH }
 		local cloudQuality = Engine.SettingsGetInt("CloudQuality")
-		c,cloudQuality = combo("Cloud quality", cloudQuality, cloudQualityLabels,
-			"Samples taken along each view ray through the clouds near the ground and in the air. Fewer is faster; the difference is mostly in fine detail close to the clouds.")
+		c,cloudQuality = combo(lui.CLOUD_QUALITY, cloudQuality, cloudQualityLabels,
+			lui.CLOUD_QUALITY_DESC)
 		if c then
 			Engine.SettingsSetInt("CloudQuality", cloudQuality)
 		end
 
-		local cloudTemporalLabels = { "Off", "4x (1 of 4 pixels per frame)", "9x (1 of 9 pixels per frame)", "16x (1 of 16 pixels per frame)" }
+		local cloudTemporalLabels = { lui.OFF, lui.CLOUD_TEMPORAL_4X, lui.CLOUD_TEMPORAL_9X, lui.CLOUD_TEMPORAL_16X }
 		local cloudTemporal = Engine.SettingsGetInt("CloudTemporal")
-		c,cloudTemporal = combo("Temporal cloud reconstruction", cloudTemporal, cloudTemporalLabels,
-			"Each frame traces only some of the cloud pixels and fills in the rest from previous frames. 4x: a quarter, the picture refreshes every 4 frames. 9x: a ninth, about twice as fast again, refreshing every 9 frames (best at high frame rates; fast turns may briefly smear cloud edges). 16x: a sixteenth, faster still, refreshing every 16 frames (for 120+ fps; more smearing in fast turns and at the horizon). Off: every pixel every frame, slowest.")
+		c,cloudTemporal = combo(lui.CLOUD_TEMPORAL, cloudTemporal, cloudTemporalLabels,
+			lui.CLOUD_TEMPORAL_DESC)
 		if c then
 			Engine.SettingsSetInt("CloudTemporal", cloudTemporal)
 		end
 
-		local cloudSoftnessLabels = { "Sharp", "Soft", "Very soft" }
+		local cloudSoftnessLabels = { lui.CLOUD_SOFTENING_SHARP, lui.CLOUD_SOFTENING_SOFT, lui.CLOUD_SOFTENING_VERY_SOFT }
 		local cloudSoftness = Engine.SettingsGetInt("CloudSoftness")
-		c,cloudSoftness = combo("Cloud softening", cloudSoftness, cloudSoftnessLabels,
-			"Blurs the cloud image while scaling it up, hiding the reduced resolution.")
+		c,cloudSoftness = combo(lui.CLOUD_SOFTENING, cloudSoftness, cloudSoftnessLabels,
+			lui.CLOUD_SOFTENING_DESC)
 		if c then
 			Engine.SettingsSetInt("CloudSoftness", cloudSoftness)
 		end
 
 		local cloudWeatherMaps = Engine.SettingsGetInt("CloudWeatherMaps") ~= 0
-		c,cloudWeatherMaps = checkbox("Cached weather patterns", cloudWeatherMaps,
-			"Computes the large-scale weather pattern (storms, fronts) of the nearest planet once into a map instead of for every pixel: about 15-20% faster clouds for about 38 MB of video memory. The clouds look the same.")
+		c,cloudWeatherMaps = checkbox(lui.CLOUD_WEATHER_MAPS, cloudWeatherMaps,
+			lui.CLOUD_WEATHER_MAPS_DESC)
 		if c then
 			Engine.SettingsSetInt("CloudWeatherMaps", cloudWeatherMaps and 1 or 0)
 		end
 
-		local cloudShadowLabels = { "Off", "Soft", "Detailed" }
+		local cloudShadowLabels = { lui.OFF, lui.CLOUD_SHADOWS_SOFT, lui.CLOUD_SHADOWS_DETAILED }
 		local cloudShadows = Engine.SettingsGetInt("CloudShadows")
-		c,cloudShadows = combo("Cloud shadows", cloudShadows, cloudShadowLabels,
-			"Shadows of the clouds on the ground, cities and ships. Soft: dimming under cloud fields. Detailed: the shadow of each cloud. Both are computed at the cloud resolution, so they cost little.")
+		c,cloudShadows = combo(lui.CLOUD_SHADOWS, cloudShadows, cloudShadowLabels,
+			lui.CLOUD_SHADOWS_DESC)
 		if c then
 			Engine.SettingsSetInt("CloudShadows", cloudShadows)
 		end
 
 		local cloudSpeed = Engine.SettingsGetInt("CloudSpeed")
-		c,cloudSpeed = slider("Cloud speed", cloudSpeed, 1, 100,
-			"How fast clouds drift and change shape, as a multiple of the real wind speed.")
+		c,cloudSpeed = slider(lui.CLOUD_SPEED, cloudSpeed, 1, 100,
+			lui.CLOUD_SPEED_DESC)
 		if c then
 			Engine.SettingsSetInt("CloudSpeed", cloudSpeed)
 		end
 
 		-- per-layer tuning, in percent of the physically derived value
 		local cloudLayers = {
-			{ key = "High", label = "high altitude (cirrus)" },
-			{ key = "Medium", label = "medium altitude (altocumulus)" },
-			{ key = "Low", label = "low altitude (stratus / stratocumulus)" },
+			{ key = "High", label = lui.CLOUD_LAYER_HIGH },
+			{ key = "Medium", label = lui.CLOUD_LAYER_MEDIUM },
+			{ key = "Low", label = lui.CLOUD_LAYER_LOW },
 		}
-		ui.text("Cloud cover multiplier (%)")
+		ui.text(lui.CLOUD_COVER_HEADER)
 		for _, layer in ipairs(cloudLayers) do
 			local key = "CloudDensity" .. layer.key
 			local value = Engine.SettingsGetInt(key)
-			c,value = slider("Cover, " .. layer.label, value, 0, 300,
-				"Global cover: the share of the whole planet this layer covers. 100 = physically derived (Earth: low ~40%, medium ~27%, high ~30%), 50 = about half of that, 0 = layer off. Above 100 it approaches overcast gradually.")
+			c,value = slider(string.interp(lui.CLOUD_COVER_LAYER, { layer = layer.label }), value, 0, 300,
+				lui.CLOUD_COVER_DESC)
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
 		end
-		ui.text("Cloud size multiplier (%)")
+		ui.text(lui.CLOUD_SIZE_HEADER)
 		for _, layer in ipairs(cloudLayers) do
 			local key = "CloudSize" .. layer.key
 			local value = Engine.SettingsGetInt(key)
-			c,value = slider("Size, " .. layer.label, value, 25, 1600,
-				"Size of the individual clouds in this layer. 100 = base size, up to 16x. Does not change the cover.")
+			c,value = slider(string.interp(lui.CLOUD_SIZE_LAYER, { layer = layer.label }), value, 25, 1600,
+				lui.CLOUD_SIZE_DESC)
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
 		end
-		ui.text("Cloud system size multiplier (%)")
+		ui.text(lui.CLOUD_SYSTEM_SIZE_HEADER)
 		for _, layer in ipairs(cloudLayers) do
 			local key = "CloudSystemSize" .. layer.key
 			local value = Engine.SettingsGetInt(key)
-			c,value = slider("System size, " .. layer.label, value, 25, 400,
-				"Size of the cloud systems (groups of clouds) and of the clear areas between them. Does not change the cover.")
+			c,value = slider(string.interp(lui.CLOUD_SYSTEM_SIZE_LAYER, { layer = layer.label }), value, 25, 400,
+				lui.CLOUD_SYSTEM_SIZE_DESC)
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
 		end
-		ui.text("Cloud clustering (%)")
+		ui.text(lui.CLOUD_CLUSTERING_HEADER)
 		for _, layer in ipairs(cloudLayers) do
 			local key = "CloudClustering" .. layer.key
 			local value = Engine.SettingsGetInt(key)
-			c,value = slider("Clustering, " .. layer.label, value, 0, 100,
-				"Local cover: how much of the sky is cloud where this layer has clouds. Does not change the global cover. 0 = broken clouds spread over most of the planet (~40% of the sky inside them), 100 = nearly overcast decks with large clear areas between them (~85-90%).")
+			c,value = slider(string.interp(lui.CLOUD_CLUSTERING_LAYER, { layer = layer.label }), value, 0, 100,
+				lui.CLOUD_CLUSTERING_DESC)
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
 		end
-		ui.text("Cloud transparency multiplier (%)")
+		ui.text(lui.CLOUD_TRANSPARENCY_HEADER)
 		for _, layer in ipairs(cloudLayers) do
 			local key = "CloudTransparency" .. layer.key
 			local value = Engine.SettingsGetInt(key)
-			c,value = slider("Transparency, " .. layer.label, value, 25, 1000,
-				"How much light passes through the clouds of this layer. 100 = physically derived, 200 = half as thick, 50 = twice as thick. Does not change the cover, but very high values make thin clouds (cirrus) hard to see.")
+			c,value = slider(string.interp(lui.CLOUD_TRANSPARENCY_LAYER, { layer = layer.label }), value, 25, 1000,
+				lui.CLOUD_TRANSPARENCY_DESC)
 			if c then
 				Engine.SettingsSetInt(key, value)
 			end
@@ -886,8 +883,8 @@ local function showModOptions()
 
 	modSection(lui.MOD_SOUND)
 	local windHowlLevel = Engine.SettingsGetInt("WindHowlVolume")
-	c,windHowlLevel = slider("Wind howl (%)", windHowlLevel, 0, 200,
-		"Loudness of the surface wind heard when hovering, landed or flying slowly near the ground of a planet with an atmosphere. 100 is the designed level; it also follows the effects volume.")
+	c,windHowlLevel = slider(lui.SETTINGS_WIND_HOWL, windHowlLevel, 0, 200,
+		lui.SETTINGS_WIND_HOWL_DESC)
 	if c then Engine.SettingsSetInt("WindHowlVolume", windHowlLevel) end
 
 	modSection(lui.MOD_ON_FOOT)

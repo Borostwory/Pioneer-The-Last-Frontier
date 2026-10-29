@@ -75,6 +75,14 @@
     "description": "Descriptive name for the IncreaseTimeAcceleration action.",
     "message": "Zeitbeschleunigung erhöhen"
   },
+  "BIND_INTERACT": {
+    "description": "Descriptive name for the Interact action (on foot: board the ship)",
+    "message": "Interagieren"
+  },
+  "BIND_JETPACK_UP": {
+    "description": "Descriptive name for the on-foot Jetpack Up / Down axis",
+    "message": "Jetpack hoch / runter"
+  },
   "BIND_KILL_ROT": {
     "description": "Descriptive name for the KillRot action.",
     "message": "Rotation stoppen"
@@ -171,6 +179,14 @@
     "description": "Descriptive name for the RightCamera action.",
     "message": "Zur rechten Kamera wechseln"
   },
+  "BIND_ROVER_CYCLE_VIEW": {
+    "description": "Descriptive name for the action that cycles the views while driving the surface rover: from the cab, without the rover's model, from outside",
+    "message": "Roveransicht wechseln"
+  },
+  "BIND_ROVER_LIGHTS": {
+    "description": "Descriptive name for the action that steps the surface rover's lamps through off and their brightness levels while driving",
+    "message": "Roverscheinwerfer"
+  },
   "BIND_SECONDARY_FIRE": {
     "description": "Descriptive name for the SecondaryFire action.",
     "message": "Sekundärfeuer"
@@ -223,6 +239,30 @@
     "description": "Descriptive name for the View Zoom axis",
     "message": "Ansicht zoomen"
   },
+  "BIND_WALK_FORWARD": {
+    "description": "Descriptive name for the on-foot Walk Forward / Back axis",
+    "message": "Vorwärts / rückwärts gehen"
+  },
+  "BIND_WALK_JUMP": {
+    "description": "Descriptive name for the on-foot Jump action",
+    "message": "Springen"
+  },
+  "BIND_WALK_LOOK_PITCH": {
+    "description": "Descriptive name for the on-foot Look Up / Down axis",
+    "message": "Hoch / runter schauen"
+  },
+  "BIND_WALK_LOOK_YAW": {
+    "description": "Descriptive name for the on-foot Look Left / Right axis",
+    "message": "Links / rechts schauen"
+  },
+  "BIND_WALK_RIGHT": {
+    "description": "Descriptive name for the on-foot Strafe Right / Left axis",
+    "message": "Seitwärts rechts / links"
+  },
+  "BIND_WALK_RUN": {
+    "description": "Descriptive name for the on-foot Run action (hold)",
+    "message": "Rennen"
+  },
   "BUTTON": {
     "description": "",
     "message": "\"-Taste \""
@@ -251,6 +291,10 @@
     "description": "Header for the GeneralViewControls input group.",
     "message": "Allgemeine Ansichtssteuerung"
   },
+  "GROUP_INTERACTION": {
+    "description": "Header for the Interaction input group.",
+    "message": "Interaktion"
+  },
   "GROUP_LANDING_CONTROL": {
     "description": "Group label for landing-related inputs",
     "message": "Landesteuerung"
@@ -261,6 +305,10 @@
   },
   "GROUP_MISCELLANEOUS": {
     "message": "Verschiedenes"
+  },
+  "GROUP_MOVEMENT": {
+    "description": "Header for the Movement input group.",
+    "message": "Bewegung"
   },
   "GROUP_RADAR_CONTROL": {
     "description": "Group label for radar-related inputs",
@@ -337,6 +385,10 @@
   "PAGE_MAP_CONTROLS": {
     "description": "Header for the MapControls input page.",
     "message": "Kartensteuerung"
+  },
+  "PAGE_ON_FOOT": {
+    "description": "Header for the OnFoot input page.",
+    "message": "Zu Fuß"
   },
   "PAGE_SHIP_CONTROLS": {
     "description": "Header for the ShipControls input page.",

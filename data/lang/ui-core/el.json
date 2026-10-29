@@ -119,6 +119,218 @@
     "description": "",
     "message": "Πίνακας ανακοινώσεων"
   },
+  "BURN_ACCURACY": {
+    "description": "Flight HUD burn list label of the Auto Burn accuracy setting (in percent).",
+    "message": "Ακρίβεια καύσης"
+  },
+  "BURN_ACCURACY_TIP": {
+    "description": "Tooltip of the 'Burn accuracy' setting in the flight HUD burn list.",
+    "message": "Η Αυτόματη καύση φέρνει κάθε καύση στην προγραμματισμένη τροχιά, με τον προγραμματισμένο χρονισμό, μειώνοντας ομαλά την ώση στο τέλος. Αν η περίαψη ή η απόαψη που προκύπτει απέχει ακόμη περισσότερο από αυτό το ποσοστό του ύψους της (ή η τροχιά βγαίνει από το προγραμματισμένο επίπεδο), στρέφεται και κάνει μια μικρή διορθωτική καύση."
+  },
+  "BURN_APPROACH_NONE": {
+    "description": "Flight HUD burn list closest approach status when no approach target is set.",
+    "message": "Δεν έχει σχεδιαστεί προσέγγιση"
+  },
+  "BURN_APPROACH_PASSED": {
+    "description": "Flight HUD burn list closest approach status after it has happened. %s = target name.",
+    "message": "%s: η πλησιέστερη προσέγγιση πέρασε"
+  },
+  "BURN_APPROACH_STATUS": {
+    "description": "Flight HUD burn list closest approach status. 1st %s = target name, 2nd %s = closest distance, 3rd %s = countdown to the closest approach.",
+    "message": "%s: %s σε %s"
+  },
+  "BURN_APPROACH_STOP": {
+    "description": "Flight HUD burn list checkbox: stop the clock before the closest approach to the planned target.",
+    "message": "Διακοπή πριν από την πλησιέστερη προσέγγιση"
+  },
+  "BURN_APPROACH_STOP_TIP": {
+    "description": "Tooltip of the 'Stop before closest approach' setting in the flight HUD burn list.",
+    "message": "Σταματά το ρολόι τόσο πριν από την πλησιέστερη προσέγγιση στον στόχο της προσέγγισης που σχεδιάστηκε στον χάρτη - με παύση ή συνέχεια στο 1x, όπως έχει επιλεγεί για τις καύσεις. Η επιτάχυνση χρόνου μειώνεται σταδιακά στη διαδρομή, ώστε να μην την προσπεράσει."
+  },
+  "BURN_ARRIVE_NORMAL_TIP": {
+    "description": "Tooltip of the 1x button in the flight HUD burn list.",
+    "message": "Όταν ολοκληρωθεί η επιτάχυνση χρόνου, συνέχεια με κανονική ταχύτητα (1x)"
+  },
+  "BURN_ARRIVE_PAUSE": {
+    "description": "Flight HUD burn list button: pause the game when the warp arrives.",
+    "message": "Παύση"
+  },
+  "BURN_ARRIVE_PAUSE_TIP": {
+    "description": "Tooltip of the Pause button in the flight HUD burn list.",
+    "message": "Όταν ολοκληρωθεί η επιτάχυνση χρόνου, παύση του παιχνιδιού"
+  },
+  "BURN_ARRIVE_THEN": {
+    "description": "Flight HUD burn list: short connecting word before the choice of what happens when a warp arrives ('then' Pause / 1x).",
+    "message": "μετά"
+  },
+  "BURN_AUTO_BURN": {
+    "description": "Name of the Auto Burn toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "Αυτόματη καύση"
+  },
+  "BURN_AUTO_BURN_TIP": {
+    "description": "Tooltip of the Auto Burn toggle button in the flight HUD burn list.",
+    "message": "Αυτόματη καύση: ενεργοποιεί τον κύριο κινητήρα για την ενεργή καύση, και μόνο όσο το σκάφος είναι ευθυγραμμισμένο με την κατεύθυνση της καύσης - χωρίς ευθυγράμμιση δεν δίνει ώση. Χρησιμοποιήστε τη μαζί με τον Αυτόματο προσανατολισμό ώστε το σκάφος να στρέφεται μόνο του· η ίδια δεν αλλάζει ποτέ τον προσανατολισμό του σκάφους"
+  },
+  "BURN_AUTO_ORIENTATION": {
+    "description": "Name of the Auto Orientation toggle, shown in its state line (see BURN_STATE_LINE).",
+    "message": "Αυτόματος προσανατολισμός"
+  },
+  "BURN_AUTO_ORIENTATION_TIP": {
+    "description": "Tooltip of the Auto Orientation toggle button in the flight HUD burn list.",
+    "message": "Αυτόματος προσανατολισμός: κρατά το σκάφος στην κατεύθυνση της ενεργής καύσης. Μόνο προσανατολισμός, δεν ενεργοποιεί ποτέ τον κύριο κινητήρα"
+  },
+  "BURN_CANCEL_WARP": {
+    "description": "Tooltip of the button that cancels a warp to a burn (flight HUD).",
+    "message": "Ακύρωση επιτάχυνσης: επαναφορά της προηγούμενης επιτάχυνσης χρόνου"
+  },
+  "BURN_CAPTION_BURN": {
+    "description": "Flight HUD burn list column caption: the burn number.",
+    "message": "Καύση"
+  },
+  "BURN_CAPTION_DURATION": {
+    "description": "Flight HUD burn list column caption: burn duration.",
+    "message": "Χρόνος καύσης"
+  },
+  "BURN_CAPTION_DURATION_TIP": {
+    "description": "Tooltip of the Burn time column caption in the flight HUD burn list.",
+    "message": "Υπόλοιπος χρόνος καύσης με την τρέχουσα ώση"
+  },
+  "BURN_CAPTION_DV": {
+    "description": "Flight HUD burn list column caption: delta-v of the burn.",
+    "message": "Δv"
+  },
+  "BURN_CAPTION_DV_TIP": {
+    "description": "Tooltip of the Δv column caption in the flight HUD burn list.",
+    "message": "Δv που απομένει· η μπάρα από κάτω δείχνει το μέρος που έχει ήδη γίνει"
+  },
+  "BURN_CAPTION_IGNITION": {
+    "description": "Flight HUD burn list column caption: time until engine start.",
+    "message": "Ανάφλεξη"
+  },
+  "BURN_CAPTION_IGNITION_TIP": {
+    "description": "Tooltip of the Ignition column caption in the flight HUD burn list.",
+    "message": "Χρόνος έως την εκκίνηση του κινητήρα: μισός χρόνος καύσης πριν από τον κόμβο"
+  },
+  "BURN_CAPTION_NODE": {
+    "description": "Flight HUD burn list column caption: time until the planned maneuver node.",
+    "message": "Κόμβος"
+  },
+  "BURN_CAPTION_NODE_TIP": {
+    "description": "Tooltip of the Node column caption in the flight HUD burn list.",
+    "message": "Χρόνος έως τον προγραμματισμένο κόμβο, το μέσο της καύσης"
+  },
+  "BURN_DONE": {
+    "description": "Flight HUD burn list: shown in place of the countdown for a completed burn.",
+    "message": "Έγινε"
+  },
+  "BURN_DURATION_TIP": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list. 1st %s = total duration, 2nd %s = remaining duration.",
+    "message": "%s συνολικά με την τρέχουσα ώση, απομένουν %s"
+  },
+  "BURN_DV_TIP": {
+    "description": "Tooltip of a burn's delta-v in the flight HUD burn list. The three %s are speeds: planned, already flown, left. Keep the line breaks.",
+    "message": "Προγραμματισμένο %s\nΈγινε %s\nΑπομένει %s"
+  },
+  "BURN_LIST_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the burn list panel.",
+    "message": "Απόκρυψη της λίστας πολλαπλών καύσεων"
+  },
+  "BURN_LIST_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the burn list panel.",
+    "message": "Εμφάνιση της λίστας πολλαπλών καύσεων"
+  },
+  "BURN_MARK_COMPLETE": {
+    "description": "Tooltip of the button that marks a planned burn as flown (flight HUD burn list and map planner).",
+    "message": "Σήμανση αυτής της καύσης ως ολοκληρωμένης"
+  },
+  "BURN_NEEDS_AUTOPILOT": {
+    "description": "Tooltip of the greyed-out Auto Orientation / Auto Burn buttons when the ship has no autopilot.",
+    "message": "Απαιτεί εξοπλισμό αυτόματου πιλότου"
+  },
+  "BURN_NO_THRUST": {
+    "description": "Tooltip of a burn's burn time in the flight HUD burn list when the ship has no forward thrust.",
+    "message": "Χωρίς ώση προς τα εμπρός: ο χρόνος καύσης είναι άγνωστος"
+  },
+  "BURN_NUMBER": {
+    "description": "Label of one planned burn (flight HUD burn list, map planner burn list, map and 3D orbit view burn markers). %d = burn number, starting at 1.",
+    "message": "Καύση %d"
+  },
+  "BURN_OVERLAP": {
+    "description": "Flight HUD burn list tooltip when a burn starts before the previous one ends. %s = overlap duration, %d = number of the previous burn.",
+    "message": "Ξεκινά %s πριν τελειώσει η Καύση %d"
+  },
+  "BURN_PLAN_ALL_DONE": {
+    "description": "Flight HUD burn list summary when every planned burn has been flown.",
+    "message": "Όλες οι καύσεις ολοκληρώθηκαν"
+  },
+  "BURN_PLAN_NO_BURNS": {
+    "description": "Flight HUD burn list when the plan is empty.",
+    "message": "Καμία προγραμματισμένη καύση"
+  },
+  "BURN_PLAN_SUMMARY": {
+    "description": "Flight HUD burn list summary line. %d = burns left, 1st %s = delta-v they need, 2nd %s = delta-v the ship has, 3rd %s = their total burn time.",
+    "message": "%d απομένουν  ·  %s από %s  ·  %s"
+  },
+  "BURN_PLAN_SUMMARY_TIP": {
+    "description": "Tooltip of the flight HUD burn list summary line.",
+    "message": "Καύσεις που απομένουν, το Δv που χρειάζονται ακόμη από το Δv που διαθέτει το σκάφος, και ο χρόνος καύσης τους με την τρέχουσα ώση"
+  },
+  "BURN_PLAN_TITLE": {
+    "description": "Title of the flight HUD burn list panel.",
+    "message": "ΣΧΕΔΙΟ ΚΑΥΣΕΩΝ"
+  },
+  "BURN_PROGRESS": {
+    "description": "Below the flight HUD reticule: which planned burn is active. 1st %d = active burn number, 2nd %d = number of burns in the plan.",
+    "message": "Καύση %d/%d"
+  },
+  "BURN_STATE_LINE": {
+    "description": "State line of a flight HUD burn list toggle. 1st %s = toggle name (Auto Orientation / Auto Burn), 2nd %s = ON / OFF.",
+    "message": "%s: %s"
+  },
+  "BURN_STATE_OFF": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched off.",
+    "message": "ΑΝΕΝΕΡΓΟ"
+  },
+  "BURN_STATE_ON": {
+    "description": "State of an Auto Orientation / Auto Burn toggle: switched on.",
+    "message": "ΕΝΕΡΓΟ"
+  },
+  "BURN_STATUS_ACTIVE": {
+    "description": "Tooltip of a burn's status: the burn the ship is to fly next (flight HUD burn list and map planner).",
+    "message": "Ενεργή καύση"
+  },
+  "BURN_STATUS_COMPLETED": {
+    "description": "Tooltip of a burn's status: already flown (flight HUD burn list and map planner).",
+    "message": "Ολοκληρωμένη καύση"
+  },
+  "BURN_STATUS_PLANNED": {
+    "description": "Tooltip of a burn's status: not yet flown and not the active burn (flight HUD burn list and map planner).",
+    "message": "Προγραμματισμένη καύση"
+  },
+  "BURN_STOP_BEFORE_BURN": {
+    "description": "Flight HUD burn list label of the setting for how many seconds before the burn start the warp stops.",
+    "message": "Διακοπή πριν από την καύση"
+  },
+  "BURN_STOP_BEFORE_BURN_TIP": {
+    "description": "Tooltip of the 'Stop before burn' setting in the flight HUD burn list.",
+    "message": "Η επιτάχυνση χρόνου σταματά τόσο πριν από την έναρξη της καύσης (μισή διάρκεια καύσης πριν από τον προγραμματισμένο χρόνο)· κοινό για όλες τις καύσεις"
+  },
+  "BURN_WARP_REACHED": {
+    "description": "Tooltip of a greyed-out Warp button in the flight HUD burn list: the burn start is now or in the past.",
+    "message": "Ο στόχος έχει ήδη επιτευχθεί"
+  },
+  "BURN_WARP_STRIP": {
+    "description": "Flight HUD status line while warping to a burn. 1st %d = burn number, 2nd %d = seconds to stop before (the 's' after it means seconds), %s = time acceleration level such as 1000x.",
+    "message": "Επιτάχυνση έως την Καύση %d - διακοπή %ds πριν, %s"
+  },
+  "BURN_WARP_STRIP_LIMITED": {
+    "description": "Same as BURN_WARP_STRIP, shown when the game is limiting the requested time acceleration. 1st %d = burn number, 2nd %d = seconds to stop before, %s = requested time acceleration level.",
+    "message": "Επιτάχυνση έως την Καύση %d - διακοπή %ds πριν, %s (περιορισμένη)"
+  },
+  "BURN_WARP_TIP": {
+    "description": "Tooltip of a burn's Warp button in the flight HUD burn list. %d = configured number of seconds to stop before the burn (the 's' after it means seconds).",
+    "message": "Επιτάχυνση: επιτάχυνση χρόνου με διακοπή %ds πριν ξεκινήσει αυτή η καύση (μισή διάρκειά της πριν από τον προγραμματισμένο χρόνο)"
+  },
   "BUY": {
     "description": "Commodities and equipment prices",
     "message": "Αγορά"
@@ -274,6 +486,230 @@
   "CLOSE": {
     "description": "",
     "message": "Κλείσε"
+  },
+  "CLOUD_CLUSTERING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud clustering sliders",
+    "message": "Τοπική κάλυψη: πόσος ουρανός είναι σύννεφο εκεί όπου αυτό το στρώμα έχει σύννεφα. Δεν αλλάζει τη συνολική κάλυψη. 0 = διάσπαρτα σύννεφα στο μεγαλύτερο μέρος του πλανήτη (~40% του ουρανού μέσα σε αυτά), 100 = σχεδόν συμπαγή στρώματα με μεγάλες καθαρές περιοχές ανάμεσά τους (~85-90%)."
+  },
+  "CLOUD_CLUSTERING_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud clustering sliders, in percent",
+    "message": "Συγκέντρωση νεφών (%)"
+  },
+  "CLOUD_CLUSTERING_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud clustering slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Συγκέντρωση, {layer}"
+  },
+  "CLOUD_COVER_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud cover sliders",
+    "message": "Συνολική κάλυψη: το μέρος ολόκληρου του πλανήτη που καλύπτει αυτό το στρώμα. 100 = φυσικά υπολογισμένη (Γη: χαμηλά ~40%, μεσαία ~27%, υψηλά ~30%), 50 = περίπου το μισό αυτού, 0 = στρώμα ανενεργό. Πάνω από 100 πλησιάζει σταδιακά την πλήρη νέφωση."
+  },
+  "CLOUD_COVER_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud cover sliders, in percent",
+    "message": "Πολλαπλασιαστής νεφοκάλυψης (%)"
+  },
+  "CLOUD_COVER_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud cover slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Κάλυψη, {layer}"
+  },
+  "CLOUD_LAYER_HIGH": {
+    "description": "Settings window, The Last Frontier tab: name of the high cloud layer, inserted as {layer} into the per-layer slider labels (e.g. CLOUD_COVER_LAYER); lower case in English because it follows a comma",
+    "message": "υψηλό ύψος (θύσανοι)"
+  },
+  "CLOUD_LAYER_LOW": {
+    "description": "Settings window, The Last Frontier tab: name of the low cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "χαμηλό ύψος (στρώματα / στρωματοσωρείτες)"
+  },
+  "CLOUD_LAYER_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: name of the medium cloud layer, inserted as {layer} into the per-layer slider labels",
+    "message": "μεσαίο ύψος (υψισωρείτες)"
+  },
+  "CLOUD_QUALITY": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud ray-marching quality",
+    "message": "Ποιότητα νεφών"
+  },
+  "CLOUD_QUALITY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud quality' combo box",
+    "message": "Δείγματα που λαμβάνονται κατά μήκος κάθε ακτίνας όρασης μέσα από τα σύννεφα κοντά στο έδαφος και στον αέρα. Λιγότερα είναι ταχύτερα· η διαφορά φαίνεται κυρίως στη λεπτομέρεια κοντά στα σύννεφα."
+  },
+  "CLOUD_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Υψηλή (32 βήματα)"
+  },
+  "CLOUD_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Χαμηλή (16 βήματα)"
+  },
+  "CLOUD_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Μέση (24 βήματα)"
+  },
+  "CLOUD_QUALITY_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud quality option; the number is the count of samples taken along each view ray",
+    "message": "Πολύ υψηλή (48 βήματα)"
+  },
+  "CLOUD_RESOLUTION": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the cloud rendering resolution near the ground. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "Ανάλυση νεφών"
+  },
+  "CLOUD_RESOLUTION_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution' combo box",
+    "message": "Η ανάλυση με την οποία αποδίδονται τα σύννεφα κοντά στο έδαφος και στον αέρα (η πιο χονδροειδής που χρησιμοποιείται), πριν κλιμακωθούν στην οθόνη. Υψηλότερη είναι πιο ευκρινής και πιο αργή."
+  },
+  "CLOUD_RESOLUTION_FULL": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option, render clouds at the full screen resolution",
+    "message": "Πλήρης ανάλυση οθόνης"
+  },
+  "CLOUD_RESOLUTION_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Υψηλή (720 γραμμές)"
+  },
+  "CLOUD_RESOLUTION_LOW": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Χαμηλή (360 γραμμές)"
+  },
+  "CLOUD_RESOLUTION_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Μέση (540 γραμμές)"
+  },
+  "CLOUD_RESOLUTION_SPACE": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for the finest cloud resolution, used from space. CLOUD_SPACE_DETAIL_DESC refers to it by name",
+    "message": "Ανάλυση νεφών από το διάστημα"
+  },
+  "CLOUD_RESOLUTION_SPACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud resolution from space' combo box",
+    "message": "Η λεπτότερη ανάλυση που χρησιμοποιείται. Ψηλά πάνω από έναν πλανήτη τα σύννεφα σχεδιάζονται φθηνά, αλλά η λεπτομέρειά τους γίνεται μικρή στην οθόνη, οπότε η ανάλυση αυξάνεται σταδιακά προς αυτήν, όσο χρειάζεται η λεπτομέρεια. Στη Γη αρχίζει να αυξάνεται περίπου στα 100 km και τη φτάνει περίπου στα 450 km κοιτώντας προς τα κάτω· πλανήτες με μεγαλύτερα σύννεφα (αραιές, ψυχρές ατμόσφαιρες ή μεγαλύτερη ρύθμιση μεγέθους νεφών) τη χρειάζονται αργότερα."
+  },
+  "CLOUD_RESOLUTION_ULTRA": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Ultra (1440 γραμμές)"
+  },
+  "CLOUD_RESOLUTION_VERY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: cloud resolution option; the number is the vertical resolution in screen lines",
+    "message": "Πολύ υψηλή (1080 γραμμές)"
+  },
+  "CLOUD_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for shadows cast by clouds",
+    "message": "Σκιές νεφών"
+  },
+  "CLOUD_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud shadows' combo box. 'Soft' and 'Detailed' should match CLOUD_SHADOWS_SOFT and CLOUD_SHADOWS_DETAILED",
+    "message": "Σκιές των νεφών στο έδαφος, στις πόλεις και στα σκάφη. Απαλές: σκίαση κάτω από νεφικά πεδία. Λεπτομερείς: η σκιά κάθε νέφους. Και οι δύο υπολογίζονται με την ανάλυση νεφών, οπότε κοστίζουν λίγο."
+  },
+  "CLOUD_SHADOWS_DETAILED": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, the shadow of each individual cloud",
+    "message": "Λεπτομερείς"
+  },
+  "CLOUD_SHADOWS_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud shadows' option, dimming under whole cloud fields",
+    "message": "Απαλές"
+  },
+  "CLOUD_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud size sliders",
+    "message": "Μέγεθος των μεμονωμένων νεφών αυτού του στρώματος. 100 = βασικό μέγεθος, έως 16x. Δεν αλλάζει την κάλυψη."
+  },
+  "CLOUD_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud size sliders, in percent",
+    "message": "Πολλαπλασιαστής μεγέθους νεφών (%)"
+  },
+  "CLOUD_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Μέγεθος, {layer}"
+  },
+  "CLOUD_SOFTENING": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for how much the cloud image is blurred when upscaled",
+    "message": "Εξομάλυνση νεφών"
+  },
+  "CLOUD_SOFTENING_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud softening' combo box",
+    "message": "Θολώνει την εικόνα των νεφών κατά την κλιμάκωσή της, κρύβοντας τη μειωμένη ανάλυση."
+  },
+  "CLOUD_SOFTENING_SHARP": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, no blur",
+    "message": "Ευκρινής"
+  },
+  "CLOUD_SOFTENING_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, moderate blur",
+    "message": "Απαλή"
+  },
+  "CLOUD_SOFTENING_VERY_SOFT": {
+    "description": "Settings window, The Last Frontier tab: 'Cloud softening' option, strong blur",
+    "message": "Πολύ απαλή"
+  },
+  "CLOUD_SPACE_DETAIL": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how soon cloud resolution rises when seen from space, in percent",
+    "message": "Λεπτομέρεια νεφών από το διάστημα (%)"
+  },
+  "CLOUD_SPACE_DETAIL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud detail from space' slider. The quoted names should match the translations of CLOUD_RESOLUTION and CLOUD_RESOLUTION_SPACE",
+    "message": "Πόσο νωρίς αυξάνεται η ανάλυση νεφών από την «Ανάλυση νεφών» προς την «Ανάλυση νεφών από το διάστημα» καθώς τα σύννεφα απομακρύνονται και η λεπτομέρειά τους μικραίνει στην οθόνη. Λειτουργεί το ίδιο σε κάθε πλανήτη. Ο υποδιπλασιασμός της διπλασιάζει την απόσταση όπου γίνεται η όξυνση (φθηνότερο)· 0 = καμία όξυνση. Στη Γη σε 4K κοιτώντας προς τα κάτω: το 100 φτάνει την πλήρη ανάλυση περίπου στα 450 km, το 50 περίπου στα 900 km, το 25 περίπου στα 1800 km."
+  },
+  "CLOUD_SPEED": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how fast clouds drift and evolve",
+    "message": "Ταχύτητα νεφών"
+  },
+  "CLOUD_SPEED_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cloud speed' slider",
+    "message": "Πόσο γρήγορα τα σύννεφα μετακινούνται και αλλάζουν σχήμα, ως πολλαπλάσιο της πραγματικής ταχύτητας του ανέμου."
+  },
+  "CLOUD_SYSTEM_SIZE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud system size sliders",
+    "message": "Μέγεθος των νεφικών συστημάτων (ομάδων νεφών) και των καθαρών περιοχών ανάμεσά τους. Δεν αλλάζει την κάλυψη."
+  },
+  "CLOUD_SYSTEM_SIZE_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud system size sliders, in percent",
+    "message": "Πολλαπλασιαστής μεγέθους νεφικών συστημάτων (%)"
+  },
+  "CLOUD_SYSTEM_SIZE_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud system size slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Μέγεθος συστήματος, {layer}"
+  },
+  "CLOUD_TEMPORAL": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box for temporal cloud reconstruction",
+    "message": "Χρονική ανακατασκευή νεφών"
+  },
+  "CLOUD_TEMPORAL_16X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 16 cloud pixels is traced each frame",
+    "message": "16x (1 στα 16 pixel ανά καρέ)"
+  },
+  "CLOUD_TEMPORAL_4X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 4 cloud pixels is traced each frame",
+    "message": "4x (1 στα 4 pixel ανά καρέ)"
+  },
+  "CLOUD_TEMPORAL_9X": {
+    "description": "Settings window, The Last Frontier tab: temporal cloud reconstruction option, only 1 of 9 cloud pixels is traced each frame",
+    "message": "9x (1 στα 9 pixel ανά καρέ)"
+  },
+  "CLOUD_TEMPORAL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Temporal cloud reconstruction' combo box. 'Off' refers to the OFF option",
+    "message": "Κάθε καρέ υπολογίζει μόνο μερικά από τα pixel των νεφών και συμπληρώνει τα υπόλοιπα από προηγούμενα καρέ. 4x: το ένα τέταρτο, η εικόνα ανανεώνεται κάθε 4 καρέ. 9x: το ένα ένατο, περίπου διπλάσια ταχύτητα ακόμη, ανανέωση κάθε 9 καρέ (καλύτερο σε υψηλούς ρυθμούς καρέ· οι γρήγορες στροφές μπορεί να θολώσουν για λίγο τις άκρες των νεφών). 16x: το ένα δέκατο έκτο, ακόμη ταχύτερο, ανανέωση κάθε 16 καρέ (για 120+ fps· περισσότερο θόλωμα σε γρήγορες στροφές και στον ορίζοντα). Απενεργοποίηση: κάθε pixel σε κάθε καρέ, το πιο αργό."
+  },
+  "CLOUD_TRANSPARENCY_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the per-layer cloud transparency sliders",
+    "message": "Πόσο φως περνά μέσα από τα σύννεφα αυτού του στρώματος. 100 = φυσικά υπολογισμένο, 200 = μισό πάχος, 50 = διπλό πάχος. Δεν αλλάζει την κάλυψη, αλλά πολύ υψηλές τιμές κάνουν τα λεπτά σύννεφα (θυσάνους) δυσδιάκριτα."
+  },
+  "CLOUD_TRANSPARENCY_HEADER": {
+    "description": "Settings window, The Last Frontier tab: heading above the three per-layer cloud transparency sliders, in percent",
+    "message": "Πολλαπλασιαστής διαφάνειας νεφών (%)"
+  },
+  "CLOUD_TRANSPARENCY_LAYER": {
+    "description": "Settings window, The Last Frontier tab: label of a per-layer cloud transparency slider; {layer} is one of CLOUD_LAYER_HIGH / CLOUD_LAYER_MEDIUM / CLOUD_LAYER_LOW. The label is also the widget ID, so it must contain {layer}",
+    "message": "Διαφάνεια, {layer}"
+  },
+  "CLOUD_VOLUMETRIC": {
+    "description": "Settings window, The Last Frontier tab: checkbox enabling volumetric clouds",
+    "message": "Ογκομετρικά σύννεφα"
+  },
+  "CLOUD_VOLUMETRIC_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
+    "message": "Στρώματα νεφών σε πλανήτες με ατμόσφαιρα. Δεν σχεδιάζονται όταν είναι ενεργή η πολυδειγματοληψία (εξομάλυνση ακμών)."
+  },
+  "CLOUD_WEATHER_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",
+    "message": "Προσωρινά αποθηκευμένα καιρικά μοτίβα"
+  },
+  "CLOUD_WEATHER_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Cached weather patterns' checkbox",
+    "message": "Υπολογίζει το καιρικό μοτίβο μεγάλης κλίμακας (καταιγίδες, μέτωπα) του πλησιέστερου πλανήτη μία φορά σε έναν χάρτη αντί για κάθε pixel: περίπου 15-20% ταχύτερα σύννεφα για περίπου 38 MB μνήμης βίντεο. Τα σύννεφα φαίνονται ίδια."
   },
   "COLLAPSE": {
     "description": "Close / collapse an open folder or group",
@@ -895,6 +1331,14 @@
     "description": "Player combat rating",
     "message": "Αβλαβής"
   },
+  "HEAD_BOB": {
+    "description": "Game option: the view bobs up and down as the player walks on foot",
+    "message": "Ταλάντωση κεφαλής στο βάδισμα"
+  },
+  "HEAD_BOB_DESC": {
+    "description": "The tooltip of the Head Bob on Foot option in the settings menu",
+    "message": "Η όψη ταλαντεύεται απαλά με κάθε βήμα όταν περπατάτε ή τρέχετε έξω από το σκάφος"
+  },
   "HEAVY_CARGO_SHUTTLE": {
     "description": "",
     "message": "Βαρύ μεταφορικό εμπορευμάτων"
@@ -971,6 +1415,10 @@
     "description": "Tooltip for button",
     "message": "Up cruise mode"
   },
+  "HUD_BUTTON_DEPLOY_ROVER": {
+    "description": "Tooltip: set the surface rover down beside the landed ship and drive it",
+    "message": "Οδήγηση του οχήματος"
+  },
   "HUD_BUTTON_DISABLE_AUTOPILOT": {
     "description": "Tooltip for button",
     "message": "Κατάργηση αυτόματου πιλότου"
@@ -987,9 +1435,17 @@
     "description": "Tooltip for button",
     "message": "Disable follow mode"
   },
+  "HUD_BUTTON_DISEMBARK": {
+    "description": "Tooltip: get out of the landed ship on foot",
+    "message": "Αποβίβαση"
+  },
   "HUD_BUTTON_EQUIPMENT": {
     "description": "Tooltip: Equipment",
     "message": "Εξοπλισμός"
+  },
+  "HUD_BUTTON_EVA": {
+    "description": "Tooltip: leave the ship in space, floating beside it with the jetpack (extravehicular activity)",
+    "message": "Διαστημικός περίπατος"
   },
   "HUD_BUTTON_EXTERNAL_VIEW": {
     "description": "Tooltip: External camera view",
@@ -1055,9 +1511,21 @@
     "description": "Tooltip: Landing gear is up",
     "message": "Σύστημα προσγείωσης ανεβασμένο"
   },
+  "HUD_BUTTON_LIGHTS_ARE_OFF": {
+    "description": "Tooltip: The ship's lamps, lighting the ground and everything around, are off; clicking switches them on",
+    "message": "Τα φώτα είναι σβηστά"
+  },
+  "HUD_BUTTON_LIGHTS_LEVEL": {
+    "description": "Tooltip: The ship's lamps are on at brightness level {level} of {max}; clicking steps to the next level, or off after the brightest",
+    "message": "Φώτα: επίπεδο {level} από {max}"
+  },
   "HUD_BUTTON_MANUAL_CONTROL": {
     "description": "Tooltip: Manual control",
     "message": "Χειροκίνητος έλεγχος"
+  },
+  "HUD_BUTTON_PLAN_HEADING": {
+    "description": "Tooltip of the flight control state button while Auto Orientation holds the burn direction.",
+    "message": "Κατεύθυνση σχεδίου: κρατά το σκάφος στην κατεύθυνση της ενεργής καύσης"
   },
   "HUD_BUTTON_ROTATION_DAMPING_IS_OFF": {
     "description": "Tooltip: Rotation damping is off",
@@ -1066,6 +1534,10 @@
   "HUD_BUTTON_ROTATION_DAMPING_IS_ON": {
     "description": "Tooltip: Rotation damping is on",
     "message": "Η απόσβεση περιστροφής είναι ενεργοποιημένη"
+  },
+  "HUD_BUTTON_ROVER_PARKED": {
+    "description": "Tooltip of the disabled rover button while the surface rover is out of the ship, parked where the player left it: the planet (or moon) and the star system, e.g. 'The rover is parked on Mars, Sol'",
+    "message": "Το όχημα είναι σταθμευμένο στο {planet}, {system}"
   },
   "HUD_BUTTON_SET_SPEED": {
     "description": "Tooltip: set speed",
@@ -1114,6 +1586,10 @@
   "HUD_BUTTON_UNDOCK": {
     "description": "Tooltip: Undock",
     "message": "Απόπλευσε"
+  },
+  "HUD_BUTTON_UNKNOWN_FLIGHT_STATE": {
+    "description": "Tooltip of the flight control state button for an unrecognised state (fallback).",
+    "message": "Άγνωστη κατάσταση ελέγχου πτήσης"
   },
   "HUD_CARGO_MASS": {
     "description": "Cargo Mass",
@@ -1755,6 +2231,22 @@
     "description": "3d model of the ship",
     "message": "Model"
   },
+  "MOD_GRAPHICS": {
+    "description": "Mod settings tab section",
+    "message": "Γραφικά"
+  },
+  "MOD_ON_FOOT": {
+    "description": "Mod settings tab section",
+    "message": "Πεζός και στο όχημα"
+  },
+  "MOD_OPTIONS": {
+    "description": "Settings window tab with the settings The Last Frontier adds",
+    "message": "The Last Frontier (mod)"
+  },
+  "MOD_SOUND": {
+    "description": "Mod settings tab section",
+    "message": "Ήχος"
+  },
   "MONEY": {
     "description": "",
     "message": "Money"
@@ -1943,9 +2435,45 @@
     "description": "Label for the point of an orbit furthest from the orbited body",
     "message": "Apoapsis"
   },
+  "ORBIT_IMPACT_IN": {
+    "description": "Label next to the predicted impact point on an orbit (system map and 3D orbit view). %s = time until impact.",
+    "message": "Πρόσκρουση σε %s"
+  },
+  "ORBIT_MARKER_APOAPSIS": {
+    "description": "Short abbreviation for apoapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the apoapsis.",
+    "message": "Ap"
+  },
+  "ORBIT_MARKER_ASCENDING_NODE": {
+    "description": "Short abbreviation for ascending node: orbit marker label (followed by its altitude) and the button that moves a burn to the ascending node.",
+    "message": "AN"
+  },
+  "ORBIT_MARKER_DESCENDING_NODE": {
+    "description": "Short abbreviation for descending node: orbit marker label (followed by its altitude) and the button that moves a burn to the descending node.",
+    "message": "DN"
+  },
+  "ORBIT_MARKER_PERIAPSIS": {
+    "description": "Short abbreviation for periapsis: orbit marker label (followed by its altitude) and the button that moves a burn to the periapsis.",
+    "message": "Pe"
+  },
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "Periapsis"
+  },
+  "ORBIT_VIEW_FOCUS_BODY": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",
+    "message": "Εστίαση τρισδιάστατης όψης τροχιάς: Κεντρικό σώμα (κλικ για εστίαση στο σκάφος σας)"
+  },
+  "ORBIT_VIEW_FOCUS_PLAYER": {
+    "description": "Tooltip of the 3D orbit view focus button while it is centred on the player's ship.",
+    "message": "Εστίαση τρισδιάστατης όψης τροχιάς: Το σκάφος σας (κλικ για εστίαση στο κεντρικό σώμα)"
+  },
+  "ORBIT_VIEW_HIDE": {
+    "description": "Tooltip of the flight HUD button that hides the floating 3D orbit view.",
+    "message": "Απόκρυψη τρισδιάστατης όψης τροχιάς"
+  },
+  "ORBIT_VIEW_SHOW": {
+    "description": "Tooltip of the flight HUD button that shows the floating 3D orbit view.",
+    "message": "Εμφάνιση τρισδιάστατης όψης τροχιάς"
   },
   "OUTER_ARM": {
     "description": "Arm of the Milky Way galaxy",
@@ -2062,6 +2590,218 @@
   "PLANET_TEXTURES": {
     "description": "",
     "message": "Υφές πλανήτη"
+  },
+  "PLANNER_ADD_BURN": {
+    "description": "Orbit planner button that adds a burn to the plan.",
+    "message": "Προσθήκη καύσης"
+  },
+  "PLANNER_APPROACH_ALTITUDE": {
+    "description": "Orbit planner closest approach distance over a planet or moon. %s = altitude.",
+    "message": "%s πάνω από την επιφάνεια"
+  },
+  "PLANNER_APPROACH_FLYBY": {
+    "description": "Orbit planner label: altitude to pass a planet or moon at.",
+    "message": "Ύψος διέλευσης"
+  },
+  "PLANNER_APPROACH_FLYBY_TIP": {
+    "description": "Tooltip of the Flyby altitude setting.",
+    "message": "Διέλευση από έναν πλανήτη ή δορυφόρο σε αυτό το ύψος πάνω από την επιφάνειά του. Η βαρύτητά του κάμπτει τη διέλευση μόλις μπείτε στη σφαίρα επιρροής του· το σχέδιο στοχεύει ώστε το χαμηλότερο σημείο της καμπυλωμένης διέλευσης να είναι σε αυτό το ύψος."
+  },
+  "PLANNER_APPROACH_FROM_NAV": {
+    "description": "Orbit planner tooltip: the approach target is the navigation target.",
+    "message": "Ο στόχος πλοήγησής σας - επιλέξτε ένα αντικείμενο στον χάρτη για να διαλέξετε άλλον"
+  },
+  "PLANNER_APPROACH_FROM_SELECTION": {
+    "description": "Orbit planner tooltip: the approach target comes from the map selection.",
+    "message": "Το αντικείμενο που επιλέχθηκε στον χάρτη"
+  },
+  "PLANNER_APPROACH_IMPACT": {
+    "description": "Orbit planner closest approach result when the plan hits the target body. %s = time until impact.",
+    "message": "Πρόσκρουση στον στόχο σε %s"
+  },
+  "PLANNER_APPROACH_INTERCEPT": {
+    "description": "Orbit planner button: plan a 1-burn intercept.",
+    "message": "Αναχαίτιση"
+  },
+  "PLANNER_APPROACH_INTERCEPT_BODY_TIP": {
+    "description": "Tooltip of the Intercept button for a planet or moon target.",
+    "message": "1 καύση: διέλευση από τον πλανήτη ή δορυφόρο στο ύψος διέλευσης"
+  },
+  "PLANNER_APPROACH_INTERCEPT_TIP": {
+    "description": "Tooltip of the Intercept button for a ship or station target.",
+    "message": "1 καύση: μια μετάβαση που συναντά τον στόχο"
+  },
+  "PLANNER_APPROACH_NO_TARGET": {
+    "description": "Orbit planner approach section when there is no target.",
+    "message": "Επιλέξτε ένα αντικείμενο στον χάρτη ή ορίστε στόχο πλοήγησης"
+  },
+  "PLANNER_APPROACH_ONE_BURN": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "1 καύση"
+  },
+  "PLANNER_APPROACH_ORBIT": {
+    "description": "Orbit planner label: altitude of the circular orbit a rendezvous with a planet or moon ends in.",
+    "message": "Ύψος τροχιάς"
+  },
+  "PLANNER_APPROACH_ORBIT_TIP": {
+    "description": "Tooltip of the Orbit altitude setting.",
+    "message": "Το ύψος της κυκλικής τροχιάς στην οποία σας αφήνει η καύση σύλληψης. Η διέλευση στοχεύεται ώστε, καμπυλωμένη από τη βαρύτητα του σώματος, το χαμηλότερο σημείο της να είναι σε αυτό το ύψος, όπου γίνεται η καύση σύλληψης."
+  },
+  "PLANNER_APPROACH_PLAN": {
+    "description": "Orbit planner button that computes the approach plan.",
+    "message": "Σχεδιασμός προσέγγισης"
+  },
+  "PLANNER_APPROACH_PLAN_TIP": {
+    "description": "Tooltip of the 'Plan approach' button. %s = PLANNER_APPROACH_ONE_BURN or PLANNER_APPROACH_TWO_BURNS.",
+    "message": "Αντικαθιστά το σχέδιο με %s από την τρέχουσα τροχιά σας, χρονισμένο για το ελάχιστο Δv. Ένας στόχος γύρω από άλλο σώμα προσεγγίζεται σε στάδια, με στάθμευση σε τροχιά γύρω από κάθε σώμα στη διαδρομή.\nΑν δεν βρεθεί μετάβαση, το σχέδιο μένει ως είχε."
+  },
+  "PLANNER_APPROACH_RENDEZVOUS": {
+    "description": "Orbit planner button: plan a 2-burn rendezvous.",
+    "message": "Συνάντηση"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_BODY_TIP": {
+    "description": "Tooltip of the Rendezvous button for a planet or moon target.",
+    "message": "2 καύσεις: διέλευση από τον πλανήτη ή δορυφόρο στο παρακάτω ύψος, μετά καύση επιβράδυνσης στο πλησιέστερο σημείο, μέσα στη σφαίρα επιρροής του, που σας αφήνει σε κυκλική τροχιά γύρω του εκεί"
+  },
+  "PLANNER_APPROACH_RENDEZVOUS_TIP": {
+    "description": "Tooltip of the Rendezvous button for a ship or station target.",
+    "message": "2 καύσεις: συνάντηση με τον στόχο και μετά εξίσωση της ταχύτητάς του κατά την άφιξη"
+  },
+  "PLANNER_APPROACH_RESULT": {
+    "description": "Orbit planner closest approach result. 1st %s = distance (or PLANNER_APPROACH_ALTITUDE), 2nd %s = time until it.",
+    "message": "%s σε %s"
+  },
+  "PLANNER_APPROACH_RESULT_TIP": {
+    "description": "Tooltip of the closest approach result.",
+    "message": "Πλησιέστερη προσέγγιση της σχεδιασμένης τροχιάς στον στόχο, έως μία περιφορά μετά την τελευταία καύση"
+  },
+  "PLANNER_APPROACH_SPEED": {
+    "description": "Orbit planner closest approach relative speed. %s = speed.",
+    "message": "Σχετική ταχύτητα %s"
+  },
+  "PLANNER_APPROACH_STAND_OFF": {
+    "description": "Orbit planner label: distance behind a ship or station target to meet it at.",
+    "message": "Απόσταση ασφαλείας"
+  },
+  "PLANNER_APPROACH_STAND_OFF_FORMAT": {
+    "description": "Orbit planner drag field format for the stand-off distance. %.1f = kilometres (keep it exactly).",
+    "message": "%.1f km πίσω"
+  },
+  "PLANNER_APPROACH_STAND_OFF_TIP": {
+    "description": "Tooltip of the Stand-off setting.",
+    "message": "Συνάντηση με σκάφος ή σταθμό τόσο πίσω του, στη δική του τροχιά, αντί για το κέντρο του. Μετά από μια συνάντηση το σκάφος διατηρεί αυτό το κενό, αφού και τα δύο ακολουθούν την ίδια τροχιά."
+  },
+  "PLANNER_APPROACH_TARGET": {
+    "description": "Orbit planner approach section. %s = target name.",
+    "message": "Στόχος: %s"
+  },
+  "PLANNER_APPROACH_TITLE": {
+    "description": "Orbit planner section header for planning an approach to a target.",
+    "message": "Πλησιέστερη προσέγγιση"
+  },
+  "PLANNER_APPROACH_TWO_BURNS": {
+    "description": "Inserted into PLANNER_APPROACH_PLAN_TIP.",
+    "message": "2 καύσεις"
+  },
+  "PLANNER_BURN_IS_COMPLETE": {
+    "description": "Orbit planner tooltip of the snap and Circularize buttons for a burn that has been flown.",
+    "message": "Αυτή η καύση έχει ολοκληρωθεί"
+  },
+  "PLANNER_CIRCULARIZE": {
+    "description": "Orbit planner button that makes the orbit circular.",
+    "message": "Κυκλοποίηση"
+  },
+  "PLANNER_CIRCULARIZE_AT_APSIS": {
+    "description": "Part of the Circularize tooltip. 1st %s = periapsis / apoapsis, 2nd %s = time until it.",
+    "message": "στην %s, σε %s"
+  },
+  "PLANNER_CIRCULARIZE_AT_POINT": {
+    "description": "Part of the Circularize tooltip when no apsis lies ahead.",
+    "message": "στο σημείο αυτής της καύσης (καμία περίαψη ή απόαψη μπροστά)"
+  },
+  "PLANNER_CIRCULARIZE_NONE": {
+    "description": "Orbit planner Circularize button tooltip when it is not possible.",
+    "message": "Η τροχιά αυτής της καύσης δεν μπορεί να γίνει κυκλική εδώ"
+  },
+  "PLANNER_CIRCULARIZE_TIP": {
+    "description": "Orbit planner Circularize button tooltip. 1st %s = where (PLANNER_CIRCULARIZE_AT_APSIS or PLANNER_CIRCULARIZE_AT_POINT), 2nd %s = delta-v needed.",
+    "message": "Κάνει την τροχιά κυκλική %s: %s Δv.\nΜετακινεί αυτή την καύση εκεί και αντικαθιστά τις τιμές της κατά την πορεία, κάθετα και ακτινικά."
+  },
+  "PLANNER_DV_AFTER": {
+    "description": "Orbit planner delta-v summary label: delta-v left after the plan.",
+    "message": "Μετά το σχέδιο"
+  },
+  "PLANNER_DV_AFTER_TIP": {
+    "description": "Tooltip of the After plan delta-v line.",
+    "message": "Δv που απομένει όταν γίνουν όλες οι προγραμματισμένες καύσεις"
+  },
+  "PLANNER_DV_AVAILABLE": {
+    "description": "Orbit planner delta-v summary label: delta-v the ship has.",
+    "message": "Διαθέσιμο"
+  },
+  "PLANNER_DV_AVAILABLE_TIP": {
+    "description": "Tooltip of the Available delta-v line.",
+    "message": "Δv που δίνουν τα καύσιμα του σκάφους με την τρέχουσα μάζα του"
+  },
+  "PLANNER_DV_PLAN": {
+    "description": "Orbit planner delta-v summary label: delta-v the remaining burns need.",
+    "message": "Σχέδιο"
+  },
+  "PLANNER_DV_PLAN_TIP": {
+    "description": "Tooltip of the Plan delta-v line.",
+    "message": "Δv που χρειάζονται οι καύσεις που απομένουν"
+  },
+  "PLANNER_DV_SHORT": {
+    "description": "Orbit planner delta-v summary when the plan needs more than the ship has. %s = missing delta-v.",
+    "message": "Λείπουν %s"
+  },
+  "PLANNER_DV_SHORT_TIP": {
+    "description": "Tooltip of the After plan line when delta-v is short.",
+    "message": "Το σχέδιο χρειάζεται περισσότερο Δv από όσο δίνουν τα καύσιμα"
+  },
+  "PLANNER_EVENT_APOAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "απόαψη"
+  },
+  "PLANNER_EVENT_ASCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "ανιόντα κόμβο"
+  },
+  "PLANNER_EVENT_DESCENDING_NODE": {
+    "description": "Orbit planner: event name used inside sentences (snap tooltips), lower case.",
+    "message": "κατιόντα κόμβο"
+  },
+  "PLANNER_EVENT_PERIAPSIS": {
+    "description": "Orbit planner: event name used inside sentences (snap and circularize tooltips), lower case.",
+    "message": "περίαψη"
+  },
+  "PLANNER_REF_EQUATOR": {
+    "description": "Orbit planner reference plane for nodes: the body's equatorial plane. %s = body name.",
+    "message": "τον ισημερινό του %s"
+  },
+  "PLANNER_REF_TARGET_ORBIT": {
+    "description": "Orbit planner reference plane for nodes: the target's orbital plane. %s = target name.",
+    "message": "την τροχιά του %s"
+  },
+  "PLANNER_REMAINING_DV": {
+    "description": "Orbit planner tooltip of a burn's remaining delta-v.",
+    "message": "Υπόλοιπο Δv αυτής της καύσης"
+  },
+  "PLANNER_SNAP_NODE_NONE": {
+    "description": "Orbit planner AN/DN button tooltip when the node does not exist. 1st %s = node name, 2nd %s = reference plane.",
+    "message": "Η τροχιά πριν από αυτή την καύση δεν περνά από %s ως προς %s"
+  },
+  "PLANNER_SNAP_NODE_TIP": {
+    "description": "Orbit planner AN/DN button tooltip. 1st %s = node name, 2nd %s = reference plane (PLANNER_REF_TARGET_ORBIT / PLANNER_REF_EQUATOR), 3rd %s = time until it.",
+    "message": "Μετακίνηση αυτής της καύσης στον επόμενο %s, ως προς %s, σε %s.\nΚλικ ξανά για την επόμενη τροχιά."
+  },
+  "PLANNER_SNAP_NONE": {
+    "description": "Orbit planner Pe/Ap button tooltip when the event does not exist. %s = event name.",
+    "message": "Καμία %s μπροστά στην τροχιά πριν από αυτή την καύση"
+  },
+  "PLANNER_SNAP_TIP": {
+    "description": "Orbit planner Pe/Ap button tooltip. 1st %s = event name (periapsis / apoapsis), 2nd %s = time until it.",
+    "message": "Μετακίνηση αυτής της καύσης στην επόμενη %s της τροχιάς πριν από αυτήν, σε %s.\nΚλικ ξανά για την επόμενη τροχιά."
   },
   "PLEASE_DESIGN_NEW_PAINTJOB": {
     "description": "",
@@ -2291,6 +3031,30 @@
     "description": "For hyperjump planner",
     "message": "Άλματα διαδρομής"
   },
+  "ROVER_BAY": {
+    "description": "Used in ShipInfo view, followed by a yes/no depending on whether the ship has a vehicle bay for the surface rover",
+    "message": "Θάλαμος οχήματος"
+  },
+  "ROVER_DEFAULT_VIEW": {
+    "description": "Game option: the view the surface rover starts in when the player gets in",
+    "message": "Όψη οχήματος κατά την επιβίβαση"
+  },
+  "ROVER_DEFAULT_VIEW_DESC": {
+    "description": "The tooltip of the Rover View on Getting In option in the settings menu",
+    "message": "Η όψη όταν μπαίνετε στο όχημα ή το βγάζετε από το σκάφος. Το πλήκτρο όψης την αλλάζει ακόμη κατά την οδήγηση"
+  },
+  "ROVER_VIEW_CAB": {
+    "description": "Rover view option: from the driver's seat, with the cab drawn",
+    "message": "Από την καμπίνα"
+  },
+  "ROVER_VIEW_EXTERNAL": {
+    "description": "Rover view option: from outside, circling the rover",
+    "message": "Από έξω"
+  },
+  "ROVER_VIEW_NO_MODEL": {
+    "description": "Rover view option: from the driver's eyes, without the rover drawn (as the ship's internal view)",
+    "message": "Μάτια οδηγού, χωρίς όχημα"
+  },
   "SAFETY_LOCKOUT": {
     "description": "Ship jump status",
     "message": "Κλείδωμα ασφαλείας"
@@ -2387,6 +3151,22 @@
     "description": "UI option",
     "message": "Ρυθμίσεις"
   },
+  "SETTINGS_SHADOWS": {
+    "description": "Settings window, The Last Frontier tab: label of the combo box choosing sun shadow quality",
+    "message": "Σκιές"
+  },
+  "SETTINGS_SHADOWS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadows' combo box",
+    "message": "Σκιές από τον ήλιο που ρίχνουν σκάφη, σταθμοί, κτίρια πόλεων και το έδαφος, στο έδαφος και το ένα στο άλλο. Ο αριθμός είναι η ανάλυση του χάρτη σκιών: υψηλότερη είναι πιο ευκρινής και χρησιμοποιεί περισσότερη μνήμη βίντεο (περίπου 12 / 48 / 192 MB). Οι ευκρινείς σκιές γύρω από το σκάφος σας ξανασχεδιάζονται σε κάθε καρέ· οι πιο μακρινές επαναχρησιμοποιούνται έως ότου μετακινηθεί ο ήλιος ή η κάμερα, οπότε κοστίζουν λίγο."
+  },
+  "SETTINGS_WIND_HOWL": {
+    "description": "Settings window, The Last Frontier tab, Sound: label of the slider for the surface wind sound volume, in percent",
+    "message": "Βουητό ανέμου (%)"
+  },
+  "SETTINGS_WIND_HOWL_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Wind howl' slider",
+    "message": "Η ένταση του ανέμου επιφανείας που ακούγεται όταν αιωρείστε, έχετε προσεδαφιστεί ή πετάτε αργά κοντά στο έδαφος ενός πλανήτη με ατμόσφαιρα. Το 100 είναι το σχεδιασμένο επίπεδο· ακολουθεί επίσης την ένταση των εφέ."
+  },
   "SET_AS_TARGET": {
     "description": "",
     "message": "Ορίστε τον προορισμό ως στόχο πλοήγησης."
@@ -2410,6 +3190,42 @@
   "SET_TO_ZERO": {
     "description": "For the speed limiter button",
     "message": "Set to zero"
+  },
+  "SHADOW_DARKNESS": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how dark shadows are, in percent",
+    "message": "Σκοτεινότητα σκιών (%)"
+  },
+  "SHADOW_DARKNESS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow darkness' slider",
+    "message": "Πόσο από το ηλιακό φως αφαιρεί μια σκιά κάτω από ουρανό σαν της Γης· το υπόλοιπο αντιστοιχεί στο φως του ουρανού, που φτάνει ακόμη στα σκιασμένα σημεία. Οι αραιότερες ατμόσφαιρες κάνουν τις σκιές πιο σκοτεινές, έως εντελώς σκοτεινές στο κενό."
+  },
+  "SHADOW_DEBUG_MAPS": {
+    "description": "Settings window, The Last Frontier tab: checkbox for a debug view tinting the scene by shadow map",
+    "message": "Εμφάνιση χαρτών σκιών (αποσφαλμάτωση)"
+  },
+  "SHADOW_DEBUG_MAPS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Show shadow maps (debug)' checkbox",
+    "message": "Χρωματίζει τα πάντα ανάλογα με τον χάρτη σκιών που χρησιμοποιούν: κόκκινο ο ευκρινής χάρτης γύρω από το σκάφος σας, πράσινο ο μεσαίος, μπλε ο μακρινός."
+  },
+  "SHADOW_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab: label of the slider for how far shadows are drawn, in metres",
+    "message": "Απόσταση σκιών (m)"
+  },
+  "SHADOW_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Shadow distance' slider",
+    "message": "Πόσο μακριά από την κάμερα ρίχνουν σκιές σταθμοί, πόλεις και σταθμευμένα σκάφη. Μεγαλύτερη απόσταση απλώνει τον ίδιο χάρτη σκιών σε μεγαλύτερη περιοχή, οπότε οι μακρινές σκιές γίνονται πιο χονδροειδείς."
+  },
+  "SHADOW_QUALITY_HIGH": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Υψηλή (4096)"
+  },
+  "SHADOW_QUALITY_LOW": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Χαμηλή (1024)"
+  },
+  "SHADOW_QUALITY_MEDIUM": {
+    "description": "Settings window, The Last Frontier tab: 'Shadows' option; the number is the shadow map resolution in pixels",
+    "message": "Μέση (2048)"
   },
   "SHIP": {
     "description": "",
@@ -2575,6 +3391,50 @@
     "description": "Tab item in the start game menu",
     "message": "Σύνοψη"
   },
+  "SURFACE_BOARD_SHIP": {
+    "description": "On-foot HUD prompt: the key and this board the ship",
+    "message": "Επιβίβαση στο σκάφος"
+  },
+  "SURFACE_ENTER_ROVER": {
+    "description": "On-foot HUD prompt: the key and this get into the surface rover",
+    "message": "Είσοδος στο όχημα"
+  },
+  "SURFACE_EVA_SHIP": {
+    "description": "EVA HUD: distance to the player's ship and the speed relative to it, e.g. 'Ship 35 m, 0.4 m/s'",
+    "message": "Σκάφος {distance}, {speed}"
+  },
+  "SURFACE_EXIT_ROVER": {
+    "description": "Rover HUD prompt: the key and this get out of the surface rover",
+    "message": "Έξοδος"
+  },
+  "SURFACE_FREE_CURSOR": {
+    "description": "On-foot HUD hint: hold Alt to free the mouse cursor",
+    "message": "Κρατήστε το Alt για τον δείκτη του ποντικιού"
+  },
+  "SURFACE_JETPACK": {
+    "description": "On-foot HUD: label of the jetpack fuel bar",
+    "message": "Σακίδιο προώθησης"
+  },
+  "SURFACE_ROVER_SPEED": {
+    "description": "Rover HUD: the speed in kilometres per hour, e.g. '42 km/h'",
+    "message": "{speed} km/h"
+  },
+  "SURFACE_ROVER_VIEW": {
+    "description": "Rover HUD hint: the key and this change the view (from the cab, without the rover's model, from outside)",
+    "message": "Αλλαγή όψης"
+  },
+  "SURFACE_STOW_ROVER": {
+    "description": "Rover HUD prompt next to the ship: the key and this drive the rover into the hold and board the ship",
+    "message": "Φόρτωση του οχήματος και επιβίβαση"
+  },
+  "SURFACE_YOUR_ROVER": {
+    "description": "On-foot HUD: label of the marker of the player's surface rover on the compass",
+    "message": "Όχημα"
+  },
+  "SURFACE_YOUR_SHIP": {
+    "description": "On-foot HUD: label of the marker of the player's own ship on the compass",
+    "message": "Σκάφος"
+  },
   "SYSTEM_BODY_INDEX_IS_OUT_OF_RANGE": {
     "description": "Message when restoring savegame",
     "message": "System body index is out of range"
@@ -2615,6 +3475,26 @@
     "description": "Tooltip introducing the system security rating",
     "message": "Επίπεδο ασφαλείας συστήματος"
   },
+  "SYSTEM_VIEW_FOLLOW_PLAN": {
+    "description": "System map button tooltip: follow the ship's planned position.",
+    "message": "Ακολουθεί τη θέση όπου το σχέδιο φέρνει το σκάφος σας - μετακινήστε τον χρόνο του χάρτη για να πετάξετε κατά μήκος του"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_15": {
+    "description": "System map combo item: latitude/longitude lines every 15 degrees.",
+    "message": "Κάθε 15°"
+  },
+  "SYSTEM_VIEW_LATLONG_EVERY_30": {
+    "description": "System map combo item: latitude/longitude lines every 30 degrees.",
+    "message": "Κάθε 30°"
+  },
+  "SYSTEM_VIEW_LATLONG_LINES": {
+    "description": "System map: button tooltip and settings label for latitude/longitude lines on planets and moons.",
+    "message": "Γραμμές γεωγραφικού πλάτους και μήκους"
+  },
+  "SYSTEM_VIEW_ZOOM_TO_SHIP": {
+    "description": "System map button tooltip: centre and zoom the map on the player's ship.",
+    "message": "Εστίαση στο σκάφος σας"
+  },
   "TECH_CERTIFIED": {
     "description": "Lobby screen shows the tech level (an integer number) of the station",
     "message": "Αυτός ο σταθμός διαθέτει πιστοποιητικό τεχνολογίας επιπέδου {tech_level}."
@@ -2626,6 +3506,14 @@
   "TECH_LEVEL": {
     "description": "System view label for technology level",
     "message": "Τεχνολογικό επίπεδο"
+  },
+  "TERRAIN_DETAIL_DISTANCE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the slider for the planet terrain level-of-detail distance",
+    "message": "Απόσταση λεπτομέρειας εδάφους"
+  },
+  "TERRAIN_DETAIL_DISTANCE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Terrain detail distance' slider",
+    "message": "Πόσο μακριά το έδαφος των πλανητών αποκτά πλήρη λεπτομέρεια πλέγματος: ένα τμήμα εδάφους βελτιώνεται μόλις βρεθείτε πιο κοντά από τόσα πλάτη τμήματος. Υψηλότερη τιμή είναι πιο ευκρινής από μακριά, αλλά παράγει περισσότερο έδαφος (CPU) και σχεδιάζει περισσότερα τρίγωνα. Αυτή είναι η τιμή σε μεσαίο ύψος (περίπου 200 έως 2.000 km στη Γη)· μειώνεται αυτόματα κοντά στο έδαφος και σε υψηλή τροχιά, όπου κοστίζει περισσότερο ή φαίνεται λιγότερο. 15 = προεπιλογή, 1 = αρχική συμπεριφορά του Pioneer."
   },
   "TEXTURE_COMPRESSION": {
     "description": "",

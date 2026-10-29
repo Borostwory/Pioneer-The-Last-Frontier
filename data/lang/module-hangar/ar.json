@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "على متن السفينة"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "على متن \"{ship}\""
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "قيد الطيران"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "إضافة مربض"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "الكل"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "كل ما يتسع"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "موجود بالفعل على متن \"{ship}\": {cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "إنها في طريقها إلى محطة أخرى."
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "أنت تستأجر حظيرة هنا بالفعل."
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "إنها في طريق العودة بالفعل."
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "ينتظرون أيضًا في أماكن أخرى:"
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "مهمة"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "المرابض"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "يمكن إضافة المرابض أو إزالتها لاحقًا."
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "حجز التوصيل"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "حجز رحلة"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "\"{ship}\" مخزنة في حظيرتك هنا."
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "بيع هيكل \"{ship}\": ذهب {items} عنصرًا إلى مخزن المعدات، و{tons} طن من الحمولة إلى مخزن الحمولة، و{crew} من الطاقم إلى الصالة."
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "إحضار إلى السفينة"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "تذهب معداتها إلى مخزن معدات الحظيرة وحمولتها إلى مخزن حمولة الحظيرة؛ ولا يُباع سوى الهيكل."
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "تُحفظ كما هي، بمعداتها وكل حمولتها؛ ولا ينتقل شيء إلى السفينة الجديدة. تدفع السعر كاملًا."
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "تُباع بكل معداتها. تنتقل كل حمولتها إلى السفينة الجديدة."
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "مقايضة الهيكل المجرد لـ \"{ship}\""
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "تخزين \"{ship}\" في مربض هنا"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "مقايضة \"{ship}\""
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "شراء {ship}؟"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "ركاب على متن السفينة"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "إلغاء التوصيل"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "يُسترد {refund} (نصف السعر)، وتعود إلى {station}، وتصل في {date}."
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "إلغاء توصيل {what}؟"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "لا يمكن إزالته الآن"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station} ميناء فضائي سطحي، وهذه السفينة ليس لديها فتحة للتدريع الجوي."
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "لا يمكنك الإقلاع بطاقم أقل من {min}."
+  },
+  "CARGO": {
+    "description": "",
+    "message": "الحمولة"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "الحمولة على متن السفينة"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "عنبر الحمولة"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "الحمولة التي يحملها لن تتسع بدونه"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "مخزن الحمولة في {station}"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "مخزن الحمولة فارغ."
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "أفرغ البضائع في مخزن حمولة الحظيرة وحمّلها على السفينة التي تقودها. غير محدود ومجاني؛ وتحتفظ حمولة المهمات بعلامتها."
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} طن"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "الحمولة"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "الوصول"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "المربض"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "رسوم المربض"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "التكلفة"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "المسافة"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "الموقع"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "الاسم"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "مدفوع حتى"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "رسوم الوقوف"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "شهريًا"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "السفينة"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "أفضل مهارة"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "المحطة"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "الحالة"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "المخزن"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "النوع"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "سيصعد إلى السفينة"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/أسبوع"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/ليلة + {wage}/أسبوع"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "مدفوع مقدمًا: يتبقى {credit} من الرصيد، مشترك بين كل المرابض. بالإيجار الحالي يكفي حتى نحو {date}؛ بعد ذلك يُخصم الإيجار من حسابك في الأول من كل شهر."
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "ينتهي الإيجار الذي دفعته مقدمًا لحظيرتك في {station} في {date}. بعد ذلك يُفوتر في الأول من كل شهر."
+  },
+  "CREW": {
+    "description": "",
+    "message": "الطاقم"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "وصل {name} إلى صالة الطاقم في {station}."
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "طاقم \"{ship}\" (تتسع لـ {min}–{max}):"
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} من الطاقم (تتسع هذه السفينة لـ {min}–{max})"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "صالة الطاقم"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "طاقم السفينة الجديدة"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "من لم يُحدَّد ينتظر في الصالة هنا."
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "يُدفع نصف الأجر في الطريق، ولا رسوم صالة. عند الوصول ينتظرون في الصالة هناك."
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "ماذا سيحدث لـ \"{ship}\"؟ اختر واحدًا:"
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "خدمة التوصيل"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "توصيل \"{ship}\""
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "أنت مدين له بـ {owed} من الأجور. لن يتقبل ذلك جيدًا، والدَّين الذي يتجاوز {limit} يُعد احتيالًا في العقد."
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} ينتظر في الصالة هنا. ينتهي عقده ويغادر طاقمك."
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "صرف {name}؟"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "هذه السفينة لا تناسب منافذ الالتحام في {station}: بمجرد مغادرتها لن تستطيع الالتحام هناك مجددًا."
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} طن وقود"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "فارغ"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "فارغ"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "فارغة"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "إنهاء الإيجار"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "لا يمكن التخلي إلا عن حظيرة فارغة: بلا سفن أو معدات أو بضائع، ولا شيء في الطريق، ولا إيجار غير مدفوع."
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "المعدات"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "وصل {count} عنصرًا إلى مخزن حظيرتك في {station}."
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "المعدات هنا…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "المعدات"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "حجم المعدات: مستخدم {used} من {capacity} m³"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "مركّبة على"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "تركيب على \"{ship}\""
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "الأسطول"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "الطاقم في الصالات"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "الحظائر"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "السفن"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "مخزن المعدات: {items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "قيادة هذه السفينة"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "يُخصم من حسابك."
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "يُدفع من رصيدك."
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "يُدفع من رصيدك، والباقي من حسابك."
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "من:"
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "من: {station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "الوقود"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "سينتظر في الصالة"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "تبويب الحظيرة"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "الحظيرة"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "الحظيرة في {station}"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "هذه الحظيرة مقفلة حتى يُدفع الإيجار المستحق."
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station} ({free} مربض شاغر)"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "شكرًا! سأنتظر في صالة الطاقم هنا حتى تحتاجني على متن السفينة."
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "عنبر الحمولة ممتلئ"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "عنبر الحمولة: مستخدم {used} من {total} طن"
+  },
+  "HULL": {
+    "description": "",
+    "message": "الهيكل"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "كل الطاقم عداك ينتظر في الصالة هنا. أحضرهم إلى السفينة من تبويب الحظيرة، صالة الطاقم."
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "جهاز الإطلاق الضوئي"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "إلى مربض شاغر هنا ({free} شاغر)"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "في الفضاء الفائق"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "في الصالة"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "في الصالة هنا"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "يُحفظ {count} عنصر معدات في مخزن هذه الحظيرة."
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "لم يتسع {count} عنصر معدات للعودة إلى السفينة وهي محفوظة في مخزن الحظيرة."
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "تم اختيار {count} عنصر"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "استئجار حظيرة"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "الحمولة على متن السفينة تحتاجه"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "على بعد {dist} سنة ضوئية"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "تحميل على السفينة"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} من الطاقم ينتظرون في الصالة"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "حظيرتك: {ships} من {bays} مربض مستخدم، {paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "يُفوتر شهريًا"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "مدفوع حتى {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "إيجار غير مدفوع"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "في الصالة هنا بعد التبديل: {count}، {cost} لليلة، إضافة إلى نصف الأجر."
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "صالة الطاقم في {station}"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "رسوم صالة غير مدفوعة: {debt}."
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "عليك {debt} من رسوم الصالة. ادفعها قبل أن ينتظر أي شخص آخر في صالة."
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "الصالة: {rate} للشخص لليلة ({now} لليلة الآن)، تُفوتر في الأول من الشهر. يتقاضى الطاقم المنتظر هنا نصف الأجر كأجر احتفاظ ولا يتعلم شيئًا جديدًا."
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "تعذر دفع رسوم الصالة كاملة. عليك {debt}؛ وستُخصم من أموالك عندما تتوفر."
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "يتقاضون نصف الأجر أثناء الانتظار. انقلهم من تبويب الحظيرة في أي محطة، صالة الطاقم."
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "\"{ship}\" عند {hull}% للهيكل و{fuel}% للوقود. الإصلاح والتزود بالوقود متاحان هنا."
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "للحظيرة 4 مرابض كحد أقصى."
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "حمولة المهمات المتروكة يجب أن تُسلَّم بالسفينة التي تحملها."
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "أشهر"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d أشهر"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "تحتاج دعم حياة للحمولة"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity} تحتاج دعم حياة للحمولة، وهو غير متوفر في السفينة المخزنة."
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "الفاتورة التالية {date}: نحو {amount}، إيجار الفترة {from} – {to}. {source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "الفاتورة التالية {date}: نحو {amount}، إيجار الفترة {from} – {to} (جزء من شهر). {source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "لا أحد ينتظر هنا."
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "لا أحد ينتظر في صالة أو مسافر."
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "لا أحد ينتظر في محطة أخرى."
+  },
+  "NONE": {
+    "description": "",
+    "message": "لا شيء"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "حدّد ما تريد إرساله."
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "يجب أن تكون على متن سفينتك."
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "تلك السفينة مخزنة في محطة أخرى."
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "ليس لديك مال كافٍ."
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "غير مدفوع مقدمًا"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "لا يوجد مربض شاغر في {station} للعودة إليه."
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "لا حمولة على متن السفينة."
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "لم يُدفع شيء مقدمًا: يُخصم الإيجار من حسابك في الأول من كل شهر."
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "اختر وجهتها."
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "حجم المعدات غير كافٍ"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "لا يوجد مربض شاغر في {station}."
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "لا يوجد مربض شاغر هنا. أضف مربضًا أولًا."
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "لا تستأجر أي حظيرة. استأجر واحدة في أي محطة، من تبويب الحظيرة."
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "ليست لديك حظيرة في {station}."
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "لا يوجد، لا يمكنها مغادرة نظامها"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "ليست لديك حظيرة أخرى."
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "لا توجد سفن مخزنة في حظائرك الأخرى."
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "لا توجد سفن مخزنة هنا بعد."
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "لا توجد فتحة له في هذه السفينة"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} عنصر"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "تقديم عرض وظيفة، مع الانتظار في صالة الطاقم هنا حاليًا"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "في الطريق من {from}، تصل {date}"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "الحظيرة التي جاءت منها لم تعد لك."
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station} ({used}/{bays} مرابض)"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "مدفوع حتى نحو {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} طن · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "ركاب على متن السفينة: أنهِ عقود الركاب أولًا."
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "دفع"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "دفع {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "لا شيء الآن: يُفوتر الإيجار في الأول من كل شهر."
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "الدفع مقدمًا"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "الدفع مقدمًا…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "اختر سفينة."
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "الإيجار الحالي: {rent} شهريًا. الدفع لمدة:"
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "دفع الإيجار مقدمًا لـ {station}"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}، تصل {date} · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1 ش"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1 س"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2 س"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3 ش"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6 ش"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "إزالة مربض"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "لا يمكن إزالة إلا مربض فارغ، وتحتفظ الحظيرة بمربض واحد على الأقل."
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "إعادة تسمية"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "فارغة: {empty} شهريًا. مع وقوف \"{ship}\" ({tonnes} طن): {rent} شهريًا."
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "الإيجار الشهري: {bay} لكل مربض، إضافة إلى {tonne} لكل طن من الهيكل المتوقف."
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "تعذر دفع إيجار حظيرتك في {station}. عليك {debt}؛ والسفن هناك مقفلة حتى يُدفع."
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "إيجار غير مدفوع: {debt} ({months} شهر، مع غرامة تأخير 10%). السفن هنا مقفلة حتى يُدفع."
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "يبقى الباقي على متن \"{ship}\"."
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "عائدة إلى {to}، تصل {date}"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "المركبة متوقفة على كوكب"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "مركبتك متوقفة على {planet}. أدخلها أولًا."
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "النظام نفسه"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "حفظ"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "اختر سفينة مخزنة في الجدول أعلاه لرؤيتها وقيادتها."
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "بيع"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "تدفع {station} مبلغ {price} مقابل {item}، كما يدفع متجر المعدات."
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "بيع {item}؟"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "البيع لهذه المحطة مقابل {price}"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "إرسال طاقم من الصالة في {station}"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "إرسال إلى الصالة في محطة أخرى"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "إرسال معدات…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "إرسال معدات من {station}"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "إرسال عناصر من هذا المخزن إلى حظيرة أخرى من حظائرك"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "اجعل خدمة التوصيل تنقل هذه السفينة إلى حظيرة أخرى من حظائرك"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "إرسال إلى…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "الانتظار في الصالة هنا"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "السفن"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "لا تُدرج السفن التي في الطريق، ولا السفن في الحظائر المقفلة بسبب إيجار غير مدفوع."
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "\"{name}\" (النشطة)"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "وصلت \"{ship}\" إلى حظيرتك في {station}."
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name} ({type}) · الهيكل {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "\"{ship}\" تتسع لطاقم من {max} كحد أقصى."
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "في الطريق: لا يمكن قيادتها أو إرسالها أو تجهيزها حتى تصل."
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "السعر: {price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "عادت \"{ship}\" إلى حظيرتك في {station}."
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "\"{name}\" (مخزنة هنا)"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "تسافر السفينة بحمولتها ومعداتها وتشغل مربضها في الوجهة. لا يمكن قيادتها أو تجهيزها في الطريق. تُحتسب رسوم الوقوف من وقت وصولها."
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "إظهار على خريطة القطاع"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "منذ"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "فتحاته في هذه السفينة مشغولة"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "فتحته في هذه السفينة بحجم خاطئ"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "المحطة"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "السفينة التي تقودها"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "قيد الطيران"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "مخزنة، مقفلة: إيجار غير مدفوع"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "مخزنة منذ {date}"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "مخزنة"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "مخزن الحظيرة في {station}"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} عنصر · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "المخزن فارغ."
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "فكّ العناصر إلى المخزن، ثم ركّبها على السفينة المختارة على اليسار، أو بِعها لهذه المحطة. تنطبق قواعد متجر المعدات وأسعاره، بلا رسوم تركيب. اختر فتحة فارغة أولًا لتركيب عنصر فيها."
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "حظيرتك هنا ليس فيها مربض شاغر."
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "ليست لديك حظيرة هنا."
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} عنصر، {tons} طن"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "ستُخزَّن \"{ship}\" في هذا المربض. لا يبقى الطاقم أبدًا على سفينة مخزنة: من لم يُحدَّد أدناه ينتظر في الصالة هنا."
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "تبديل السفن"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "التبديل إلى \"{ship}\"؟"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d طن"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "لا شيء"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "بعد ذلك، {rent} لكل شهر كامل، تُفوتر في الأول من الشهر."
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "هذه هي السفينة التي تقودها."
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "تحتاج \"{ship}\" إلى طاقم من {min} على الأقل، ولن يكون على متنها سوى {crew}. لا يمكنك الإقلاع حتى توظف المزيد أو تأخذ أحدًا من الصالة."
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "تتسع \"{ship}\" لطاقم من {max} كحد أقصى، وسيكون على متنها {crew}. ألغِ تحديد {over} لتركهم في الصالة."
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "في \"{ship}\" متسع لـ {room} طن. خذ أقل بـ {over} طن."
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "الإجمالي: {used} من {bays} مرابض مستخدمة"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "إلى:"
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "تتسع {ship} لـ {room} طن، ولديك {used} طن على متن السفينة. عند المقايضة تنتقل كل الحمولة إلى السفينة الجديدة: بِع أو أفرغ {over} طن أولًا، أو اختر خيارًا آخر."
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "لديك {used} طن من الحمولة و{ship} تتسع لـ {room} طن."
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "إحضار طاقم إلى الصالة في {station}"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "إحضار الطاقم المنتظر في محطة أخرى إلى هذه الصالة"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "نقل معدات إلى {station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "توصيل عناصر من مخزن حظيرة أخرى إلى هنا"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "نقل من…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "نقل إلى هنا"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "توصيلها إلى حظيرتك هنا"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "نقل سفينة إلى {station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "توصيل سفينة مخزنة في حظيرة أخرى من حظائرك إلى هنا"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "مسافر إلى {station}، يصل {date}"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "فك الكل"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "نقل كل ما يمكن فكه من هذه السفينة إلى المخزن"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "فكّ العناصر المركبة عليه أولًا"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "فك إلى المخزن"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "تفريغ في مخزن الحمولة"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "غير مدفوع: {debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "{wage} أسبوعيًا"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{count} في {station}"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} ينتظرون"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "المنتظرون في الصالات"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "ينتظر منذ {date}"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "مرحبًا بعودتك."
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} من الطاقم ينتظرون في الصالة."
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "تضم حظيرتك هنا {ships} سفينة في {bays} مربض."
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "مركّبة بلا فتحة"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "سنوات"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "حظائرك الأخرى:"
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "أنت (القائد)"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "(لديك {crew})"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "تدفع: {cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "تستلم: {amount}"
+  }
+}

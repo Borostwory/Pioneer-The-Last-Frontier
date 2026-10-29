@@ -303,6 +303,10 @@
     "description": "Name for a generic utility hardpoint",
     "message": "公用事业"
   },
+  "HARDPOINT_VEHICLE_BAY": {
+    "description": "Name for a hardpoint: a bay in the hull for a vehicle carried aboard (a shuttle or the surface rover)",
+    "message": "载具舱"
+  },
   "HARDPOINT_WEAPON": {
     "description": "Name for a generic weapon hardpoint",
     "message": "武器"
@@ -827,6 +831,10 @@
     "description": "Generic name for secondary attitude or maneuvering thrusters",
     "message": "推进器"
   },
+  "SLOT_VEHICLE_BAY": {
+    "description": "Name for an equipment slot: a bay in the hold big enough for the surface rover",
+    "message": "载具舱"
+  },
   "SMALL_PLASMA_ACCEL": {
     "description": "",
     "message": "小型等离子体加速器"
@@ -874,6 +882,14 @@
   "STAT_WEIGHT": {
     "description": "Stat label for equipment weight",
     "message": "重量"
+  },
+  "SURFACE_ROVER": {
+    "description": "Ship equipment: a pressurised four-wheeled vehicle carried in the hold, driven out of the landed ship",
+    "message": "地面漫游车"
+  },
+  "SURFACE_ROVER_DESCRIPTION": {
+    "description": "",
+    "message": "一辆可乘两人的加压四轮漫游车，装在载具舱内，只有较大的飞船才有载具舱（飞船市场中的“漫游车舱”）。着陆后把它放到飞船旁边，驾车出去探索地表。"
   },
   "SURFACE_SCANNER": {
     "description": "A ship equipment that records data of terrain, for cartography mapping/geological survey. Note: Scout Mission module reference and distinguishes between 'orbital' and 'surface' scanner types, the former scans planet from orbit, the latter from low altitude. Model manufacturer name is meant to sound like a cheap brand.",
@@ -970,6 +986,10 @@
   "UTILITY": {
     "description": "Category name of utility equipment",
     "message": "公用事业"
+  },
+  "VEHICLES": {
+    "description": "Category name for the equipment slots of vehicles carried aboard (the surface rover)",
+    "message": "载具"
   },
   "WEAPONS": {
     "description": "Category name of weapon-related equipment",

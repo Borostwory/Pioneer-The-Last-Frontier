@@ -234,12 +234,12 @@ local l4l5DisplayMode = SystemViewComboState:new{
 }
 
 -- latitude and longitude lines on planets and moons, toggled by their own
--- button; no lang keys exist for these strings
-local LATLONG_DISPLAY_MODE = "Latitude and longitude lines"
+-- button
+local LATLONG_DISPLAY_MODE = luc.SYSTEM_VIEW_LATLONG_LINES
 local latLongDisplayMode = SystemViewComboState:new{
 	items = {
-		"Every 30°",
-		"Every 15°"
+		luc.SYSTEM_VIEW_LATLONG_EVERY_30,
+		luc.SYSTEM_VIEW_LATLONG_EVERY_15
 	},
 	displayModes = {
 		"LATLONG_30",
@@ -738,79 +738,89 @@ local infoView = {
 	end
 }
 
--- strings the game ships no lang key for: the burn list's status labels and its
--- Complete control. The wording mirrors the flight HUD's burn list
--- (flight-ui/burn-hud.lua) so the map sidebar and the HUD read identically, and
--- no data/lang entries are added here.
+-- the burn list's and the planner's strings, from the ui-core lang resource.
+-- The status labels and the Complete control share their keys with the flight
+-- HUD's burn list (flight-ui/burn-hud.lua), so the map sidebar and the HUD read
+-- identically; the numeric drag format stays literal
 local L = {
-	STATUS_PENDING = "Planned burn",
-	STATUS_ACTIVE = "Active burn",
-	STATUS_COMPLETED = "Completed burn",
-	REMAINING_DV = "Remaining delta-v of this burn",
-	ZOOM_TO_SHIP = "Zoom to your ship",
-	FOLLOW_PLAN = "Follow where the plan puts your ship - scrub the map time to fly along it",
-	COMPLETE = "Mark this burn complete",
+	STATUS_PENDING = luc.BURN_STATUS_PLANNED,
+	STATUS_ACTIVE = luc.BURN_STATUS_ACTIVE,
+	STATUS_COMPLETED = luc.BURN_STATUS_COMPLETED,
+	BURN = luc.BURN_NUMBER,
+	ADD_BURN = luc.PLANNER_ADD_BURN,
+	REMAINING_DV = luc.PLANNER_REMAINING_DV,
+	ZOOM_TO_SHIP = luc.SYSTEM_VIEW_ZOOM_TO_SHIP,
+	FOLLOW_PLAN = luc.SYSTEM_VIEW_FOLLOW_PLAN,
+	COMPLETE = luc.BURN_MARK_COMPLETE,
+	IMPACT_IN = luc.ORBIT_IMPACT_IN,
 	-- snap row: the burn's node time jumps to an event of the orbit leading
 	-- into it (the current orbit for the first burn)
-	SNAP_TIP = "Move this burn to the next %s of the orbit before it, in %s.\nClick again for the next orbit.",
-	SNAP_NODE_TIP = "Move this burn to the next %s, relative to %s, in %s.\nClick again for the next orbit.",
-	SNAP_NONE = "No %s ahead on the orbit before this burn",
-	SNAP_NODE_NONE = "No %s ahead relative to %s on the orbit before this burn",
-	SNAP_COMPLETED = "This burn is complete",
-	CIRCULARIZE = "Circularize",
-	CIRCULARIZE_TIP = "Make the orbit a circle at %s: %s of Δv.\nMoves this burn there and replaces its prograde, normal and radial values.",
-	CIRCULARIZE_AT_APSIS = "the %s, in %s",
-	CIRCULARIZE_AT_POINT = "this burn's point (no periapsis or apoapsis ahead)",
+	SNAP_TIP = luc.PLANNER_SNAP_TIP,
+	SNAP_NODE_TIP = luc.PLANNER_SNAP_NODE_TIP,
+	SNAP_NONE = luc.PLANNER_SNAP_NONE,
+	SNAP_NODE_NONE = luc.PLANNER_SNAP_NODE_NONE,
+	SNAP_COMPLETED = luc.PLANNER_BURN_IS_COMPLETE,
+	CIRCULARIZE = luc.PLANNER_CIRCULARIZE,
+	CIRCULARIZE_TIP = luc.PLANNER_CIRCULARIZE_TIP,
+	CIRCULARIZE_AT_APSIS = luc.PLANNER_CIRCULARIZE_AT_APSIS,
+	CIRCULARIZE_AT_POINT = luc.PLANNER_CIRCULARIZE_AT_POINT,
 	-- closest-approach planning
-	APPROACH_TITLE = "Closest approach",
-	APPROACH_TARGET = "Target: %s",
-	APPROACH_FROM_SELECTION = "The object selected on the map",
-	APPROACH_FROM_NAV = "Your navigation target - select an object on the map to choose another",
-	APPROACH_NO_TARGET = "Select an object on the map, or set a navigation target",
-	APPROACH_INTERCEPT = "Intercept",
-	APPROACH_INTERCEPT_TIP = "1 burn: a transfer that meets the target",
-	APPROACH_RENDEZVOUS = "Rendezvous",
-	APPROACH_RENDEZVOUS_TIP = "2 burns: meet the target, then match its velocity on arrival",
-	APPROACH_PLAN = "Plan approach",
-	APPROACH_PLAN_TIP = "Replace the plan with %s from your current orbit, timed for the least Δv. A target around another body is reached in stages, parking in an orbit around each body on the way.\nIf no transfer is found, the plan stays as it was.",
-	APPROACH_ONE_BURN = "1 burn",
-	APPROACH_TWO_BURNS = "2 burns",
-	APPROACH_STAND_OFF = "Stand-off",
-	APPROACH_STAND_OFF_FORMAT = "%.1f km behind",
-	APPROACH_STAND_OFF_TIP = "Meet a ship or station this far behind it, on its own orbit, instead of at its centre. After a rendezvous the ship keeps this gap, since both fly the same orbit.",
-	APPROACH_FLYBY = "Flyby altitude",
+	APPROACH_TITLE = luc.PLANNER_APPROACH_TITLE,
+	APPROACH_TARGET = luc.PLANNER_APPROACH_TARGET,
+	APPROACH_FROM_SELECTION = luc.PLANNER_APPROACH_FROM_SELECTION,
+	APPROACH_FROM_NAV = luc.PLANNER_APPROACH_FROM_NAV,
+	APPROACH_NO_TARGET = luc.PLANNER_APPROACH_NO_TARGET,
+	APPROACH_INTERCEPT = luc.PLANNER_APPROACH_INTERCEPT,
+	APPROACH_INTERCEPT_TIP = luc.PLANNER_APPROACH_INTERCEPT_TIP,
+	APPROACH_RENDEZVOUS = luc.PLANNER_APPROACH_RENDEZVOUS,
+	APPROACH_RENDEZVOUS_TIP = luc.PLANNER_APPROACH_RENDEZVOUS_TIP,
+	APPROACH_PLAN = luc.PLANNER_APPROACH_PLAN,
+	APPROACH_PLAN_TIP = luc.PLANNER_APPROACH_PLAN_TIP,
+	APPROACH_ONE_BURN = luc.PLANNER_APPROACH_ONE_BURN,
+	APPROACH_TWO_BURNS = luc.PLANNER_APPROACH_TWO_BURNS,
+	APPROACH_STAND_OFF = luc.PLANNER_APPROACH_STAND_OFF,
+	APPROACH_STAND_OFF_FORMAT = luc.PLANNER_APPROACH_STAND_OFF_FORMAT,
+	APPROACH_STAND_OFF_TIP = luc.PLANNER_APPROACH_STAND_OFF_TIP,
+	APPROACH_FLYBY = luc.PLANNER_APPROACH_FLYBY,
 	APPROACH_FLYBY_FORMAT = "%.0f km",
-	APPROACH_FLYBY_TIP = "Pass a planet or moon this high above its surface. Its own gravity bends the pass once you are inside its sphere of influence; the plan aims so that the bent pass has its lowest point at this altitude.",
-	APPROACH_INTERCEPT_BODY_TIP = "1 burn: fly past the planet or moon at the flyby altitude",
-	APPROACH_RENDEZVOUS_BODY_TIP = "2 burns: fly past the planet or moon at the altitude below, then a retro burn at the closest point, inside its sphere of influence, that leaves you in a circular orbit around it there",
-	APPROACH_ORBIT = "Orbit altitude",
-	APPROACH_ORBIT_TIP = "The altitude of the circular orbit the capture burn leaves you in. The pass is aimed so that, bent by the body's gravity, its lowest point is at this altitude, where the capture burn is made.",
-	APPROACH_RESULT = "%s in %s",
-	APPROACH_ALTITUDE = "%s above the surface",
-	APPROACH_IMPACT = "Impact with the target in %s",
-	APPROACH_SPEED = "Relative speed %s",
-	APPROACH_RESULT_TIP = "Closest approach of the planned trajectory to the target, up to a revolution after the last burn",
-	CIRCULARIZE_NONE = "This burn's orbit cannot be circularized here",
+	APPROACH_FLYBY_TIP = luc.PLANNER_APPROACH_FLYBY_TIP,
+	APPROACH_INTERCEPT_BODY_TIP = luc.PLANNER_APPROACH_INTERCEPT_BODY_TIP,
+	APPROACH_RENDEZVOUS_BODY_TIP = luc.PLANNER_APPROACH_RENDEZVOUS_BODY_TIP,
+	APPROACH_ORBIT = luc.PLANNER_APPROACH_ORBIT,
+	APPROACH_ORBIT_TIP = luc.PLANNER_APPROACH_ORBIT_TIP,
+	APPROACH_RESULT = luc.PLANNER_APPROACH_RESULT,
+	APPROACH_ALTITUDE = luc.PLANNER_APPROACH_ALTITUDE,
+	APPROACH_IMPACT = luc.PLANNER_APPROACH_IMPACT,
+	APPROACH_SPEED = luc.PLANNER_APPROACH_SPEED,
+	APPROACH_RESULT_TIP = luc.PLANNER_APPROACH_RESULT_TIP,
+	CIRCULARIZE_NONE = luc.PLANNER_CIRCULARIZE_NONE,
 	-- the plan's delta-v against the ship's
-	DV_PLAN = "Plan",
-	DV_PLAN_TIP = "Δv the burns still to fly need",
-	DV_AVAILABLE = "Available",
-	DV_AVAILABLE_TIP = "Δv the ship's fuel gives at its current mass",
-	DV_AFTER = "After plan",
-	DV_AFTER_TIP = "Δv left once every planned burn is flown",
-	DV_SHORT = "Short by %s",
-	DV_SHORT_TIP = "The plan needs more Δv than the fuel gives",
-	REF_TARGET = "%s's orbit",
-	REF_EQUATOR = "%s's equator",
+	DV_PLAN = luc.PLANNER_DV_PLAN,
+	DV_PLAN_TIP = luc.PLANNER_DV_PLAN_TIP,
+	DV_AVAILABLE = luc.PLANNER_DV_AVAILABLE,
+	DV_AVAILABLE_TIP = luc.PLANNER_DV_AVAILABLE_TIP,
+	DV_AFTER = luc.PLANNER_DV_AFTER,
+	DV_AFTER_TIP = luc.PLANNER_DV_AFTER_TIP,
+	DV_SHORT = luc.PLANNER_DV_SHORT,
+	DV_SHORT_TIP = luc.PLANNER_DV_SHORT_TIP,
+	REF_TARGET = luc.PLANNER_REF_TARGET_ORBIT,
+	REF_EQUATOR = luc.PLANNER_REF_EQUATOR,
 }
 
 -- the snap events, in button order: short label, the name the tooltip uses,
 -- and whether it is a node (measured against a reference plane)
 local snapEvents = {
-	{ key = "periapsis", label = "Pe", name = "periapsis" },
-	{ key = "apoapsis", label = "Ap", name = "apoapsis" },
-	{ key = "ascending", label = "AN", name = "ascending node", node = true },
-	{ key = "descending", label = "DN", name = "descending node", node = true },
+	{ key = "periapsis", label = luc.ORBIT_MARKER_PERIAPSIS, name = luc.PLANNER_EVENT_PERIAPSIS },
+	{ key = "apoapsis", label = luc.ORBIT_MARKER_APOAPSIS, name = luc.PLANNER_EVENT_APOAPSIS },
+	{ key = "ascending", label = luc.ORBIT_MARKER_ASCENDING_NODE, name = luc.PLANNER_EVENT_ASCENDING_NODE, node = true },
+	{ key = "descending", label = luc.ORBIT_MARKER_DESCENDING_NODE, name = luc.PLANNER_EVENT_DESCENDING_NODE, node = true },
+}
+
+-- TransferPlannerGetCircularizeDeltaV names its apsis by key; the tooltip
+-- shows the same names as the snap row
+local apsisNames = {
+	periapsis = luc.PLANNER_EVENT_PERIAPSIS,
+	apoapsis = luc.PLANNER_EVENT_APOAPSIS,
 }
 
 -- cells render "-" when a value is unavailable
@@ -906,7 +916,7 @@ local function drawCircularizeButton(idx, width, completed)
 		local where = L.CIRCULARIZE_AT_POINT
 		if apsis then
 			local delay = ui.Format.Duration(math.max(0, math.floor(time - Game.time)))
-			where = string.format(L.CIRCULARIZE_AT_APSIS, apsis, delay)
+			where = string.format(L.CIRCULARIZE_AT_APSIS, apsisNames[apsis] or apsis, delay)
 		end
 		tooltip = string.format(L.CIRCULARIZE_TIP, where, ui.Format.Speed(dv))
 	end
@@ -1211,7 +1221,7 @@ local plannerView = {
 				-- clicking the header selects this burn, the highlight marks the
 				-- selection; the map time jumps to the burn and holds there (the
 				-- game clock is untouched)
-				if ui.selectable("Burn " .. (idx + 1) .. "##plannerBurnHeader" .. idx, idx == selectedBurn, {"SpanAllColumns"}) then
+				if ui.selectable(string.format(L.BURN, idx + 1) .. "##plannerBurnHeader" .. idx, idx == selectedBurn, {"SpanAllColumns"}) then
 					selectedBurn = idx
 					local burnTime = systemView:TransferPlannerGet(idx, "starttime")
 					if burnTime then
@@ -1278,7 +1288,7 @@ local plannerView = {
 		end
 
 		-- footer: insert a burn after the selected one, then select the new burn
-		if ui.button(ui.get_icon_glyph(icons.burn_add) .. " Add Burn##plannerAddBurn") then
+		if ui.button(ui.get_icon_glyph(icons.burn_add) .. " " .. L.ADD_BURN .. "##plannerAddBurn") then
 			selectedBurn = systemView:TransferPlannerInsertBurn(selectedBurn)
 			clampSelectedBurn(systemView:TransferPlannerGetBurnCount())
 		end
@@ -1387,10 +1397,10 @@ end
 -- orbit markers labelled on the player's and the planner's orbits, which
 -- carry the marker's altitude (other orbits' apsides stay icon-only)
 local markerLabels = {
-	[Projectable.PERIAPSIS] = "Pe",
-	[Projectable.APOAPSIS] = "Ap",
-	[Projectable.ASCENDING_NODE] = "AN",
-	[Projectable.DESCENDING_NODE] = "DN",
+	[Projectable.PERIAPSIS] = luc.ORBIT_MARKER_PERIAPSIS,
+	[Projectable.APOAPSIS] = luc.ORBIT_MARKER_APOAPSIS,
+	[Projectable.ASCENDING_NODE] = luc.ORBIT_MARKER_ASCENDING_NODE,
+	[Projectable.DESCENDING_NODE] = luc.ORBIT_MARKER_DESCENDING_NODE,
 }
 
 local function getLabel(obj)
@@ -1398,12 +1408,12 @@ local function getLabel(obj)
 		return markerLabels[obj.type] .. " " .. ui.Format.Distance(obj.altitude)
 	end
 	if obj.type == Projectable.IMPACT then
-		return "Impact in " .. ui.Format.Duration(math.max((obj.time or 0) - Game.time, 0), 2)
+		return string.format(L.IMPACT_IN, ui.Format.Duration(math.max((obj.time or 0) - Game.time, 0), 2))
 	end
 	if obj.type == Projectable.OBJECT then
 		if obj.base == Projectable.SYSTEMBODY then return obj.ref.name
 		elseif obj.base == Projectable.PLANNER then return ""
-		elseif obj.base == Projectable.PLANNER_BURN then return "Burn " .. tostring(obj.burnIndex or 1)
+		elseif obj.base == Projectable.PLANNER_BURN then return string.format(L.BURN, obj.burnIndex or 1)
 		else return obj.ref:GetLabel() end
 	--elseif obj.type == Projectable.L4 and show_lagrange == "LAG_ICONTEXT" then return "L4"
 	elseif obj.type == Projectable.L4 and l4l5DisplayMode:getMode() == "LAG_ICONTEXT" then return "L4"

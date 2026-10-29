@@ -1,0 +1,58 @@
+{
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "misja"
+  },
+  "CARGO_LABEL": {
+    "description": "How a mission is named where cargo held for it is listed. {mission} is the mission type",
+    "message": "{mission}: {place}, termin {date}"
+  },
+  "HELD_ABOARD": {
+    "description": "Missions tab",
+    "message": "{amount} t: {commodity}, na pokładzie „{ship}”"
+  },
+  "HELD_FOR_MISSIONS": {
+    "description": "Cargo sidebar tooltip",
+    "message": "{amount} t zarezerwowane dla misji. Możesz je wyrzucić na ekranie ładunku."
+  },
+  "HELD_IN_HANGAR": {
+    "description": "Missions tab",
+    "message": "{amount} t: {commodity}, w magazynie ładunków twojego hangaru w {station}"
+  },
+  "HELD_MISSING": {
+    "description": "Missions tab",
+    "message": "{amount} t: {commodity}, brakuje: wyrzucone, utracone lub zepsute"
+  },
+  "HELD_NOT_FOR_SALE": {
+    "description": "Commodity market tooltip on the In hold column",
+    "message": "{amount} t zarezerwowane dla misji, nie na sprzedaż"
+  },
+  "HELD_ON_STORED_SHIP": {
+    "description": "Missions tab",
+    "message": "{amount} t: {commodity}, na pokładzie „{ship}”, odstawionego w {station}"
+  },
+  "JETTISON_ANYWAY": {
+    "description": "Button",
+    "message": "Wyrzuć"
+  },
+  "JETTISON_HELD": {
+    "description": "",
+    "message": "Ta tona ładunku „{commodity}” jest przeznaczona na: {mission}."
+  },
+  "JETTISON_MISSION_FAILS": {
+    "description": "",
+    "message": "Bez niej misja może się nie powieść."
+  },
+  "JETTISON_TITLE": {
+    "description": "Title of the window asking before mission cargo is jettisoned",
+    "message": "Wyrzucić „{commodity}”?"
+  },
+  "MISSION_CARGO": {
+    "description": "Missions tab: heading over where the mission's cargo is",
+    "message": "Ładunek misji"
+  },
+  "OF_WHICH_HELD": {
+    "description": "Cargo list: part of a commodity held for a mission. {icon} is the mission cargo mark",
+    "message": "w tym {icon} {amount} t: {mission}"
+  }
+}

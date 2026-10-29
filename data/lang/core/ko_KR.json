@@ -1675,6 +1675,10 @@
     "description": "",
     "message": "Surface pressure"
   },
+  "SURFACE_ROVER": {
+    "description": "The name of the player's surface rover, on its marker in the world view and as the nav target",
+    "message": "로버"
+  },
   "SURFACE_TEMPERATURE": {
     "description": "",
     "message": "Surface temperature"

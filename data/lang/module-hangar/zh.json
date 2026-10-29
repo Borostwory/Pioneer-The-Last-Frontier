@@ -1,0 +1,1170 @@
+{
+  "ABOARD": {
+    "description": "Swap window: where a crew member is now",
+    "message": "在船上"
+  },
+  "ABOARD_SHIP": {
+    "description": "Crew lounge: heading over the crew aboard",
+    "message": "在“{ship}”上"
+  },
+  "ACTIVE": {
+    "description": "Bay table: the row for the ship the player is flying",
+    "message": "驾驶中"
+  },
+  "ADD_BAY": {
+    "description": "Button: lease one more bay in this hangar",
+    "message": "增加泊位"
+  },
+  "ALL": {
+    "description": "Button: move all of it",
+    "message": "全部"
+  },
+  "ALL_THAT_FITS": {
+    "description": "Button in the swap window: take as much cargo as fits",
+    "message": "装满为止"
+  },
+  "ALREADY_ABOARD": {
+    "description": "Cargo already on the stored ship",
+    "message": "已在“{ship}”上：{cargo}"
+  },
+  "ALREADY_IN_TRANSIT": {
+    "description": "",
+    "message": "它正在运往另一个空间站。"
+  },
+  "ALREADY_LEASED": {
+    "description": "",
+    "message": "你已经在这里租了一个机库。"
+  },
+  "ALREADY_RETURNING": {
+    "description": "",
+    "message": "它已经在返回途中。"
+  },
+  "ALSO_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "其他地方也有人在等候："
+  },
+  "A_MISSION": {
+    "description": "Fallback name for whatever holds some cargo",
+    "message": "某项任务"
+  },
+  "BAYS": {
+    "description": "Label: number of bays in a hangar",
+    "message": "泊位"
+  },
+  "BAYS_CAN_CHANGE": {
+    "description": "",
+    "message": "泊位以后可以增加或减少。"
+  },
+  "BOOK_DELIVERY": {
+    "description": "Button",
+    "message": "预订运送"
+  },
+  "BOOK_PASSAGE": {
+    "description": "Button",
+    "message": "预订行程"
+  },
+  "BOUGHT_AND_STORED": {
+    "description": "Ship Market, after buying",
+    "message": "“{ship}”已停放在你在这里的机库中。"
+  },
+  "BOUGHT_HULL_SOLD": {
+    "description": "Ship Market, after buying",
+    "message": "“{ship}”的船体已售出：{items} 件装备转入装备仓库，{tons} 吨货物转入货物仓库，{crew} 名船员前往休息室。"
+  },
+  "BRING_ABOARD": {
+    "description": "Tooltip: button bringing a crew member aboard",
+    "message": "带上船"
+  },
+  "BUY_DESC_HULL": {
+    "description": "",
+    "message": "它的装备转入机库的装备仓库，货物转入机库的货物仓库；只出售船体。"
+  },
+  "BUY_DESC_STORE": {
+    "description": "",
+    "message": "原样保留，连同装备和全部货物；不会转移到新船。你需支付全价。"
+  },
+  "BUY_DESC_TRADEIN": {
+    "description": "",
+    "message": "连同所有装备一起出售。所有货物转移到新船。"
+  },
+  "BUY_MODE_HULL": {
+    "description": "",
+    "message": "以“{ship}”的空船体折价"
+  },
+  "BUY_MODE_STORE": {
+    "description": "",
+    "message": "将“{ship}”停放在这里的泊位"
+  },
+  "BUY_MODE_TRADEIN": {
+    "description": "Ship Market purchase window: a choice for the current ship",
+    "message": "以“{ship}”折价换购"
+  },
+  "BUY_TITLE": {
+    "description": "Ship Market purchase window",
+    "message": "购买 {ship}？"
+  },
+  "CABIN_OCCUPIED": {
+    "description": "",
+    "message": "有乘客在船上"
+  },
+  "CANCEL_DELIVERY": {
+    "description": "Button",
+    "message": "取消运送"
+  },
+  "CANCEL_TEXT": {
+    "description": "",
+    "message": "退还 {refund}（价格的一半），它将返回{station}，于 {date} 到达。"
+  },
+  "CANCEL_TITLE": {
+    "description": "",
+    "message": "取消{what}的运送？"
+  },
+  "CANT_BE_REMOVED": {
+    "description": "",
+    "message": "目前无法拆卸"
+  },
+  "CANT_LAND_AT": {
+    "description": "",
+    "message": "{station}是地面太空港，而这艘飞船没有大气护盾槽位。"
+  },
+  "CANT_LAUNCH_FEWER": {
+    "description": "",
+    "message": "船员少于 {min} 人时无法起飞。"
+  },
+  "CARGO": {
+    "description": "",
+    "message": "货物"
+  },
+  "CARGO_ABOARD": {
+    "description": "",
+    "message": "船上货物"
+  },
+  "CARGO_HOLD": {
+    "description": "Size of the ship's cargo hold",
+    "message": "货舱"
+  },
+  "CARGO_RACK_IN_USE": {
+    "description": "",
+    "message": "没有它，船上的货物就装不下"
+  },
+  "CARGO_STORE_AT": {
+    "description": "",
+    "message": "{station}的货物仓库"
+  },
+  "CARGO_STORE_EMPTY": {
+    "description": "",
+    "message": "货物仓库是空的。"
+  },
+  "CARGO_STORE_HELP": {
+    "description": "",
+    "message": "将货物卸到机库的货物仓库，或装上你正在驾驶的飞船。容量无限且免费；任务货物保留其标记。"
+  },
+  "CARGO_STORE_TOTAL": {
+    "description": "",
+    "message": "{total} 吨"
+  },
+  "CARGO_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "货物"
+  },
+  "COL_ARRIVES": {
+    "description": "Delivery window column",
+    "message": "到达"
+  },
+  "COL_BAY": {
+    "description": "Bay table column",
+    "message": "泊位"
+  },
+  "COL_BAY_FEE": {
+    "description": "Bay table column: the fee for the bay itself",
+    "message": "泊位费"
+  },
+  "COL_COST": {
+    "description": "Fleet tab column",
+    "message": "费用"
+  },
+  "COL_DISTANCE": {
+    "description": "Delivery window column",
+    "message": "距离"
+  },
+  "COL_LOCATION": {
+    "description": "Fleet tab column",
+    "message": "位置"
+  },
+  "COL_NAME": {
+    "description": "Fleet tab column",
+    "message": "名称"
+  },
+  "COL_PAID_UNTIL": {
+    "description": "Bay table column",
+    "message": "已付至"
+  },
+  "COL_PARKING": {
+    "description": "Bay table column: the fee per tonne of the ship parked",
+    "message": "停泊费"
+  },
+  "COL_PER_MONTH": {
+    "description": "Bay table column: bay fee plus parking fee",
+    "message": "每月"
+  },
+  "COL_SHIP": {
+    "description": "Bay table column",
+    "message": "飞船"
+  },
+  "COL_SKILL": {
+    "description": "Fleet tab column",
+    "message": "最佳技能"
+  },
+  "COL_STATION": {
+    "description": "Fleet tab column",
+    "message": "空间站"
+  },
+  "COL_STATUS": {
+    "description": "Fleet tab column",
+    "message": "状态"
+  },
+  "COL_STORE": {
+    "description": "Fleet tab column",
+    "message": "仓库"
+  },
+  "COL_TYPE": {
+    "description": "Fleet tab column",
+    "message": "类型"
+  },
+  "COMES_ABOARD": {
+    "description": "Swap window",
+    "message": "将登船"
+  },
+  "COST_TRAVELLING": {
+    "description": "Fleet tab: what someone travelling costs",
+    "message": "{wage}/周"
+  },
+  "COST_WAITING": {
+    "description": "Fleet tab: what someone waiting costs",
+    "message": "{rate}/晚 + {wage}/周"
+  },
+  "CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "预付余额：剩余 {credit}，所有泊位共用。按目前租金可用到约 {date}；之后每月 1 日从你的账户扣除租金。"
+  },
+  "CREDIT_RUNNING_OUT": {
+    "description": "Message a week before prepaid rent runs out",
+    "message": "你在{station}的机库预付租金将于 {date} 用完。之后每月 1 日计费。"
+  },
+  "CREW": {
+    "description": "",
+    "message": "船员"
+  },
+  "CREW_ARRIVED": {
+    "description": "Message",
+    "message": "{name} 已抵达{station}的船员休息室。"
+  },
+  "CREW_FOR": {
+    "description": "Swap window: crew section",
+    "message": "“{ship}”的船员（{min}–{max} 人）："
+  },
+  "CREW_LIMITS": {
+    "description": "",
+    "message": "{crew} 名船员（此船可载 {min}–{max} 人）"
+  },
+  "CREW_LOUNGE": {
+    "description": "Hangar sub-tab",
+    "message": "船员休息室"
+  },
+  "CREW_SECTION": {
+    "description": "Purchase window: heading over the crew picker",
+    "message": "新船的船员"
+  },
+  "CREW_STAY_HINT": {
+    "description": "",
+    "message": "未勾选的人将在这里的休息室等候。"
+  },
+  "CREW_TRAVEL_NOTE": {
+    "description": "",
+    "message": "途中支付一半工资，不收休息室费用。到达后他们在当地休息室等候。"
+  },
+  "CURRENT_SHIP_CHOICE": {
+    "description": "Purchase window: heading over the choices",
+    "message": "“{ship}”如何处理？请选择一项："
+  },
+  "DELIVERY_SERVICE": {
+    "description": "Sender of delivery messages",
+    "message": "运送服务"
+  },
+  "DELIVER_SHIP_TITLE": {
+    "description": "Delivery window title",
+    "message": "运送“{ship}”"
+  },
+  "DISMISS_OWED": {
+    "description": "",
+    "message": "你欠他们 {owed} 工资。他们不会善罢甘休，而拖欠超过 {limit} 将被视为合同欺诈。"
+  },
+  "DISMISS_TEXT": {
+    "description": "",
+    "message": "{name} 正在这里的休息室等候。其合同终止，将离开你的船员队伍。"
+  },
+  "DISMISS_TITLE": {
+    "description": "Window asking before someone in a lounge is dismissed",
+    "message": "解雇 {name}？"
+  },
+  "DOCK_SIZE_WARNING": {
+    "description": "Warning: the ship fits none of a station's docking ports",
+    "message": "这艘飞船不适合{station}的停靠口：一旦离开，就无法再在那里停靠。"
+  },
+  "DRIVE_FUEL": {
+    "description": "Hyperdrive in the store: fuel it holds",
+    "message": "{fuel} 吨燃料"
+  },
+  "EMPTY_BAY": {
+    "description": "Bay table: an empty bay",
+    "message": "空"
+  },
+  "EMPTY_HOLD": {
+    "description": "",
+    "message": "空"
+  },
+  "EMPTY_SLOT": {
+    "description": "",
+    "message": "空"
+  },
+  "END_LEASE": {
+    "description": "Button: end the lease of this hangar",
+    "message": "结束租约"
+  },
+  "END_LEASE_NEEDS_EMPTY": {
+    "description": "Tooltip on a disabled End lease button",
+    "message": "只有空机库才能退租：没有飞船、装备或货物，没有在途物品，也没有欠缴租金。"
+  },
+  "EQUIPMENT": {
+    "description": "",
+    "message": "装备"
+  },
+  "EQUIPMENT_ARRIVED": {
+    "description": "Message",
+    "message": "{count} 件物品已运抵你在{station}的机库仓库。"
+  },
+  "EQUIPMENT_HERE": {
+    "description": "Button",
+    "message": "此处装备…"
+  },
+  "EQUIPMENT_TAB": {
+    "description": "Hangar sub-tab",
+    "message": "装备"
+  },
+  "EQUIP_VOLUME": {
+    "description": "",
+    "message": "装备容积：已用 {used} / {capacity} m³"
+  },
+  "FITTED_ON": {
+    "description": "Equipment sub-tab: before the ship picker",
+    "message": "安装于"
+  },
+  "FIT_TOOLTIP": {
+    "description": "Tooltip on the fit button",
+    "message": "安装到“{ship}”"
+  },
+  "FLEET": {
+    "description": "Info screen tab",
+    "message": "舰队"
+  },
+  "FLEET_CREW": {
+    "description": "Fleet tab section",
+    "message": "休息室中的船员"
+  },
+  "FLEET_HANGARS": {
+    "description": "Fleet tab section",
+    "message": "机库"
+  },
+  "FLEET_SHIPS": {
+    "description": "Fleet tab section",
+    "message": "飞船"
+  },
+  "FLEET_STORE_LINE": {
+    "description": "Fleet tab: the selected hangar's equipment",
+    "message": "装备仓库：{items}"
+  },
+  "FLY_THIS_SHIP": {
+    "description": "Button: swap to this stored ship",
+    "message": "驾驶这艘飞船"
+  },
+  "FROM_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "从你的账户扣除。"
+  },
+  "FROM_CREDIT": {
+    "description": "Where the next bill is paid from",
+    "message": "从预付余额支付。"
+  },
+  "FROM_CREDIT_AND_ACCOUNT": {
+    "description": "Where the next bill is paid from",
+    "message": "从预付余额支付，其余从你的账户扣除。"
+  },
+  "FROM_LABEL": {
+    "description": "",
+    "message": "从："
+  },
+  "FROM_LINE": {
+    "description": "",
+    "message": "从：{station}"
+  },
+  "FUEL": {
+    "description": "",
+    "message": "燃料"
+  },
+  "GOES_TO_LOUNGE": {
+    "description": "Swap window",
+    "message": "将在休息室等候"
+  },
+  "GO_TO_HANGAR": {
+    "description": "Ship Market button opening the Hangar tab",
+    "message": "机库标签页"
+  },
+  "HANGAR": {
+    "description": "Name of the station tab",
+    "message": "机库"
+  },
+  "HANGAR_AT": {
+    "description": "",
+    "message": "{station}的机库"
+  },
+  "HANGAR_LOCKED": {
+    "description": "",
+    "message": "在付清欠缴租金之前，此机库已被锁定。"
+  },
+  "HANGAR_WITH_BAYS": {
+    "description": "Destination entry",
+    "message": "{station}（{free} 个空泊位）"
+  },
+  "HIRED_INTO_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "谢谢！在你需要我上船之前，我会在这里的船员休息室等候。"
+  },
+  "HOLD_FULL": {
+    "description": "Why goods can't be loaded",
+    "message": "货舱已满"
+  },
+  "HOLD_USE": {
+    "description": "",
+    "message": "货舱：已用 {used} / {total} 吨"
+  },
+  "HULL": {
+    "description": "",
+    "message": "船体"
+  },
+  "HULL_ALL_CREW_LOUNGE": {
+    "description": "",
+    "message": "除你之外的所有船员都在这里的休息室等候。可在机库标签页的“船员休息室”中带他们上船。"
+  },
+  "HYPERDRIVE": {
+    "description": "",
+    "message": "超空间引擎"
+  },
+  "INTO_BAY_LINE": {
+    "description": "",
+    "message": "停入这里的空泊位（{free} 个空闲）"
+  },
+  "IN_HYPERSPACE": {
+    "description": "Fleet tab: where the active ship is",
+    "message": "在超空间中"
+  },
+  "IN_LOUNGE": {
+    "description": "Swap window: where a crew member is now",
+    "message": "在休息室"
+  },
+  "IN_LOUNGE_HERE": {
+    "description": "Crew lounge: heading over the crew waiting",
+    "message": "在这里的休息室"
+  },
+  "ITEMS_IN_STORE": {
+    "description": "Equipment that couldn't be refitted is kept in the hangar",
+    "message": "{count} 件装备存放在此机库的仓库中。"
+  },
+  "ITEMS_MOVED_TO_STORE": {
+    "description": "Message after a swap",
+    "message": "{count} 件装备无法装回飞船，已存放在机库仓库中。"
+  },
+  "ITEMS_PICKED": {
+    "description": "",
+    "message": "已选 {count} 件"
+  },
+  "LEASE_HANGAR": {
+    "description": "Button",
+    "message": "租用机库"
+  },
+  "LIFE_SUPPORT_IN_USE": {
+    "description": "",
+    "message": "船上货物需要它"
+  },
+  "LIGHT_YEARS_AWAY": {
+    "description": "Crew tab: distance to a lounge in another system",
+    "message": "{dist} 光年外"
+  },
+  "LOAD_TOOLTIP": {
+    "description": "",
+    "message": "装上船"
+  },
+  "LOBBY_CREW": {
+    "description": "Station lobby line",
+    "message": "{crew} 名船员在休息室等候"
+  },
+  "LOBBY_HANGAR": {
+    "description": "Station lobby line",
+    "message": "你的机库：已用 {ships} / {bays} 个泊位，{paid}"
+  },
+  "LOBBY_MONTHLY": {
+    "description": "",
+    "message": "按月计费"
+  },
+  "LOBBY_PAID_UNTIL": {
+    "description": "",
+    "message": "已付至 {date}"
+  },
+  "LOBBY_UNPAID": {
+    "description": "",
+    "message": "租金未付"
+  },
+  "LOUNGE_AFTER_SWAP": {
+    "description": "Swap window",
+    "message": "换船后在这里休息室等候：{count} 人，每晚 {cost}，另加一半工资。"
+  },
+  "LOUNGE_AT": {
+    "description": "Crew lounge heading",
+    "message": "{station}的船员休息室"
+  },
+  "LOUNGE_DEBT_BANNER": {
+    "description": "",
+    "message": "休息室费用未付：{debt}。"
+  },
+  "LOUNGE_DEBT_BLOCKS": {
+    "description": "Why nobody can be put in a lounge",
+    "message": "你欠休息室费用 {debt}。付清之前，不能再让任何人在休息室等候。"
+  },
+  "LOUNGE_RATE_LINE": {
+    "description": "",
+    "message": "休息室：每人每晚 {rate}（目前每晚 {now}），每月 1 日计费。在此等候的船员领取一半工资作为保留金，不会学到新技能。"
+  },
+  "LOUNGE_UNPAID": {
+    "description": "Comms message on the 1st",
+    "message": "休息室费用未能全额支付。你欠 {debt}；有钱时会从中扣除。"
+  },
+  "LOUNGE_WAGE_NOTE": {
+    "description": "Crew tab",
+    "message": "等候期间支付一半工资。可在空间站的机库标签页“船员休息室”中调动他们。"
+  },
+  "LOW_HULL_FUEL": {
+    "description": "Swap warning",
+    "message": "“{ship}”的船体为 {hull}%，燃料为 {fuel}%。这里可以维修和补充燃料。"
+  },
+  "MAX_BAYS_REACHED": {
+    "description": "",
+    "message": "一个机库最多 4 个泊位。"
+  },
+  "MISSION_CARGO_STAYS": {
+    "description": "Swap window, when some mission cargo stays on the stored ship",
+    "message": "留下的任务货物必须由载着它的飞船交付。"
+  },
+  "MONTHS": {
+    "description": "Unit picker",
+    "message": "个月"
+  },
+  "MONTHS_FORMAT": {
+    "description": "Slider format",
+    "message": "%d 个月"
+  },
+  "NEEDS_CARGO_LIFE_SUPPORT": {
+    "description": "Swap window: this cargo can't go on the stored ship",
+    "message": "需要货物生命维持"
+  },
+  "NEEDS_LIFE_SUPPORT": {
+    "description": "Swap blocker",
+    "message": "{commodity}需要货物生命维持系统，而停放的飞船没有。"
+  },
+  "NEXT_BILL_FULL": {
+    "description": "Under the bay table: a bill for a whole month. {to} is the last day it covers",
+    "message": "下次账单 {date}：约 {amount}，为 {from} – {to} 的租金。{source}"
+  },
+  "NEXT_BILL_PART": {
+    "description": "Under the bay table: the first bill, for part of a month. {to} is the last day it covers",
+    "message": "下次账单 {date}：约 {amount}，为 {from} – {to} 的租金（不足一个月）。{source}"
+  },
+  "NOBODY_WAITING": {
+    "description": "",
+    "message": "这里没有人在等候。"
+  },
+  "NOBODY_WAITING_ANYWHERE": {
+    "description": "",
+    "message": "没有人在休息室等候或在途中。"
+  },
+  "NOBODY_WAITING_ELSEWHERE": {
+    "description": "",
+    "message": "其他空间站没有人在等候。"
+  },
+  "NONE": {
+    "description": "",
+    "message": "无"
+  },
+  "NOTHING_PICKED": {
+    "description": "",
+    "message": "勾选要发送的内容。"
+  },
+  "NOT_ABOARD": {
+    "description": "Swap blocker: the player is out of the ship",
+    "message": "你需要在自己的飞船上。"
+  },
+  "NOT_DOCKED_HERE": {
+    "description": "Swap blocker",
+    "message": "那艘飞船停放在另一个空间站。"
+  },
+  "NOT_ENOUGH_MONEY": {
+    "description": "",
+    "message": "你的钱不够。"
+  },
+  "NOT_PREPAID": {
+    "description": "Bay table, Paid until column, when nothing is paid upfront",
+    "message": "未预付"
+  },
+  "NO_BAY_TO_RETURN": {
+    "description": "",
+    "message": "{station}没有可返回的空泊位。"
+  },
+  "NO_CARGO_ABOARD": {
+    "description": "",
+    "message": "船上没有货物。"
+  },
+  "NO_CREDIT_LINE": {
+    "description": "Under the bay table",
+    "message": "未预付：每月 1 日从你的账户扣除租金。"
+  },
+  "NO_DESTINATION": {
+    "description": "",
+    "message": "选择目的地。"
+  },
+  "NO_EQUIP_VOLUME": {
+    "description": "Why an item can't be fitted",
+    "message": "装备容积不足"
+  },
+  "NO_FREE_BAY_AT": {
+    "description": "",
+    "message": "{station}没有空泊位。"
+  },
+  "NO_FREE_BAY_HERE": {
+    "description": "",
+    "message": "这里没有空泊位。请先增加泊位。"
+  },
+  "NO_HANGARS": {
+    "description": "",
+    "message": "你没有租用机库。可在任意空间站的机库标签页租用。"
+  },
+  "NO_HANGAR_HERE": {
+    "description": "",
+    "message": "你在{station}没有机库。"
+  },
+  "NO_HYPERDRIVE": {
+    "description": "",
+    "message": "无，无法离开所在星系"
+  },
+  "NO_OTHER_HANGARS": {
+    "description": "",
+    "message": "你没有其他机库。"
+  },
+  "NO_SHIPS_ELSEWHERE": {
+    "description": "",
+    "message": "你的其他机库中没有停放飞船。"
+  },
+  "NO_SHIPS_STORED": {
+    "description": "",
+    "message": "这里还没有停放飞船。"
+  },
+  "NO_SLOT_FOR_IT": {
+    "description": "",
+    "message": "这艘飞船上没有适合它的槽位"
+  },
+  "N_ITEMS": {
+    "description": "",
+    "message": "{count} 件"
+  },
+  "OFFER_POSITION_IN_LOUNGE": {
+    "description": "Bulletin board, crew for hire",
+    "message": "提供职位，暂时在这里的船员休息室等候"
+  },
+  "ON_ITS_WAY_STATUS": {
+    "description": "",
+    "message": "正从{from}运来，{date} 到达"
+  },
+  "ORIGIN_GONE": {
+    "description": "",
+    "message": "它原来所在的机库已不再属于你。"
+  },
+  "OTHER_HANGAR": {
+    "description": "One of the player's other hangars",
+    "message": "{station}（{used}/{bays} 个泊位）"
+  },
+  "PAID_UNTIL_ABOUT": {
+    "description": "Estimate shown before leasing",
+    "message": "约付至 {date}"
+  },
+  "PARKING_CELL": {
+    "description": "Bay table: parking fee for the ship's hull mass",
+    "message": "{tonnes} 吨 · {fee}"
+  },
+  "PASSENGERS_ABOARD": {
+    "description": "Swap blocker",
+    "message": "船上有乘客：请先完成乘客合同。"
+  },
+  "PAY": {
+    "description": "Button",
+    "message": "支付"
+  },
+  "PAY_AMOUNT": {
+    "description": "Button",
+    "message": "支付 {amount}"
+  },
+  "PAY_NOTHING_NOW": {
+    "description": "",
+    "message": "现在无需支付：租金在每月 1 日计费。"
+  },
+  "PAY_UPFRONT": {
+    "description": "Label for the number of months or years to pay upfront",
+    "message": "预付"
+  },
+  "PAY_UPFRONT_BUTTON": {
+    "description": "Button: show the upfront payment controls",
+    "message": "预付…"
+  },
+  "PICK_A_SHIP": {
+    "description": "",
+    "message": "选择一艘飞船。"
+  },
+  "PREPAY_RENT_NOW": {
+    "description": "",
+    "message": "当前租金：每月 {rent}。预付："
+  },
+  "PREPAY_TITLE": {
+    "description": "Fleet tab window",
+    "message": "预付{station}的租金"
+  },
+  "PRICE_WITH_DISCOUNT": {
+    "description": "",
+    "message": "{value} - {discount}% = {cost}"
+  },
+  "QUOTE_LINE": {
+    "description": "Distance, travel time, arrival and price of a delivery",
+    "message": "{distance} · {time}，{date} 到达 · {cost}"
+  },
+  "Q_1M": {
+    "description": "Quick pick: 1 month",
+    "message": "1月"
+  },
+  "Q_1Y": {
+    "description": "Quick pick: 1 year",
+    "message": "1年"
+  },
+  "Q_2Y": {
+    "description": "Quick pick: 2 years",
+    "message": "2年"
+  },
+  "Q_3M": {
+    "description": "Quick pick: 3 months",
+    "message": "3月"
+  },
+  "Q_6M": {
+    "description": "Quick pick: 6 months",
+    "message": "6月"
+  },
+  "REMOVE_BAY": {
+    "description": "Button",
+    "message": "减少泊位"
+  },
+  "REMOVE_BAY_NEEDS_EMPTY": {
+    "description": "",
+    "message": "只能移除空泊位，且机库至少保留一个。"
+  },
+  "RENAME": {
+    "description": "Button",
+    "message": "重命名"
+  },
+  "RENT_EXAMPLE": {
+    "description": "",
+    "message": "空置：每月 {empty}。停放“{ship}”（{tonnes} 吨）时：每月 {rent}。"
+  },
+  "RENT_RULE": {
+    "description": "",
+    "message": "月租：每个泊位 {bay}，另加停放船体每吨 {tonne}。"
+  },
+  "RENT_UNPAID": {
+    "description": "Comms message when a monthly bill can't be paid",
+    "message": "你在{station}的机库租金未能支付。你欠 {debt}；付清前那里的飞船将被锁定。"
+  },
+  "RENT_UNPAID_BANNER": {
+    "description": "",
+    "message": "租金未付：{debt}（{months} 个月，含 10% 滞纳金）。付清前这里的飞船将被锁定。"
+  },
+  "REST_STAYS": {
+    "description": "",
+    "message": "其余留在“{ship}”上。"
+  },
+  "RETURNING_STATUS": {
+    "description": "",
+    "message": "正返回{to}，{date} 到达"
+  },
+  "ROVER_IS_OUT": {
+    "description": "",
+    "message": "漫游车停在某颗行星上"
+  },
+  "ROVER_OUT": {
+    "description": "Swap blocker",
+    "message": "你的漫游车停在{planet}上。请先收回它。"
+  },
+  "SAME_SYSTEM": {
+    "description": "",
+    "message": "同一星系"
+  },
+  "SAVE_NAME": {
+    "description": "Button",
+    "message": "保存"
+  },
+  "SELECT_A_SHIP": {
+    "description": "",
+    "message": "在上方表格中选择一艘停放的飞船以查看并驾驶它。"
+  },
+  "SELL": {
+    "description": "Button: sell an item from the hangar store",
+    "message": "出售"
+  },
+  "SELL_TEXT": {
+    "description": "",
+    "message": "{station}以 {price} 收购{item}，与装备市场相同。"
+  },
+  "SELL_TITLE": {
+    "description": "Window asking before an item from the store is sold",
+    "message": "出售{item}？"
+  },
+  "SELL_TOOLTIP": {
+    "description": "",
+    "message": "以 {price} 卖给此空间站"
+  },
+  "SEND_CREW_TITLE": {
+    "description": "",
+    "message": "从{station}的休息室派遣船员"
+  },
+  "SEND_CREW_TOOLTIP": {
+    "description": "",
+    "message": "派往另一个空间站的休息室"
+  },
+  "SEND_EQUIPMENT_BUTTON": {
+    "description": "Button",
+    "message": "发送装备…"
+  },
+  "SEND_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "从{station}发送装备"
+  },
+  "SEND_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "将此仓库中的物品发送到你的另一个机库"
+  },
+  "SEND_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "让运送服务把这艘飞船送到你的另一个机库"
+  },
+  "SEND_TO": {
+    "description": "Button: deliver something to another station",
+    "message": "发送到…"
+  },
+  "SEND_TO_LOUNGE": {
+    "description": "Tooltip: button sending a crew member to the lounge",
+    "message": "在这里的休息室等候"
+  },
+  "SHIPS": {
+    "description": "Hangar sub-tab",
+    "message": "飞船"
+  },
+  "SHIPS_ELSEWHERE_NOTE": {
+    "description": "",
+    "message": "在途的飞船，以及因欠租被锁定的机库中的飞船，不在此列。"
+  },
+  "SHIP_ACTIVE_OPTION": {
+    "description": "Ship picker entry for the ship being flown",
+    "message": "“{name}”（当前）"
+  },
+  "SHIP_ARRIVED": {
+    "description": "Message",
+    "message": "“{ship}”已抵达你在{station}的机库。"
+  },
+  "SHIP_CELL": {
+    "description": "Bay table: a ship",
+    "message": "{name}（{type}）· 船体 {hull}%"
+  },
+  "SHIP_FULL": {
+    "description": "Tooltip on a disabled bring-aboard button",
+    "message": "“{ship}”最多可载 {max} 名船员。"
+  },
+  "SHIP_ON_ITS_WAY": {
+    "description": "",
+    "message": "运送途中：到达前无法驾驶、发送或改装。"
+  },
+  "SHIP_PRICE": {
+    "description": "Ship Market purchase window",
+    "message": "价格：{price}"
+  },
+  "SHIP_RETURNED": {
+    "description": "Message",
+    "message": "“{ship}”已回到你在{station}的机库。"
+  },
+  "SHIP_STORED_OPTION": {
+    "description": "Ship picker entry for a stored ship",
+    "message": "“{name}”（停放于此）"
+  },
+  "SHIP_TRAVELS_NOTE": {
+    "description": "",
+    "message": "飞船连同货物和装备一起运送，并占用目的地的泊位。途中无法驾驶或改装。停泊费从到达时起计。"
+  },
+  "SHOW_ON_MAP": {
+    "description": "Tooltip: button selecting a system on the sector map",
+    "message": "在星区地图上显示"
+  },
+  "SINCE": {
+    "description": "Crew tab column",
+    "message": "起始"
+  },
+  "SLOTS_TAKEN": {
+    "description": "",
+    "message": "此船上它的槽位已被占用"
+  },
+  "SLOT_WRONG_SIZE": {
+    "description": "",
+    "message": "此船上它的槽位尺寸不符"
+  },
+  "STATION": {
+    "description": "Crew tab column",
+    "message": "空间站"
+  },
+  "STATUS_ACTIVE": {
+    "description": "",
+    "message": "你正在驾驶的飞船"
+  },
+  "STATUS_FLYING": {
+    "description": "Fleet tab: the active ship",
+    "message": "驾驶中"
+  },
+  "STATUS_LOCKED": {
+    "description": "Fleet tab",
+    "message": "停放，已锁定：租金未付"
+  },
+  "STATUS_STORED": {
+    "description": "",
+    "message": "自 {date} 起停放"
+  },
+  "STATUS_STORED_SHORT": {
+    "description": "Fleet tab",
+    "message": "停放中"
+  },
+  "STORE_AT": {
+    "description": "",
+    "message": "{station}的机库仓库"
+  },
+  "STORE_CONTENTS": {
+    "description": "",
+    "message": "{count} 件 · {volume} m³"
+  },
+  "STORE_EMPTY": {
+    "description": "",
+    "message": "仓库是空的。"
+  },
+  "STORE_HELP": {
+    "description": "",
+    "message": "将物品拆卸到仓库，然后安装到左侧选中的飞船上，或卖给此空间站。规则和价格同装备市场，安装不收费。要装入特定槽位，请先选择一个空槽位。"
+  },
+  "STORE_NEEDS_BAY": {
+    "description": "",
+    "message": "你在这里的机库没有空泊位。"
+  },
+  "STORE_NEEDS_HANGAR": {
+    "description": "",
+    "message": "你在这里没有机库。"
+  },
+  "STORE_SUMMARY": {
+    "description": "Fleet tab: what a hangar's stores hold",
+    "message": "{items} 件，{tons} 吨"
+  },
+  "SWAP_NOTE": {
+    "description": "",
+    "message": "“{ship}”将停放在此泊位。船员不会留在停放的飞船上：下方未勾选的人将在这里的休息室等候。"
+  },
+  "SWAP_SHIPS": {
+    "description": "Button",
+    "message": "换船"
+  },
+  "SWAP_TITLE": {
+    "description": "",
+    "message": "换乘“{ship}”？"
+  },
+  "TAKE_FORMAT": {
+    "description": "Slider format for tonnes taken along",
+    "message": "%d 吨"
+  },
+  "TAKE_NONE": {
+    "description": "Button: take no cargo along",
+    "message": "不带"
+  },
+  "THEN_MONTHLY": {
+    "description": "After a part-month first bill",
+    "message": "此后每整月 {rent}，每月 1 日计费。"
+  },
+  "THIS_IS_YOUR_SHIP": {
+    "description": "",
+    "message": "这是你正在驾驶的飞船。"
+  },
+  "TOO_FEW_CREW": {
+    "description": "Swap warning",
+    "message": "“{ship}”至少需要 {min} 名船员，而船上只有 {crew} 人。在雇用更多人或从休息室带人之前，你无法起飞。"
+  },
+  "TOO_MANY_CREW": {
+    "description": "Swap blocker",
+    "message": "“{ship}”最多可载 {max} 名船员，而船上将有 {crew} 人。取消勾选 {over} 人，让他们留在休息室。"
+  },
+  "TOO_MUCH_CARGO": {
+    "description": "Swap blocker",
+    "message": "“{ship}”只能装 {room} 吨。请少带 {over} 吨。"
+  },
+  "TOTAL_ROW": {
+    "description": "Bay table: total row",
+    "message": "合计：已用 {used} / {bays} 个泊位"
+  },
+  "TO_LABEL": {
+    "description": "",
+    "message": "到："
+  },
+  "TRADE_IN_CARGO": {
+    "description": "Ship Market: trading in, and the cargo doesn't fit the new ship",
+    "message": "{ship} 可装 {room} 吨，而你船上有 {used} 吨。折价换购时所有货物都会转移到新船：请先出售或卸下 {over} 吨，或选择其他选项。"
+  },
+  "TRADE_IN_CARGO_SHORT": {
+    "description": "Purchase window: on the trade-in card",
+    "message": "你有 {used} 吨货物，而 {ship} 可装 {room} 吨。"
+  },
+  "TRANSFER_CREW_TITLE": {
+    "description": "",
+    "message": "将船员带到{station}的休息室"
+  },
+  "TRANSFER_CREW_TOOLTIP": {
+    "description": "",
+    "message": "将在其他空间站等候的船员带到此休息室"
+  },
+  "TRANSFER_EQUIPMENT_TITLE": {
+    "description": "",
+    "message": "将装备转运到{station}"
+  },
+  "TRANSFER_EQUIPMENT_TOOLTIP": {
+    "description": "",
+    "message": "将另一个机库仓库中的物品运送到这里"
+  },
+  "TRANSFER_FROM": {
+    "description": "Button: bring something here from another station",
+    "message": "转运自…"
+  },
+  "TRANSFER_HERE": {
+    "description": "Button: deliver it to the station you're docked at",
+    "message": "转运到这里"
+  },
+  "TRANSFER_HERE_TOOLTIP": {
+    "description": "",
+    "message": "运送到你在这里的机库"
+  },
+  "TRANSFER_SHIP_TITLE": {
+    "description": "",
+    "message": "将飞船转运到{station}"
+  },
+  "TRANSFER_SHIP_TOOLTIP": {
+    "description": "",
+    "message": "将停放在你另一个机库的飞船运送到这里"
+  },
+  "TRAVELLING_TO": {
+    "description": "Crew tab: someone between lounges",
+    "message": "正前往{station}，{date} 到达"
+  },
+  "UNFIT_ALL": {
+    "description": "Button",
+    "message": "全部拆卸"
+  },
+  "UNFIT_ALL_TOOLTIP": {
+    "description": "",
+    "message": "将此船上所有可拆卸的物品移入仓库"
+  },
+  "UNFIT_CHILDREN_FIRST": {
+    "description": "Why an item can't be unfitted",
+    "message": "请先拆卸安装在它上面的物品"
+  },
+  "UNFIT_TOOLTIP": {
+    "description": "Tooltip on the unfit button",
+    "message": "拆卸到仓库"
+  },
+  "UNLOAD_TOOLTIP": {
+    "description": "",
+    "message": "卸到货物仓库"
+  },
+  "UNPAID_SHORT": {
+    "description": "Fleet tab",
+    "message": "未付：{debt}"
+  },
+  "WAGE_PER_WEEK": {
+    "description": "",
+    "message": "每周 {wage}"
+  },
+  "WAITING_AT": {
+    "description": "Count of crew waiting at another station",
+    "message": "{station}：{count} 人"
+  },
+  "WAITING_COUNT": {
+    "description": "",
+    "message": "{count} 人等候"
+  },
+  "WAITING_IN_LOUNGES": {
+    "description": "Crew tab heading",
+    "message": "在休息室等候"
+  },
+  "WAITING_SINCE": {
+    "description": "",
+    "message": "自 {date} 起等候"
+  },
+  "WELCOME_BACK": {
+    "description": "Message when docking",
+    "message": "欢迎回来。"
+  },
+  "WELCOME_CREW": {
+    "description": "",
+    "message": "{crew} 名船员正在休息室等候。"
+  },
+  "WELCOME_HANGAR": {
+    "description": "",
+    "message": "你在这里的机库有 {bays} 个泊位，停放着 {ships} 艘飞船。"
+  },
+  "WITHOUT_A_SLOT": {
+    "description": "Heading over items fitted without a slot",
+    "message": "无槽位安装"
+  },
+  "YEARS": {
+    "description": "Unit picker",
+    "message": "年"
+  },
+  "YOUR_OTHER_HANGARS": {
+    "description": "",
+    "message": "你的其他机库："
+  },
+  "YOU_COMMANDER": {
+    "description": "The player in crew lists",
+    "message": "你（指挥官）"
+  },
+  "YOU_HAVE_CREW": {
+    "description": "",
+    "message": "（你有 {crew} 人）"
+  },
+  "YOU_PAY": {
+    "description": "",
+    "message": "你支付：{cost}"
+  },
+  "YOU_RECEIVE": {
+    "description": "When the trade-in is worth more than the new ship",
+    "message": "你收到：{amount}"
+  }
+}
