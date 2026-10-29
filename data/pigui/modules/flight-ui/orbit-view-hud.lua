@@ -95,8 +95,8 @@ end
 local function getBodyIcon(obj)
 	if obj.type == Projectable.APOAPSIS then return icons.apoapsis
 	elseif obj.type == Projectable.PERIAPSIS then return icons.periapsis
-	elseif obj.type == Projectable.ASCENDING_NODE then return icons.normal_thin
-	elseif obj.type == Projectable.DESCENDING_NODE then return icons.antinormal_thin
+	elseif obj.type == Projectable.ASCENDING_NODE then return icons.nav_normal
+	elseif obj.type == Projectable.DESCENDING_NODE then return icons.nav_antinormal
 	elseif obj.type == Projectable.IMPACT then return icons.impact_warning
 	elseif obj.type == Projectable.L4 or obj.type == Projectable.L5 then return icons.lagrange_marker
 	elseif obj.base == Projectable.PLAYER or obj.base == Projectable.PLANNER or obj.base == Projectable.PLANNER_BURN then

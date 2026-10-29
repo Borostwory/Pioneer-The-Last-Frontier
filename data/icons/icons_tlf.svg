@@ -35,7 +35,13 @@
 
     row 2 - map and view
     32 zoom_to_ship        magnifier over a ship (zoom the map to your ship)
-    33-47 free
+    33 nav_prograde        circle with a centre dot and spokes left, right and up
+    34 nav_retrograde      circle crossed by an X, legs up and out to either side below
+    35 nav_normal          upward triangle with a centre dot
+    36 nav_antinormal      downward triangle with a centre dot, a spoke square off each side
+    37 nav_radial_in       large circle with four wedges pointing at the centre
+    38 nav_radial_out      smaller circle with a centre dot and four short diagonal spokes
+    39-47 free
 
     row 3 - hangar, fleet and crew
     48 hangar              ship under an arched hangar roof (station Hangar tab)
@@ -420,6 +426,46 @@
          style="fill:#ffffff"
          transform="translate(16,16.4) scale(0.75)"
          d="M0,-9 L6.5,8 L0,4.5 L-6.5,8 Z" />
+    </g>
+
+    <!-- 33: nav_prograde -->
+    <g id="icon_nav_prograde" transform="translate(40,80)">
+      <circle cx="20" cy="20" r="9.5" style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" />
+      <circle cx="20" cy="20" r="2" style="fill:#ffffff" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" d="M20,9 L20,3.5 M9,20 L3.5,20 M31,20 L36.5,20" />
+    </g>
+
+    <!-- 34: nav_retrograde -->
+    <g id="icon_nav_retrograde" transform="translate(80,80)">
+      <circle cx="20" cy="20" r="9.5" style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" d="M20,20 L26.72,26.72 M20,20 L13.28,26.72 M20,20 L13.28,13.28 M20,20 L26.72,13.28" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" d="M20,9 L20,3.5 M10.47,25.5 L5.71,28.25 M29.53,25.5 L34.29,28.25" />
+    </g>
+
+    <!-- 35: nav_normal -->
+    <g id="icon_nav_normal" transform="translate(120,80)">
+      <path style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" d="M20,9 L30.83,27.75 L9.17,27.75 Z" />
+      <circle cx="20" cy="21.5" r="2" style="fill:#ffffff" />
+    </g>
+
+    <!-- 36: nav_antinormal -->
+    <g id="icon_nav_antinormal" transform="translate(160,80)">
+      <path style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" d="M20,32.5 L30.83,13.75 L9.17,13.75 Z" />
+      <circle cx="20" cy="20" r="2" style="fill:#ffffff" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" d="M20,13.75 L20,7.75 M14.59,23.12 L9.39,26.12 M25.41,23.12 L30.61,26.12" />
+    </g>
+
+    <!-- 37: nav_radial_in -->
+    <g id="icon_nav_radial_in" transform="translate(200,80)">
+      <circle cx="20" cy="20" r="15.5" style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" />
+      <path style="fill:#ffffff" d="M26.01,26.01 L28.84,33.08 L33.08,28.84 Z M13.99,26.01 L6.92,28.84 L11.16,33.08 Z M13.99,13.99 L11.16,6.92 L6.92,11.16 Z M26.01,13.99 L33.08,11.16 L28.84,6.92 Z" />
+    </g>
+
+    <!-- 38: nav_radial_out -->
+    <g id="icon_nav_radial_out" transform="translate(240,80)">
+      <circle cx="20" cy="20" r="11" style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" />
+      <circle cx="20" cy="20" r="2" style="fill:#ffffff" />
+      <path style="fill:none;stroke:#ffffff;stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round" d="M28.84,28.84 L32.73,32.73 M11.16,28.84 L7.27,32.73 M11.16,11.16 L7.27,7.27 M28.84,11.16 L32.73,7.27" />
     </g>
 
     <!-- row 3: hangar, fleet and crew -->

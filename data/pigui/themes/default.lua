@@ -180,6 +180,10 @@ theme.colors = {
 	brakeOvershoot			= styleColors.danger_500,
 	maneuver				= styleColors.accent_300,
 	maneuverDark			= styleColors.accent_500,
+	-- KSP-style direction marker colors (heading-lock radial menu)
+	navMarkerPrograde		= Color "CCE600",
+	navMarkerNormal			= Color "CC33CC",
+	navMarkerRadial			= Color "00D2D2",
 	mouseMovementDirection	= styleColors.accent_100,
 	landingAsstHorizon      = styleColors.success_500,
 	landingAsstYawTick      = styleColors.gray_300,
@@ -785,6 +789,13 @@ theme.icons = {
 	follow_plan = 543,
 	-- map and view
 	zoom_to_ship = 544,
+	-- flight direction markers (in-space indicators, heading locks, readouts, orbit nodes)
+	nav_prograde = 545,
+	nav_retrograde = 546,
+	nav_normal = 547,
+	nav_antinormal = 548,
+	nav_radial_in = 549,
+	nav_radial_out = 550,
 	-- hangar, fleet and crew
 	hangar = 560,
 	ship_swap = 561,

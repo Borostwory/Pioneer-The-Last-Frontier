@@ -385,19 +385,19 @@ local function displayFrameData(frame, radius, tooltip)
 		frameDetailStyle:withStyle(function()
 			ui.withFont(pionillium.reticle_md, function()
 
-				textShadowedRight(ui.Format.Speed(data.ship_speed) .. " " .. ui.get_icon_glyph(icons.prograde_thin))
+				textShadowedRight(ui.Format.Speed(data.ship_speed) .. " " .. ui.get_icon_glyph(icons.nav_prograde))
 				ui.setItemTooltip(lui.HUD_SPEED_RELATIVE_TO_TARGET)
 
-				textShadowedRight(ui.Format.Speed(data.approach_speed) .. " " .. ui.get_icon_glyph(icons.normal_thin))
+				textShadowedRight(ui.Format.Speed(data.approach_speed) .. " " .. ui.get_icon_glyph(icons.nav_normal))
 				ui.setItemTooltip(lui.HUD_SPEED_OF_APPROACH_TO_FRAME)
 
 				ui.spacing()
-				local dist_icon = is_station and icons.radial_out_thin or icons.altitude
+				local dist_icon = is_station and icons.nav_radial_out or icons.altitude
 
 				textShadowedRight(ui.Format.Distance(data.distance) .. " ".. ui.get_icon_glyph(dist_icon))
 				ui.setItemTooltip(lui.HUD_DISTANCE_TO_SURFACE_OF_TARGET)
 
-				textShadowedRight("~" .. ui.Format.Distance(data.brake_distance) .. " " .. ui.get_icon_glyph(icons.radial_in_thin))
+				textShadowedRight("~" .. ui.Format.Distance(data.brake_distance) .. " " .. ui.get_icon_glyph(icons.nav_radial_in))
 				ui.setItemTooltip(lui.HUD_BRAKE_DISTANCE_MAIN_THRUSTERS)
 
 			end)
@@ -476,20 +476,20 @@ local function displayDetailData(target, data, radius, tooltip)
 		frameDetailStyle:withStyle(function()
 
 			ui.withFont(pionillium.reticle_md, function()
-				ui.textShadowed(ui.get_icon_glyph(icons.prograde_thin) .. " " .. ui.Format.Speed(data.ship_speed))
+				ui.textShadowed(ui.get_icon_glyph(icons.nav_prograde) .. " " .. ui.Format.Speed(data.ship_speed))
 				ui.setItemTooltip(lui.HUD_SPEED_RELATIVE_TO_TARGET)
 
-				ui.textShadowed(ui.get_icon_glyph(icons.antinormal_thin) .. " " .. ui.Format.Speed(data.approach_speed))
+				ui.textShadowed(ui.get_icon_glyph(icons.nav_antinormal) .. " " .. ui.Format.Speed(data.approach_speed))
 				ui.setItemTooltip(lui.HUD_SPEED_OF_APPROACH_TO_FRAME)
 
 				ui.spacing()
 
-				local dist_icon = is_planet and icons.altitude or icons.radial_out_thin
+				local dist_icon = is_planet and icons.altitude or icons.nav_radial_out
 
 				ui.textShadowed(ui.get_icon_glyph(dist_icon) .. " " .. ui.Format.Distance(data.distance))
 				ui.setItemTooltip(lui.HUD_DISTANCE_TO_SURFACE_OF_TARGET)
 
-				ui.textShadowed(ui.get_icon_glyph(icons.radial_in_thin) .. " ~" .. ui.Format.Distance(data.brake_distance))
+				ui.textShadowed(ui.get_icon_glyph(icons.nav_radial_in) .. " ~" .. ui.Format.Distance(data.brake_distance))
 				ui.setItemTooltip(lui.HUD_BRAKE_DISTANCE_MAIN_THRUSTERS)
 			end)
 
@@ -583,12 +583,12 @@ local flightstate_info = {
 	CONTROL_MANUAL = { icon = icons.empty, tooltip = lui.HUD_BUTTON_MANUAL_CONTROL },
 	-- "CONTROL_AUTOPILOT" - depends on the current command
 	-- "CONTROL_FIXSPEED" - depends on the cruise mode
-	CONTROL_FIXHEADING_FORWARD = { icon = icons.prograde_thin, tooltip = lui.HUD_BUTTON_FIX_PROGRADE },
-	CONTROL_FIXHEADING_BACKWARD = { icon = icons.retrograde_thin , tooltip = lui.HUD_BUTTON_FIX_RETROGRADE },
-	CONTROL_FIXHEADING_NORMAL = { icon = icons.normal_thin, tooltip = lui.HUD_BUTTON_FIX_NORMAL },
-	CONTROL_FIXHEADING_ANTINORMAL = { icon = icons.antinormal_thin, tooltip = lui.HUD_BUTTON_FIX_ANTINORMAL },
-	CONTROL_FIXHEADING_RADIALLY_INWARD = { icon = icons.radial_in_thin, tooltip = lui.HUD_BUTTON_FIX_RADIAL_IN },
-	CONTROL_FIXHEADING_RADIALLY_OUTWARD = { icon = icons.radial_out_thin, tooltip = lui.HUD_BUTTON_FIX_RADIAL_OUT },
+	CONTROL_FIXHEADING_FORWARD = { icon = icons.nav_prograde, tooltip = lui.HUD_BUTTON_FIX_PROGRADE },
+	CONTROL_FIXHEADING_BACKWARD = { icon = icons.nav_retrograde , tooltip = lui.HUD_BUTTON_FIX_RETROGRADE },
+	CONTROL_FIXHEADING_NORMAL = { icon = icons.nav_normal, tooltip = lui.HUD_BUTTON_FIX_NORMAL },
+	CONTROL_FIXHEADING_ANTINORMAL = { icon = icons.nav_antinormal, tooltip = lui.HUD_BUTTON_FIX_ANTINORMAL },
+	CONTROL_FIXHEADING_RADIALLY_INWARD = { icon = icons.nav_radial_in, tooltip = lui.HUD_BUTTON_FIX_RADIAL_IN },
+	CONTROL_FIXHEADING_RADIALLY_OUTWARD = { icon = icons.nav_radial_out, tooltip = lui.HUD_BUTTON_FIX_RADIAL_OUT },
 	-- "CONTROL_FIXHEADING_KILLROT" uses the same icon as rotation damping on
 	CONTROL_FIXHEADING_KILLROT = { icon = icons.rotation_damping_on , tooltip = lui.HUD_BUTTON_KILL_ROTATION },
 	-- the transfer-planner orientation state (flight-ui/burn-hud.lua's Auto
@@ -604,23 +604,30 @@ local function flightStateInfo(state)
 	return flightstate_info[state] or { icon = icons.empty, tooltip = L.UNKNOWN_STATE }
 end
 
+-- icons colored by marker type, KSP style
 local radial_menu_actions_orbital = {
-	{icon = ui.theme.icons.normal_thin,
+	{icon = ui.theme.icons.nav_normal,
+	 color = colors.navMarkerNormal,
 	 tooltip=lc.HEADING_LOCK_NORMAL,
 	 action=function(_) Game.player:SetFlightControlState("CONTROL_FIXHEADING_NORMAL") end},
-	{icon = ui.theme.icons.radial_out_thin,
+	{icon = ui.theme.icons.nav_radial_out,
+	 color = colors.navMarkerRadial,
 	 tooltip=lc.HEADING_LOCK_RADIALLY_OUTWARD,
 	 action=function(_) Game.player:SetFlightControlState("CONTROL_FIXHEADING_RADIALLY_OUTWARD") end},
-	{icon = ui.theme.icons.retrograde_thin,
+	{icon = ui.theme.icons.nav_retrograde,
+	 color = colors.navMarkerPrograde,
 	 tooltip=lc.HEADING_LOCK_BACKWARD,
 	 action=function(_) Game.player:SetFlightControlState("CONTROL_FIXHEADING_BACKWARD") end},
-	{icon = ui.theme.icons.antinormal_thin,
+	{icon = ui.theme.icons.nav_antinormal,
+	 color = colors.navMarkerNormal,
 	 tooltip=lc.HEADING_LOCK_ANTINORMAL,
 	 action=function(_) Game.player:SetFlightControlState("CONTROL_FIXHEADING_ANTINORMAL") end},
-	{icon = ui.theme.icons.radial_in_thin,
+	{icon = ui.theme.icons.nav_radial_in,
+	 color = colors.navMarkerRadial,
 	 tooltip=lc.HEADING_LOCK_RADIALLY_INWARD,
 	 action=function(_) Game.player:SetFlightControlState("CONTROL_FIXHEADING_RADIALLY_INWARD") end},
-	{icon = ui.theme.icons.prograde_thin,
+	{icon = ui.theme.icons.nav_prograde,
+	 color = colors.navMarkerPrograde,
 	 tooltip=lc.HEADING_LOCK_FORWARD,
 	 action=function(_) Game.player:SetFlightControlState("CONTROL_FIXHEADING_FORWARD") end},
 }
