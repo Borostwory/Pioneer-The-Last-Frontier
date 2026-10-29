@@ -1,10 +1,70 @@
-[![Build](https://github.com/pioneerspacesim/pioneer/workflows/Build%20Pioneer/badge.svg)](https://github.com/pioneerspacesim/pioneer/actions)
 [![License GPLv3](https://img.shields.io/badge/license-GPL_v3-green.svg)](http://www.gnu.org/licenses/gpl-3.0.html)
-[![#pioneer on Libera.Chat](https://img.shields.io/badge/LiberaChat-%23pioneer-brightgreen.svg)](https://kiwiirc.com/client/irc.libera.chat/pioneer)
-[![Github All Releases](https://img.shields.io/github/downloads/pioneerspacesim/pioneer/latest/total)]()
+
+![Pioneer – The Last Frontier](.github/images/TLF_Logo.jpg)
 
 
-# Pioneer Space Simulator
+# Pioneer – The Last Frontier
+
+**The Last Frontier** is a modified fork of [Pioneer Space Simulator](https://github.com/pioneerspacesim/pioneer).
+
+> **Status:** work in progress, and a fun project to test LLM capabilities.
+> It is 100% vibe coded: all code was written with AI assistance.
+> Expect bugs, and expect modules and settings to change.
+>
+> This fork is not affiliated with or endorsed by the Pioneer developers.
+> Please don't report bugs from this fork to the upstream Pioneer project.
+
+
+## What it adds
+
+- **Orbit Planner** – chains of planned burns, rendezvous and flyby planning,
+  closed-loop autoburn, a burn HUD and a 3D orbit map with patched trajectories.
+- **Surface Exploration** – leave the ship on foot or on EVA with a jetpack,
+  and drive a rover carried by ships with a vehicle bay.
+- **Hangars and Storage** – lease hangars at stations to store ships and swap
+  your active ship, keep equipment and cargo in each hangar's store, and have
+  ships, equipment and crew delivered between stations. A Fleet tab shows
+  everything you own.
+- **Crew Lounges** – a crew lounge at every station. Crew who aren't aboard wait
+  there on half wages, can be hired straight into the lounge, and can be sent to
+  a lounge at another station.
+- **Hyperspace** – a relativistic jump effect and new jump sounds.
+- **Weather and Clouds** – volumetric multi-layer clouds, cyclones and weather
+  fronts, and cloud shadows.
+- **Planet Terrain** – per-pixel ground and water, photo-based ground materials,
+  river valleys and detailed terrain from orbit to the ground.
+- **Cities** – layouts shaped by their planet, forcefield domes and gardens.
+- **Lighting and Shadows** – sun shadows, city lights, ship lights and animated stars.
+- **Audio** – wind, rover and hyperspace sounds.
+- **Developer Tools** – travel tab, GPU timers and terrain debugging.
+
+
+## Bugs
+
+Bugs in The Last Frontier should be reported as issues on this repository,
+not on the upstream Pioneer project.
+
+
+## Getting The Last Frontier
+
+There are no prebuilt releases yet. Build from source on the
+`the-last-frontier` branch; see [COMPILING.txt](COMPILING.txt).
+
+
+## License
+
+Like Pioneer, this fork is licensed under the GNU GPL version 3. See
+[licenses/GPL-3.txt](licenses/GPL-3.txt). Assets keep their original licenses;
+see the [licenses](licenses) folder and [AUTHORS.txt](AUTHORS.txt).
+
+The original Pioneer code and assets are by the Pioneer developers. The changes
+in this fork are by the fork's author and are recorded in the git history.
+
+
+---
+
+
+# About Pioneer Space Simulator
 
 ![](https://github.com/pioneerspacesim/pioneer/blob/master/data/icons/badge.png)
 
@@ -19,86 +79,3 @@ the various factions fighting for power, freedom or self-determination.
 
 For more information, see:
   http://pioneerspacesim.net/
-
-
-## Community
-
-Come by #pioneer at irc.libera.chat and say hi to the team:
-  https://kiwiirc.com/client/irc.libera.chat/pioneer
-
-Bugs? Please log an issue:
-  https://github.com/pioneerspacesim/pioneer/issues
-
-Follow Pioneer on Twitter:
-  https://twitter.com/pioneerspacesim/
-
-Pioneer wiki
-  https://wiki.pioneerspacesim.net
-
-Join the player's forum:
-  https://spacesimcentral.com/viewforum.php?f=49
-
-Join the development forum:
-  http://forum.pioneerspacesim.net
-
-
-## Manual
-
-Manual can be found at:
-  https://wiki.pioneerspacesim.net/wiki/Manual
-
-Basic flight:
-  https://wiki.pioneerspacesim.net/wiki/Basic_flight
-
-Keyboard and mouse control is found at:
-  https://wiki.pioneerspacesim.net/wiki/Keyboard_and_mouse_controls
-
-
-## FAQ
-
-For frequently asked questions, please see
-  https://wiki.pioneerspacesim.net/wiki/FAQ
-
-
-## BUG Reporting
-
-Please see the section of the FAQ pertaining to bugs, crashes and reporting other issues: [Bug Reporting FAQs](https://wiki.pioneerspacesim.net/wiki/FAQ#How.2Fwhere_do_I_report_my_bug.2Fcrash).
-
-Please do your best to fill out the issue template as completely as possible, especially when you're reporting a crash bug or a graphical issue. Having system information including graphics drivers and the method you used to install Pioneer helps immensely to diagnose and fix these kinds of issues.
-
-## Contributing
-
-If you are hungry to contribute, more information can be found here:
-  https://wiki.pioneerspacesim.net/wiki/How_you_can_contribute
-
-If you have a contribution you want to share, and want to learn how to make a
-pull request, see:
-  https://dev.pioneerspacesim.net/contribute/git-and-github
-
-Pioneer development documentation
-  https://dev.pioneerspacesim.net/
-
-### AI Policy
-
-Pioneer does not accept AI-generated code contributions. Code contributions generated by AI do not comply with and cannot be licensed under Pioneer's GPLv3 license, and as such the project maintainers will reject pull requests containing wholly or in large part AI-generated code.
-
-We do not condemn the use of AI-powered autocomplete as a secondary assistive tool for experienced programmers, but cannot accept any contributions where AI-generated code forms a material part of the contribution. This includes AI-generated comments and design suggestions.
-
-## Localization
-
-Localization for Pioneer is handled through Transifex, and pulled to the source from there automatically. Because of this please don't make pull requests for translations. [You can find the localization project here.](https://explore.transifex.com/pioneer/pioneer/)
-You need to register at transifex to be able to access the translations.
-
-If you want a new language introduced, [please request it on the Libera IRC channel of Pioneer](https://web.libera.chat/#pioneer), or here by making an issue for it.
-
-## Getting Pioneer
-
-Latest build is available at
-  https://pioneerspacesim.net/page/download/
-
-For compiling from source, please see [COMPILING.txt](https://github.com/pioneerspacesim/pioneer/blob/master/COMPILING.txt)
-
-
-## Changelog
-
-Please see [Changelog.txt](https://github.com/pioneerspacesim/pioneer/blob/master/Changelog.txt)
