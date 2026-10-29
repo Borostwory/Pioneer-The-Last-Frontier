@@ -224,7 +224,7 @@ void SurfaceViewController::ResetLook()
 	m_extYaw = 0.0;
 	m_extPitch = EXTERNAL_PITCH;
 	m_bobHeight = 0.0;
-	switch (Pi::config->Int("RoverDefaultView")) {
+	switch (Pi::config->Int("RoverDefaultView", 2)) {
 	case 1: m_roverView = RoverView::NO_MODEL; break;
 	case 2: m_roverView = RoverView::EXTERNAL; break;
 	default: m_roverView = RoverView::CAB; break;
@@ -573,7 +573,7 @@ void SurfaceViewController::UpdateHeadBob(const Walker *walker)
 	m_bobPhase = std::fmod(m_bobPhase + speed * dt / step * M_PI, 2.0 * M_PI);
 
 	double height = 0.0;
-	if (Pi::config->Int("OnFootHeadBob") != 0 && speed > STEP_MIN_SPEED)
+	if (Pi::config->Int("OnFootHeadBob", 1) != 0 && speed > STEP_MIN_SPEED)
 		height = (BOB_WALK_HEIGHT + (BOB_RUN_HEIGHT - BOB_WALK_HEIGHT) * run) * std::min(speed / WALK_PACE, 1.0);
 	m_bobHeight += (height - m_bobHeight) * (1.0 - std::exp(-BOB_FADE * dt));
 }

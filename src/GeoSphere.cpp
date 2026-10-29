@@ -81,7 +81,7 @@ static double ReadLodForeshortening()
 void GeoSphere::InitGeoSphere()
 {
 	s_patchContext.Reset(new GeoPatchContext(detail_edgeLen[Pi::detail.planets > 4 ? 4 : Pi::detail.planets]));
-	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 30.0);
+	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 15.0f)), 1.0, 30.0);
 	s_lodForeshortening = ReadLodForeshortening();
 }
 
@@ -145,7 +145,7 @@ void GeoSphere::UpdateAllGeoSpheres()
 {
 	PROFILE_SCOPED()
 	// terrain detail settings; read every frame so the sliders apply live
-	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 8.0f)), 1.0, 30.0);
+	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 15.0f)), 1.0, 30.0);
 	s_lodForeshortening = ReadLodForeshortening();
 	// switched off in the Terrain Debug window: freed here, between frames,
 	// not while other planets' draws using the atlas are queued

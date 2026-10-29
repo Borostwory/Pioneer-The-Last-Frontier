@@ -349,14 +349,15 @@ namespace {
 			return;
 		}
 		const double maxStep = CLOUD_MAX_TIME_RATE * std::max(double(Pi::GetFrameTime()), 0.0);
-		const double speed = Clamp(Pi::config->Int("CloudSpeed", 10), 1, 100);
+		const double speed = Clamp(Pi::config->Int("CloudSpeed", 5), 1, 100);
 		s_cloudTime += std::min(dGame, maxStep) * speed;
 	}
 
 	// a per-layer percentage setting as a multiplier
-	double LayerPercent(const char *key, int lo, int hi)
+	// a per-layer percentage; `def` matches the default in GameConfig.cpp
+	double LayerPercent(const char *key, int def, int lo, int hi)
 	{
-		return Clamp(Pi::config->Int(key, 100), lo, hi) / 100.0;
+		return Clamp(Pi::config->Int(key, def), lo, hi) / 100.0;
 	}
 
 	bool CloudsEnabled()
@@ -368,7 +369,7 @@ namespace {
 	// fractional: 1440 lines on a 2160-line screen is 1.5)
 	double ChooseDivisor(int height, bool space)
 	{
-		const int level = space ? Clamp(Pi::config->Int("CloudResolutionSpace", 5), 0, 5) : Clamp(Pi::config->Int("CloudResolution", 1), 0, 5);
+		const int level = space ? Clamp(Pi::config->Int("CloudResolutionSpace", 5), 0, 5) : Clamp(Pi::config->Int("CloudResolution", 4), 0, 5);
 		const int lines = CLOUD_RESOLUTION_LINES[level];
 		if (lines <= 0)
 			return 1.0;
@@ -517,7 +518,7 @@ namespace {
 		// All cells count, even ones drawn as a uniform medium: the edges of
 		// the cloud fields still need the resolution (refining only for cells
 		// drawn as cells made orbital views blurry).
-		const double detail = Clamp(Pi::config->Int("CloudSpaceDetail", 50), 0, 200) / 100.0;
+		const double detail = Clamp(Pi::config->Int("CloudSpaceDetail", 15), 0, 200) / 100.0;
 		const double pixelAngle = 2.0 / (proj5 * pass.height); // full-resolution pixel [rad]
 		const double divDetail = detail > 0.0 ? SmallestCloudCell(e.cloudData) / (dist * RES_PIXELS_PER_CELL * detail * pixelAngle) : divCoarse;
 		const double visibleCell = SmallestVisibleCloudCell(e.cloudData, dist * pixelAngle);
@@ -687,15 +688,15 @@ namespace PlanetClouds {
 		const Uint32 seed = sbody->GetSeed();
 		SetVec4(out.time, std::fmod(t, CLOUD_TIME_WRAP), std::floor(t / CLOUD_TIME_WRAP), double(seed & 0xFFFF), double(seed >> 16));
 
-		SetVec4(out.tuneDensity, LayerPercent("CloudDensityLow", 0, 300), LayerPercent("CloudDensityMedium", 0, 300), LayerPercent("CloudDensityHigh", 0, 300),
+		SetVec4(out.tuneDensity, LayerPercent("CloudDensityLow", 26, 0, 300), LayerPercent("CloudDensityMedium", 32, 0, 300), LayerPercent("CloudDensityHigh", 48, 0, 300),
 			Clamp(Pi::config->Int("CloudShadows", 2), 0, 2));
-		SetVec4(out.tuneSize, LayerPercent("CloudSizeLow", 25, 1600), LayerPercent("CloudSizeMedium", 25, 1600), LayerPercent("CloudSizeHigh", 25, 1600),
+		SetVec4(out.tuneSize, LayerPercent("CloudSizeLow", 122, 25, 1600), LayerPercent("CloudSizeMedium", 944, 25, 1600), LayerPercent("CloudSizeHigh", 25, 25, 1600),
 			CLOUD_QUALITY_STEPS[Clamp(Pi::config->Int("CloudQuality", 2), 0, 3)]);
-		SetVec4(out.tuneTransparency, LayerPercent("CloudTransparencyLow", 25, 1000), LayerPercent("CloudTransparencyMedium", 25, 1000), LayerPercent("CloudTransparencyHigh", 25, 1000), 0.0);
-		SetVec4(out.tuneSystem, LayerPercent("CloudSystemSizeLow", 25, 400), LayerPercent("CloudSystemSizeMedium", 25, 400), LayerPercent("CloudSystemSizeHigh", 25, 400), 0.0);
-		SetVec4(out.tuneCluster, Clamp(Pi::config->Int("CloudClusteringLow", 75), 0, 100) / 100.0,
-			Clamp(Pi::config->Int("CloudClusteringMedium", 50), 0, 100) / 100.0,
-			Clamp(Pi::config->Int("CloudClusteringHigh", 50), 0, 100) / 100.0, 0.0);
+		SetVec4(out.tuneTransparency, LayerPercent("CloudTransparencyLow", 248, 25, 1000), LayerPercent("CloudTransparencyMedium", 100, 25, 1000), LayerPercent("CloudTransparencyHigh", 218, 25, 1000), 0.0);
+		SetVec4(out.tuneSystem, LayerPercent("CloudSystemSizeLow", 25, 25, 400), LayerPercent("CloudSystemSizeMedium", 177, 25, 400), LayerPercent("CloudSystemSizeHigh", 400, 25, 400), 0.0);
+		SetVec4(out.tuneCluster, Clamp(Pi::config->Int("CloudClusteringLow", 0), 0, 100) / 100.0,
+			Clamp(Pi::config->Int("CloudClusteringMedium", 63), 0, 100) / 100.0,
+			Clamp(Pi::config->Int("CloudClusteringHigh", 75), 0, 100) / 100.0, 0.0);
 		// no weather maps until RenderCloudPasses bakes them for the nearest planet
 		SetVec4(out.weatherCyc0, -1.0, -1.0, -1.0, -1.0);
 		SetVec4(out.weatherCyc1, -1.0, -1.0, 0.0, 0.0);

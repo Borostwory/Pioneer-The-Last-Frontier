@@ -156,7 +156,7 @@ void SceneShadows::Begin(const CameraContext *camera, const Graphics::Light &sun
 	PROFILE_SCOPED()
 	m_active = false;
 
-	const int quality = Clamp(Pi::config->Int("ShadowQuality", 2), 0, 3);
+	const int quality = Clamp(Pi::config->Int("ShadowQuality", 3), 0, 3);
 	if (quality == 0 || !Pi::game) {
 		// free the video memory
 		for (Cascade &c : m_cascades) {
@@ -171,8 +171,8 @@ void SceneShadows::Begin(const CameraContext *camera, const Graphics::Light &sun
 	// radii growing by about the same factor from map to map
 	double radii[NUM_CASCADES];
 	radii[0] = Clamp(Pi::config->Int("ShadowNearRadius", 120), 20, 1000);
-	radii[1] = std::max(2.0 * radii[0], std::sqrt(radii[0] * Clamp(Pi::config->Int("ShadowDistance", 2000), 200, 20000)));
-	radii[2] = std::max(2.0 * radii[1], double(Clamp(Pi::config->Int("ShadowDistance", 2000), 200, 20000)));
+	radii[1] = std::max(2.0 * radii[0], std::sqrt(radii[0] * Clamp(Pi::config->Int("ShadowDistance", 10000), 200, 20000)));
+	radii[2] = std::max(2.0 * radii[1], double(Clamp(Pi::config->Int("ShadowDistance", 10000), 200, 20000)));
 	const double reach = radii[2] + DEPTH_TOWARD_SUN[2];
 
 	const FrameId frameId = camera->GetCameraFrame();

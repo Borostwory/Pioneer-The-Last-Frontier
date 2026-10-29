@@ -270,7 +270,7 @@ static void UpdateWindHowl(const float v_env)
 	s_windPitch += (s_windPitchTarget - s_windPitch) * (1.0f - expf(-dt / WINDHOWL_PITCH_SMOOTHING));
 
 	// WindHowlVolume setting, percent (settings window, sound)
-	level *= Clamp(Pi::config->Int("WindHowlVolume", 50), 0, 200) * 0.01f;
+	level *= Clamp(Pi::config->Int("WindHowlVolume", 20), 0, 200) * 0.01f;
 
 	const float smoothing = 1.0f - expf(-dt / WINDHOWL_SMOOTHING);
 	UpdateWindHowlEvent(s_windHowl, s_windHowlPlaying, s_windHowlVolume,
