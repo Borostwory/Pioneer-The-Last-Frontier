@@ -6,6 +6,7 @@ local Engine = require 'Engine'
 local Event = require 'Event'
 local Game = require 'Game'
 local Vector2 = _G.Vector2
+local Vector3 = _G.Vector3
 local bindManager = require 'bind-manager'
 
 -- cache ui
@@ -33,12 +34,34 @@ local gaugeGap = 3
 -- the frame and target readouts sit just outside the arcs and their gauges
 local sideLabelRadius = sideArcRadius + gaugeOffset + gaugeThickness * 2 + gaugeGap + reticuleCircleRadius * 0.1
 -- the space the arcs frame: an ellipse as wide as the arcs but flatter, clear of
--- the heading tape above and the radar below; the horizon hooks and the small
--- marker indicators run along its inside
+-- the heading tape above and the radar below; the small marker indicators run
+-- along its inside
 local reticuleFrame = Vector2(sideArcRadius, sideArcRadius * 0.55)
 
 -- degrees of heading across the heading tape
 local headingTapeSpan = 60
+
+-- the pitch ladder in the middle of the view (fractions of sideArcRadius):
+-- rungs show only within ladderClip of the center, the horizon line reaches
+-- horizonHalfWidth either side, and each rung runs from rungInner to rungOuter
+local ladderClip = 0.27
+local horizonHalfWidth = 0.4
+local rungInner = 0.1
+local rungOuter = 0.22
+-- degrees between rungs, and degrees of heading either side shown on the horizon
+local ladderStep = 5
+local horizonHeadingSpan = 60
+
+-- the speed (left) and altitude (right) tapes: distance from the center and
+-- half height (fractions of sideArcRadius), and line thickness (px)
+local tapeOffset = 0.55
+local tapeHalfHeight = 0.33
+local tapeThickness = 2
+
+-- the ladder and the tapes hide above hudCeiling planet radii of altitude and
+-- show again below hudFloor, so they do not flicker at the boundary
+local hudCeiling = 1.0
+local hudFloor = 0.9
 
 local flightAssistIconSize = ui.theme.styles.SmallButtonSize.x
 -- first we calculate the padding so that it does not turn out to be fractional
@@ -110,39 +133,180 @@ local function displayReticulePitch(pitch_degrees)
 	ui.lineOnClock(nil, xpitch_h, tick_length * 1.5, radius, colors.navigationalElements, 2)
 end
 
--- distance from the center to the reticle frame at the given clock hour
-local function frameRadiusOnClock(hours)
-	local angle = hours / 6 * math.pi
-	return 1 / math.sqrt((math.sin(angle) / reticuleFrame.x)^2 + (math.cos(angle) / reticuleFrame.y)^2)
+-- the camera's focal length in pixels, so that the ladder's degrees match the view
+local function cameraFocalLength()
+	local angle = math.rad(10)
+	local ahead = Engine.CameraSpaceToScreenSpace(Vector3(0, 0, -1))
+	local above = Engine.CameraSpaceToScreenSpace(Vector3(0, math.sin(angle), -math.cos(angle)))
+	return (ahead.y - above.y) / math.tan(angle)
 end
 
--- display the horizon in the middle of the view
-local function displayReticuleHorizon(roll_degrees)
-	-- how far out the hooks sit, as a fraction of the reticle frame
-	local inset = 0.9
-	-- width of the horizontal bar (px)
-	local width = 10
-	-- height of the horizontal bar (clock hours)
-	local height_hrs = 0.1
+-- display the pitch ladder, rolled with the ship: the horizon line carries the
+-- heading every 5 degrees (labelled every 10) and a caret under the nose, and a
+-- rung every ladderStep degrees, solid above the horizon and dashed below
+-- (pitch and roll in radians, heading in degrees)
+local function displayPitchLadder(heading, pitch, roll)
+	local focal = cameraFocalLength()
+	-- along the rungs, and towards the sky
+	local along = Vector2(math.cos(roll), math.sin(roll))
+	local up = Vector2(math.sin(roll), -math.cos(roll))
+	local clip = sideArcRadius * ladderClip
+	local color = colors.reticuleCircle
 
-	local hrs = roll_degrees / 360 * 12 + 3
+	local function point(x, y)
+		return center + along * x + up * y
+	end
 
-	-- the frame is symmetric, so both hooks share the radius at their hour and
-	-- the line between them stays true; the level marks keep the side radius
-	local radius = frameRadiusOnClock(hrs) * inset
-	local level_radius = reticuleFrame.x * inset
-	-- left hook
-	ui.lineOnClock(center, hrs, width, radius, colors.navigationalElements, 1)
-	ui.addLine(ui.pointOnClock(nil, radius, hrs),
-		ui.pointOnClock(nil, radius, hrs + height_hrs),
-		colors.navigationalElements, 1)
-	ui.lineOnClock(nil, -3, -width/2, level_radius, colors.navigationalElements, 1)
-	-- right hook
-	ui.lineOnClock(nil, hrs + 6, width, radius, colors.navigationalElements, 1)
-	ui.addLine(ui.pointOnClock(nil, radius, hrs + 6),
-		ui.pointOnClock(nil, radius, hrs + 6 - height_hrs),
-		colors.navigationalElements, 1)
-	ui.lineOnClock(nil, 3, -width/2, level_radius, colors.navigationalElements, 1)
+	for deg = -90, 90, ladderStep do
+		local angle = math.rad(deg) - pitch
+		local offset = focal * math.tan(angle)
+		if math.abs(angle) < ui.pi_2 and math.abs(offset) <= clip then
+			if deg == 0 then
+				local half = sideArcRadius * horizonHalfWidth
+				ui.addLine(point(-half, offset), point(half, offset), color, 1.5)
+
+				-- headings where they meet the horizon; the ground is below the line
+				local cos_pitch = math.cos(pitch)
+				if cos_pitch > 0.05 then
+					local first = math.ceil((heading - horizonHeadingSpan) / 5) * 5
+					for d = first, heading + horizonHeadingSpan, 5 do
+						local x = focal * math.tan(math.rad(d - heading)) / cos_pitch
+						if math.abs(x) <= half then
+							local labelled = d % 10 == 0
+							local p = point(x, offset)
+							ui.addLine(p, p - up * (labelled and 6 or 3), color, 1)
+							if labelled then
+								local tens = math.floor(d % 360 / 10)
+								local label = string.format("%02d", tens == 0 and 36 or tens)
+								ui.addStyledText(p - up * 14, ui.anchor.center, ui.anchor.center, label, color, pionillium.tiny, "")
+							end
+						end
+					end
+				end
+				local nose = point(0, offset)
+				ui.addLine(nose - up * 9 - along * 4, nose - up * 3, color, 1)
+				ui.addLine(nose - up * 3, nose - up * 9 + along * 4, color, 1)
+			else
+				local inner = sideArcRadius * rungInner
+				local outer = sideArcRadius * rungOuter
+				-- the rungs' ends turn towards the horizon
+				local tick = up * (deg > 0 and -6 or 6)
+				for _, side in ipairs({ -1, 1 }) do
+					local a = point(side * inner, offset)
+					local b = point(side * outer, offset)
+					if deg > 0 then
+						ui.addLine(a, b, color, 1)
+					else
+						for k = 0, 2 do
+							ui.addLine(a + (b - a) * (k / 3), a + (b - a) * (k / 3 + 0.2), color, 1)
+						end
+					end
+					ui.addLine(b, b + tick, color, 1)
+					ui.addStyledText(point(side * (outer + 12), offset), ui.anchor.center, ui.anchor.center, tostring(deg), color, pionillium.tiny, "")
+				end
+			end
+		end
+	end
+end
+
+-- the largest of 1, 2 or 5 times a power of ten that is no more than x
+local function niceStep(x)
+	local magnitude = 10 ^ math.floor(math.log(x, 10))
+	local n = x / magnitude
+	if n >= 5 then
+		return 5 * magnitude
+	elseif n >= 2 then
+		return 2 * magnitude
+	end
+	return magnitude
+end
+
+-- 16490.5 -> 16,490.5
+local function groupThousands(text)
+	local n
+	repeat
+		text, n = text:gsub("^(-?%d+)(%d%d%d)", "%1,%2")
+	until n == 0
+	return text
+end
+
+-- display a scrolling tape beside the ladder, left (side -1) or right (side 1),
+-- with the current value boxed: value and minStep are in units of scale,
+-- ticks every half step and labels every step, about ten steps to the value
+local function displayTape(side, value, scale, minStep, valueText, unit, tooltip)
+	local v = value / scale
+	local step = v > 0 and math.max(minStep, niceStep(v / 10)) or minStep
+	local half = step / 2
+	local decimals = math.max(0, math.ceil(-math.log(step, 10) - 1e-6))
+	local x = center.x + side * sideArcRadius * tapeOffset
+	local tapeHalf = sideArcRadius * tapeHalfHeight
+	-- two labelled steps either side of the value
+	local stepPx = tapeHalf / 2
+	local color = colors.reticuleCircle
+	local outward = side < 0 and ui.anchor.right or ui.anchor.left
+
+	ui.addLine(Vector2(x, center.y - tapeHalf), Vector2(x, center.y + tapeHalf), color, tapeThickness)
+	for i = math.ceil((v - 2 * step) / half), math.floor((v + 2 * step) / half) do
+		local val = i * half
+		if val >= 0 then
+			local y = center.y - (val - v) / step * stepPx
+			local major = i % 2 == 0
+			local length = major and 8 or 4
+			ui.addLine(Vector2(x, y), Vector2(x + side * length, y), color, tapeThickness)
+			if major then
+				local label = groupThousands(string.format("%." .. decimals .. "f", val))
+				ui.addStyledText(Vector2(x + side * (length + 4), y), outward, ui.anchor.center, label, color, pionillium.small, "")
+			end
+		end
+	end
+
+	-- the current value, boxed over the labels and pointing at the tape
+	local size = ui.calcTextSize(valueText, pionillium.body)
+	local padding = 3
+	local inner = x + side * 10
+	local outer = inner + side * (size.x + padding * 2)
+	local topLeft = Vector2(math.min(inner, outer), center.y - size.y / 2 - padding)
+	local bottomRight = Vector2(math.max(inner, outer), center.y + size.y / 2 + padding)
+	ui.addRectFilled(topLeft, bottomRight, colors.lightBlackBackground, 0, ui.RoundCornersNone)
+	ui.addRect(topLeft, bottomRight, color, 0, ui.RoundCornersNone, tapeThickness)
+	ui.addLine(Vector2(inner, center.y - 4), Vector2(x, center.y), color, tapeThickness)
+	ui.addLine(Vector2(x, center.y), Vector2(inner, center.y + 4), color, tapeThickness)
+	ui.addStyledText(Vector2((inner + outer) / 2, center.y), ui.anchor.center, ui.anchor.center, valueText, color, pionillium.body, tooltip)
+
+	ui.addStyledText(Vector2(x + side * 8, center.y + tapeHalf + 4), outward, ui.anchor.top, unit, color, pionillium.small, "")
+end
+
+-- whether the ladder and tapes showed last time, for the ceiling's hysteresis
+local flightHudShown = false
+
+-- the pitch ladder and the tapes only make sense flying over a planet or moon,
+-- not when the frame is a star, a station or empty space, nor high above it
+local function isFlightHudShown(frame)
+	if frame == nil or not (frame.superType == "ROCKY_PLANET" or frame.superType == "GAS_GIANT") then
+		flightHudShown = false
+		return false
+	end
+	local radius = frame.path:GetSystemBody().radius
+	local ceiling = (flightHudShown and hudCeiling or hudFloor) * radius
+	flightHudShown = player:GetAltitudeRelTo(frame) < ceiling
+	return flightHudShown
+end
+
+-- display the speed tape (left, in the game's speed units) and the altitude
+-- tape (right, in meters, then kilometers from 10 km) relative to the frame
+local function displaySpeedAltitudeTapes(frame)
+	local speed = player:GetVelocityRelTo(frame):length()
+	local speedText, speedUnit = ui.Format.SpeedUnit(speed)
+	local speedScale = speed < 1e3 and 1 or speed < 1e6 and 1e3 or 1e6
+	displayTape(-1, speed, speedScale, speedScale == 1 and 1 or 0.01, tostring(speedText), speedUnit)
+
+	local altitude = player:GetAltitudeRelTo(frame)
+	if altitude < 1e4 then
+		displayTape(1, altitude, 1, 1, groupThousands(string.format("%.0f", altitude)), lc.UNIT_METERS)
+	else
+		local altitudeText = groupThousands(string.format(altitude < 1e6 and "%.1f" or "%.0f", altitude / 1e3))
+		displayTape(1, altitude, 1e3, 0.1, altitudeText, lc.UNIT_KILOMETERS)
+	end
 end
 
 -- display the heading tape across the top of the view: a tick every 5 degrees,
@@ -283,7 +447,8 @@ local function displayReticuleBrakeGauge(ratio_primary, ratio_secondary)
 	end
 end
 
--- display heading (on the tape), pitch (on the right arc) and roll (in the middle)
+-- display heading (on the tape), pitch (on the right arc), roll (in the middle)
+-- and the pitch ladder
 local function displayReticulePitchHorizonCompass()
 	local heading, pitch, roll = Game.player:GetHeadingPitchRoll("planet")
 	local pitch_degrees = (pitch / ui.twoPi * 360)
@@ -300,7 +465,9 @@ local function displayReticulePitchHorizonCompass()
 	end
 
 	displayReticulePitch(pitch_degrees)
-	displayReticuleHorizon(roll_degrees)
+	if isFlightHudShown(player.frameBody) then
+		displayPitchLadder(heading_degrees, pitch, roll)
+	end
 	displayHeadingTape(heading_degrees)
 end
 
@@ -987,6 +1154,9 @@ local function displayReticule()
 
 	if frame then
 		displayFrameData(frame, radius, lui.HUD_CURRENT_FRAME)
+		if isFlightHudShown(frame) then
+			displaySpeedAltitudeTapes(frame)
+		end
 	else
 		displayFrameLabel(frameLabel, radius, lui.HUD_CURRENT_FRAME)
 	end
