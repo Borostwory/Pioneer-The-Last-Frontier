@@ -159,7 +159,10 @@ local function showMainMenu()
 			end)
 		end)
 	end
-	local build_text = Engine.version
+	-- The Last Frontier: the mod's name and the git commit the game was built
+	-- from (Engine.version is "<version> (<commit>)")
+	local commit = Engine.version:match("%((.-)%)")
+	local build_text = "Pioneer - The Last Frontier (Mod)" .. (commit and (" (" .. commit .. ")") or "")
 	ui.withFont(orbiteer.medium,
 		function()
 			ui.setNextWindowPos(Vector2(ui.screenWidth - ui.calcTextSize(build_text).x * 1.2,ui.screenHeight - 50), 'Always')
