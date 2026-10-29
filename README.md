@@ -1,4 +1,5 @@
 [![License GPLv3](https://img.shields.io/badge/license-GPL_v3-green.svg)](http://www.gnu.org/licenses/gpl-3.0.html)
+[![Latest release](https://img.shields.io/github/v/release/Borostwory/Pioneer-The-Last-Frontier?include_prereleases&label=release)](https://github.com/Borostwory/Pioneer-The-Last-Frontier/releases)
 
 ![Pioneer – The Last Frontier](.github/images/TLF_Logo.jpg)
 
@@ -102,8 +103,19 @@ not on the upstream Pioneer project.
 
 ## Getting The Last Frontier
 
-There are no prebuilt releases yet. Build from source on the
-`the-last-frontier` branch; see [COMPILING.txt](COMPILING.txt).
+**Latest release: [v0.1.0 – early preview](https://github.com/Borostwory/Pioneer-The-Last-Frontier/releases/tag/v0.1.0)**
+(Windows, 64-bit). All releases are on the
+[Releases page](https://github.com/Borostwory/Pioneer-The-Last-Frontier/releases).
+
+1. Download the `.zip` from the release's assets.
+2. Unzip it anywhere.
+3. Run `pioneer.exe`.
+
+The mod's options are in their own **The Last Frontier (mod)** tab in the
+settings window.
+
+To build from source instead, use the `the-last-frontier` branch; see
+[COMPILING.txt](COMPILING.txt).
 
 
 ## License
