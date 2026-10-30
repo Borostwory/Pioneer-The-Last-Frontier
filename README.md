@@ -33,7 +33,8 @@ a burn HUD and a 3D orbit map with patched trajectories.
 ### Surface Exploration
 
 Leave the ship on foot or on EVA with a jetpack, and drive a rover carried by
-ships with a vehicle bay.
+ships with a vehicle bay. Hard impacts are deadly: hitting anything at 40 km/h
+or more kills you, and in EVA you collide with other ships, stations and cargo.
 
 <p>
   <a href=".github/images/screens/eva.jpg"><img src=".github/images/screens/eva.jpg" width="49%" alt="EVA"></a>
@@ -91,6 +92,21 @@ Sun shadows, city lights, ship lights and animated stars.
 
 <a href=".github/images/screens/sun.jpg"><img src=".github/images/screens/sun.jpg" width="49%" alt="Animated star surface"></a>
 
+### Engine Plumes
+
+Thruster flames change with power: a loose yellow-orange flame at low power,
+a white-hot cone at half power, and at full power a blue jet with shock
+diamonds.
+
+<p>
+  <a href=".github/images/screens/thruster-low.jpg"><img src=".github/images/screens/thruster-low.jpg" width="49%" alt="Thrusters at low power"></a>
+  <a href=".github/images/screens/thruster-half.jpg"><img src=".github/images/screens/thruster-half.jpg" width="49%" alt="Thrusters at half power"></a>
+</p>
+<p>
+  <a href=".github/images/screens/thruster-three-quarter.jpg"><img src=".github/images/screens/thruster-three-quarter.jpg" width="49%" alt="Thrusters at three-quarter power"></a>
+  <a href=".github/images/screens/thruster-full.jpg"><img src=".github/images/screens/thruster-full.jpg" width="49%" alt="Thrusters at full power with shock diamonds"></a>
+</p>
+
 ### Flight HUD
 
 A wider reticle with a heading tape, and near planets a fighter-jet style
@@ -105,7 +121,8 @@ KSP-inspired direction markers, coloured in the heading-lock menu.
 ### And more
 
 - **Hyperspace** – a relativistic jump effect and new jump sounds.
-- **Audio** – wind, rover and hyperspace sounds.
+- **Audio** – wind, rover and hyperspace sounds, and new thruster and landing
+  gear sounds.
 - **Developer Tools** – travel tab, GPU timers and terrain debugging.
 
 
