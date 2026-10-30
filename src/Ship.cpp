@@ -1304,8 +1304,10 @@ void Ship::DoThrusterSounds() const
 	// also, ship sounds could be split to internal and external sounds
 
 	// XXX sound logic could be part of a bigger class (ship internal sounds)
-	/* Ship engine noise. less loud inside */
-	float v_env = (Pi::game->GetWorldView()->shipView->IsExteriorView() ? 1.0f : 0.5f);
+	/* Ship engine noise, as loud in the cockpit as outside */
+	// The Last Frontier: levels tuned in game for the mod's thruster sounds
+	const float mainLevel = 1.73f;
+	const float rcsLevel = 2.1f;
 	static Sound::Event sndev;
 	float volBoth = 0.0f;
 	volBoth += 0.5f * fabs(m_propulsion->GetLinThrusterState().y);
@@ -1317,14 +1319,14 @@ void Ship::DoThrusterSounds() const
 	else
 		targetVol[1] += -0.5f * float(m_propulsion->GetLinThrusterState().x);
 
-	targetVol[0] = v_env * Clamp(targetVol[0], 0.0f, 1.0f);
-	targetVol[1] = v_env * Clamp(targetVol[1], 0.0f, 1.0f);
+	targetVol[0] = Clamp(mainLevel * targetVol[0], 0.0f, 1.0f);
+	targetVol[1] = Clamp(mainLevel * targetVol[1], 0.0f, 1.0f);
 	float dv_dt[2] = { 4.0f, 4.0f };
 	if (!sndev.VolumeAnimate(targetVol, dv_dt)) {
 		sndev.Play("Thruster_large", 0.0f, 0.0f, Sound::OP_REPEAT);
 		sndev.VolumeAnimate(targetVol, dv_dt);
 	}
-	float angthrust = 0.1f * v_env * float(m_propulsion->GetAngThrusterState().Length());
+	float angthrust = Clamp(0.1f * rcsLevel * float(m_propulsion->GetAngThrusterState().Length()), 0.0f, 1.0f);
 
 	static Sound::Event angThrustSnd;
 	if (!angThrustSnd.VolumeAnimate(angthrust, angthrust, 5.0f, 5.0f)) {
