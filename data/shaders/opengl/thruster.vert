@@ -8,8 +8,11 @@
 
 out vec2 texCoord0;
 out vec3 face_norm;
-out vec4 flame_color;
-out float ramp;
+out float is_glow;
+out float power;
+out float flicker;
+out float phase;
+out float alpha;
 
 float map_percentage( float val, float base_percent)
 {
@@ -19,26 +22,24 @@ float map_percentage( float val, float base_percent)
 void main(void)
 {
 	// emission.r is the thruster power setting
-	float thruster_power = material.emission.r;
+	power = material.emission.r;
+	// emission.g is a looping animation phase (0..1)
+	phase = material.emission.g;
 	// emission.a is the random flicker value
 	float random = material.emission.a;
+	flicker = random;
 
-	// power setting effects the brightness and opacity of the flame
-	float brightness = map_percentage(thruster_power, 0.35);
-	// flicker should only change the brightness a small amount each frame
-	float flicker = map_percentage(random, 0.95);
-	float flicker_len = map_percentage(1 - random, 0.90);
+	// the glow cards face along the thrust axis, the flame planes contain it
+	is_glow = step(0.5, abs(a_normal.z));
 
-	flame_color = material.diffuse * flicker * brightness;
-	// a very light blue flickering glow around flame
-	flame_color.rg *= vec2(flicker);
+	// flicker should only change the size a small amount each frame
+	float flicker_w = map_percentage(random, 0.95);
+	float flicker_len = map_percentage(1.0 - random, 0.90);
 
-	float flame_width = map_percentage(thruster_power, 0.8) * flicker;
-	// the power setting also controls the length of the flame
-	// flame length can range from 20% to 100%
-	// random flicker can adjust the flame length by up to 20%
-	float flame_length = map_percentage(thruster_power, 0.2) * flicker_len;
-	// modulate the flame shape using flicker
+	// low power: short and spread out, full power: long and tight
+	// (the fragment shader draws the actual flame shape inside these planes)
+	float flame_width = mix(1.2, 0.9, smoothstep(0.0, 1.0, power)) * flicker_w;
+	float flame_length = mix(0.3, 1.0, smoothstep(0.0, 1.0, power)) * flicker_len;
 	// flame_length only effects the z axis which is the thrust direction
 	vec4 scale = vec4(flame_width, flame_width, flame_length, 1.0);
 
@@ -47,6 +48,6 @@ void main(void)
 	face_norm = normalize(normalMatrix() * a_normal);
 
 	texCoord0 = a_uv0.xy;
-	// set the blend ramp
-	ramp = a_uv0.y * 0.5;
+	// diffuse.a is the view-direction crossfade between flame planes and glow cards
+	alpha = material.diffuse.a;
 }

@@ -23,7 +23,8 @@ namespace SceneGraph {
 
 	static const std::string thrusterTextureFilename("textures/thruster.dds");
 	static const std::string thrusterGlowTextureFilename("textures/halo.dds");
-	static Color baseColor(178, 153, 255, 255);
+	// full-power jet colour; low and half power use fixed hot colours in the shader
+	static Color baseColor(110, 125, 255, 255);
 
 	uint32_t hash32(uint32_t x)
 	{
@@ -137,8 +138,12 @@ namespace SceneGraph {
 		// emissive.a is the flicker value for the flame
 		m_tMat->emissive.a = m_glowMat->emissive.a = flicker * 255.f;
 
-		// emissive.r is the thruster power setting which effects flame length and brightness
+		// emissive.r is the thruster power setting which effects flame length, shape and colour
 		m_tMat->emissive.r = m_glowMat->emissive.r = 255.0f * displayedPower;
+
+		// emissive.g is a looping 0..1 phase for the flame turbulence, offset per thruster
+		const double phase = rd->renderTime * 0.75 + hash;
+		m_tMat->emissive.g = m_glowMat->emissive.g = 255.0f * float(phase - std::floor(phase));
 
 		m_tMat->diffuse = m_glowMat->diffuse = currentColor;
 
