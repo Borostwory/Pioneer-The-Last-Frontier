@@ -24,6 +24,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["FOVVertical"] = "65";
 	map["OnFootHeadBob"] = "1";     // the view bobs as the player walks (SurfaceViewController)
 	map["RoverDefaultView"] = "2";  // getting into the rover: 0 from the cab, 1 without the rover drawn, 2 from outside
+	map["DebugAlwaysAllowRover"] = "0"; // debug: the rover can be deployed without the surface rover equipment
 	map["DisplayNavTunnel"] = "0";
 	map["CompactRadar"] = "1";
 	map["ConfirmQuit"] = "1";

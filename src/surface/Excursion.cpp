@@ -5,6 +5,7 @@
 
 #include "Frame.h"
 #include "Game.h"
+#include "GameConfig.h"
 #include "GameSaveError.h"
 #include "JsonUtils.h"
 #include "MathUtil.h"
@@ -357,7 +358,8 @@ bool Excursion::CanDeployRover() const
 	const Player *player = m_game->GetPlayer();
 	if (IsOffShip() || IsRoverOut() || !m_game->IsNormalSpace() || !player || player->IsDead() || player->GetFlightState() != Ship::LANDED)
 		return false;
-	if (player->Properties().Get("surface_rover_cap").get_integer() < 1)
+	// debug option: the rover is always aboard, equipment or not
+	if (player->Properties().Get("surface_rover_cap").get_integer() < 1 && !Pi::config->Int("DebugAlwaysAllowRover", 0))
 		return false;
 
 	vector3d pos, forward;

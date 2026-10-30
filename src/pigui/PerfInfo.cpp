@@ -551,6 +551,13 @@ void PerfInfo::DrawWorldViewStats()
 	}
 	/* clang-format on */
 
+	// the rover can be deployed without the surface rover equipment (Excursion)
+	bool alwaysRover = Pi::config->Int("DebugAlwaysAllowRover", 0) != 0;
+	if (ImGui::Checkbox("Always Allow Rover", &alwaysRover)) {
+		Pi::config->SetInt("DebugAlwaysAllowRover", alwaysRover ? 1 : 0);
+		Pi::config->Save();
+	}
+
 	if (Pi::player->GetNavTarget() && Pi::player->GetNavTarget()->GetSystemBody()) {
 		const auto *sbody = Pi::player->GetNavTarget()->GetSystemBody();
 		ImGui::TextUnformatted(fmt::format("Name: {}, Population: {}", sbody->GetName(), sbody->GetPopulation() * 1e9).c_str());
