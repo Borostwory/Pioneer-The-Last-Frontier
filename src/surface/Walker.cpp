@@ -78,6 +78,30 @@ namespace {
 		const vector3d flat = v - up * up.Dot(v);
 		return flat.LengthSqr() > 1e-12 ? flat.Normalized() : Perpendicular(up);
 	}
+
+	// a ray against body's collision mesh, in its model space, from `from`
+	// along unit dir for len: the distance and the surface normal (model
+	// space) of the nearest hit
+	bool MeshHit(const Body *body, const vector3d &from, const vector3d &dir, double len, double &dist, vector3d &normal)
+	{
+		if (!body->IsType(ObjectType::MODELBODY))
+			return false;
+		const Geom *geom = static_cast<const ModelBody *>(body)->GetGeom();
+		if (!geom)
+			return false;
+		const GeomTree *tree = geom->GetGeomTree();
+
+		isect_t isect;
+		isect.triIdx = -1;
+		isect.dist = float(len);
+		tree->TraceRay(vector3f(from), vector3f(dir), &isect);
+		if (isect.triIdx == -1)
+			return false;
+
+		dist = isect.dist;
+		normal = vector3d(tree->GetTriNormal(isect.triIdx)).NormalizedSafe();
+		return true;
+	}
 } // namespace
 
 Walker::Walker() :
@@ -298,26 +322,48 @@ void Walker::FollowShipInterp(double alpha)
 
 bool Walker::HullHit(const vector3d &from, const vector3d &dir, double len, double &dist, vector3d &normal) const
 {
-	if (!m_evaShip || !m_evaShip->IsType(ObjectType::MODELBODY))
+	if (!m_evaShip)
 		return false;
-	const Geom *geom = static_cast<const ModelBody *>(m_evaShip)->GetGeom();
-	if (!geom)
-		return false;
-	const GeomTree *tree = geom->GetGeomTree();
 
 	// root axes to the ship's model space
 	const matrix3x3d shipToRoot = ToRoot(m_evaShip->GetFrame()) * m_evaShip->GetOrient();
 	const matrix3x3d rootToShip = shipToRoot.Transpose();
-	isect_t isect;
-	isect.triIdx = -1;
-	isect.dist = float(len);
-	tree->TraceRay(vector3f(rootToShip * from), vector3f(rootToShip * dir), &isect);
-	if (isect.triIdx == -1)
+	if (!MeshHit(m_evaShip, rootToShip * from, rootToShip * dir, len, dist, normal))
 		return false;
-
-	dist = isect.dist;
-	normal = (shipToRoot * vector3d(tree->GetTriNormal(isect.triIdx))).NormalizedSafe();
+	normal = shipToRoot * normal;
 	return true;
+}
+
+void Walker::EvaHitBodies(double dt)
+{
+	// As the hull: each against its own collision mesh in its model space,
+	// along the walker's velocity relative to it, so neither's speed in the
+	// frame matters. A station's or a ship's frame axes are its model's
+	// turned by its orientation.
+	for (const Body *b : Pi::game->GetSpace()->GetBodies()) {
+		if (b == this || b == m_evaShip || b->IsDead() || !b->IsType(ObjectType::MODELBODY))
+			continue;
+		const vector3d rel = GetPositionRelTo(b);
+		const vector3d vel = GetVelocityRelTo(b);
+		const double speed = vel.Length();
+		const double reach = speed * dt + RADIUS;
+		const double range = b->GetPhysRadius() + reach;
+		if (speed < 1e-9 || rel.LengthSqr() > range * range)
+			continue;
+
+		const matrix3x3d toModel = b->GetOrient().Transpose();
+		double dist;
+		vector3d n;
+		if (!MeshHit(b, toModel * rel, toModel * (vel / speed), reach, dist, n))
+			continue;
+		n = b->GetOrient() * n;
+		if (n.Dot(vel) > 0.0)
+			n = -n;
+		const double into = vel.Dot(n);
+		Impact(-into);
+		// bounce off it, in root axes as m_relVel is
+		m_relVel -= ToRoot(b->GetFrame()) * (n * (into * (1.0 + EVA_BOUNCE)));
+	}
 }
 
 void Walker::EvaStep(double dt)
@@ -325,6 +371,10 @@ void Walker::EvaStep(double dt)
 	// where the ship is now, consistent with its collision mesh
 	FollowShip();
 	m_oldRelPos = m_relPos;
+
+	// other ships, stations, cargo: from where it is now, at the velocity
+	// FollowShip just gave it
+	EvaHitBodies(dt);
 
 	// the jetpack along its own axes, as a ship's thrusters
 	const vector3d forward = -m_evaOrient.VectorZ();
@@ -356,6 +406,7 @@ void Walker::EvaStep(double dt)
 				n = -n;
 			move -= n * move.Dot(n);
 			const double into = m_relVel.Dot(n);
+			Impact(-into);
 			if (into < 0.0)
 				m_relVel -= n * (into * (1.0 + EVA_BOUNCE));
 		}
@@ -546,9 +597,11 @@ void Walker::TimeStepUpdate(const float timeStep)
 				n = n.Normalized();
 				if (n.Dot(move) > 0.0)
 					n = -n;
+				Impact(-vFlat.Dot(n));
 				move -= n * move.Dot(n);
 				vFlat -= n * vFlat.Dot(n);
 			} else {
+				Impact(vFlat.Length());
 				move = vector3d(0.0);
 			}
 			moveLen = move.Length();
@@ -568,6 +621,7 @@ void Walker::TimeStepUpdate(const float timeStep)
 		CollisionContact c;
 		frame->GetCollisionSpace()->TraceRay(pos + up * EYE_HEIGHT, up, vUp * dt + HEAD_CLEARANCE, &c);
 		if (c.userData1) {
+			Impact(vUp);
 			vUp = 0.0;
 			next = pos + move;
 		}
@@ -586,6 +640,9 @@ void Walker::TimeStepUpdate(const float timeStep)
 		const bool tooSteep = m_onGround && !groundBody && rise > MAX_SLOPE * moveLen + SLOPE_TOLERANCE;
 		const bool intoSea = m_onGround && IsSea(terrain, nextUp, ground);
 		if (intoSea || tooHigh || tooSteep) {
+			// stopped dead by a step, a cliff face or a slope (the sea just won't let it in)
+			if (!intoSea)
+				Impact(vFlat.Length());
 			next = pos + up * (vUp * dt);
 			nextUp = next.Normalized();
 			vFlat = vector3d(0.0);
@@ -604,6 +661,7 @@ void Walker::TimeStepUpdate(const float timeStep)
 		// never below the ground; coming down, it is a landing
 		next = nextUp * ground;
 		if (vUp <= 0.0) {
+			Impact(-vUp);
 			vUp = 0.0;
 			m_onGround = true;
 		}

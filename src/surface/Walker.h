@@ -56,6 +56,12 @@ public:
 	const vector3d &GetForward() const { return m_forward; }
 	bool IsOnGround() const { return m_onGround; }
 
+	// hitting anything this fast (m/s, straight into it) kills the player: the
+	// ground, a wall, a ceiling, the rover, a ship, a station, the hull in EVA
+	static constexpr double FATAL_SPEED = 40.0 / 3.6; // 40 km/h
+	// it has: Excursion ends the game
+	bool IsKilled() const { return m_killed; }
+
 	// Jetpack: up (R) lifts off, down (F) and forward/right push in the air,
 	// as a ship's thrusters. It burns for JET_BURN_TIME seconds at full
 	// thrust, then refills over JET_REFILL_TIME once it has been idle for
@@ -114,6 +120,15 @@ private:
 	// the ship, root axes) along unit dir for len: the distance and the
 	// surface normal (root axes) of the nearest hit
 	bool HullHit(const vector3d &from, const vector3d &dir, double len, double &dist, vector3d &normal) const;
+	// EVA: every other body with a collision mesh near enough to be hit this
+	// step, tested along the walker's velocity relative to it; bounces off it
+	void EvaHitBodies(double dt);
+	// hit something at speed (m/s) straight into it
+	void Impact(double speed)
+	{
+		if (speed >= FATAL_SPEED)
+			m_killed = true;
+	}
 	void UpdateOrient();
 
 	vector3d m_vel;
@@ -141,6 +156,7 @@ private:
 	matrix3x3d m_evaOrient;
 	vector3d m_evaHatch;
 	bool m_evaTaut = false;
+	bool m_killed = false;
 };
 
 #endif /* _WALKER_H */

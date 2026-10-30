@@ -595,6 +595,12 @@ void Excursion::OnShipMoved()
 	if (m_mode == Mode::EVA && m_walker)
 		m_walker->FollowShip();
 
+	// the walker slammed into something: the player is dead (Pi shows the
+	// death view, looking at the walker; the ship stays where it is)
+	Player *player = m_game->GetPlayer();
+	if ((m_mode == Mode::ON_FOOT || m_mode == Mode::EVA) && m_walker && m_walker->IsKilled() && !player->IsDead())
+		m_game->GetSpace()->KillBody(player);
+
 	if (m_rover) {
 		const Body *me = GetControlledBody();
 		const bool near = m_mode == Mode::ROVER ||

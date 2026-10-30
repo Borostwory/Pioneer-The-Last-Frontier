@@ -30,9 +30,11 @@ DeathView::~DeathView() {}
 
 void DeathView::Init()
 {
-	m_cameraDist = Pi::player->GetClipRadius() * 5.0;
-	m_cameraContext->SetCameraFrame(Pi::player->GetFrame());
-	m_cameraContext->SetCameraPosition(Pi::player->GetInterpPosition() + vector3d(0, 0, m_cameraDist));
+	// the ship, or the player out of it (Excursion: killed on foot or in EVA)
+	const Body *body = m_game->GetControlledBody();
+	m_cameraDist = body->GetClipRadius() * 5.0;
+	m_cameraContext->SetCameraFrame(body->GetFrame());
+	m_cameraContext->SetCameraPosition(body->GetInterpPosition() + vector3d(0, 0, m_cameraDist));
 	m_cameraContext->SetCameraOrient(matrix3x3d::Identity);
 }
 
@@ -45,7 +47,7 @@ void DeathView::Update()
 	assert(Pi::player->IsDead());
 
 	m_cameraDist += 160.0 * Pi::GetFrameTime();
-	m_cameraContext->SetCameraPosition(Pi::player->GetInterpPosition() + vector3d(0, 0, m_cameraDist));
+	m_cameraContext->SetCameraPosition(m_game->GetControlledBody()->GetInterpPosition() + vector3d(0, 0, m_cameraDist));
 	m_cameraContext->BeginFrame();
 	m_camera->Update();
 }
