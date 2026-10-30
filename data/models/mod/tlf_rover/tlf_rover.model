@@ -2,34 +2,52 @@ version 2
 
 material "tlf_rover_metal" {
 	shader "multi"
-	specular 0.8 0.8 0.8
+	specular 0.85 0.85 0.85
 	shininess 50
 	texture diffuse "tlf_rover_metal.dds"
 	texture specular "tlf_rover_metal_spec.dds"
+	texture normal "tlf_rover_metal_nrm.dds"
+}
+
+material "tlf_rover_decal" {
+	shader "multi"
+	specular 0 0 0
+}
+
+material "tlf_rover_yellow" {
+	shader "multi"
+	specular 0.8 0.8 0.8
+	shininess 35
+	texture diffuse "tlf_rover_yellow.dds"
+	texture specular "tlf_rover_yellow_spec.dds"
+	texture normal "tlf_rover_yellow_nrm.dds"
+}
+
+material "tlf_rover_deck" {
+	shader "multi"
+	specular 0.85 0.85 0.85
+	shininess 45
+	texture diffuse "tlf_rover_deck.dds"
+	texture specular "tlf_rover_deck_spec.dds"
+	texture normal "tlf_rover_deck_nrm.dds"
+}
+
+material "tlf_rover_wheel" {
+	shader "multi"
+	specular 0.8 0.8 0.8
+	shininess 30
+	texture diffuse "tlf_rover_wheel.dds"
+	texture specular "tlf_rover_wheel_spec.dds"
+	texture normal "tlf_rover_wheel_nrm.dds"
 }
 
 material "tlf_rover_body" {
 	shader "multi"
-	specular 0.7 0.7 0.7
-	shininess 30
+	specular 0.8 0.8 0.8
+	shininess 40
 	texture diffuse "tlf_rover_body.dds"
 	texture specular "tlf_rover_body_spec.dds"
-
-	use_patterns
-}
-
-material "tlf_rover_rim" {
-	shader "multi"
-	specular 0.5 0.5 0.5
-	shininess 45
-	texture diffuse "tlf_rover_rim.dds"
-}
-
-material "tlf_rover_tyre" {
-	shader "multi"
-	specular 0.06 0.06 0.06
-	shininess 4
-	texture diffuse "tlf_rover_tyre.dds"
+	texture normal "tlf_rover_body_nrm.dds"
 }
 
 material "tlf_rover_glass" {
@@ -45,9 +63,11 @@ material "tlf_rover_glass" {
 
 material "tlf_rover_interior" {
 	shader "multi"
-	specular 0.2 0.2 0.2
-	shininess 8
+	specular 0.6 0.6 0.6
+	shininess 15
 	texture diffuse "tlf_rover_interior.dds"
+	texture specular "tlf_rover_interior_spec.dds"
+	texture normal "tlf_rover_interior_nrm.dds"
 }
 
 material "tlf_rover_glow" {
@@ -60,16 +80,26 @@ material "tlf_rover_glow" {
 
 material "tlf_rover_brass" {
 	shader "multi"
-	specular 0.9 0.8 0.6
 	shininess 80
 	texture diffuse "tlf_rover_brass.dds"
+	texture specular "tlf_rover_brass_spec.dds"
+	texture normal "tlf_rover_brass_nrm.dds"
 }
 
-material "tlf_rover_glass_opaque" {
+material "tlf_rover_lamp" {
 	shader "multi"
-	diffuse 0.45 0.45 0.45
 	specular 0.9 0.9 0.9
-	texture diffuse "tlf_rover_glass.dds"
+	emissive 1 0.95 0.85
+	shininess 60
+	texture diffuse "tlf_rover_lamp.dds"
+}
+
+material "tlf_rover_lod" {
+	shader "multi"
+	shininess 30
+	texture diffuse "tlf_rover_lod.dds"
+	texture specular "tlf_rover_lod_spec.dds"
+	texture glow "tlf_rover_lod_glow.dds"
 }
 
 lod 1000 {
