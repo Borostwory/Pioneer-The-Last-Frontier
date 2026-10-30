@@ -1,0 +1,125 @@
+version 2
+
+material "ov_concrete_slab" {
+	shader "multi"
+	shininess 20
+	texture diffuse "ov_concrete_diff.dds"
+	texture specular "ov_concrete_spec.dds"
+	texture glow "ov_concrete_glow.dds"
+	texture normal "ov_concrete_norm.dds"
+	texture ambient "ov_concrete_ao.dds"
+}
+
+material "ov_pad" {
+	shader "multi"
+	shininess 25
+	texture diffuse "ov_pad_diff.dds"
+	texture specular "ov_pad_spec.dds"
+	texture glow "ov_pad_glow.dds"
+	texture normal "ov_pad_norm.dds"
+	texture ambient "ov_pad_ao.dds"
+}
+
+material "ov_tower_bake" {
+	shader "multi"
+	shininess 40
+	texture diffuse "ov_tower_bake_diff.dds"
+	texture specular "ov_tower_bake_spec.dds"
+	texture glow "ov_tower_bake_glow.dds"
+	texture normal "ov_tower_bake_norm.dds"
+	texture ambient "ov_tower_bake_ao.dds"
+}
+
+material "ov_hangar_bake" {
+	shader "multi"
+	shininess 40
+	texture diffuse "ov_hangar_bake_diff.dds"
+	texture specular "ov_hangar_bake_spec.dds"
+	texture glow "ov_hangar_bake_glow.dds"
+	texture normal "ov_hangar_bake_norm.dds"
+	texture ambient "ov_hangar_bake_ao.dds"
+}
+
+material "ov_sign_bake" {
+	shader "multi"
+	shininess 40
+	texture diffuse "ov_sign_bake_diff.dds"
+	texture specular "ov_sign_bake_spec.dds"
+	texture glow "ov_sign_bake_glow.dds"
+	texture normal "ov_sign_bake_norm.dds"
+	texture ambient "ov_sign_bake_ao.dds"
+}
+
+material "ov_glass" {
+	shader "multi"
+	shininess 90
+	texture diffuse "ov_glass_diff.dds"
+	texture specular "ov_glass_spec.dds"
+	texture glow "ov_glass_glow.dds"
+	texture normal "ov_glass_norm.dds"
+	texture ambient "ov_glass_ao.dds"
+}
+
+material "ov_paint" {
+	shader "multi"
+	shininess 30
+	texture diffuse "ov_paint_diff.dds"
+	texture specular "ov_paint_spec.dds"
+	texture normal "ov_paint_norm.dds"
+	texture ambient "ov_paint_ao.dds"
+}
+
+material "ov_tower_lo_bake" {
+	shader "multi"
+	shininess 40
+	texture diffuse "ov_tower_lo_bake_diff.dds"
+	texture specular "ov_tower_lo_bake_spec.dds"
+	texture glow "ov_tower_lo_bake_glow.dds"
+	texture normal "ov_tower_lo_bake_norm.dds"
+	texture ambient "ov_tower_lo_bake_ao.dds"
+}
+
+material "ov_sign_lo_bake" {
+	shader "multi"
+	shininess 40
+	texture diffuse "ov_sign_lo_bake_diff.dds"
+	texture specular "ov_sign_lo_bake_spec.dds"
+	texture glow "ov_sign_lo_bake_glow.dds"
+	texture normal "ov_sign_lo_bake_norm.dds"
+	texture ambient "ov_sign_lo_bake_ao.dds"
+}
+
+material "ov_hangar_lo_bake" {
+	shader "multi"
+	shininess 40
+	texture diffuse "ov_hangar_lo_bake_diff.dds"
+	texture specular "ov_hangar_lo_bake_spec.dds"
+	texture glow "ov_hangar_lo_bake_glow.dds"
+	texture normal "ov_hangar_lo_bake_norm.dds"
+	texture ambient "ov_hangar_lo_bake_ao.dds"
+}
+
+material "ov_vlo_bake" {
+	shader "multi"
+	shininess 40
+	texture diffuse "ov_vlo_bake_diff.dds"
+	texture specular "ov_vlo_bake_spec.dds"
+	texture glow "ov_vlo_bake_glow.dds"
+	texture normal "ov_vlo_bake_norm.dds"
+	texture ambient "ov_vlo_bake_ao.dds"
+}
+
+lod 1000 {
+	mesh "olympus_village_1000.dae"
+	mesh "olympus_village_landing.dae"
+}
+
+lod 150 {
+	mesh "olympus_village_150.dae"
+}
+
+lod 25 {
+	mesh "olympus_village_25.dae"
+}
+
+collision "olympus_village_collision.dae"

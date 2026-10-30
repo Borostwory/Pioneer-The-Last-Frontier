@@ -118,6 +118,18 @@ KSP-inspired direction markers, coloured in the heading-lock menu.
   <a href=".github/images/screens/direction-markers.jpg"><img src=".github/images/screens/direction-markers.jpg" width="49%" alt="Direction markers in the heading-lock menu"></a>
 </p>
 
+### Olympus Village
+
+The Frontier: Elite II starport: six pads round a control tower, with
+runways, taxiways and hangars, lit by floodlights and edge lights at night.
+It's at Olympus Mons on Mars, and turns up at random on Earth-like worlds
+(breathable air, mild temperatures, 0.5–1.5 g).
+
+<p>
+  <a href=".github/images/screens/olympus-village-day.jpg"><img src=".github/images/screens/olympus-village-day.jpg" width="49%" alt="Olympus Village by day"></a>
+  <a href=".github/images/screens/olympus-village-night.jpg"><img src=".github/images/screens/olympus-village-night.jpg" width="49%" alt="Olympus Village at night"></a>
+</p>
+
 ### And more
 
 - **Hyperspace** – a relativistic jump effect and new jump sounds.

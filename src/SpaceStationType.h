@@ -119,6 +119,15 @@ private:
 	float padOffset;
 	float flattenRadius;
 	bool customOnly;
+	// share of the random pick among the types a body suits
+	float weight;
+	// "conditions": a property of the body the station sits on or orbits, and
+	// the range (from min_<name>, max_<name>) it must be in for a random pick
+	struct Condition {
+		int property;
+		double min, max;
+	};
+	std::vector<Condition> conditions;
 
 	static std::vector<SpaceStationType *> surfaceTypes;
 	static std::vector<SpaceStationType *> orbitalTypes;
@@ -167,10 +176,14 @@ public:
 	// metres from the model's origin the ground is levelled for a surface station
 	float FlattenRadius() const { return flattenRadius; }
 	const TPorts &Ports() const { return m_ports; }
+	// whether sbody meets the conditions for a random pick of this type
+	bool Suits(const SystemBody *sbody) const;
 
 	static void Init();
 
-	static const SpaceStationType *RandomStationType(Random &random, const bool bIsGround);
+	// a weighted pick among the non-custom types of sbody's kind it suits (all
+	// of them if it suits none); equal weights pick as a plain uniform choice
+	static const SpaceStationType *RandomStationType(Random &random, const SystemBody *sbody);
 	static const SpaceStationType *FindByName(const std::string &name);
 	// the type of the station at sbody: its custom type, or one picked with
 	// random (seeded from sbody); nullptr before Init or without any types

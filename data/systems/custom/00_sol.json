@@ -761,6 +761,7 @@
 			"rotationPhase": "f0/0",
 			"seed": 3046926584,
 			"semiMajorAxis": "f0/0",
+			"spaceStationType": "olympus_village",
 			"type": "STARPORT_SURFACE",
 			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",

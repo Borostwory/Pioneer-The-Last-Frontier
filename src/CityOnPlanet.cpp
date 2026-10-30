@@ -38,6 +38,7 @@
 #include "scenegraph/CollisionGeometry.h"
 #include "scenegraph/Model.h"
 #include "scenegraph/ModelSkin.h"
+#include "scenegraph/Tag.h"
 #include "sound/Sound.h"
 
 #include "matrix3x3.h"
@@ -1061,6 +1062,20 @@ void CityOnPlanet::GenerateFixedLights(const SpaceStation *station)
 			const vector3f offset((i & 1 ? 1.0f : -1.0f) * PAD_LIGHT_OFFSET, PAD_LIGHT_HEIGHT, (i & 2 ? 1.0f : -1.0f) * PAD_LIGHT_OFFSET);
 			m_fixedLights.push_back({ pad + offset, PAD_LIGHT_RADIUS, padColour, PAD_LIGHT_HEIGHT });
 		}
+	}
+
+	// floodlights the station model places itself: tag_floodlight_* empties,
+	// cool white (tag_floodlight_warm_* warm), reach and brightness as a
+	// spaceport floodlight's times the empty's scale
+	std::vector<SceneGraph::Tag *> floodTags;
+	station->GetModel()->FindTagsByStartOfName("tag_floodlight_", floodTags);
+	const vector3f warmColour = vector3f(1.0f, 0.78f, 0.5f) * FLOOD_BRIGHTNESS;
+	for (const SceneGraph::Tag *tag : floodTags) {
+		const matrix4x4f &m = tag->GetGlobalTransform();
+		const float scale = std::max(0.1f, m.GetOrient().VectorX().Length());
+		const vector3f pos = m.GetTranslate();
+		const bool warm = starts_with(tag->GetName(), "tag_floodlight_warm_");
+		m_fixedLights.push_back({ pos, FLOOD_RADIUS * scale, (warm ? warmColour : floodColour) * (scale * scale), std::max(1.0f, pos.y) });
 	}
 
 	Log::Verbose("\tCityOnPlanet: {} street lamps and floodlights", m_fixedLights.size());

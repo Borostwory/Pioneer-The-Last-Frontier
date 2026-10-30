@@ -15,6 +15,7 @@
 #include "galaxy/SystemBody.h"
 
 #include <algorithm>
+#include <cmath>
 #include <map>
 
 // TODO: Fix the horrible control flow that makes this exception type necessary.
@@ -24,6 +25,22 @@ std::vector<SpaceStationType *> SpaceStationType::surfaceTypes;
 std::vector<SpaceStationType *> SpaceStationType::orbitalTypes;
 
 static std::map<std::string, SpaceStationType> s_allTypes;
+
+// what a station type's "conditions" can test, on the body the station sits
+// on or orbits
+struct ConditionProperty {
+	const char *name;
+	double (*get)(const SystemBody *body);
+};
+static const ConditionProperty s_conditionProperties[] = {
+	{ "oxidizing", [](const SystemBody *b) { return b->GetAtmosOxidizing(); } },
+	{ "atmos_density", [](const SystemBody *b) { return b->GetVolatileGas(); } }, // kg/m^3, Earth 1.225
+	{ "temperature", [](const SystemBody *b) { return double(b->GetAverageTemp()); } }, // K
+	{ "gravity", [](const SystemBody *b) { return b->CalcSurfaceGravity() / 9.81; } }, // g
+	{ "liquid", [](const SystemBody *b) { return b->GetVolatileLiquid(); } },
+	{ "life", [](const SystemBody *b) { return b->GetLife(); } },
+	{ "population", [](const SystemBody *b) { return b->GetPopulation(); } }, // billions
+};
 
 SpaceStationType::SpaceStationType(const std::string &id_, const std::string &path_) :
 	id(id_),
@@ -37,7 +54,8 @@ SpaceStationType::SpaceStationType(const std::string &id_, const std::string &pa
 	parkingDistance(0),
 	parkingGapSize(0),
 	flattenRadius(0),
-	customOnly(false)
+	customOnly(false),
+	weight(1.0f)
 {
 	Json data = JsonUtils::LoadJsonDataFile(path_);
 	if (data.is_null()) {
@@ -65,6 +83,29 @@ SpaceStationType::SpaceStationType(const std::string &id_, const std::string &pa
 	padOffset = data.value("pad_offset", 150.f);
 
 	customOnly = data.value("custom_only", false);
+
+	weight = std::max(0.0f, data.value("weight", 1.0f));
+
+	const auto conds = data.find("conditions");
+	if (conds != data.end() && conds->is_object()) {
+		for (const auto &cond : conds->items()) {
+			const std::string &key = cond.key();
+			const bool isMin = starts_with(key, "min_");
+			const bool isMax = starts_with(key, "max_");
+			const auto prop = std::find_if(std::begin(s_conditionProperties), std::end(s_conditionProperties),
+				[&](const ConditionProperty &p) { return (isMin || isMax) && key.compare(4, std::string::npos, p.name) == 0; });
+			if (prop == std::end(s_conditionProperties) || !cond.value().is_number()) {
+				Output("station def '%s': ignoring unknown condition '%s'\n", path_.c_str(), key.c_str());
+				continue;
+			}
+
+			const int property = int(prop - std::begin(s_conditionProperties));
+			auto c = std::find_if(conditions.begin(), conditions.end(), [&](const Condition &other) { return other.property == property; });
+			if (c == conditions.end())
+				c = conditions.insert(conditions.end(), Condition{ property, -HUGE_VAL, HUGE_VAL });
+			(isMin ? c->min : c->max) = cond.value().get<double>();
+		}
+	}
 
 	model = Pi::FindModel(modelName, /* allowPlaceholder = */ false);
 	if (!model) {
@@ -316,14 +357,51 @@ void SpaceStationType::Init()
 	}
 }
 
-/*static*/
-const SpaceStationType *SpaceStationType::RandomStationType(Random &random, const bool bIsGround)
+bool SpaceStationType::Suits(const SystemBody *sbody) const
 {
-	if (bIsGround) {
-		return surfaceTypes[random.Int32(SpaceStationType::surfaceTypes.size())];
+	if (conditions.empty())
+		return true;
+	const SystemBody *body = sbody->GetParent();
+	if (!body)
+		return false;
+	for (const Condition &c : conditions) {
+		const double v = s_conditionProperties[c.property].get(body);
+		if (v < c.min || v > c.max)
+			return false;
 	}
+	return true;
+}
 
-	return orbitalTypes[random.Int32(SpaceStationType::orbitalTypes.size())];
+/*static*/
+const SpaceStationType *SpaceStationType::RandomStationType(Random &random, const SystemBody *sbody)
+{
+	const bool ground = sbody->GetType() != SystemBody::TYPE_STARPORT_ORBITAL;
+	const std::vector<SpaceStationType *> &pool = ground ? surfaceTypes : orbitalTypes;
+
+	// in the pool's order, so where the same types suit as before the pick
+	// is the same as before
+	std::vector<const SpaceStationType *> suited;
+	for (const SpaceStationType *type : pool)
+		if (type->weight > 0.0f && type->Suits(sbody))
+			suited.push_back(type);
+	if (suited.empty())
+		suited.assign(pool.begin(), pool.end());
+
+	const bool equalWeights = std::all_of(suited.begin(), suited.end(),
+		[&](const SpaceStationType *type) { return type->weight == suited.front()->weight; });
+	if (equalWeights)
+		return suited[random.Int32(int(suited.size()))];
+
+	double total = 0.0;
+	for (const SpaceStationType *type : suited)
+		total += type->weight;
+	double pick = random.Double() * total;
+	for (const SpaceStationType *type : suited) {
+		pick -= type->weight;
+		if (pick < 0.0)
+			return type;
+	}
+	return suited.back();
 }
 
 /*static*/
@@ -339,7 +417,7 @@ const SpaceStationType *SpaceStationType::ForSystemBody(const SystemBody *sbody,
 	const bool ground = sbody->GetType() != SystemBody::TYPE_STARPORT_ORBITAL;
 	if ((ground ? surfaceTypes : orbitalTypes).empty())
 		return nullptr;
-	return RandomStationType(random, ground);
+	return RandomStationType(random, sbody);
 }
 
 /*static*/

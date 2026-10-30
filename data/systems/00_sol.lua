@@ -169,7 +169,8 @@ local mars_starports = {
 	CustomSystemBody:new('Olympus Mons', 'STARPORT_SURFACE')
 		:seed(3046926584)
 		:latitude(math.deg2rad(25.60955))
-		:longitude(math.deg2rad(-41.35269)),
+		:longitude(math.deg2rad(-41.35269))
+		:space_station_type("olympus_village"),
 	CustomSystemBody:new('Mars High', 'STARPORT_ORBITAL')
 		:semi_major_axis(f(5068,100000000))
 		:rotation_period(f(11,24)),
