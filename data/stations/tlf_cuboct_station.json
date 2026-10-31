@@ -1,0 +1,8 @@
+{
+   "model" : "tlf_cuboct_station",
+   "type" : "orbital",
+   "angular_velocity" : 0.05,
+   "parking_distance" : 3000,
+   "parking_gap_size" : 500,
+   "pad_offset" : 150
+}

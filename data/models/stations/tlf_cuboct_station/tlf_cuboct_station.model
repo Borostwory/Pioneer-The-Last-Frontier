@@ -1,0 +1,130 @@
+version 2
+
+material "tlf_cuboct_station_hull" {
+	shader "multi"
+	specular 0.55 0.55 0.58
+	shininess 40
+	texture diffuse "tlf_cuboct_hull_d.dds"
+	texture specular "tlf_cuboct_hull_s.dds"
+	texture glow "tlf_cuboct_hull_g.dds"
+	texture ambient "tlf_cuboct_hull_a.dds"
+	texture normal "tlf_cuboct_hull_n.dds"
+}
+
+material "tlf_cuboct_station_hangar" {
+	shader "multi"
+	specular 0.45 0.45 0.47
+	shininess 25
+	texture diffuse "tlf_cuboct_hangar_d.dds"
+	texture specular "tlf_cuboct_hangar_s.dds"
+	texture glow "tlf_cuboct_hangar_g.dds"
+	texture ambient "tlf_cuboct_hangar_a.dds"
+	texture normal "tlf_cuboct_hangar_n.dds"
+}
+
+material "tlf_cuboct_station_frame" {
+	shader "multi"
+	specular 0.65 0.65 0.68
+	shininess 50
+	texture diffuse "tlf_cuboct_frame_d.dds"
+	texture specular "tlf_cuboct_frame_s.dds"
+	texture glow "tlf_cuboct_frame_g.dds"
+	texture ambient "tlf_cuboct_frame_a.dds"
+	texture normal "tlf_cuboct_frame_n.dds"
+}
+
+material "tlf_cuboct_station_greeble" {
+	shader "multi"
+	specular 0.5 0.5 0.52
+	shininess 35
+	texture diffuse "tlf_cuboct_greeble_d.dds"
+	texture specular "tlf_cuboct_greeble_s.dds"
+	texture glow "tlf_cuboct_greeble_g.dds"
+	texture ambient "tlf_cuboct_greeble_a.dds"
+	texture normal "tlf_cuboct_greeble_n.dds"
+}
+
+material "tlf_cuboct_station_glow_cyan" {
+	shader "multi"
+	specular 0.5 0.5 0.5
+	shininess 60
+	texture diffuse "tlf_cuboct_glow_cyan_d.dds"
+	texture specular "tlf_cuboct_glow_cyan_s.dds"
+	texture glow "tlf_cuboct_glow_cyan_g.dds"
+	texture ambient "tlf_cuboct_glow_cyan_a.dds"
+	texture normal "tlf_cuboct_glow_cyan_n.dds"
+}
+
+material "tlf_cuboct_station_glow_warm" {
+	shader "multi"
+	specular 0.5 0.5 0.5
+	shininess 60
+	texture diffuse "tlf_cuboct_glow_warm_d.dds"
+	texture specular "tlf_cuboct_glow_warm_s.dds"
+	texture glow "tlf_cuboct_glow_warm_g.dds"
+	texture ambient "tlf_cuboct_glow_warm_a.dds"
+	texture normal "tlf_cuboct_glow_warm_n.dds"
+}
+
+material "tlf_cuboct_station_glow_white" {
+	shader "multi"
+	specular 0.5 0.5 0.5
+	shininess 60
+	texture diffuse "tlf_cuboct_glow_white_d.dds"
+	texture specular "tlf_cuboct_glow_white_s.dds"
+	texture glow "tlf_cuboct_glow_white_g.dds"
+	texture ambient "tlf_cuboct_glow_white_a.dds"
+	texture normal "tlf_cuboct_glow_white_n.dds"
+}
+
+material "tlf_cuboct_station_barrier" {
+	shader "multi"
+	specular 0.8 0.8 0.8
+	shininess 60
+	texture diffuse "tlf_cuboct_barrier_d.dds"
+	texture specular "tlf_cuboct_barrier_s.dds"
+	texture glow "tlf_cuboct_barrier_g.dds"
+	texture ambient "tlf_cuboct_barrier_a.dds"
+	texture normal "tlf_cuboct_barrier_n.dds"
+}
+
+material "tlf_cuboct_station_pad" {
+	shader "multi"
+	specular 0.35 0.35 0.35
+	shininess 15
+	texture diffuse "tlf_cuboct_pad_d.dds"
+	texture specular "tlf_cuboct_pad_s.dds"
+	texture glow "tlf_cuboct_pad_g.dds"
+	texture ambient "tlf_cuboct_pad_a.dds"
+	texture normal "tlf_cuboct_pad_n.dds"
+}
+
+material "tlf_cuboct_station_padnum" {
+	shader "multi"
+	specular 0.35 0.35 0.35
+	shininess 15
+	texture diffuse "tlf_cuboct_padnum_d.dds"
+	texture specular "tlf_cuboct_padnum_s.dds"
+	texture glow "tlf_cuboct_padnum_g.dds"
+	texture ambient "tlf_cuboct_padnum_a.dds"
+	texture normal "tlf_cuboct_padnum_n.dds"
+
+	alpha_test
+}
+
+lod 1000 {
+	mesh "tlf_cuboct_station_1000.dae"
+	mesh "tlf_cuboct_station_docking.dae"
+}
+
+lod 300 {
+	mesh "tlf_cuboct_station_300.dae"
+}
+
+lod 60 {
+	mesh "tlf_cuboct_station_60.dae"
+}
+
+bound capsule interior "tag_interior0" "tag_interior1" 260
+
+collision "tlf_cuboct_station_collision.dae"
