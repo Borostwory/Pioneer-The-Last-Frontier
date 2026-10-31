@@ -798,6 +798,7 @@
 			"rotationPhase": "f0/0",
 			"seed": 3278817225,
 			"semiMajorAxis": "f0/217668",
+			"spaceStationType": "tlf_cuboct_station",
 			"type": "STARPORT_ORBITAL",
 			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",

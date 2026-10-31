@@ -172,6 +172,7 @@ local mars_starports = {
 		:longitude(math.deg2rad(-41.35269))
 		:space_station_type("olympus_village"),
 	CustomSystemBody:new('Mars High', 'STARPORT_ORBITAL')
+		:space_station_type("tlf_cuboct_station")
 		:semi_major_axis(f(5068,100000000))
 		:rotation_period(f(11,24)),
 }
