@@ -1633,6 +1633,7 @@
 			"rotationPhase": "f0/0",
 			"seed": 518598116,
 			"semiMajorAxis": "f0/60129542",
+			"spaceStationType": "tlf_tube_station",
 			"type": "STARPORT_ORBITAL",
 			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",

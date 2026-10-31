@@ -407,6 +407,7 @@ local jupiter_moons = {
 		:rings(false),
 
 	CustomSystemBody:new('Discovery Base', 'STARPORT_ORBITAL')
+		:space_station_type("tlf_tube_station")
 		:semi_major_axis(f(14,1000))
 		:rotation_period(f(204,10)),
 
