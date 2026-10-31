@@ -130,6 +130,24 @@ It's at Olympus Mons on Mars, and turns up at random on Earth-like worlds
   <a href=".github/images/screens/olympus-village-night.jpg"><img src=".github/images/screens/olympus-village-night.jpg" width="49%" alt="Olympus Village at night"></a>
 </p>
 
+### Tube Station
+
+A 5 km spinning habitat tube with a city inside: farmland and towns on two
+land strips, long window bands looking out into space, and artificial sun
+rods. A spoke runs across the middle with a docking hall of 18 pads. Ships fly
+in at one end and out at the other, guided by green and red navlights, through
+blue forcefield membranes that close both ends. It turns up at random around
+planets and moons without life.
+
+<p>
+  <a href=".github/images/screens/tube-station-outside.jpg"><img src=".github/images/screens/tube-station-outside.jpg" width="49%" alt="Tube station from outside"></a>
+  <a href=".github/images/screens/tube-station-habitat.jpg"><img src=".github/images/screens/tube-station-habitat.jpg" width="49%" alt="Inside the tube: the spoke, sun rods and the city"></a>
+</p>
+<p>
+  <a href=".github/images/screens/tube-station-forcefield.jpg"><img src=".github/images/screens/tube-station-forcefield.jpg" width="49%" alt="Forcefield membrane over the tube's end"></a>
+  <a href=".github/images/screens/tube-station-window.jpg"><img src=".github/images/screens/tube-station-window.jpg" width="49%" alt="Earth through the window band"></a>
+</p>
+
 ### And more
 
 - **Hyperspace** – a relativistic jump effect and new jump sounds.

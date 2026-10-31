@@ -1,0 +1,11 @@
+{
+   "model" : "tlf_tube_station",
+   "type" : "orbital",
+   "angular_velocity" : 0.06,
+   "parking_distance" : 5000,
+   "parking_gap_size" : 500,
+   "pad_offset" : 150,
+   "conditions" : {
+      "max_life" : 0
+   }
+}

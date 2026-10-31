@@ -1,0 +1,226 @@
+version 2
+
+material "tlf_tube_station_hull" {
+	shader "multi"
+	specular 0.7 0.7 0.7
+	shininess 60
+	texture diffuse "tlf_tube_hull_d.dds"
+	texture specular "tlf_tube_hull_s.dds"
+	texture glow "tlf_tube_hull_g.dds"
+	texture ambient "tlf_tube_hull_a.dds"
+	texture normal "tlf_tube_hull_n.dds"
+}
+
+material "tlf_tube_station_ground" {
+	shader "multi"
+	specular 0.5 0.5 0.5
+	shininess 20
+	texture diffuse "tlf_tube_ground_d.dds"
+	texture specular "tlf_tube_ground_s.dds"
+	texture glow "tlf_tube_ground_g.dds"
+	texture ambient "tlf_tube_ground_a.dds"
+	texture normal "tlf_tube_ground_n.dds"
+}
+
+material "tlf_tube_station_trim" {
+	shader "multi"
+	specular 0.6 0.6 0.6
+	shininess 60
+	texture diffuse "tlf_tube_trim_d.dds"
+	texture specular "tlf_tube_trim_s.dds"
+	texture glow "tlf_tube_trim_g.dds"
+	texture ambient "tlf_tube_trim_a.dds"
+	texture normal "tlf_tube_trim_n.dds"
+}
+
+material "tlf_tube_station_spoke" {
+	shader "multi"
+	specular 0.7 0.7 0.7
+	shininess 60
+	texture diffuse "tlf_tube_spoke_d.dds"
+	texture specular "tlf_tube_spoke_s.dds"
+	texture glow "tlf_tube_spoke_g.dds"
+	texture ambient "tlf_tube_spoke_a.dds"
+	texture normal "tlf_tube_spoke_n.dds"
+}
+
+material "tlf_tube_station_glass" {
+	shader "multi"
+	opacity 99
+	texture diffuse "tlf_tube_glass_d.dds"
+	texture specular "tlf_tube_glass_s.dds"
+	texture glow "tlf_tube_glass_g.dds"
+	texture ambient "tlf_tube_glass_a.dds"
+	texture normal "tlf_tube_glass_n.dds"
+
+	render_state {
+		blend alpha
+		depth_write off
+	}
+}
+
+material "tlf_tube_station_sun" {
+	shader "multi"
+	specular 0.2 0.2 0.2
+	shininess 10
+	texture diffuse "tlf_tube_sun_d.dds"
+	texture specular "tlf_tube_sun_s.dds"
+	texture glow "tlf_tube_sun_g.dds"
+	texture ambient "tlf_tube_sun_a.dds"
+	texture normal "tlf_tube_sun_n.dds"
+}
+
+material "tlf_tube_station_bld_glass_blue" {
+	shader "multi"
+	specular 0.8 0.8 0.8
+	shininess 60
+	texture diffuse "tlf_tube_fac_glass_blue_d.dds"
+	texture specular "tlf_tube_fac_glass_blue_s.dds"
+	texture glow "tlf_tube_fac_glass_blue_g.dds"
+	texture ambient "tlf_tube_fac_glass_blue_a.dds"
+	texture normal "tlf_tube_fac_glass_blue_n.dds"
+}
+
+material "tlf_tube_station_bld_glass_bronze" {
+	shader "multi"
+	specular 0.8 0.8 0.8
+	shininess 60
+	texture diffuse "tlf_tube_fac_glass_bronze_d.dds"
+	texture specular "tlf_tube_fac_glass_bronze_s.dds"
+	texture glow "tlf_tube_fac_glass_bronze_g.dds"
+	texture ambient "tlf_tube_fac_glass_bronze_a.dds"
+	texture normal "tlf_tube_fac_glass_bronze_n.dds"
+}
+
+material "tlf_tube_station_bld_office_light" {
+	shader "multi"
+	specular 0.8 0.8 0.8
+	shininess 60
+	texture diffuse "tlf_tube_fac_office_light_d.dds"
+	texture specular "tlf_tube_fac_office_light_s.dds"
+	texture glow "tlf_tube_fac_office_light_g.dds"
+	texture ambient "tlf_tube_fac_office_light_a.dds"
+	texture normal "tlf_tube_fac_office_light_n.dds"
+}
+
+material "tlf_tube_station_bld_office_dark" {
+	shader "multi"
+	specular 0.8 0.8 0.8
+	shininess 60
+	texture diffuse "tlf_tube_fac_office_dark_d.dds"
+	texture specular "tlf_tube_fac_office_dark_s.dds"
+	texture glow "tlf_tube_fac_office_dark_g.dds"
+	texture ambient "tlf_tube_fac_office_dark_a.dds"
+	texture normal "tlf_tube_fac_office_dark_n.dds"
+}
+
+material "tlf_tube_station_bld_res_beige" {
+	shader "multi"
+	specular 0.8 0.8 0.8
+	shininess 60
+	texture diffuse "tlf_tube_fac_res_beige_d.dds"
+	texture specular "tlf_tube_fac_res_beige_s.dds"
+	texture glow "tlf_tube_fac_res_beige_g.dds"
+	texture ambient "tlf_tube_fac_res_beige_a.dds"
+	texture normal "tlf_tube_fac_res_beige_n.dds"
+}
+
+material "tlf_tube_station_bld_res_brick" {
+	shader "multi"
+	specular 0.8 0.8 0.8
+	shininess 60
+	texture diffuse "tlf_tube_fac_res_brick_d.dds"
+	texture specular "tlf_tube_fac_res_brick_s.dds"
+	texture glow "tlf_tube_fac_res_brick_g.dds"
+	texture ambient "tlf_tube_fac_res_brick_a.dds"
+	texture normal "tlf_tube_fac_res_brick_n.dds"
+}
+
+material "tlf_tube_station_bld_roof" {
+	shader "multi"
+	specular 0.5 0.5 0.5
+	shininess 30
+	texture diffuse "tlf_tube_roof_d.dds"
+	texture specular "tlf_tube_roof_s.dds"
+	texture glow "tlf_tube_roof_g.dds"
+	texture ambient "tlf_tube_roof_a.dds"
+	texture normal "tlf_tube_roof_n.dds"
+}
+
+material "tlf_tube_station_field" {
+	shader "multi"
+	specular 0.6 0.6 0.6
+	shininess 80
+	opacity 99
+	texture diffuse "tlf_tube_field_d.dds"
+	texture specular "tlf_tube_field_s.dds"
+	texture glow "tlf_tube_field_g.dds"
+
+	render_state {
+		blend alpha
+		depth_write off
+	}
+}
+
+material "tlf_tube_station_hall" {
+	shader "multi"
+	specular 0.4 0.4 0.4
+	shininess 40
+	texture diffuse "tlf_tube_hall_d.dds"
+	texture specular "tlf_tube_hall_s.dds"
+	texture glow "tlf_tube_hall_g.dds"
+	texture ambient "tlf_tube_hall_a.dds"
+	texture normal "tlf_tube_hall_n.dds"
+}
+
+material "tlf_tube_station_pad" {
+	shader "multi"
+	specular 0.4 0.4 0.4
+	shininess 20
+	texture diffuse "tlf_tube_pad_d.dds"
+	texture specular "tlf_tube_pad_s.dds"
+	texture glow "tlf_tube_pad_g.dds"
+	texture ambient "tlf_tube_pad_a.dds"
+	texture normal "tlf_tube_pad_n.dds"
+}
+
+material "tlf_tube_station_padnum" {
+	shader "multi"
+	specular 0.3 0.3 0.3
+	shininess 20
+	texture diffuse "tlf_tube_padnum_d.dds"
+	texture specular "tlf_tube_padnum_s.dds"
+	texture glow "tlf_tube_padnum_g.dds"
+
+	alpha_test
+}
+
+material "tlf_tube_station_road" {
+	shader "multi"
+	specular 0.4 0.4 0.4
+	shininess 10
+	texture diffuse "tlf_tube_road_d.dds"
+	texture specular "tlf_tube_road_s.dds"
+	texture glow "tlf_tube_road_g.dds"
+	texture ambient "tlf_tube_road_a.dds"
+	texture normal "tlf_tube_road_n.dds"
+}
+
+lod 500 {
+	mesh "tlf_tube_station_500.dae"
+	mesh "tlf_tube_station_docking.dae"
+}
+
+lod 100 {
+	mesh "tlf_tube_station_100.dae"
+}
+
+lod 15 {
+	mesh "tlf_tube_station_15.dae"
+}
+
+bound capsule interior "tag_interior0" "tag_interior1" 45
+bound capsule interior "tag_interior1" "tag_interior2" 150
+bound capsule interior "tag_interior2" "tag_interior3" 45
+
+collision "tlf_tube_station_collision.dae"
