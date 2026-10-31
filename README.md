@@ -141,11 +141,23 @@ planets and moons without life.
 
 <p>
   <a href=".github/images/screens/tube-station-outside.jpg"><img src=".github/images/screens/tube-station-outside.jpg" width="49%" alt="Tube station from outside"></a>
-  <a href=".github/images/screens/tube-station-habitat.jpg"><img src=".github/images/screens/tube-station-habitat.jpg" width="49%" alt="Inside the tube: the spoke, sun rods and the city"></a>
+  <a href=".github/images/screens/tube-station-docking-hall.jpg"><img src=".github/images/screens/tube-station-docking-hall.jpg" width="49%" alt="The docking hall in the spoke, looking out into the tube"></a>
 </p>
 <p>
   <a href=".github/images/screens/tube-station-forcefield.jpg"><img src=".github/images/screens/tube-station-forcefield.jpg" width="49%" alt="Forcefield membrane over the tube's end"></a>
-  <a href=".github/images/screens/tube-station-window.jpg"><img src=".github/images/screens/tube-station-window.jpg" width="49%" alt="Earth through the window band"></a>
+  <a href=".github/images/screens/tube-station-window.jpg"><img src=".github/images/screens/tube-station-window.jpg" width="49%" alt="Looking out through the window band"></a>
+</p>
+
+### Cuboctahedron Station
+
+A dark, greebled cuboctahedron with cyan edge lights and warm window lights.
+Ships enter through a single letterbox slot, guided in by a navlit approach
+scaffold, into a tube hangar with 56 numbered pads in 7 rings, split by
+yellow barrier gates. It turns up at random around any world.
+
+<p>
+  <a href=".github/images/screens/cuboct-station-mars.jpg"><img src=".github/images/screens/cuboct-station-mars.jpg" width="49%" alt="Cuboctahedron station orbiting Mars"></a>
+  <a href=".github/images/screens/cuboct-station-hangar-entrance.jpg"><img src=".github/images/screens/cuboct-station-hangar-entrance.jpg" width="49%" alt="The slot entrance and approach scaffold"></a>
 </p>
 
 ### And more
