@@ -245,7 +245,11 @@ void DynamicBody::TimeStepUpdate(const float timeStep)
 		// every other force (thrust) kicks the velocity, then the body drifts
 		// along the conic. Rotating frames (fictitious forces, atmosphere)
 		// and station frames (no gravity) keep the plain step.
-		const double gravityMu = GetFrameGravityMu();
+		// Only the player's ship, the one the planner predicts: the AI
+		// autopilot steers for the plain step, and on the split one under
+		// time acceleration trade ships miss their final approach and pile
+		// up near the stations, never docking.
+		const double gravityMu = IsType(ObjectType::PLAYER) ? GetFrameGravityMu() : 0.0;
 		if (gravityMu > 0.0) {
 			const vector3d nonGravity = m_force + (m_externalForce - m_gravityForce);
 			vector3d pos = GetPosition();
