@@ -26,6 +26,7 @@
 #include "graphics/Types.h"
 #include "graphics/RenderState.h"
 #include "graphics/VertexBuffer.h"
+#include "scenegraph/Thruster.h"
 
 #include "profiler/Profiler.h"
 
@@ -36,6 +37,9 @@ static const float OBJECT_HIDDEN_PIXEL_THRESHOLD = 2.0f;
 
 // if a terrain object would render smaller than this many pixels, draw a billboard instead
 static const float BILLBOARD_PIXEL_THRESHOLD = 8.0f;
+
+// engine flames nearer the camera than this [m] are always drawn over the clouds
+static const float FLAME_OVER_CLOUDS_DISTANCE = 1000.0f;
 
 // city lights are fully on below this daylight on level ground and off above
 // that (1: the Sun overhead on an airless body at 1 AU; CITY_LIGHTS_* in city-glow.glsl)
@@ -411,6 +415,9 @@ void Camera::Draw(const Body *excludeBody)
 	// the lamps of the ships around, for the lit shaders (ship-lights.glsl)
 	SetShipLights();
 
+	// engine flames are drawn after the clouds, see below
+	SceneGraph::Thruster::SetCollecting(true);
+
 	m_renderer->BeginGpuTimer("bodies");
 	for (std::list<BodyAttrs>::iterator i = m_sortedBodies.begin(); i != m_sortedBodies.end(); ++i) {
 		BodyAttrs *attrs = &(*i);
@@ -433,6 +440,19 @@ void Camera::Draw(const Body *excludeBody)
 	RestoreLighting();
 	m_shadows->End();
 
+	// Engine flames write no depth, so the clouds would be composited over
+	// them wherever there is cloud behind them. Those the clouds may hide
+	// (somewhere along the line of sight) are drawn now, under the clouds;
+	// the rest after them. Flames near the camera always go over the clouds:
+	// those are the ship being flown, mostly against clouds behind it.
+	SceneGraph::Thruster::SetCollecting(false);
+	{
+		Graphics::Renderer::MatrixTicket mt(m_renderer);
+		SceneGraph::Thruster::DrawCollected([](const vector3f &pos) {
+			return pos.Length() > FLAME_OVER_CLOUDS_DISTANCE && PlanetClouds::MayHide(vector3d(pos));
+		});
+	}
+
 	// the lights of cities too far away to see on the terrain
 	DrawCityDots(camFrameId);
 
@@ -441,6 +461,11 @@ void Camera::Draw(const Body *excludeBody)
 	m_renderer->BeginGpuTimer("clouds");
 	PlanetClouds::RenderCloudPasses(m_renderer);
 	m_renderer->EndGpuTimer();
+
+	{
+		Graphics::Renderer::MatrixTicket mt(m_renderer);
+		SceneGraph::Thruster::DrawCollected([](const vector3f &) { return true; });
+	}
 	m_renderer->SetCityLightData(nullptr, nullptr, nullptr);
 	m_renderer->SetCityGroundData(nullptr, nullptr, nullptr);
 	m_renderer->SetSurfaceTrackData(nullptr, nullptr, nullptr);

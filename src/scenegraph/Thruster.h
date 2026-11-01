@@ -9,6 +9,8 @@
 
 #include "Node.h"
 
+#include <functional>
+
 namespace Graphics {
 	class Renderer;
 	class Material;
@@ -40,7 +42,18 @@ namespace SceneGraph {
 		float GetVisualSize() const { return visualSize; }
 		float GetVisualSizeProportional() const { return visualSizeScaled; }
 
+		// While collecting, Render keeps the flames for DrawCollected instead
+		// of drawing them. Camera::Draw uses this to draw the flames after the
+		// clouds: they write no depth, so the clouds, composited over
+		// everything drawn before them, would cover flames in front of them.
+		static void SetCollecting(bool collecting);
+		// draws the collected flames whose view-space position select accepts,
+		// and forgets them
+		static void DrawCollected(const std::function<bool(const vector3f &)> &select);
+
 	private:
+		void DrawFlame(const matrix4x4f &trans, const Color &emissive, const Color &flameDiffuse, const Color &glowDiffuse);
+
 		// thruster geometry is shared between all instances of Thruster
 		// TODO: load this as a model to allow customization
 		static void CreateThrusterGeometry(Graphics::Renderer *);

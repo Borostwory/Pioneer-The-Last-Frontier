@@ -107,6 +107,14 @@ namespace {
 	static const double SHADER_FEATURE_M[3] = { 4000.0, 1500.0, 0.2 * 700.0 }; // CLOUD_CELL_LOW_M, CLOUD_CELL_MID_M, cirrus crest
 	static const double SHADER_MIN_PIXELS[3] = { 4.0, 4.0, 1.0 };				 // CLOUD_MIN_CELL_PIXELS, cirrus octaves > 0
 
+	// Must match the shader: no cloud below this altitude (CLOUD_FLOOR_M,
+	// cloud-config.glsl), tops rise by up to this share of a layer's thickness
+	// (CLOUD_TOP_RELIEF, cloud-march.glsl), and no layer is thicker than this
+	// for a scale height of 8.4 km (dHigh, cloud-derive.glsl).
+	static const double CLOUD_FLOOR_M = 750.0;
+	static const double CLOUD_TOP_RELIEF = 0.35;
+	static const double CLOUD_MAX_THICKNESS_M = 3000.0;
+
 	// planets further away than this (planet radii) are not given a pass
 	static const float CLOUD_PASS_MAX_DISTANCE = 2000.0f;
 
@@ -460,6 +468,21 @@ namespace {
 		return smallest < 1e29 ? smallest : CELL_LOW_M * sH;
 	}
 
+	// Highest altitude [m] the shader can put cloud at: every layer lies below
+	// the tropopause (two scale heights without one) and 1 km under the top of
+	// the atmosphere (cloudDerive, cloud-derive.glsl), and its top rises
+	// by up to CLOUD_TOP_RELIEF of its thickness (cloudMarchView, cloud-march.glsl).
+	double CloudCeiling(const PlanetClouds::CloudDataBlock &d)
+	{
+		const double T = std::max(double(d.atmos[0]), 1.0);
+		const double g = std::max(double(d.atmos[3]), 1e-3);
+		const double H = 8.3144621 * T / (0.02897 * g);
+		const double sH = Clamp(H / 8400.0, 0.5, 4.0);
+		const double tropopause = std::max(double(d.geom[1]), 0.0);
+		const double top = std::min(tropopause > 0.0 ? tropopause : 2.0 * H, double(d.geom[2]) - 1000.0);
+		return top + CLOUD_TOP_RELIEF * CLOUD_MAX_THICKNESS_M * sH;
+	}
+
 	// Like SmallestCloudCell, but only cells the shader still draws as cells
 	// when a full-resolution pixel covers pixelM metres; 0 when none are.
 	double SmallestVisibleCloudCell(const PlanetClouds::CloudDataBlock &d, double pixelM)
@@ -732,6 +755,28 @@ namespace PlanetClouds {
 		e.heightTex.Reset(heightMap ? heightMap->GetTexture() : GetFallbackTexture());
 		e.cityGlow = cityGlow;
 		s_queue.push_back(e);
+	}
+
+	bool MayHide(const vector3d &viewPos)
+	{
+		for (const PassEntry &e : s_queue) {
+			// the shell between the cloud floor and ceiling, in view space [m]
+			const double radius = e.cloudData.geom[0];
+			const vector3d c = vector3d(e.center) * radius;
+			const double rIn = radius + CLOUD_FLOOR_M;
+			const double rOut = radius + CloudCeiling(e.cloudData);
+
+			// the camera (the origin) to viewPos: entirely under the floor, or
+			// entirely over the ceiling (the point nearest the centre)
+			if (std::max(c.Length(), (viewPos - c).Length()) < rIn)
+				continue;
+			const double len2 = viewPos.LengthSqr();
+			const double t = len2 > 0.0 ? Clamp(c.Dot(viewPos) / len2, 0.0, 1.0) : 0.0;
+			if ((viewPos * t - c).Length() > rOut)
+				continue;
+			return true;
+		}
+		return false;
 	}
 
 	void RenderCloudPasses(Graphics::Renderer *r)

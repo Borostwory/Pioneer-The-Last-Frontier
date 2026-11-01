@@ -26,6 +26,19 @@ namespace SceneGraph {
 	// full-power jet colour; low and half power use fixed hot colours in the shader
 	static Color baseColor(110, 125, 255, 255);
 
+	// flames held back by SetCollecting, with their values for this frame
+	namespace {
+		struct CollectedFlame {
+			Thruster *thruster;
+			matrix4x4f trans;
+			Color emissive;
+			Color flameDiffuse;
+			Color glowDiffuse;
+		};
+		bool s_collecting = false;
+		std::vector<CollectedFlame> s_collected;
+	} // namespace
+
 	uint32_t hash32(uint32_t x)
 	{
 		x ^= x >> 16;
@@ -135,17 +148,19 @@ namespace SceneGraph {
 		const float flicker = abs(sin(x) * sin(pow(x, 1.1)));
 
 		// pass the power setting and flicker value using the material emissive
+		Color emissive = m_tMat->emissive;
 		// emissive.a is the flicker value for the flame
-		m_tMat->emissive.a = m_glowMat->emissive.a = flicker * 255.f;
+		emissive.a = flicker * 255.f;
 
 		// emissive.r is the thruster power setting which effects flame length, shape and colour
-		m_tMat->emissive.r = m_glowMat->emissive.r = 255.0f * displayedPower;
+		emissive.r = 255.0f * displayedPower;
 
 		// emissive.g is a looping 0..1 phase for the flame turbulence, offset per thruster
 		const double phase = rd->renderTime * 0.75 + hash;
-		m_tMat->emissive.g = m_glowMat->emissive.g = 255.0f * float(phase - std::floor(phase));
+		emissive.g = 255.0f * float(phase - std::floor(phase));
 
-		m_tMat->diffuse = m_glowMat->diffuse = currentColor;
+		Color flameDiffuse = currentColor;
+		Color glowDiffuse = currentColor;
 
 		//directional fade
 		// In view space, camera is at origin, so view direction is from thruster position to origin.
@@ -154,8 +169,41 @@ namespace SceneGraph {
 		vector3f vdir = (thrusterPos.LengthSqr() > 1e-8f) ? (-thrusterPos).Normalized() : flameDir;
 		float facing = Clamp(std::abs(vdir.Dot(flameDir)), 0.f, 1.f);
 		// XXX check this for transition to new colors.
-		m_glowMat->diffuse.a = Easing::Circ::EaseIn(facing, 0.f, 1.f, 1.f) * 255;
-		m_tMat->diffuse.a = 255 - m_glowMat->diffuse.a;
+		glowDiffuse.a = Easing::Circ::EaseIn(facing, 0.f, 1.f, 1.f) * 255;
+		flameDiffuse.a = 255 - glowDiffuse.a;
+
+		if (s_collecting) {
+			s_collected.push_back({ this, trans, emissive, flameDiffuse, glowDiffuse });
+			return;
+		}
+		DrawFlame(trans, emissive, flameDiffuse, glowDiffuse);
+	}
+
+	void Thruster::SetCollecting(bool collecting)
+	{
+		s_collecting = collecting;
+	}
+
+	void Thruster::DrawCollected(const std::function<bool(const vector3f &)> &select)
+	{
+		PROFILE_SCOPED()
+		size_t kept = 0;
+		for (const CollectedFlame &f : s_collected) {
+			if (select(f.trans.GetTranslate()))
+				f.thruster->DrawFlame(f.trans, f.emissive, f.flameDiffuse, f.glowDiffuse);
+			else
+				s_collected[kept++] = f;
+		}
+		s_collected.resize(kept);
+	}
+
+	void Thruster::DrawFlame(const matrix4x4f &trans, const Color &emissive, const Color &flameDiffuse, const Color &glowDiffuse)
+	{
+		// the materials are shared between copies of a model, so they are set
+		// for each draw (the renderer takes the values when the draw is added)
+		m_tMat->emissive = m_glowMat->emissive = emissive;
+		m_tMat->diffuse = flameDiffuse;
+		m_glowMat->diffuse = glowDiffuse;
 
 		Graphics::Renderer *r = GetRenderer();
 		if (!s_thrustMesh.Valid())

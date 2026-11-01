@@ -101,6 +101,11 @@ namespace PlanetClouds {
 	void QueueCloudPass(const SystemBody *sbody, const CloudDataBlock &data, const vector3f &center, const Color4f &atmosColor, CloudHeightMap *heightMap,
 		const Graphics::CityGlowDataBlock &cityGlow);
 
+	// true if the clouds queued so far this frame may lie between the camera
+	// and viewPos (view space [m]), from the heights the shaders can put
+	// cloud at; false if the line of sight stays under or over them all
+	bool MayHide(const vector3d &viewPos);
+
 	// Called by Camera::Draw after all bodies are drawn: renders the queued
 	// clouds over the current render target.
 	void RenderCloudPasses(Graphics::Renderer *renderer);
