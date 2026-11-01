@@ -1288,20 +1288,111 @@ local function lightYears(a, b)
 	return a:DistanceTo(b)
 end
 
--- Price, travel time in seconds and light years for delivering a ship
-function Hangar.ShipDeliveryQuote(shipId, fromPath, toPath)
-	local ly = lightYears(fromPath, toPath)
-	local mass = hullMass(shipId)
-	local cost = ly == 0 and 50 + 0.2 * mass or 40 + 60 * ly + 0.3 * mass * ly
-	return round(cost), (1 + 0.5 * ly) * DAY, ly
+-- A ship goes to another system on its own hyperdrive: a pilot flies it jump
+-- by jump along the route the sector map's planner would pick for it, buying
+-- the drive's fuel on the way, so it arrives with the fuel it left with. The
+-- price is a booking fee, then for each jump the pilot, a fee by the hull's
+-- size and insurance on the ship's price, and that fuel. Within a system it
+-- is the booking fee and one leg's size fee and insurance.
+Hangar.DELIVERY_FEE = 100
+Hangar.DELIVERY_JUMP_FEE = 150         -- the pilot, a jump
+Hangar.DELIVERY_TONNE_FEE = 2          -- a leg, per tonne of hull
+Hangar.DELIVERY_INSURANCE = 0.001      -- a leg, of the ship type's price
+Hangar.DELIVERY_STOP_TIME = DAY / 2 -- between jumps: refuelling, flying out to jump
+
+---@param rec Hangar.Record
+---@return Equipment.HyperdriveType?
+local function recordDrive(rec)
+	for _, item in pairs(rec.equip) do
+		if item.slot and item.slot.type:match("^hyperdrive") and item.GetMaximumRange then return item end
+	end
+	return nil
 end
+
+-- What a stored ship weighs, as its Ship.staticMass and fuelMassLeft would be
+---@param rec Hangar.Record
+local function recordMass(rec)
+	local mass = hullMass(rec.shipId) + cargoTotal(rec.cargo or {})
+	for _, item in pairs(rec.equip) do mass = mass + (item.mass or 0) end
+	local def = ShipDef[rec.shipId]
+	return mass, (def and def.fuelTankMass or 0) * (rec.fuel or 0) / 100
+end
+
+local routeCache = {} ---@type table<string, number[]|false>
+
+-- The light years of each jump from `fromPath` to `toPath` at most `range`
+-- a jump, or nil when no route gets there. Kept: windows ask every frame.
+-- An older build without Game.FindJumpRoute only takes a direct jump.
+local function jumpDistances(fromPath, toPath, range)
+	local key = string.format("%s>%s@%.3f", tostring(fromPath:SystemOnly()), tostring(toPath:SystemOnly()), range)
+	if routeCache[key] ~= nil then return routeCache[key] or nil end
+	local hops = nil
+	if Game.FindJumpRoute then
+		local route = Game.FindJumpRoute(fromPath, toPath, range)
+		if route then
+			hops = {}
+			local here = fromPath
+			for _, path in ipairs(route) do
+				table.insert(hops, here:DistanceTo(path))
+				here = path
+			end
+		end
+	elseif fromPath:DistanceTo(toPath) <= range then
+		hops = { fromPath:DistanceTo(toPath) }
+	end
+	routeCache[key] = hops or false
+	return hops
+end
+
+-- Price, travel time in seconds, light years flown, jumps and tons of drive
+-- fuel for delivering stored ship `rec`; or nil and why it can't go
+---@param rec Hangar.Record
+function Hangar.ShipDeliveryQuote(rec, fromPath, toPath)
+	local def = ShipDef[rec.shipId]
+	local leg = Hangar.DELIVERY_TONNE_FEE * hullMass(rec.shipId)
+		+ Hangar.DELIVERY_INSURANCE * (def and def.basePrice or 0)
+	if fromPath:IsSameSystem(toPath) then
+		return round(Hangar.DELIVERY_FEE + leg), DAY, 0, 0, 0
+	end
+	local drive = recordDrive(rec)
+	if not drive then return nil, l.NO_DRIVE_TO_DELIVER end
+
+	-- Each jump starts with the drive full, as the pilot refuels at every stop
+	local staticMass, fuelMass = recordMass(rec)
+	local range = drive:GetMaximumRange({ staticMass = staticMass, fuelMassLeft = fuelMass })
+	local full = { staticMass = staticMass + drive:GetMaxFuel() - drive.storedFuel, fuelMassLeft = fuelMass }
+	local hops = jumpDistances(fromPath, toPath, range)
+	if not hops then
+		return nil, string.interp(l.OUT_OF_JUMP_RANGE, { range = string.format("%.2f", range) })
+	end
+
+	local ly, fuel, time = 0, 0, DAY
+	for i, d in ipairs(hops) do
+		ly = ly + d
+		fuel = fuel + drive:GetFuelUse(full, d)
+		time = time + drive:GetDuration(full, d) + (i > 1 and Hangar.DELIVERY_STOP_TIME or 0)
+	end
+	local cost = Hangar.DELIVERY_FEE + (Hangar.DELIVERY_JUMP_FEE + leg) * #hops + fuel * drive.fuel.price
+	return round(cost), time, ly, #hops, fuel
+end
+
+-- Equipment goes by courier: a booking fee, a fee by distance and by mass
+-- over that distance, and insurance on what the items are worth
+Hangar.EQUIPMENT_FEE = 50
+Hangar.EQUIPMENT_LY_FEE = 10           -- per ly
+Hangar.EQUIPMENT_TONNE_LY_FEE = 1      -- per tonne and ly
+Hangar.EQUIPMENT_INSURANCE = 0.01      -- of the items' price
 
 -- ... for equipment (one booking carries several items)
 function Hangar.EquipmentDeliveryQuote(items, fromPath, toPath)
 	local ly = lightYears(fromPath, toPath)
-	local mass = 0
-	for _, item in ipairs(items) do mass = mass + (item.mass or 0) end
-	local cost = ly == 0 and 20 or 30 + 0.5 * mass * ly
+	local mass, value = 0, 0
+	for _, item in ipairs(items) do
+		mass = mass + (item.mass or 0)
+		value = value + (item.price or 0)
+	end
+	local cost = Hangar.EQUIPMENT_FEE + Hangar.EQUIPMENT_INSURANCE * value
+		+ (Hangar.EQUIPMENT_LY_FEE + Hangar.EQUIPMENT_TONNE_LY_FEE * mass) * ly
 	return round(cost), (1 + 0.5 * ly) * DAY, ly
 end
 
@@ -1376,7 +1467,8 @@ function Hangar.SendShipBlocked(rec, to)
 	if Hangar.IsLocked(from) or Hangar.IsLocked(to) then return l.HANGAR_LOCKED end
 	if Hangar.FreeBays(to) < 1 then return string.interp(l.NO_FREE_BAY_AT, { station = to.station }) end
 	if not canLandAt(rec.shipId, to) then return string.interp(l.CANT_LAND_AT, { station = to.station }) end
-	local cost = Hangar.ShipDeliveryQuote(rec.shipId, from.path, to.path)
+	local cost, why = Hangar.ShipDeliveryQuote(rec, from.path, to.path)
+	if not cost then return why end
 	if PlayerState.GetMoney() < cost then return l.NOT_ENOUGH_MONEY end
 	return nil
 end
@@ -1386,7 +1478,7 @@ function Hangar.SendShip(rec, to)
 	local blocked = Hangar.SendShipBlocked(rec, to)
 	if blocked then return false, blocked end
 	local from = hangars[rec.hangar]
-	local cost, time = Hangar.ShipDeliveryQuote(rec.shipId, from.path, to.path)
+	local cost, time = Hangar.ShipDeliveryQuote(rec, from.path, to.path)
 	accrue(from, Game.time) -- its parking ends here
 	accrue(to, Game.time)
 	local t = book({ kind = "ship", rec = rec, from = placeOfHangar(from), to = placeOfHangar(to),
@@ -1575,10 +1667,7 @@ end
 
 ---@param rec Hangar.Record
 function Hangar.RecordHasHyperdrive(rec)
-	for _, item in pairs(rec.equip) do
-		if item.slot and item.slot.type:match("^hyperdrive") then return true end
-	end
-	return false
+	return recordDrive(rec) ~= nil
 end
 
 -- Snapshot the player's ship into a new record. Doesn't change the ship.
@@ -2173,6 +2262,7 @@ Event.Register("onGameEnd", function()
 	nextId = 1
 	nextBill = nil
 	billingToken = billingToken + 1
+	routeCache = {}
 end)
 
 local serialize = function()

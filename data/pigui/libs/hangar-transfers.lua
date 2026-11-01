@@ -50,10 +50,16 @@ local function distanceText(ly)
 	return ly == 0 and l.SAME_SYSTEM or string.format("%.2f %s", ly, lc.LY)
 end
 
+-- "12.40 ly in 3 jump(s)" for a ship flown there on its own drive
+local function routeText(ly, jumps)
+	if not jumps or jumps == 0 then return distanceText(ly) end
+	return string.interp(l.ROUTE_JUMPS, { distance = distanceText(ly), jumps = jumps })
+end
+
 -- "5.00 ly · 3d 12h, arrives 22 Apr 3201 · 490 cr"
-local function quoteLine(cost, time, ly)
+local function quoteLine(cost, time, ly, jumps)
 	return string.interp(l.QUOTE_LINE, {
-		distance = distanceText(ly),
+		distance = routeText(ly, jumps),
 		time = ui.Format.Duration(time, 2),
 		date = Format.DateOnly(Game.time + time),
 		cost = money(cost),
@@ -134,8 +140,13 @@ function draw.sendShip(self)
 		return
 	end
 	Pickers.mapButton("sendShipTo", to.path)
-	local cost, time, ly = Hangar.ShipDeliveryQuote(rec.shipId, from.path, to.path)
-	ui.text(quoteLine(cost, time, ly))
+	local cost, time, ly, jumps, fuel = Hangar.ShipDeliveryQuote(rec, from.path, to.path)
+	if cost then
+		ui.text(quoteLine(cost, time, ly, jumps))
+		if jumps > 0 then
+			ui.textColored(colors.fontDim, string.interp(l.DELIVERY_FUEL_NOTE, { fuel = string.format("%.2f", fuel) }))
+		end
+	end
 	ui.textWrapped(l.SHIP_TRAVELS_NOTE)
 	local dock = Hangar.DockWarning(rec.shipId, to.path, to.station)
 	if dock then ui.textColored(colors.alertYellow, dock) end
@@ -154,8 +165,10 @@ function draw.shipFrom(self)
 		if not Hangar.IsLocked(other) then
 			for _, rec in ipairs(Hangar.StoredShips(other)) do
 				if not rec.transit then
-					local cost, time, ly = Hangar.ShipDeliveryQuote(rec.shipId, other.path, h.path)
-					table.insert(rows, { rec = rec, from = other, cost = cost, time = time, ly = ly })
+					-- ships that can't get here are listed too: picked, the footer says why
+					local cost, time, ly, jumps = Hangar.ShipDeliveryQuote(rec, other.path, h.path)
+					if not cost then ly = other.path:IsSameSystem(h.path) and 0 or other.path:DistanceTo(h.path) end
+					table.insert(rows, { rec = rec, from = other, cost = cost, time = time, ly = ly, jumps = jumps })
 				end
 			end
 		end
@@ -183,11 +196,15 @@ function draw.shipFrom(self)
 			ui.tableNextColumn()
 			ui.text(row.from.station)
 			ui.tableNextColumn()
-			ui.text(distanceText(row.ly))
+			ui.text(routeText(row.ly, row.jumps))
 			ui.tableNextColumn()
-			ui.text(string.format("%s (%s)", Format.DateOnly(Game.time + row.time), ui.Format.Duration(row.time, 2)))
+			if row.cost then
+				ui.text(string.format("%s (%s)", Format.DateOnly(Game.time + row.time), ui.Format.Duration(row.time, 2)))
+			else
+				ui.textColored(colors.fontDim, l.CANT_BE_DELIVERED)
+			end
 			ui.tableNextColumn()
-			ui.text(money(row.cost))
+			ui.text(row.cost and money(row.cost) or "-")
 			ui.tableNextColumn()
 			ui.dummy(Vector2(0, 0))
 			Pickers.mapButton("shipFrom" .. i, row.from.path)

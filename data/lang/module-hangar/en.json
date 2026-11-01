@@ -119,6 +119,10 @@
     "description": "",
     "message": "Cancel the delivery of {what}?"
   },
+  "CANT_BE_DELIVERED": {
+    "description": "Ship delivery list: the ship has no drive or no route of jumps reaches here",
+    "message": "can't get here"
+  },
   "CANT_BE_REMOVED": {
     "description": "",
     "message": "can't be removed now"
@@ -286,6 +290,10 @@
   "CURRENT_SHIP_CHOICE": {
     "description": "Purchase window: heading over the choices",
     "message": "What happens to \"{ship}\"? Choose one:"
+  },
+  "DELIVERY_FUEL_NOTE": {
+    "description": "Ship delivery: hyperdrive fuel the pilot buys on the way, included in the price",
+    "message": "Includes {fuel} t of hyperdrive fuel bought on the way."
   },
   "DELIVERY_SERVICE": {
     "description": "Sender of delivery messages",
@@ -639,6 +647,10 @@
     "description": "",
     "message": "Pick where it goes."
   },
+  "NO_DRIVE_TO_DELIVER": {
+    "description": "",
+    "message": "This ship has no hyperdrive, so it can only be delivered within its system."
+  },
   "NO_EQUIP_VOLUME": {
     "description": "Why an item can't be fitted",
     "message": "not enough equipment volume"
@@ -698,6 +710,10 @@
   "OTHER_HANGAR": {
     "description": "One of the player's other hangars",
     "message": "{station} ({used}/{bays} bays)"
+  },
+  "OUT_OF_JUMP_RANGE": {
+    "description": "Ship delivery: no chain of jumps within the ship's range reaches the destination",
+    "message": "Out of reach: no route of jumps of up to {range} ly, this ship's range with a full drive, gets there."
   },
   "PAID_UNTIL_ABOUT": {
     "description": "Estimate shown before leasing",
@@ -806,6 +822,10 @@
   "RETURNING_STATUS": {
     "description": "",
     "message": "returning to {to}, arrives {date}"
+  },
+  "ROUTE_JUMPS": {
+    "description": "Ship delivery: distance flown and number of hyperjumps",
+    "message": "{distance} in {jumps} jump(s)"
   },
   "ROVER_IS_OUT": {
     "description": "",

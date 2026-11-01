@@ -146,6 +146,13 @@ function Game.DebugAdvanceTime(seconds) end
 ---@param shipId string
 ---@return boolean?
 function Game.CanDockAt(path, shipId) end
+-- the systems jumped to from `from` to `to`, at most `maxRange` ly a jump, with
+-- the least total jump time; empty in the same system, nil when out of reach
+---@param from SystemPath
+---@param to SystemPath
+---@param maxRange number
+---@return SystemPath[]?
+function Game.FindJumpRoute(from, to, maxRange) end
 ---@return number? fuel
 ---@return number? thrust
 ---@return boolean? burntOut
