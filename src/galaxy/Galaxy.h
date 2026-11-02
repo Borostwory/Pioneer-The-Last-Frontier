@@ -50,6 +50,13 @@ public:
 	const StarSystemCache *GetStarSystemCache() const { return &m_starSystemCache; }
 
 	void FlushCaches();
+
+	// The quickest chain of hyperjumps from start to target for a drive that
+	// reaches at most maxRange light years a jump: the systems jumped to, in
+	// order and system-only, ending with target's system (empty when start and
+	// target are the same system). False when no chain of jumps gets there.
+	bool FindJumpRoute(const SystemPath &start, const SystemPath &target, float maxRange, std::vector<SystemPath> &outRoute);
+
 	void Dump(FILE *file, Sint32 centerX, Sint32 centerY, Sint32 centerZ, Sint32 radius);
 
 	RefCountedPtr<GalaxyGenerator> GetGenerator() const;

@@ -30,7 +30,6 @@
 
 #include <cassert>
 #include <cmath>
-#include <unordered_set>
 
 SectorView::~SectorView() {}
 
@@ -383,170 +382,27 @@ const std::vector<SystemPath> &SectorView::GetRoute() const
 
 const std::string SectorView::AutoRoute(const SystemPath &start, const SystemPath &target, std::vector<SystemPath> &outRoute) const
 {
-	const RefCountedPtr<const Sector> start_sec = m_game.GetGalaxy()->GetSector(start);
-	const RefCountedPtr<const Sector> target_sec = m_game.GetGalaxy()->GetSector(target);
-
+	PROFILE_SCOPED()
 	LuaRef try_hdrive = LuaObject<Player>::CallMethod<LuaRef>(Pi::player, "GetInstalledHyperdrive");
 	if (try_hdrive.IsNil())
 		return "NO_DRIVE";
-	// Get the player's hyperdrive from Lua, later used to calculate the duration between systems
 	const ScopedTable hyperdrive = ScopedTable(try_hdrive);
-	// Cache max range so it doesn't get recalculated every time we call GetDuration
 	const float max_range = hyperdrive.CallMethod<float>("GetMaximumRange", Pi::player);
-	const float max_range_sqr = max_range * max_range;
 
-	// use the square of the distance to avoid doing a sqrt for each sector
-	const float distSqr = Sector::DistanceBetweenSqr(start_sec, start.systemIndex, target_sec, target.systemIndex) * 1.10;
+	// A jump's duration (HyperdriveType:GetDuration) is distance^1.6 times a
+	// factor that is the same for every jump of this ship, so the route with
+	// the least total distance^1.6 is also the quickest one.
+	std::vector<SystemPath> route;
+	if (!m_game.GetGalaxy()->FindJumpRoute(start, target, max_range, route))
+		return "NO_VALID_ROUTE";
 
-	// the maximum distance that anything can be from the direct line between the start and target systems
-	const float max_dist_from_straight_line = (Sector::SIZE * 3);
-
-	// nodes[0] is always start
-	std::vector<SystemPath> nodes;
-	{
-		// calculate an approximate initial number of nodes
-		const float dist = sqrt(distSqr);
-		// +2 for the sectors near start and target, *9 for the sectors immediately around the path... might want to be bigger but seems to work
-		const size_t num_sectors_covered = (size_t(dist / Sector::SIZE) + 2) * 9;
-		const size_t num_systems_per_sector = 6; // total guess
-		nodes.reserve(num_sectors_covered * num_systems_per_sector);
-	}
-	nodes.push_back(start);
-
-	const Sint32 minX = std::min(start.sectorX, target.sectorX) - 2, maxX = std::max(start.sectorX, target.sectorX) + 2;
-	const Sint32 minY = std::min(start.sectorY, target.sectorY) - 2, maxY = std::max(start.sectorY, target.sectorY) + 2;
-	const Sint32 minZ = std::min(start.sectorZ, target.sectorZ) - 2, maxZ = std::max(start.sectorZ, target.sectorZ) + 2;
-	const vector3f start_pos = start_sec->m_systems[start.systemIndex].GetFullPosition();
-	const vector3f target_pos = target_sec->m_systems[target.systemIndex].GetFullPosition();
-
-	// go sector by sector for the minimum cube of sectors and add systems
-	// if they are within 110% of dist of both start and target
-	size_t secLineToFar = 0u;
-	for (Sint32 sx = minX; sx <= maxX; sx++) {
-		for (Sint32 sy = minY; sy <= maxY; sy++) {
-			for (Sint32 sz = minZ; sz < maxZ; sz++) {
-				const SystemPath sec_path = SystemPath(sx, sy, sz);
-
-				// early out here if the sector is too far from the direct line
-				vector3f sec_centre(Sector::SIZE * vector3f(float(sx) + 0.5f, float(sy) + 0.5f, float(sz) + 0.5f));
-				const float secLineDist = MathUtil::DistanceFromLine(start_pos, target_pos, sec_centre);
-				// this test is deliberately conservative to over include sectors, a better test might use the nearest corner of an AABB to the line - Math hard, Andy tired
-				if ((secLineDist - Sector::SIZE) > max_dist_from_straight_line) {
-					++secLineToFar;
-					continue;
-				}
-
-				// GetSector is very expensive if it's not in the cache
-				RefCountedPtr<const Sector> sec = m_game.GetGalaxy()->GetSector(sec_path);
-				for (std::vector<Sector::System>::size_type s = 0; s < sec->m_systems.size(); s++) {
-					if (start.IsSameSystem(sec->m_systems[s].GetPath()))
-						continue; // start is already nodes[0]
-
-					const float lineDist = MathUtil::DistanceFromLine(start_pos, target_pos, sec->m_systems[s].GetFullPosition());
-
-					if (Sector::DistanceBetweenSqr(start_sec, start.systemIndex, sec, sec->m_systems[s].idx) <= distSqr &&
-						Sector::DistanceBetweenSqr(target_sec, target.systemIndex, sec, sec->m_systems[s].idx) <= distSqr &&
-						lineDist < max_dist_from_straight_line) {
-						nodes.push_back(sec->m_systems[s].GetPath());
-					}
-				}
-			}
-		}
-	}
-	Output("SectorView::AutoRoute, nodes to search = %lu, earlied out sector distance from line: %lu times.\n", nodes.size(), secLineToFar);
-
-	// setup inital values and set everything as unvisited
-	std::vector<float> path_dist;							   // distance from source to node
-	std::vector<std::vector<SystemPath>::size_type> path_prev; // previous node in optimal path
-	std::unordered_set<std::vector<SystemPath>::size_type> unvisited;
-	// we know how big these need to be, to reserve space up front
-	path_dist.reserve(nodes.size());
-	path_prev.reserve(nodes.size());
-	unvisited.reserve(nodes.size());
-	// initialise them
-	for (std::vector<SystemPath>::size_type i = 0; i < nodes.size(); i++) {
-		path_dist.push_back(INFINITY);
-		path_prev.push_back(0);
-		unvisited.insert(i);
-	}
-
-	// distance to the start is 0
-	path_dist[0] = 0.f;
-
-	size_t totalSkipped = 0u;
-	while (unvisited.size() > 0) {
-		// find the closest node (for the first loop this will be start)
-		std::vector<SystemPath>::size_type closest_i = *unvisited.begin();
-		for (auto it : unvisited) {
-			if (path_dist[it] < path_dist[closest_i])
-				closest_i = it;
-		}
-
-		// mark it as visited
-		unvisited.erase(closest_i);
-
-		// if this is the target then we have found the route
-		const SystemPath &closest = nodes[closest_i];
-		if (closest.IsSameSystem(target))
-			break;
-
-		RefCountedPtr<const Sector> closest_sec = m_game.GetGalaxy()->GetSector(closest);
-
-		// if not, loop through all unvisited nodes
-		// since every system is technically reachable from every other system
-		// everything is a neighbor :)
-		for (auto it : unvisited) {
-			const SystemPath &v = nodes[it];
-			// everything is a neighbor isn't quite true as the ship has a max_range for each jump!
-			if ((SystemPath::SectorDistanceSqr(closest, v) * Sector::SIZE) > max_range_sqr) {
-				++totalSkipped;
-				continue;
-			}
-
-			RefCountedPtr<const Sector> v_sec = m_game.GetGalaxy()->GetSector(v); // this causes it to generate a sector (slooooooow)
-
-			const float v_dist_ly = Sector::DistanceBetween(closest_sec, closest.systemIndex, v_sec, v.systemIndex);
-
-			// in this case, duration is used for the distance since that's what we are optimizing
-			float v_dist = hyperdrive.CallMethod<float>("GetDuration", Pi::player, v_dist_ly, max_range);
-
-			v_dist += path_dist[closest_i]; // we want the total duration from start to this node
-			if (v_dist < path_dist[it]) {
-				// if our calculated duration is less than a previous value, this path is more efficent
-				// so store/override it
-				path_dist[it] = v_dist;
-				path_prev[it] = closest_i;
-			}
-		}
-	}
-	Output("SectorView::AutoRoute, total times that nodes were skipped = %lu\n", totalSkipped);
-
-	bool foundRoute = false;
-	std::vector<SystemPath>::size_type u = 0;
-
-	// find the index of our target
-	for (std::vector<SystemPath>::size_type i = 0, numNodes = nodes.size(); i < numNodes; i++) {
-		if (target.IsSameSystem(nodes[i])) {
-			u = i;
-			foundRoute = true;
-			break;
-		}
-	}
-
-	// It's posible that there is no valid route
-	if (foundRoute) {
-		outRoute.reserve(nodes.size());
-		// Build the route, in reverse starting with the target
-		while (u != 0) {
-			outRoute.push_back(m_game.GetGalaxy()->GetStarSystem(nodes[u])->GetStars()[0]->GetPath());
-			u = path_prev[u];
-		}
-		//End at given body in multistar systems
-		outRoute.begin()->bodyIndex = target.bodyIndex;
-		std::reverse(std::begin(outRoute), std::end(outRoute));
-		return "OKAY";
-	}
-	return "NO_VALID_ROUTE";
+	outRoute.reserve(route.size());
+	for (const SystemPath &path : route)
+		outRoute.push_back(m_game.GetGalaxy()->GetStarSystem(path)->GetStars()[0]->GetPath());
+	// end at the given body in multistar systems
+	if (!outRoute.empty())
+		outRoute.back().bodyIndex = target.bodyIndex;
+	return "OKAY";
 }
 
 void SectorView::SetupLines(const vector3f &playerAbsPos, const matrix4x4f &trans)

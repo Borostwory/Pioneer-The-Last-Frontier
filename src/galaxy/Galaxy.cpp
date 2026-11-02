@@ -10,8 +10,12 @@
 #include "MathUtil.h"
 #include "Sector.h"
 #include "core/Log.h"
+#include "profiler/Profiler.h"
 
 #include <SDL_surface.h>
+#include <algorithm>
+#include <cmath>
+#include <limits>
 
 Galaxy::Galaxy(RefCountedPtr<GalaxyGenerator> galaxyGenerator, float radius, float sol_offset_x, float sol_offset_y,
 	const std::string &factionsDir, const std::string &customSysDir) :
@@ -87,6 +91,101 @@ void Galaxy::FlushCaches()
 	m_sectorCache.OutputCacheStatistics();
 	m_sectorCache.ClearCache();
 	assert(m_sectorCache.IsEmpty());
+}
+
+bool Galaxy::FindJumpRoute(const SystemPath &startIn, const SystemPath &targetIn, float maxRange, std::vector<SystemPath> &outRoute)
+{
+	PROFILE_SCOPED()
+	const SystemPath start = startIn.SystemOnly();
+	const SystemPath target = targetIn.SystemOnly();
+	outRoute.clear();
+	if (start.IsSameSystem(target))
+		return true;
+	if (maxRange <= 0.f)
+		return false;
+
+	RefCountedPtr<const Sector> startSec = GetSector(start);
+	RefCountedPtr<const Sector> targetSec = GetSector(target);
+	if (start.systemIndex >= startSec->m_systems.size() || target.systemIndex >= targetSec->m_systems.size())
+		return false;
+	const vector3f startPos = startSec->m_systems[start.systemIndex].GetFullPosition();
+	const vector3f targetPos = targetSec->m_systems[target.systemIndex].GetFullPosition();
+
+	// The systems a route may use: about as far from either end as the ends
+	// are from each other, and within three sectors of the straight line.
+	// nodes[0] is the start, nodes[1] the target. Positions are kept here
+	// because a sector nothing else holds is freed (and regenerated on the
+	// next GetSector) as soon as it goes out of scope.
+	const float distSqr = (targetPos - startPos).LengthSqr() * 1.10f;
+	const float maxFromLine = Sector::SIZE * 3;
+	std::vector<SystemPath> nodes = { start, target };
+	std::vector<vector3f> positions = { startPos, targetPos };
+
+	const Sint32 minX = std::min(start.sectorX, target.sectorX) - 2, maxX = std::max(start.sectorX, target.sectorX) + 2;
+	const Sint32 minY = std::min(start.sectorY, target.sectorY) - 2, maxY = std::max(start.sectorY, target.sectorY) + 2;
+	const Sint32 minZ = std::min(start.sectorZ, target.sectorZ) - 2, maxZ = std::max(start.sectorZ, target.sectorZ) + 2;
+	for (Sint32 sx = minX; sx <= maxX; sx++) {
+		for (Sint32 sy = minY; sy <= maxY; sy++) {
+			for (Sint32 sz = minZ; sz <= maxZ; sz++) {
+				const vector3f centre = Sector::SIZE * vector3f(sx + 0.5f, sy + 0.5f, sz + 0.5f);
+				if (MathUtil::DistanceFromLine(startPos, targetPos, centre) - Sector::SIZE > maxFromLine)
+					continue;
+
+				RefCountedPtr<const Sector> sec = GetSector(SystemPath(sx, sy, sz));
+				for (const Sector::System &sys : sec->m_systems) {
+					const SystemPath path = sys.GetPath();
+					if (path.IsSameSystem(start) || path.IsSameSystem(target))
+						continue;
+					const vector3f pos = sys.GetFullPosition();
+					if ((pos - startPos).LengthSqr() <= distSqr && (pos - targetPos).LengthSqr() <= distSqr &&
+						MathUtil::DistanceFromLine(startPos, targetPos, pos) < maxFromLine) {
+						nodes.push_back(path);
+						positions.push_back(pos);
+					}
+				}
+			}
+		}
+	}
+
+	// Dijkstra over every pair of systems within range. A jump's time grows
+	// with its distance^1.6 (HyperdriveType:GetDuration), the rest of it is
+	// the same for every jump of one ship.
+	const size_t n = nodes.size();
+	const float rangeSqr = maxRange * maxRange;
+	const double unreached = std::numeric_limits<double>::infinity();
+	std::vector<double> cost(n, unreached);
+	std::vector<size_t> prev(n, 0);
+	std::vector<bool> done(n, false);
+	cost[0] = 0.0;
+	for (;;) {
+		size_t u = n;
+		for (size_t i = 0; i < n; i++) {
+			if (!done[i] && cost[i] < unreached && (u == n || cost[i] < cost[u]))
+				u = i;
+		}
+		if (u == n || u == 1)
+			break;
+		done[u] = true;
+		for (size_t v = 0; v < n; v++) {
+			if (done[v])
+				continue;
+			const float dSqr = (positions[v] - positions[u]).LengthSqr();
+			if (dSqr > rangeSqr)
+				continue;
+			const double c = cost[u] + std::pow(double(dSqr), 0.8);
+			if (c < cost[v]) {
+				cost[v] = c;
+				prev[v] = u;
+			}
+		}
+	}
+	if (!(cost[1] < unreached))
+		return false;
+
+	for (size_t u = 1; u != 0; u = prev[u])
+		outRoute.push_back(nodes[u]);
+	std::reverse(outRoute.begin(), outRoute.end());
+	return true;
 }
 
 void Galaxy::Dump(FILE *file, Sint32 centerX, Sint32 centerY, Sint32 centerZ, Sint32 radius)

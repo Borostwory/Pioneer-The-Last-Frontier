@@ -798,10 +798,10 @@ static int l_game_can_dock_at(lua_State *l)
  * Function: FindJumpRoute
  *
  * The chain of hyperjumps from one system to another for a drive that
- * reaches at most `maxRange` light years a jump. Like the sector map's route
- * planner (SectorView::AutoRoute) it looks at the systems near the straight
- * line between the two and picks the route with the least total jump time,
- * but for any range, not only the player's drive.
+ * reaches at most `maxRange` light years a jump. The same search as the sector
+ * map's route planner (Galaxy::FindJumpRoute): it looks at the systems near the
+ * straight line between the two and picks the route with the least total jump
+ * time, but for any range, not only the player's drive.
  *
  * > route = Game.FindJumpRoute(from, to, maxRange)
  *
@@ -823,94 +823,9 @@ static int l_game_find_jump_route(lua_State *l)
 	if (!Pi::game)
 		return 0;
 
-	if (start.IsSameSystem(target)) {
-		lua_newtable(l);
-		return 1;
-	}
-	if (maxRange <= 0.f)
-		return 0;
-
-	RefCountedPtr<Galaxy> galaxy = Pi::game->GetGalaxy();
-	RefCountedPtr<const Sector> startSec = galaxy->GetSector(start);
-	RefCountedPtr<const Sector> targetSec = galaxy->GetSector(target);
-	if (start.systemIndex >= startSec->m_systems.size() || target.systemIndex >= targetSec->m_systems.size())
-		return 0;
-	const vector3f startPos = startSec->m_systems[start.systemIndex].GetFullPosition();
-	const vector3f targetPos = targetSec->m_systems[target.systemIndex].GetFullPosition();
-
-	// The systems a route may use, as AutoRoute picks them: about as far from
-	// either end as the ends are from each other, and within three sectors of
-	// the straight line. nodes[0] is the start, nodes[1] the target.
-	const float distSqr = (targetPos - startPos).LengthSqr() * 1.10f;
-	const float maxFromLine = Sector::SIZE * 3;
-	std::vector<SystemPath> nodes = { start, target };
-	std::vector<vector3f> positions = { startPos, targetPos };
-
-	const Sint32 minX = std::min(start.sectorX, target.sectorX) - 2, maxX = std::max(start.sectorX, target.sectorX) + 2;
-	const Sint32 minY = std::min(start.sectorY, target.sectorY) - 2, maxY = std::max(start.sectorY, target.sectorY) + 2;
-	const Sint32 minZ = std::min(start.sectorZ, target.sectorZ) - 2, maxZ = std::max(start.sectorZ, target.sectorZ) + 2;
-	for (Sint32 sx = minX; sx <= maxX; sx++) {
-		for (Sint32 sy = minY; sy <= maxY; sy++) {
-			for (Sint32 sz = minZ; sz <= maxZ; sz++) {
-				const vector3f centre = Sector::SIZE * vector3f(sx + 0.5f, sy + 0.5f, sz + 0.5f);
-				if (MathUtil::DistanceFromLine(startPos, targetPos, centre) - Sector::SIZE > maxFromLine)
-					continue;
-
-				RefCountedPtr<const Sector> sec = galaxy->GetSector(SystemPath(sx, sy, sz));
-				for (const Sector::System &sys : sec->m_systems) {
-					const SystemPath path = sys.GetPath();
-					if (path.IsSameSystem(start) || path.IsSameSystem(target))
-						continue;
-					const vector3f pos = sys.GetFullPosition();
-					if ((pos - startPos).LengthSqr() <= distSqr && (pos - targetPos).LengthSqr() <= distSqr &&
-						MathUtil::DistanceFromLine(startPos, targetPos, pos) < maxFromLine) {
-						nodes.push_back(path);
-						positions.push_back(pos);
-					}
-				}
-			}
-		}
-	}
-
-	// Dijkstra over every pair of systems within range. A jump's time grows
-	// with its distance^1.6 (HyperdriveType:GetDuration), the rest of it is
-	// the same for every jump of one ship.
-	const size_t n = nodes.size();
-	const float rangeSqr = maxRange * maxRange;
-	const double unreached = std::numeric_limits<double>::infinity();
-	std::vector<double> cost(n, unreached);
-	std::vector<size_t> prev(n, 0);
-	std::vector<bool> done(n, false);
-	cost[0] = 0.0;
-	for (;;) {
-		size_t u = n;
-		for (size_t i = 0; i < n; i++) {
-			if (!done[i] && cost[i] < unreached && (u == n || cost[i] < cost[u]))
-				u = i;
-		}
-		if (u == n || u == 1)
-			break;
-		done[u] = true;
-		for (size_t v = 0; v < n; v++) {
-			if (done[v])
-				continue;
-			const float dSqr = (positions[v] - positions[u]).LengthSqr();
-			if (dSqr > rangeSqr)
-				continue;
-			const double c = cost[u] + std::pow(double(dSqr), 0.8);
-			if (c < cost[v]) {
-				cost[v] = c;
-				prev[v] = u;
-			}
-		}
-	}
-	if (!(cost[1] < unreached))
-		return 0;
-
 	std::vector<SystemPath> route;
-	for (size_t u = 1; u != 0; u = prev[u])
-		route.push_back(nodes[u]);
-	std::reverse(route.begin(), route.end());
+	if (!Pi::game->GetGalaxy()->FindJumpRoute(start, target, maxRange, route))
+		return 0;
 
 	lua_newtable(l);
 	int i = 1;
