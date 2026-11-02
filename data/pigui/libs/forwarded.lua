@@ -70,6 +70,7 @@ ui.addRect = pigui.AddRect ---@type fun(a: Vector2, b: Vector2, col: Color, roun
 ui.addRectFilled = pigui.AddRectFilled ---@type fun(a: Vector2, b: Vector2, col: Color, rounding: number, draw_flags: integer)
 ui.addRectFaded = pigui.AddRectFaded ---@type fun(a: Vector2, b: Vector2, col: Color, fadeToAlpha: number, draw_flags: integer)
 ui.addLine = pigui.AddLine ---@type fun(a: Vector2, b: Vector2, col: Color, thickness: number)
+ui.addTriangleFilled = pigui.AddTriangleFilled ---@type fun(a: Vector2, b: Vector2, c: Vector2, col: Color)
 ui.addText = pigui.AddText ---@type fun(pos: Vector2, col: Color, text: string, wrapWidth: number?)
 ui.addTextShadowed = pigui.AddTextShadowed ---@type fun(pos: Vector2, col: Color, text: string, shadow: Color?, offset: Vector2?, wrapWidth: number?)
 ui.pathArcTo = pigui.PathArcTo

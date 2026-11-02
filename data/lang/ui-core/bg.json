@@ -51,6 +51,126 @@
     "description": "Time of arrival, used in flight log",
     "message": "Дата на пристигане"
   },
+  "ASCENT_ALTITUDE": {
+    "description": "Ascent guidance panel label: the target orbit altitude.",
+    "message": "Височина на орбитата"
+  },
+  "ASCENT_CIRCULARIZE": {
+    "description": "Ascent guidance button (bottom bar, coasting to apoapsis): plan the circularization burn.",
+    "message": "Планиране на импулса, който закръгля орбитата в апоцентъра; изпълнете го ръчно или с автоимпулс от списъка с импулси"
+  },
+  "ASCENT_CIRCULARIZE_BUSY": {
+    "description": "Tooltip of the disabled ascent guidance circularize button while another plan is in progress.",
+    "message": "Първо завършете или премахнете планираните импулси, за да планирате закръгляването"
+  },
+  "ASCENT_COAST": {
+    "description": "Ascent guidance phase on the flight HUD: engines off, coasting up to apoapsis.",
+    "message": "СВОБОДЕН ПОЛЕТ ДО АПОЦЕНТЪРА"
+  },
+  "ASCENT_CUT": {
+    "description": "Ascent guidance phase on the flight HUD (flashing): apoapsis reached the target, cut the engines now.",
+    "message": "ИЗКЛЮЧЕТЕ ДВИГАТЕЛИТЕ"
+  },
+  "ASCENT_DIRECTOR": {
+    "description": "Tooltip of the ascent guidance director (diamond) in the flight view.",
+    "message": "Насочване при излитане: насочете носа тук и включете тягата"
+  },
+  "ASCENT_DONE": {
+    "description": "Ascent guidance phase on the flight HUD: the orbit clears the atmosphere and the terrain.",
+    "message": "ОРБИТАТА Е ДОСТИГНАТА"
+  },
+  "ASCENT_GUIDANCE": {
+    "description": "Ascent guidance panel: name of the guidance switch, shown as 'Guidance: ON/OFF'.",
+    "message": "Насочване"
+  },
+  "ASCENT_GUIDANCE_OFF": {
+    "description": "Tooltip of the ascent guidance toggle button while it is on.",
+    "message": "Изключване на насочването при излитане"
+  },
+  "ASCENT_GUIDANCE_ON": {
+    "description": "Tooltip of the ascent guidance toggle button while it is off.",
+    "message": "Насочване при излитане: води изкачването до кръгова орбита на зададената височина"
+  },
+  "ASCENT_HEADING": {
+    "description": "Ascent guidance panel label: the compass heading to launch along.",
+    "message": "Курс на излитане"
+  },
+  "ASCENT_HEADING_LOCKED": {
+    "description": "Tooltip of the launch heading once off the ground, when it can no longer change.",
+    "message": "Задава се преди излитане"
+  },
+  "ASCENT_HEADING_TIP": {
+    "description": "Tooltip of the launch heading in the ascent guidance panel.",
+    "message": "Курс на излитане по компаса: изток (90°) е най-евтин, въртенето на планетата помага; запад (270°) е срещу него; север или юг (0°, 180°) дават полярна орбита. Задава се преди излитане."
+  },
+  "ASCENT_HIDE": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is shown.",
+    "message": "Скриване на насочването при излитане"
+  },
+  "ASCENT_HOLD": {
+    "description": "Ascent guidance phase on the flight HUD: keep burning along the horizon, apoapsis held at the target, until in orbit.",
+    "message": "УСКОРЯВАНЕ ДО ОРБИТА"
+  },
+  "ASCENT_INCLINATION": {
+    "description": "Ascent guidance panel: the orbit inclination the launch heading gives. %s = the angle.",
+    "message": "Наклон на орбитата %s"
+  },
+  "ASCENT_LIFT": {
+    "description": "Ascent guidance phase on the flight HUD: climb vertically until clear of the ground.",
+    "message": "ИЗКАЧВАЙТЕ СЕ ВЕРТИКАЛНО"
+  },
+  "ASCENT_PITCH": {
+    "description": "Ascent guidance phase on the flight HUD: the gravity turn, following the director.",
+    "message": "ГРАВИТАЦИОНЕН ЗАВОЙ"
+  },
+  "ASCENT_PLAN_HINT": {
+    "description": "Ascent guidance hint on the flight HUD while coasting without a circularization burn planned; the button is in the ascent guidance panel.",
+    "message": "Планирайте закръгляването в панела за насочване при излитане"
+  },
+  "ASCENT_READY": {
+    "description": "Ascent guidance phase on the flight HUD: on the ground, waiting for lift-off.",
+    "message": "НАСОЧВАНЕТО ПРИ ИЗЛИТАНЕ Е ГОТОВО · ИЗЛЕТЕТЕ"
+  },
+  "ASCENT_RETROGRADE": {
+    "description": "After the inclination in the ascent guidance panel, when the orbit runs against the planet's spin.",
+    "message": "(ретроградна)"
+  },
+  "ASCENT_SHOW": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is hidden.",
+    "message": "Показване на насочването при излитане"
+  },
+  "ASCENT_SPEED_TIP": {
+    "description": "Tooltip of the ascent guidance speed readout (current / needed).",
+    "message": "Орбитална скорост / скорост на кръгова орбита на целевата височина"
+  },
+  "ASCENT_TARGET_TIP": {
+    "description": "Tooltip of the ascent guidance target altitude field. %s = the lowest allowed altitude.",
+    "message": "Височина на целевата орбита: плъзнете или превъртете за промяна (Shift за по-големи стъпки). Минимумът е %s, над атмосферата и релефа."
+  },
+  "ASCENT_TARGET_TIP_SHORT": {
+    "description": "Tooltip of the target altitude in the ascent guidance panel.",
+    "message": "Височина на целевата орбита"
+  },
+  "ASCENT_TIME_TO_AP_TIP": {
+    "description": "Tooltip of the ascent guidance time-to-apoapsis readout.",
+    "message": "Време до апоцентъра"
+  },
+  "ASCENT_TITLE": {
+    "description": "Title of the ascent guidance panel in the flight HUD.",
+    "message": "НАСОЧВАНЕ ПРИ ИЗЛИТАНЕ"
+  },
+  "ASCENT_TOP_UP": {
+    "description": "Ascent guidance on the flight HUD while coasting: drag pulled apoapsis below the target, burn prograde until it is back.",
+    "message": "ВДИГНЕТЕ АПОЦЕНТЪРА · ТЯГА НАПРЕД"
+  },
+  "ASCENT_TWR_LOW": {
+    "description": "Ascent guidance warning on the flight HUD before lift-off. %s = the main engine's thrust-to-weight ratio.",
+    "message": "ОСНОВНИЯТ ДВИГАТЕЛ Е ТВЪРДЕ СЛАБ ЗА ИЗКАЧВАНЕ (TWR %s)"
+  },
+  "ASCENT_UNAVAILABLE": {
+    "description": "Tooltip of the greyed-out ascent guidance HUD button where guidance cannot be used.",
+    "message": "Насочване при излитане: само на земята или в полет под безопасна орбита около планета"
+  },
   "ATMOSPHERIC_SHIELDING": {
     "description": "Used in ShipInfo view, followed by a yes/no depending on if the ship can carry atmospheric shields",
     "message": "Атмосферна защита"
@@ -1814,6 +1934,14 @@
   "HUD_THRUST_INDICATOR": {
     "description": "Tooltip: describe what the thrust indicator shows",
     "message": "Текущи нива на тягата за маневриране (външен пръстен) и основни или ретро двигатели (централен кръг)"
+  },
+  "HUD_VERTICAL_SPEED": {
+    "description": "Tooltip: the vertical speed indicator beside the altitude tape.",
+    "message": "Вертикална скорост: + изкачване, - снижаване. Близо до земята скалата се увеличава; кацането изисква обща скорост под 30 m/s."
+  },
+  "HUD_VSI_SAFE_DESCENT": {
+    "description": "Tooltip: the diamond on the vertical speed indicator.",
+    "message": "Най-бързото снижаване, което горните двигатели все още могат да спрат преди земята. Снижавайте се по-бавно от тази отметка."
   },
   "HUD_WARNING_DESCENT_RATE": {
     "description": "Shown on HUD as a warning flasher",

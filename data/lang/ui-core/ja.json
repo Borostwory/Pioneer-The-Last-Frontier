@@ -51,6 +51,126 @@
     "description": "Time of arrival, used in flight log",
     "message": "到着日"
   },
+  "ASCENT_ALTITUDE": {
+    "description": "Ascent guidance panel label: the target orbit altitude.",
+    "message": "軌道高度"
+  },
+  "ASCENT_CIRCULARIZE": {
+    "description": "Ascent guidance button (bottom bar, coasting to apoapsis): plan the circularization burn.",
+    "message": "遠点で軌道を円形にする噴射を計画します。手動で、または噴射リストの自動噴射で実行してください"
+  },
+  "ASCENT_CIRCULARIZE_BUSY": {
+    "description": "Tooltip of the disabled ascent guidance circularize button while another plan is in progress.",
+    "message": "円軌道化を計画するには、先に計画済みの噴射を完了するか削除してください"
+  },
+  "ASCENT_COAST": {
+    "description": "Ascent guidance phase on the flight HUD: engines off, coasting up to apoapsis.",
+    "message": "遠点まで慣性飛行"
+  },
+  "ASCENT_CUT": {
+    "description": "Ascent guidance phase on the flight HUD (flashing): apoapsis reached the target, cut the engines now.",
+    "message": "エンジン停止"
+  },
+  "ASCENT_DIRECTOR": {
+    "description": "Tooltip of the ascent guidance director (diamond) in the flight view.",
+    "message": "上昇誘導: 機首をここに向けて噴射"
+  },
+  "ASCENT_DONE": {
+    "description": "Ascent guidance phase on the flight HUD: the orbit clears the atmosphere and the terrain.",
+    "message": "軌道到達"
+  },
+  "ASCENT_GUIDANCE": {
+    "description": "Ascent guidance panel: name of the guidance switch, shown as 'Guidance: ON/OFF'.",
+    "message": "誘導"
+  },
+  "ASCENT_GUIDANCE_OFF": {
+    "description": "Tooltip of the ascent guidance toggle button while it is on.",
+    "message": "上昇誘導をオフにする"
+  },
+  "ASCENT_GUIDANCE_ON": {
+    "description": "Tooltip of the ascent guidance toggle button while it is off.",
+    "message": "上昇誘導: 設定した高度の円軌道まで上昇を誘導します"
+  },
+  "ASCENT_HEADING": {
+    "description": "Ascent guidance panel label: the compass heading to launch along.",
+    "message": "打ち上げ方位"
+  },
+  "ASCENT_HEADING_LOCKED": {
+    "description": "Tooltip of the launch heading once off the ground, when it can no longer change.",
+    "message": "離陸前に設定"
+  },
+  "ASCENT_HEADING_TIP": {
+    "description": "Tooltip of the launch heading in the ascent guidance panel.",
+    "message": "打ち上げの方位: 東 (90°) が最も効率的で、惑星の自転が助けになります。西 (270°) は自転に逆らいます。北か南 (0°, 180°) は極軌道になります。離陸前に設定してください。"
+  },
+  "ASCENT_HIDE": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is shown.",
+    "message": "上昇誘導を隠す"
+  },
+  "ASCENT_HOLD": {
+    "description": "Ascent guidance phase on the flight HUD: keep burning along the horizon, apoapsis held at the target, until in orbit.",
+    "message": "軌道まで加速"
+  },
+  "ASCENT_INCLINATION": {
+    "description": "Ascent guidance panel: the orbit inclination the launch heading gives. %s = the angle.",
+    "message": "軌道傾斜角 %s"
+  },
+  "ASCENT_LIFT": {
+    "description": "Ascent guidance phase on the flight HUD: climb vertically until clear of the ground.",
+    "message": "垂直上昇"
+  },
+  "ASCENT_PITCH": {
+    "description": "Ascent guidance phase on the flight HUD: the gravity turn, following the director.",
+    "message": "重力ターン"
+  },
+  "ASCENT_PLAN_HINT": {
+    "description": "Ascent guidance hint on the flight HUD while coasting without a circularization burn planned; the button is in the ascent guidance panel.",
+    "message": "上昇誘導パネルで円軌道化の噴射を計画してください"
+  },
+  "ASCENT_READY": {
+    "description": "Ascent guidance phase on the flight HUD: on the ground, waiting for lift-off.",
+    "message": "上昇誘導 準備完了 · 離陸してください"
+  },
+  "ASCENT_RETROGRADE": {
+    "description": "After the inclination in the ascent guidance panel, when the orbit runs against the planet's spin.",
+    "message": "(逆行)"
+  },
+  "ASCENT_SHOW": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is hidden.",
+    "message": "上昇誘導を表示"
+  },
+  "ASCENT_SPEED_TIP": {
+    "description": "Tooltip of the ascent guidance speed readout (current / needed).",
+    "message": "軌道速度 / 目標高度での円軌道速度"
+  },
+  "ASCENT_TARGET_TIP": {
+    "description": "Tooltip of the ascent guidance target altitude field. %s = the lowest allowed altitude.",
+    "message": "目標軌道高度: ドラッグまたはスクロールで変更（Shiftで大きく変更）。最低は%sで、大気と地形より上です。"
+  },
+  "ASCENT_TARGET_TIP_SHORT": {
+    "description": "Tooltip of the target altitude in the ascent guidance panel.",
+    "message": "目標軌道高度"
+  },
+  "ASCENT_TIME_TO_AP_TIP": {
+    "description": "Tooltip of the ascent guidance time-to-apoapsis readout.",
+    "message": "遠点までの時間"
+  },
+  "ASCENT_TITLE": {
+    "description": "Title of the ascent guidance panel in the flight HUD.",
+    "message": "上昇誘導"
+  },
+  "ASCENT_TOP_UP": {
+    "description": "Ascent guidance on the flight HUD while coasting: drag pulled apoapsis below the target, burn prograde until it is back.",
+    "message": "遠点を上げる · 進行方向に噴射"
+  },
+  "ASCENT_TWR_LOW": {
+    "description": "Ascent guidance warning on the flight HUD before lift-off. %s = the main engine's thrust-to-weight ratio.",
+    "message": "メインエンジンの推力が上昇には不足 (TWR %s)"
+  },
+  "ASCENT_UNAVAILABLE": {
+    "description": "Tooltip of the greyed-out ascent guidance HUD button where guidance cannot be used.",
+    "message": "上昇誘導: 地上、または惑星の安全な軌道より下を飛行中のみ"
+  },
   "ATMOSPHERIC_SHIELDING": {
     "description": "Used in ShipInfo view, followed by a yes/no depending on if the ship can carry atmospheric shields",
     "message": "大気シールド"
@@ -1814,6 +1934,14 @@
   "HUD_THRUST_INDICATOR": {
     "description": "Tooltip: describe what the thrust indicator shows",
     "message": "Show current thrust levels for maneuvering (outer ring) and primary or retro engines (center circle)"
+  },
+  "HUD_VERTICAL_SPEED": {
+    "description": "Tooltip: the vertical speed indicator beside the altitude tape.",
+    "message": "垂直速度: + 上昇、- 降下。地表付近では目盛りが拡大されます。着陸には合計速度30 m/s未満が必要です。"
+  },
+  "HUD_VSI_SAFE_DESCENT": {
+    "description": "Tooltip: the diamond on the vertical speed indicator.",
+    "message": "上方スラスターで地表までに停止できる最大の降下速度。この印より遅く降下してください。"
   },
   "HUD_WARNING_DESCENT_RATE": {
     "description": "Shown on HUD as a warning flasher",

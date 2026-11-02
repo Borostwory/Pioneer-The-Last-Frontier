@@ -51,6 +51,126 @@
     "description": "Time of arrival, used in flight log",
     "message": "Arrival date"
   },
+  "ASCENT_ALTITUDE": {
+    "description": "Ascent guidance panel label: the target orbit altitude.",
+    "message": "Banehøyde"
+  },
+  "ASCENT_CIRCULARIZE": {
+    "description": "Ascent guidance button (bottom bar, coasting to apoapsis): plan the circularization burn.",
+    "message": "Planlegg brenningen som gjør banen sirkulær ved apoapsis; fly den selv eller med Autobrenning i brenningslisten"
+  },
+  "ASCENT_CIRCULARIZE_BUSY": {
+    "description": "Tooltip of the disabled ascent guidance circularize button while another plan is in progress.",
+    "message": "Fullfør eller fjern de planlagte brenningene først for å planlegge sirkulariseringen"
+  },
+  "ASCENT_COAST": {
+    "description": "Ascent guidance phase on the flight HUD: engines off, coasting up to apoapsis.",
+    "message": "FRI FLYGING TIL APOAPSIS"
+  },
+  "ASCENT_CUT": {
+    "description": "Ascent guidance phase on the flight HUD (flashing): apoapsis reached the target, cut the engines now.",
+    "message": "SLÅ AV MOTORENE"
+  },
+  "ASCENT_DIRECTOR": {
+    "description": "Tooltip of the ascent guidance director (diamond) in the flight view.",
+    "message": "Oppstigningsstyring: pek nesen hit og brenn"
+  },
+  "ASCENT_DONE": {
+    "description": "Ascent guidance phase on the flight HUD: the orbit clears the atmosphere and the terrain.",
+    "message": "BANE NÅDD"
+  },
+  "ASCENT_GUIDANCE": {
+    "description": "Ascent guidance panel: name of the guidance switch, shown as 'Guidance: ON/OFF'.",
+    "message": "Styring"
+  },
+  "ASCENT_GUIDANCE_OFF": {
+    "description": "Tooltip of the ascent guidance toggle button while it is on.",
+    "message": "Slå av oppstigningsstyring"
+  },
+  "ASCENT_GUIDANCE_ON": {
+    "description": "Tooltip of the ascent guidance toggle button while it is off.",
+    "message": "Oppstigningsstyring: leder stigningen til en sirkulær bane i valgt høyde"
+  },
+  "ASCENT_HEADING": {
+    "description": "Ascent guidance panel label: the compass heading to launch along.",
+    "message": "Oppskytingskurs"
+  },
+  "ASCENT_HEADING_LOCKED": {
+    "description": "Tooltip of the launch heading once off the ground, when it can no longer change.",
+    "message": "Stilles inn før avgang"
+  },
+  "ASCENT_HEADING_TIP": {
+    "description": "Tooltip of the launch heading in the ascent guidance panel.",
+    "message": "Kompasskurs for oppskytingen: øst (90°) er billigst, planetens rotasjon hjelper; vest (270°) går mot den; nord eller sør (0°, 180°) gir en polar bane. Stilles inn før avgang."
+  },
+  "ASCENT_HIDE": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is shown.",
+    "message": "Skjul oppstigningsstyring"
+  },
+  "ASCENT_HOLD": {
+    "description": "Ascent guidance phase on the flight HUD: keep burning along the horizon, apoapsis held at the target, until in orbit.",
+    "message": "BRENN TIL BANE"
+  },
+  "ASCENT_INCLINATION": {
+    "description": "Ascent guidance panel: the orbit inclination the launch heading gives. %s = the angle.",
+    "message": "Baneinklinasjon %s"
+  },
+  "ASCENT_LIFT": {
+    "description": "Ascent guidance phase on the flight HUD: climb vertically until clear of the ground.",
+    "message": "STIG RETT OPP"
+  },
+  "ASCENT_PITCH": {
+    "description": "Ascent guidance phase on the flight HUD: the gravity turn, following the director.",
+    "message": "TYNGDEKRAFTSVENDING"
+  },
+  "ASCENT_PLAN_HINT": {
+    "description": "Ascent guidance hint on the flight HUD while coasting without a circularization burn planned; the button is in the ascent guidance panel.",
+    "message": "Planlegg sirkulariseringen i oppstigningsstyringens panel"
+  },
+  "ASCENT_READY": {
+    "description": "Ascent guidance phase on the flight HUD: on the ground, waiting for lift-off.",
+    "message": "OPPSTIGNINGSSTYRING KLAR · LØFT AV"
+  },
+  "ASCENT_RETROGRADE": {
+    "description": "After the inclination in the ascent guidance panel, when the orbit runs against the planet's spin.",
+    "message": "(retrograd)"
+  },
+  "ASCENT_SHOW": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is hidden.",
+    "message": "Vis oppstigningsstyring"
+  },
+  "ASCENT_SPEED_TIP": {
+    "description": "Tooltip of the ascent guidance speed readout (current / needed).",
+    "message": "Banehastighet / hastighet for sirkulær bane i målhøyden"
+  },
+  "ASCENT_TARGET_TIP": {
+    "description": "Tooltip of the ascent guidance target altitude field. %s = the lowest allowed altitude.",
+    "message": "Målhøyde for banen: dra eller rull for å endre (Shift for større steg). Laveste er %s, over atmosfæren og terrenget."
+  },
+  "ASCENT_TARGET_TIP_SHORT": {
+    "description": "Tooltip of the target altitude in the ascent guidance panel.",
+    "message": "Målhøyde for banen"
+  },
+  "ASCENT_TIME_TO_AP_TIP": {
+    "description": "Tooltip of the ascent guidance time-to-apoapsis readout.",
+    "message": "Tid til apoapsis"
+  },
+  "ASCENT_TITLE": {
+    "description": "Title of the ascent guidance panel in the flight HUD.",
+    "message": "OPPSTIGNINGSSTYRING"
+  },
+  "ASCENT_TOP_UP": {
+    "description": "Ascent guidance on the flight HUD while coasting: drag pulled apoapsis below the target, burn prograde until it is back.",
+    "message": "HEV APOAPSIS · BRENN PROGRADT"
+  },
+  "ASCENT_TWR_LOW": {
+    "description": "Ascent guidance warning on the flight HUD before lift-off. %s = the main engine's thrust-to-weight ratio.",
+    "message": "HOVEDMOTOREN FOR SVAK TIL Å STIGE (TWR %s)"
+  },
+  "ASCENT_UNAVAILABLE": {
+    "description": "Tooltip of the greyed-out ascent guidance HUD button where guidance cannot be used.",
+    "message": "Oppstigningsstyring: bare på bakken eller i flukt under en sikker bane rundt en planet"
+  },
   "ATMOSPHERIC_SHIELDING": {
     "description": "Used in ShipInfo view, followed by a yes/no depending on if the ship can carry atmospheric shields",
     "message": "Atmospheric shielding"
@@ -1814,6 +1934,14 @@
   "HUD_THRUST_INDICATOR": {
     "description": "Tooltip: describe what the thrust indicator shows",
     "message": "Show current thrust levels for maneuvering (outer ring) and primary or retro engines (center circle)"
+  },
+  "HUD_VERTICAL_SPEED": {
+    "description": "Tooltip: the vertical speed indicator beside the altitude tape.",
+    "message": "Vertikal hastighet: + stigning, - nedstigning. Nær bakken zoomer skalaen inn; en landing krever under 30 m/s totalt."
+  },
+  "HUD_VSI_SAFE_DESCENT": {
+    "description": "Tooltip: the diamond on the vertical speed indicator.",
+    "message": "Den raskeste nedstigningen oppoverthrusterne fortsatt kan stoppe før bakken. Gå ned saktere enn dette merket."
   },
   "HUD_WARNING_DESCENT_RATE": {
     "description": "Shown on HUD as a warning flasher",

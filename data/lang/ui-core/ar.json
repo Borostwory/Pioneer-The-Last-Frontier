@@ -51,6 +51,126 @@
     "description": "Time of arrival, used in flight log",
     "message": "Arrival date"
   },
+  "ASCENT_ALTITUDE": {
+    "description": "Ascent guidance panel label: the target orbit altitude.",
+    "message": "ارتفاع المدار"
+  },
+  "ASCENT_CIRCULARIZE": {
+    "description": "Ascent guidance button (bottom bar, coasting to apoapsis): plan the circularization burn.",
+    "message": "خطّط للحرق الذي يجعل المدار دائريًا عند الأوج؛ نفّذه يدويًا أو بالحرق التلقائي في قائمة الحروق"
+  },
+  "ASCENT_CIRCULARIZE_BUSY": {
+    "description": "Tooltip of the disabled ascent guidance circularize button while another plan is in progress.",
+    "message": "أنهِ الحروق المخطّطة أو احذفها أولًا لتخطيط تدوير المدار"
+  },
+  "ASCENT_COAST": {
+    "description": "Ascent guidance phase on the flight HUD: engines off, coasting up to apoapsis.",
+    "message": "طيران حر حتى الأوج"
+  },
+  "ASCENT_CUT": {
+    "description": "Ascent guidance phase on the flight HUD (flashing): apoapsis reached the target, cut the engines now.",
+    "message": "أطفئ المحركات"
+  },
+  "ASCENT_DIRECTOR": {
+    "description": "Tooltip of the ascent guidance director (diamond) in the flight view.",
+    "message": "توجيه الصعود: وجّه مقدمة المركبة إلى هنا وادفع"
+  },
+  "ASCENT_DONE": {
+    "description": "Ascent guidance phase on the flight HUD: the orbit clears the atmosphere and the terrain.",
+    "message": "تم بلوغ المدار"
+  },
+  "ASCENT_GUIDANCE": {
+    "description": "Ascent guidance panel: name of the guidance switch, shown as 'Guidance: ON/OFF'.",
+    "message": "التوجيه"
+  },
+  "ASCENT_GUIDANCE_OFF": {
+    "description": "Tooltip of the ascent guidance toggle button while it is on.",
+    "message": "إيقاف توجيه الصعود"
+  },
+  "ASCENT_GUIDANCE_ON": {
+    "description": "Tooltip of the ascent guidance toggle button while it is off.",
+    "message": "توجيه الصعود: يوجّه الصعود إلى مدار دائري على الارتفاع الذي تحدده"
+  },
+  "ASCENT_HEADING": {
+    "description": "Ascent guidance panel label: the compass heading to launch along.",
+    "message": "اتجاه الإطلاق"
+  },
+  "ASCENT_HEADING_LOCKED": {
+    "description": "Tooltip of the launch heading once off the ground, when it can no longer change.",
+    "message": "يُضبط قبل الإقلاع"
+  },
+  "ASCENT_HEADING_TIP": {
+    "description": "Tooltip of the launch heading in the ascent guidance panel.",
+    "message": "اتجاه الإطلاق بالبوصلة: الشرق (90°) هو الأرخص، فدوران الكوكب يساعد؛ الغرب (270°) يعاكسه؛ الشمال أو الجنوب (0°، 180°) يعطيان مدارًا قطبيًا. يُضبط قبل الإقلاع."
+  },
+  "ASCENT_HIDE": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is shown.",
+    "message": "إخفاء توجيه الصعود"
+  },
+  "ASCENT_HOLD": {
+    "description": "Ascent guidance phase on the flight HUD: keep burning along the horizon, apoapsis held at the target, until in orbit.",
+    "message": "ادفع حتى المدار"
+  },
+  "ASCENT_INCLINATION": {
+    "description": "Ascent guidance panel: the orbit inclination the launch heading gives. %s = the angle.",
+    "message": "ميل المدار %s"
+  },
+  "ASCENT_LIFT": {
+    "description": "Ascent guidance phase on the flight HUD: climb vertically until clear of the ground.",
+    "message": "اصعد عموديًا"
+  },
+  "ASCENT_PITCH": {
+    "description": "Ascent guidance phase on the flight HUD: the gravity turn, following the director.",
+    "message": "انعطاف الجاذبية"
+  },
+  "ASCENT_PLAN_HINT": {
+    "description": "Ascent guidance hint on the flight HUD while coasting without a circularization burn planned; the button is in the ascent guidance panel.",
+    "message": "خطّط لتدوير المدار في لوحة توجيه الصعود"
+  },
+  "ASCENT_READY": {
+    "description": "Ascent guidance phase on the flight HUD: on the ground, waiting for lift-off.",
+    "message": "توجيه الصعود جاهز · أقلع"
+  },
+  "ASCENT_RETROGRADE": {
+    "description": "After the inclination in the ascent guidance panel, when the orbit runs against the planet's spin.",
+    "message": "(تراجعي)"
+  },
+  "ASCENT_SHOW": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is hidden.",
+    "message": "إظهار توجيه الصعود"
+  },
+  "ASCENT_SPEED_TIP": {
+    "description": "Tooltip of the ascent guidance speed readout (current / needed).",
+    "message": "السرعة المدارية / سرعة المدار الدائري على الارتفاع المستهدف"
+  },
+  "ASCENT_TARGET_TIP": {
+    "description": "Tooltip of the ascent guidance target altitude field. %s = the lowest allowed altitude.",
+    "message": "ارتفاع المدار المستهدف: اسحب أو مرّر للتغيير (Shift لخطوات أكبر). الحد الأدنى %s، فوق الغلاف الجوي والتضاريس."
+  },
+  "ASCENT_TARGET_TIP_SHORT": {
+    "description": "Tooltip of the target altitude in the ascent guidance panel.",
+    "message": "ارتفاع المدار المستهدف"
+  },
+  "ASCENT_TIME_TO_AP_TIP": {
+    "description": "Tooltip of the ascent guidance time-to-apoapsis readout.",
+    "message": "الوقت حتى الأوج"
+  },
+  "ASCENT_TITLE": {
+    "description": "Title of the ascent guidance panel in the flight HUD.",
+    "message": "توجيه الصعود"
+  },
+  "ASCENT_TOP_UP": {
+    "description": "Ascent guidance on the flight HUD while coasting: drag pulled apoapsis below the target, burn prograde until it is back.",
+    "message": "ارفع الأوج · ادفع إلى الأمام"
+  },
+  "ASCENT_TWR_LOW": {
+    "description": "Ascent guidance warning on the flight HUD before lift-off. %s = the main engine's thrust-to-weight ratio.",
+    "message": "المحرك الرئيسي أضعف من أن يصعد (TWR %s)"
+  },
+  "ASCENT_UNAVAILABLE": {
+    "description": "Tooltip of the greyed-out ascent guidance HUD button where guidance cannot be used.",
+    "message": "توجيه الصعود: على الأرض فقط أو أثناء الطيران تحت مدار آمن حول كوكب"
+  },
   "ATMOSPHERIC_SHIELDING": {
     "description": "Used in ShipInfo view, followed by a yes/no depending on if the ship can carry atmospheric shields",
     "message": "التدريع الجوي"
@@ -1814,6 +1934,14 @@
   "HUD_THRUST_INDICATOR": {
     "description": "Tooltip: describe what the thrust indicator shows",
     "message": "Show current thrust levels for maneuvering (outer ring) and primary or retro engines (center circle)"
+  },
+  "HUD_VERTICAL_SPEED": {
+    "description": "Tooltip: the vertical speed indicator beside the altitude tape.",
+    "message": "السرعة العمودية: + صعود، - هبوط. قرب الأرض يتكبّر المقياس؛ يتطلب الهبوط سرعة إجمالية أقل من 30 م/ث."
+  },
+  "HUD_VSI_SAFE_DESCENT": {
+    "description": "Tooltip: the diamond on the vertical speed indicator.",
+    "message": "أسرع هبوط لا تزال الدافعات العلوية قادرة على إيقافه قبل الأرض. اهبط أبطأ من هذه العلامة."
   },
   "HUD_WARNING_DESCENT_RATE": {
     "description": "Shown on HUD as a warning flasher",

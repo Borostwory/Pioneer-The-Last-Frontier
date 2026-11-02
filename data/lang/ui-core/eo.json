@@ -51,6 +51,126 @@
     "description": "Time of arrival, used in flight log",
     "message": "Arrival date"
   },
+  "ASCENT_ALTITUDE": {
+    "description": "Ascent guidance panel label: the target orbit altitude.",
+    "message": "Alteco de la orbito"
+  },
+  "ASCENT_CIRCULARIZE": {
+    "description": "Ascent guidance button (bottom bar, coasting to apoapsis): plan the circularization burn.",
+    "message": "Plani la bruligon, kiu cirkligas la orbiton ĉe la apoapsido; flugu ĝin mane aŭ per Aŭtomata Bruligo en la bruliga listo"
+  },
+  "ASCENT_CIRCULARIZE_BUSY": {
+    "description": "Tooltip of the disabled ascent guidance circularize button while another plan is in progress.",
+    "message": "Unue finu aŭ forigu la planitajn bruligojn por plani la cirkligon"
+  },
+  "ASCENT_COAST": {
+    "description": "Ascent guidance phase on the flight HUD: engines off, coasting up to apoapsis.",
+    "message": "LIBERA FLUGO ĜIS LA APOAPSIDO"
+  },
+  "ASCENT_CUT": {
+    "description": "Ascent guidance phase on the flight HUD (flashing): apoapsis reached the target, cut the engines now.",
+    "message": "MALŜALTU LA MOTOROJN"
+  },
+  "ASCENT_DIRECTOR": {
+    "description": "Tooltip of the ascent guidance director (diamond) in the flight view.",
+    "message": "Suprenira gvidado: direktu la nazon ĉi tien kaj puŝu"
+  },
+  "ASCENT_DONE": {
+    "description": "Ascent guidance phase on the flight HUD: the orbit clears the atmosphere and the terrain.",
+    "message": "ORBITO ATINGITA"
+  },
+  "ASCENT_GUIDANCE": {
+    "description": "Ascent guidance panel: name of the guidance switch, shown as 'Guidance: ON/OFF'.",
+    "message": "Gvidado"
+  },
+  "ASCENT_GUIDANCE_OFF": {
+    "description": "Tooltip of the ascent guidance toggle button while it is on.",
+    "message": "Malŝalti la supreniran gvidadon"
+  },
+  "ASCENT_GUIDANCE_ON": {
+    "description": "Tooltip of the ascent guidance toggle button while it is off.",
+    "message": "Suprenira gvidado: gvidas la supreniron al cirkla orbito je la alteco, kiun vi elektis"
+  },
+  "ASCENT_HEADING": {
+    "description": "Ascent guidance panel label: the compass heading to launch along.",
+    "message": "Lanĉa kurso"
+  },
+  "ASCENT_HEADING_LOCKED": {
+    "description": "Tooltip of the launch heading once off the ground, when it can no longer change.",
+    "message": "Agordu antaŭ ekflugo"
+  },
+  "ASCENT_HEADING_TIP": {
+    "description": "Tooltip of the launch heading in the ascent guidance panel.",
+    "message": "Kompasa kurso de la lanĉo: oriento (90°) estas plej malmultekosta, la rotacio de la planedo helpas; okcidento (270°) iras kontraŭ ĝi; nordo aŭ sudo (0°, 180°) donas polusan orbiton. Agordu antaŭ ekflugo."
+  },
+  "ASCENT_HIDE": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is shown.",
+    "message": "Kaŝi la supreniran gvidadon"
+  },
+  "ASCENT_HOLD": {
+    "description": "Ascent guidance phase on the flight HUD: keep burning along the horizon, apoapsis held at the target, until in orbit.",
+    "message": "PUŜU ĜIS LA ORBITO"
+  },
+  "ASCENT_INCLINATION": {
+    "description": "Ascent guidance panel: the orbit inclination the launch heading gives. %s = the angle.",
+    "message": "Klino de la orbito %s"
+  },
+  "ASCENT_LIFT": {
+    "description": "Ascent guidance phase on the flight HUD: climb vertically until clear of the ground.",
+    "message": "SUPRENIRU VERTIKALE"
+  },
+  "ASCENT_PITCH": {
+    "description": "Ascent guidance phase on the flight HUD: the gravity turn, following the director.",
+    "message": "GRAVITA TURNIĜO"
+  },
+  "ASCENT_PLAN_HINT": {
+    "description": "Ascent guidance hint on the flight HUD while coasting without a circularization burn planned; the button is in the ascent guidance panel.",
+    "message": "Planu la cirkligon en la panelo de suprenira gvidado"
+  },
+  "ASCENT_READY": {
+    "description": "Ascent guidance phase on the flight HUD: on the ground, waiting for lift-off.",
+    "message": "SUPRENIRA GVIDADO PRETA · EKFLUGU"
+  },
+  "ASCENT_RETROGRADE": {
+    "description": "After the inclination in the ascent guidance panel, when the orbit runs against the planet's spin.",
+    "message": "(retroira)"
+  },
+  "ASCENT_SHOW": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is hidden.",
+    "message": "Montri la supreniran gvidadon"
+  },
+  "ASCENT_SPEED_TIP": {
+    "description": "Tooltip of the ascent guidance speed readout (current / needed).",
+    "message": "Orbita rapido / rapido de cirkla orbito je la cela alteco"
+  },
+  "ASCENT_TARGET_TIP": {
+    "description": "Tooltip of the ascent guidance target altitude field. %s = the lowest allowed altitude.",
+    "message": "Alteco de la cela orbito: trenu aŭ rulumu por ŝanĝi (Majuskliga klavo por pli grandaj paŝoj). La plej malalta estas %s, super la atmosfero kaj la tereno."
+  },
+  "ASCENT_TARGET_TIP_SHORT": {
+    "description": "Tooltip of the target altitude in the ascent guidance panel.",
+    "message": "Alteco de la cela orbito"
+  },
+  "ASCENT_TIME_TO_AP_TIP": {
+    "description": "Tooltip of the ascent guidance time-to-apoapsis readout.",
+    "message": "Tempo ĝis la apoapsido"
+  },
+  "ASCENT_TITLE": {
+    "description": "Title of the ascent guidance panel in the flight HUD.",
+    "message": "SUPRENIRA GVIDADO"
+  },
+  "ASCENT_TOP_UP": {
+    "description": "Ascent guidance on the flight HUD while coasting: drag pulled apoapsis below the target, burn prograde until it is back.",
+    "message": "ALTIGU LA APOAPSIDON · PUŜU ANTAŬEN"
+  },
+  "ASCENT_TWR_LOW": {
+    "description": "Ascent guidance warning on the flight HUD before lift-off. %s = the main engine's thrust-to-weight ratio.",
+    "message": "ĈEFMOTORO TRO MALFORTA POR SUPRENIRI (TWR %s)"
+  },
+  "ASCENT_UNAVAILABLE": {
+    "description": "Tooltip of the greyed-out ascent guidance HUD button where guidance cannot be used.",
+    "message": "Suprenira gvidado: nur sur la grundo aŭ flugante sub sekura orbito ĉirkaŭ planedo"
+  },
   "ATMOSPHERIC_SHIELDING": {
     "description": "Used in ShipInfo view, followed by a yes/no depending on if the ship can carry atmospheric shields",
     "message": "Atmospheric shielding"
@@ -1814,6 +1934,14 @@
   "HUD_THRUST_INDICATOR": {
     "description": "Tooltip: describe what the thrust indicator shows",
     "message": "Show current thrust levels for maneuvering (outer ring) and primary or retro engines (center circle)"
+  },
+  "HUD_VERTICAL_SPEED": {
+    "description": "Tooltip: the vertical speed indicator beside the altitude tape.",
+    "message": "Vertikala rapido: + supreniro, - malsupreniro. Proksime al la grundo la skalo zomiĝas; surteriĝo bezonas entute malpli ol 30 m/s."
+  },
+  "HUD_VSI_SAFE_DESCENT": {
+    "description": "Tooltip: the diamond on the vertical speed indicator.",
+    "message": "La plej rapida malsupreniro, kiun la supraj reakciiloj ankoraŭ povas haltigi antaŭ la grundo. Malsupreniru pli malrapide ol ĉi tiu marko."
   },
   "HUD_WARNING_DESCENT_RATE": {
     "description": "Shown on HUD as a warning flasher",

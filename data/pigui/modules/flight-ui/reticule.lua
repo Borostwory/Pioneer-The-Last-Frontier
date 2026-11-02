@@ -8,6 +8,8 @@ local Game = require 'Game'
 local Vector2 = _G.Vector2
 local Vector3 = _G.Vector3
 local bindManager = require 'bind-manager'
+local Gravity = require 'pigui.libs.gravity'
+local AscentGuidance = require 'pigui.libs.ascent-guidance'
 
 -- cache ui
 local pionillium = ui.fonts.pionillium
@@ -62,6 +64,28 @@ local tapeThickness = 2
 -- show again below hudFloor, so they do not flicker at the boundary
 local hudCeiling = 1.0
 local hudFloor = 0.9
+
+-- the vertical speed indicator just outside the altitude tape: in flight a
+-- compressed scale out to vsiMax (m/s) either way, and near the ground a
+-- linear one from +vsiLandingTop down to -vsiLandingBottom with the
+-- touchdown bands (descent rates, m/s, and their colors)
+local vsiMax = 1e4
+local vsiLandingTop = 20
+local vsiLandingBottom = 60
+local vsiLandingBands = { { 10, "brakeNow" }, { 30, "alertYellow" }, { 60, "alertRed" } }
+-- the landing scale shows below vsiLandingAltitude (m) while descending
+-- slower than vsiLandingDescent and climbing slower than vsiLandingClimb
+-- (m/s); once shown, these grow by vsiLandingHysteresis so it does not flicker
+local vsiLandingAltitude = 2000
+local vsiLandingDescent = 80
+local vsiLandingClimb = 25
+local vsiLandingHysteresis = 1.5
+-- the trend line on the altitude tape shows the altitude this many seconds ahead
+local vsiTrendSeconds = 10
+
+-- the ascent guidance director turns to its aligned color with the nose
+-- within this many degrees of it
+local ascentAlignedAngle = 2
 
 local flightAssistIconSize = ui.theme.styles.SmallButtonSize.x
 -- first we calculate the padding so that it does not turn out to be fractional
@@ -230,9 +254,24 @@ local function groupThousands(text)
 	return text
 end
 
+-- a diamond centered on p, d from the center to each corner: filled or outlined
+local function diamond(p, d, color, filled)
+	local top, right, bottom, left = p + Vector2(0, -d), p + Vector2(d, 0), p + Vector2(0, d), p + Vector2(-d, 0)
+	if filled then
+		ui.addTriangleFilled(top, right, bottom, color)
+		ui.addTriangleFilled(top, bottom, left, color)
+	else
+		ui.addLine(top, right, color, 2)
+		ui.addLine(right, bottom, color, 2)
+		ui.addLine(bottom, left, color, 2)
+		ui.addLine(left, top, color, 2)
+	end
+end
+
 -- display a scrolling tape beside the ladder, left (side -1) or right (side 1),
 -- with the current value boxed: value and minStep are in units of scale,
--- ticks every half step and labels every step, about ten steps to the value
+-- ticks every half step and labels every step, about ten steps to the value;
+-- returns the tape's pixels per unit of value
 local function displayTape(side, value, scale, minStep, valueText, unit, tooltip)
 	local v = value / scale
 	local step = v > 0 and math.max(minStep, niceStep(v / 10)) or minStep
@@ -274,6 +313,127 @@ local function displayTape(side, value, scale, minStep, valueText, unit, tooltip
 	ui.addStyledText(Vector2((inner + outer) / 2, center.y), ui.anchor.center, ui.anchor.center, valueText, color, pionillium.body, tooltip)
 
 	ui.addStyledText(Vector2(x + side * 8, center.y + tapeHalf + 4), outward, ui.anchor.top, unit, color, pionillium.small, "")
+
+	return stepPx / (step * scale)
+end
+
+-- whether the VSI showed its landing scale last time, for the hysteresis
+local vsiLanding = false
+
+local function isVsiLanding(verticalSpeed, altitude)
+	local grow = vsiLanding and vsiLandingHysteresis or 1
+	vsiLanding = altitude < vsiLandingAltitude * grow
+		and verticalSpeed > -vsiLandingDescent * grow
+		and verticalSpeed < vsiLandingClimb * grow
+	return vsiLanding
+end
+
+-- how far above the middle of the VSI (px, half its height) a vertical speed sits:
+-- logarithmic on the compressed scale, linear on the landing scale, clamped to the ends
+local function vsiOffset(verticalSpeed, landing, half)
+	if landing then
+		local clamped = math.max(-vsiLandingBottom, math.min(vsiLandingTop, verticalSpeed))
+		return half - (vsiLandingTop - clamped) / (vsiLandingTop + vsiLandingBottom) * 2 * half
+	end
+	local fraction = math.min(math.log(1 + math.abs(verticalSpeed), 10) / math.log(1 + vsiMax, 10), 1)
+	return (verticalSpeed < 0 and -fraction or fraction) * half
+end
+
+-- -1.234 -> "-1.2 m/s", 142.6 -> "+143 m/s", -2500 -> "-2.50 km/s"
+local function formatVerticalSpeed(verticalSpeed)
+	local speed = math.abs(verticalSpeed) < 0.05 and 0 or verticalSpeed
+	local text, unit
+	if math.abs(speed) < 10 then
+		text, unit = string.format("%.1f", speed), lc.UNIT_METERS_PER_SECOND
+	elseif math.abs(speed) < 1000 then
+		text, unit = string.format("%.0f", speed), lc.UNIT_METERS_PER_SECOND
+	else
+		text, unit = ui.Format.SpeedUnit(speed)
+	end
+	return (speed > 0 and "+" or "") .. text .. " " .. unit
+end
+
+-- display the trend line on the inner side of the altitude tape: from the
+-- current altitude to where it will be in vsiTrendSeconds (pixels, up positive)
+local function displayAltitudeTrend(pixels)
+	local tapeHalf = sideArcRadius * tapeHalfHeight
+	pixels = math.max(-tapeHalf, math.min(tapeHalf, pixels))
+	if math.abs(pixels) < 2 then return end
+	local x = center.x + sideArcRadius * tapeOffset - 4
+	ui.addLine(Vector2(x, center.y), Vector2(x, center.y - pixels), colors.reticuleCircle, 3)
+end
+
+-- display the vertical speed indicator at x, just outside the altitude tape:
+-- the scale, a pointer with the vertical speed, and a diamond at the fastest
+-- descent the up thrusters can still stop before the ground
+local function displayVerticalSpeed(verticalSpeed, altitude, x)
+	local half = sideArcRadius * tapeHalfHeight
+	local landing = isVsiLanding(verticalSpeed, altitude)
+	local color = colors.reticuleCircle
+
+	local function yAt(speed)
+		return center.y - vsiOffset(speed, landing, half)
+	end
+
+	local function tick(speed, length, label)
+		local y = yAt(speed)
+		ui.addLine(Vector2(x, y), Vector2(x + length, y), color, 1)
+		if label then
+			ui.addStyledText(Vector2(x + length + 3, y), ui.anchor.left, ui.anchor.center, label, color, pionillium.tiny, "")
+		end
+	end
+
+	ui.addLine(Vector2(x, center.y - half), Vector2(x, center.y + half), color, tapeThickness)
+
+	if landing then
+		-- the touchdown bands down the inner side of the scale
+		local from = 0
+		for _, band in ipairs(vsiLandingBands) do
+			ui.addRectFilled(Vector2(x - 6, yAt(-from)), Vector2(x - 2, yAt(-band[1])), colors[band[2]], 0, ui.RoundCornersNone)
+			from = band[1]
+		end
+		local labelled = { [20] = true, [0] = true, [-10] = true, [-30] = true, [-60] = true }
+		for speed = -vsiLandingBottom, vsiLandingTop, 10 do
+			tick(speed, speed == 0 and 8 or 4, labelled[speed] and tostring(math.abs(speed)))
+		end
+	else
+		tick(0, 8, "0")
+		for _, mark in ipairs({ { 10, "10" }, { 100, "100" }, { 1000, "1k" } }) do
+			tick(mark[1], 5, mark[2])
+			tick(-mark[1], 5, mark[2])
+		end
+	end
+
+	-- the fastest safe descent: v^2 = 2 (a - g) h with the up thrusters
+	local gravity = Gravity.GetGravityAtBody(player)
+	local accel = player:GetAcceleration("up")
+	local safeDescent = gravity and accel > gravity and math.sqrt(2 * (accel - gravity) * altitude)
+	if safeDescent and (verticalSpeed < 0 or landing) then
+		local p = Vector2(x, yAt(-safeDescent))
+		local d = 5
+		diamond(p, d, colors.alertYellow, true)
+		if (ui.getMousePos() - p):length() < d * 2 then
+			ui.setTooltip(lui.HUD_VSI_SAFE_DESCENT)
+		end
+	end
+
+	-- the pointer: red when descending faster than is safe, and on the
+	-- landing scale the color of the band it is in
+	local pointerColor = color
+	if safeDescent and verticalSpeed < -safeDescent then
+		pointerColor = colors.alertRed
+	elseif landing and verticalSpeed < 0 then
+		for _, band in ipairs(vsiLandingBands) do
+			pointerColor = colors[band[2]]
+			if -verticalSpeed <= band[1] then break end
+		end
+	end
+	local y = yAt(verticalSpeed)
+	ui.addTriangleFilled(Vector2(x + 2, y), Vector2(x + 10, y - 5), Vector2(x + 10, y + 5), pointerColor)
+	ui.addStyledText(Vector2(x + 14, y), ui.anchor.left, ui.anchor.center, formatVerticalSpeed(verticalSpeed),
+		pointerColor, pionillium.small, lui.HUD_VERTICAL_SPEED, colors.lightBlackBackground)
+
+	ui.addStyledText(Vector2(x + 4, center.y + half + 4), ui.anchor.left, ui.anchor.top, lc.UNIT_METERS_PER_SECOND, color, pionillium.small, "")
 end
 
 -- whether the ladder and tapes showed last time, for the ceiling's hysteresis
@@ -293,20 +453,31 @@ local function isFlightHudShown(frame)
 end
 
 -- display the speed tape (left, in the game's speed units) and the altitude
--- tape (right, in meters, then kilometers from 10 km) relative to the frame
+-- tape (right, in meters, then kilometers from 10 km) relative to the frame,
+-- with the altitude trend line and the vertical speed indicator beside it
 local function displaySpeedAltitudeTapes(frame)
-	local speed = player:GetVelocityRelTo(frame):length()
+	local velocity = player:GetVelocityRelTo(frame)
+	local speed = velocity:length()
 	local speedText, speedUnit = ui.Format.SpeedUnit(speed)
 	local speedScale = speed < 1e3 and 1 or speed < 1e6 and 1e3 or 1e6
 	displayTape(-1, speed, speedScale, speedScale == 1 and 1 or 0.01, tostring(speedText), speedUnit)
 
 	local altitude = player:GetAltitudeRelTo(frame)
+	local pixelsPerMeter
 	if altitude < 1e4 then
-		displayTape(1, altitude, 1, 1, groupThousands(string.format("%.0f", altitude)), lc.UNIT_METERS)
+		pixelsPerMeter = displayTape(1, altitude, 1, 1, groupThousands(string.format("%.0f", altitude)), lc.UNIT_METERS)
 	else
 		local altitudeText = groupThousands(string.format(altitude < 1e6 and "%.1f" or "%.0f", altitude / 1e3))
-		displayTape(1, altitude, 1e3, 0.1, altitudeText, lc.UNIT_KILOMETERS)
+		pixelsPerMeter = displayTape(1, altitude, 1e3, 0.1, altitudeText, lc.UNIT_KILOMETERS)
 	end
+
+	-- positive climbing, negative descending
+	local verticalSpeed = velocity:dot(player:GetPositionRelTo(frame):normalized())
+	displayAltitudeTrend(verticalSpeed * vsiTrendSeconds * pixelsPerMeter)
+
+	-- clear of the altitude tape's value box, sized for its widest value
+	local boxWidth = ui.calcTextSize("00,000.0", pionillium.body).x + 16
+	displayVerticalSpeed(verticalSpeed, altitude, center.x + sideArcRadius * tapeOffset + boxWidth + 12)
 end
 
 -- display the heading tape across the top of the view: a tick every 5 degrees,
@@ -749,6 +920,16 @@ local function displayManeuverData(radius)
 		end
 		ui.addStyledText(uiPos, ui.anchor.center, ui.anchor.top, string.format(lui.BURN_PROGRESS, activeBurn + 1, burnCount), colors.maneuver, pionillium.small, nil, colors.lightBlackBackground)
 	end
+
+	-- how far down the readout reaches, for what stacks below it
+	local bottom = ui.pointOnClock(center, radius, 6).y
+	if showManeuver then
+		bottom = bottom + pionillium.medium.size + 4
+	end
+	if activeBurn >= 0 then
+		bottom = bottom + pionillium.small.size + 4
+	end
+	return bottom
 end
 
 local aicommand_info = {
@@ -1135,6 +1316,151 @@ local function displayAlertMarker()
 end
 
 
+-- how far out a screen offset from the center is, relative to the reticle frame (1 = on it)
+local function frameDistance(offset)
+	return math.sqrt((offset.x / reticuleFrame.x)^2 + (offset.y / reticuleFrame.y)^2)
+end
+
+-- the heading (deg) of a direction in the player's frame, found from the
+-- ship's own heading and the angle between them across the horizon (up is
+-- the local vertical); nil when either is too near the vertical to tell
+local function headingOf(direction, up, shipHeading)
+	local forward = Vector3(0, 0, -1)
+	local upShip = Engine.WorldSpaceToShipSpace(up)
+	local target = Engine.WorldSpaceToShipSpace(direction)
+	local f = forward - upShip * forward:dot(upShip)
+	local t = target - upShip * target:dot(upShip)
+	if f:lengthSqr() < 1e-6 or t:lengthSqr() < 1e-6 then return nil end
+	-- clockwise seen from above, as headings run
+	return shipHeading + math.deg(math.atan2(-f:cross(t):dot(upShip), f:dot(t)))
+end
+
+-- display the ascent guidance director: an outlined diamond where the nose
+-- should point, and a small filled one at the edge of the reticle frame when
+-- that is outside it
+local function displayAscentDirector(direction)
+	local inShip = Engine.WorldSpaceToShipSpace(direction):normalized()
+	local aligned = inShip:dot(Vector3(0, 0, -1)) > math.cos(math.rad(ascentAlignedAngle))
+	local color = aligned and colors.ascentDirectorAligned or colors.ascentDirector
+
+	local onscreen, position, screenDirection = Engine.ProjectRelDirection(direction)
+	if onscreen then
+		diamond(position, 10, color, false)
+		ui.addCircleFilled(position, 2, color, 8)
+		if (ui.getMousePos() - position):length() < 12 then
+			ui.setTooltip(lui.ASCENT_DIRECTOR)
+		end
+	end
+	if not onscreen or frameDistance(position - center) > 1 then
+		local dir = Vector2(screenDirection.x, screenDirection.y)
+		diamond(center + dir * (0.9 / frameDistance(dir)), 6, color, true)
+	end
+end
+
+-- display the target pitch beside the pitch indicator on the right arc
+local function displayAscentPitchBug(pitch_degrees)
+	local top, bottom = 3 - sideArcHours, 3 + sideArcHours
+	local hour = bottom - (pitch_degrees + 90) / 180 * (bottom - top)
+	diamond(ui.pointOnClock(center, sideArcRadius - 12, hour), 4, colors.ascentDirector, true)
+end
+
+-- display the target heading under the heading tape, held at its ends when off it
+local function displayAscentHeadingBug(heading_degrees, target_degrees)
+	local width = sideArcRadius * 0.9
+	local tape = Vector2(center.x, center.y - sideArcRadius * 0.7)
+	local offset = (target_degrees - heading_degrees + 180) % 360 - 180
+	local x = tape.x + math.max(-0.5, math.min(0.5, offset / headingTapeSpan)) * width
+	diamond(Vector2(x, tape.y + 6), 4, colors.ascentDirector, true)
+end
+
+local ascentPhaseText = {
+	[AscentGuidance.READY] = lui.ASCENT_READY,
+	[AscentGuidance.LIFT] = lui.ASCENT_LIFT,
+	[AscentGuidance.PITCH] = lui.ASCENT_PITCH,
+	[AscentGuidance.HOLD] = lui.ASCENT_HOLD,
+	[AscentGuidance.CUT] = lui.ASCENT_CUT,
+	[AscentGuidance.COAST] = lui.ASCENT_COAST,
+	[AscentGuidance.DONE] = lui.ASCENT_DONE,
+}
+
+-- 1240, 7800 -> "1.24 / 7.80 km/s", in the unit of the larger
+local function formatSpeedPair(speed, of)
+	local _, unit = ui.Format.SpeedUnit(math.max(speed, of))
+	local scale = unit == lc.UNIT_METERS_PER_SECOND and 1 or unit == lc.UNIT_KILOMETERS_PER_SECOND and 1e3 or 1e6
+	local format = scale == 1 and "%.0f / %.0f %s" or "%.2f / %.2f %s"
+	return string.format(format, speed / scale, of / scale, unit)
+end
+
+-- display the ascent guidance panel from top down, under the maneuver readout:
+-- the phase, apoapsis against the target with a progress bar and periapsis,
+-- then the time to apoapsis and the orbital speed against the circular speed
+local function displayAscentPanel(guidance, top)
+	local pos = Vector2(center.x, top)
+	local background = colors.lightBlackBackground
+	local phase = guidance.phase
+
+	local text = guidance.topUp and lui.ASCENT_TOP_UP or ascentPhaseText[phase]
+	local color = colors.reticuleCircle
+	if phase == AscentGuidance.READY and guidance.twr < 1.1 then
+		text = string.format(lui.ASCENT_TWR_LOW, ui.Format.TWR(guidance.twr, 2))
+		color = colors.alertRed
+	elseif phase == AscentGuidance.CUT then
+		color = math.fmod(ui.getTime(), 1) < 0.5 and colors.alertYellow or colors.alertRed
+	elseif phase == AscentGuidance.DONE then
+		color = colors.brakeNow
+	end
+	ui.addStyledText(pos, ui.anchor.center, ui.anchor.top, text, color, pionillium.medium, nil, background)
+	pos.y = pos.y + pionillium.medium.size + 8
+
+	local apText = guidance.ap and ui.Format.Distance(guidance.ap, "%0.1f") or "-"
+	local size = ui.addFancyText(pos, ui.anchor.center, ui.anchor.top, {
+		{ text = ui.get_icon_glyph(icons.apoapsis) .. " " .. apText, color = colors.reticuleCircle, font = pionillium.small, tooltip = lui.HUD_ORBIT_APOAPSIS },
+		{ text = " / " .. ui.Format.Distance(guidance.target, "%0.0f"), color = colors.reticuleCircleDark, font = pionillium.small, tooltip = lui.ASCENT_TARGET_TIP_SHORT },
+		{ text = "    " .. ui.get_icon_glyph(icons.periapsis) .. " " .. ui.Format.Distance(guidance.pe, "%0.1f"), color = colors.reticuleCircle, font = pionillium.small, tooltip = lui.HUD_ORBIT_PERIAPSIS },
+	}, background)
+	pos.y = pos.y + size.y + 4
+
+	-- apoapsis on the way to the target
+	local fraction = guidance.ap and math.max(0, math.min(1, guidance.ap / guidance.target)) or 1
+	local barHalf = math.max(size.x / 2, 60)
+	ui.addRectFilled(Vector2(pos.x - barHalf, pos.y), Vector2(pos.x + barHalf, pos.y + 3), colors.brakeBackground, 0, ui.RoundCornersNone)
+	ui.addRectFilled(Vector2(pos.x - barHalf, pos.y), Vector2(pos.x - barHalf + 2 * barHalf * fraction, pos.y + 3), color, 0, ui.RoundCornersNone)
+	pos.y = pos.y + 8
+
+	local timeToAp = guidance.timeToAp and ui.Format.Duration(guidance.timeToAp) or "-"
+	size = ui.addFancyText(pos, ui.anchor.center, ui.anchor.top, {
+		{ text = ui.get_icon_glyph(icons.eta) .. " " .. timeToAp, color = colors.reticuleCircle, font = pionillium.small, tooltip = lui.ASCENT_TIME_TO_AP_TIP },
+		{ text = "    " .. ui.get_icon_glyph(icons.orbit_prograde) .. " " .. formatSpeedPair(guidance.speed, guidance.circularSpeed), color = colors.reticuleCircle, font = pionillium.small, tooltip = lui.ASCENT_SPEED_TIP },
+	}, background)
+	pos.y = pos.y + size.y + 6
+
+	if phase == AscentGuidance.COAST and AscentGuidance.CanCircularize(player) then
+		ui.addStyledText(pos, ui.anchor.center, ui.anchor.top, lui.ASCENT_PLAN_HINT, colors.maneuver, pionillium.small, nil, background)
+	end
+end
+
+-- display ascent guidance while it is on: the director with its pitch and
+-- heading bugs while there is a direction to fly, and the panel at top
+local function displayAscentGuidance(top)
+	local guidance = AscentGuidance.Update(player)
+	if not guidance then return end
+
+	if guidance.direction then
+		displayAscentDirector(guidance.direction)
+		displayAscentPitchBug(math.deg(guidance.pitch))
+		if guidance.phase ~= AscentGuidance.LIFT and player.frameBody then
+			local heading = math.deg(player:GetHeadingPitchRoll("planet"))
+			local up = (-player.frameBody:GetPositionRelTo(player)):normalized()
+			local target = headingOf(guidance.direction, up, heading)
+			if target then
+				displayAscentHeadingBug(heading, target)
+			end
+		end
+	end
+
+	displayAscentPanel(guidance, top)
+end
+
 local function displayReticule()
 	-- the reticle's two halves, apart either side of the view
 	ui.pathArcTo(center, sideArcRadius, ui.pi - sideArcHalfAngle, ui.pi + sideArcHalfAngle, 32)
@@ -1183,8 +1509,10 @@ local function displayReticule()
 	end
 
 	displayFlightAssist(radius)
-	-- the maneuver readout stays under the middle of the view
-	displayManeuverData(reticuleCircleRadius * 1.2)
+	-- the maneuver readout stays under the middle of the view, and the
+	-- ascent guidance panel below it
+	local maneuverBottom = displayManeuverData(reticuleCircleRadius * 1.2)
+	displayAscentGuidance(maneuverBottom + 4)
 	displayReticulePitchHorizonCompass()
 	displayReticuleLandingAssist()
 	displayReticuleDeltaV()

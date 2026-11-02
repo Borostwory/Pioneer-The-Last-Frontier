@@ -188,6 +188,9 @@ theme.colors = {
 	landingAsstHorizon      = styleColors.success_500,
 	landingAsstYawTick      = styleColors.gray_300,
 	landingAsstGround       = styleColors.warning_700:opacity(0.1),
+	-- the ascent guidance director, and once the nose is on it
+	ascentDirector          = Color "FF9933",
+	ascentDirectorAligned   = styleColors.success_300,
 
 	overlayWindowBg         = styleColors.panel_900:opacity(0.90),
 

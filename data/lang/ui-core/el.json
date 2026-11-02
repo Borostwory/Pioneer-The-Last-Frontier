@@ -51,6 +51,126 @@
     "description": "Time of arrival, used in flight log",
     "message": "Ημερομηνία άφιξης"
   },
+  "ASCENT_ALTITUDE": {
+    "description": "Ascent guidance panel label: the target orbit altitude.",
+    "message": "Ύψος τροχιάς"
+  },
+  "ASCENT_CIRCULARIZE": {
+    "description": "Ascent guidance button (bottom bar, coasting to apoapsis): plan the circularization burn.",
+    "message": "Σχεδιασμός της καύσης που κυκλοποιεί την τροχιά στο απόκεντρο· εκτελέστε την χειροκίνητα ή με την αυτόματη καύση στη λίστα καύσεων"
+  },
+  "ASCENT_CIRCULARIZE_BUSY": {
+    "description": "Tooltip of the disabled ascent guidance circularize button while another plan is in progress.",
+    "message": "Ολοκληρώστε ή αφαιρέστε πρώτα τις σχεδιασμένες καύσεις για να σχεδιάσετε την κυκλοποίηση"
+  },
+  "ASCENT_COAST": {
+    "description": "Ascent guidance phase on the flight HUD: engines off, coasting up to apoapsis.",
+    "message": "ΕΛΕΥΘΕΡΗ ΠΤΗΣΗ ΩΣ ΤΟ ΑΠΟΚΕΝΤΡΟ"
+  },
+  "ASCENT_CUT": {
+    "description": "Ascent guidance phase on the flight HUD (flashing): apoapsis reached the target, cut the engines now.",
+    "message": "ΣΒΗΣΤΕ ΤΟΥΣ ΚΙΝΗΤΗΡΕΣ"
+  },
+  "ASCENT_DIRECTOR": {
+    "description": "Tooltip of the ascent guidance director (diamond) in the flight view.",
+    "message": "Καθοδήγηση ανόδου: στρέψτε τη μύτη εδώ και επιταχύνετε"
+  },
+  "ASCENT_DONE": {
+    "description": "Ascent guidance phase on the flight HUD: the orbit clears the atmosphere and the terrain.",
+    "message": "Η ΤΡΟΧΙΑ ΕΠΙΤΕΥΧΘΗΚΕ"
+  },
+  "ASCENT_GUIDANCE": {
+    "description": "Ascent guidance panel: name of the guidance switch, shown as 'Guidance: ON/OFF'.",
+    "message": "Καθοδήγηση"
+  },
+  "ASCENT_GUIDANCE_OFF": {
+    "description": "Tooltip of the ascent guidance toggle button while it is on.",
+    "message": "Απενεργοποίηση καθοδήγησης ανόδου"
+  },
+  "ASCENT_GUIDANCE_ON": {
+    "description": "Tooltip of the ascent guidance toggle button while it is off.",
+    "message": "Καθοδήγηση ανόδου: οδηγεί την άνοδο σε κυκλική τροχιά στο ύψος που ορίσατε"
+  },
+  "ASCENT_HEADING": {
+    "description": "Ascent guidance panel label: the compass heading to launch along.",
+    "message": "Πορεία εκτόξευσης"
+  },
+  "ASCENT_HEADING_LOCKED": {
+    "description": "Tooltip of the launch heading once off the ground, when it can no longer change.",
+    "message": "Ορίζεται πριν την απογείωση"
+  },
+  "ASCENT_HEADING_TIP": {
+    "description": "Tooltip of the launch heading in the ascent guidance panel.",
+    "message": "Πορεία εκτόξευσης στην πυξίδα: η ανατολή (90°) είναι η φθηνότερη, η περιστροφή του πλανήτη βοηθά· η δύση (270°) πάει αντίθετα· βορράς ή νότος (0°, 180°) δίνουν πολική τροχιά. Ορίζεται πριν την απογείωση."
+  },
+  "ASCENT_HIDE": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is shown.",
+    "message": "Απόκρυψη καθοδήγησης ανόδου"
+  },
+  "ASCENT_HOLD": {
+    "description": "Ascent guidance phase on the flight HUD: keep burning along the horizon, apoapsis held at the target, until in orbit.",
+    "message": "ΕΠΙΤΑΧΥΝΣΗ ΩΣ ΤΗΝ ΤΡΟΧΙΑ"
+  },
+  "ASCENT_INCLINATION": {
+    "description": "Ascent guidance panel: the orbit inclination the launch heading gives. %s = the angle.",
+    "message": "Κλίση τροχιάς %s"
+  },
+  "ASCENT_LIFT": {
+    "description": "Ascent guidance phase on the flight HUD: climb vertically until clear of the ground.",
+    "message": "ΚΑΤΑΚΟΡΥΦΗ ΑΝΟΔΟΣ"
+  },
+  "ASCENT_PITCH": {
+    "description": "Ascent guidance phase on the flight HUD: the gravity turn, following the director.",
+    "message": "ΒΑΡΥΤΙΚΗ ΣΤΡΟΦΗ"
+  },
+  "ASCENT_PLAN_HINT": {
+    "description": "Ascent guidance hint on the flight HUD while coasting without a circularization burn planned; the button is in the ascent guidance panel.",
+    "message": "Σχεδιάστε την κυκλοποίηση στο πάνελ καθοδήγησης ανόδου"
+  },
+  "ASCENT_READY": {
+    "description": "Ascent guidance phase on the flight HUD: on the ground, waiting for lift-off.",
+    "message": "ΚΑΘΟΔΗΓΗΣΗ ΑΝΟΔΟΥ ΕΤΟΙΜΗ · ΑΠΟΓΕΙΩΣΗ"
+  },
+  "ASCENT_RETROGRADE": {
+    "description": "After the inclination in the ascent guidance panel, when the orbit runs against the planet's spin.",
+    "message": "(ανάδρομη)"
+  },
+  "ASCENT_SHOW": {
+    "description": "Tooltip of the right-hand HUD button while the ascent guidance panel is hidden.",
+    "message": "Εμφάνιση καθοδήγησης ανόδου"
+  },
+  "ASCENT_SPEED_TIP": {
+    "description": "Tooltip of the ascent guidance speed readout (current / needed).",
+    "message": "Τροχιακή ταχύτητα / ταχύτητα κυκλικής τροχιάς στο ύψος-στόχο"
+  },
+  "ASCENT_TARGET_TIP": {
+    "description": "Tooltip of the ascent guidance target altitude field. %s = the lowest allowed altitude.",
+    "message": "Ύψος τροχιάς-στόχου: σύρετε ή κυλήστε για αλλαγή (Shift για μεγαλύτερα βήματα). Το ελάχιστο είναι %s, πάνω από την ατμόσφαιρα και το έδαφος."
+  },
+  "ASCENT_TARGET_TIP_SHORT": {
+    "description": "Tooltip of the target altitude in the ascent guidance panel.",
+    "message": "Ύψος τροχιάς-στόχου"
+  },
+  "ASCENT_TIME_TO_AP_TIP": {
+    "description": "Tooltip of the ascent guidance time-to-apoapsis readout.",
+    "message": "Χρόνος ως το απόκεντρο"
+  },
+  "ASCENT_TITLE": {
+    "description": "Title of the ascent guidance panel in the flight HUD.",
+    "message": "ΚΑΘΟΔΗΓΗΣΗ ΑΝΟΔΟΥ"
+  },
+  "ASCENT_TOP_UP": {
+    "description": "Ascent guidance on the flight HUD while coasting: drag pulled apoapsis below the target, burn prograde until it is back.",
+    "message": "ΑΝΥΨΩΣΤΕ ΤΟ ΑΠΟΚΕΝΤΡΟ · ΩΣΗ ΠΡΟΣ ΤΑ ΕΜΠΡΟΣ"
+  },
+  "ASCENT_TWR_LOW": {
+    "description": "Ascent guidance warning on the flight HUD before lift-off. %s = the main engine's thrust-to-weight ratio.",
+    "message": "Ο ΚΥΡΙΟΣ ΚΙΝΗΤΗΡΑΣ ΕΙΝΑΙ ΠΟΛΥ ΑΔΥΝΑΜΟΣ ΓΙΑ ΑΝΟΔΟ (TWR %s)"
+  },
+  "ASCENT_UNAVAILABLE": {
+    "description": "Tooltip of the greyed-out ascent guidance HUD button where guidance cannot be used.",
+    "message": "Καθοδήγηση ανόδου: μόνο στο έδαφος ή σε πτήση κάτω από ασφαλή τροχιά γύρω από πλανήτη"
+  },
   "ATMOSPHERIC_SHIELDING": {
     "description": "Used in ShipInfo view, followed by a yes/no depending on if the ship can carry atmospheric shields",
     "message": "Ατμοσφαιρική θωράκιση"
@@ -1814,6 +1934,14 @@
   "HUD_THRUST_INDICATOR": {
     "description": "Tooltip: describe what the thrust indicator shows",
     "message": "Τρέχον επίπεδο ισχύος για μανούβρες (εξωτερικός δακτύλιος) και πρόσω ή ανάποδα προωθητήρες (κεντρικός κύκλος)"
+  },
+  "HUD_VERTICAL_SPEED": {
+    "description": "Tooltip: the vertical speed indicator beside the altitude tape.",
+    "message": "Κατακόρυφη ταχύτητα: + άνοδος, - κάθοδος. Κοντά στο έδαφος η κλίμακα μεγεθύνεται· η προσγείωση απαιτεί συνολική ταχύτητα κάτω από 30 m/s."
+  },
+  "HUD_VSI_SAFE_DESCENT": {
+    "description": "Tooltip: the diamond on the vertical speed indicator.",
+    "message": "Η ταχύτερη κάθοδος που οι άνω προωθητήρες μπορούν ακόμη να σταματήσουν πριν από το έδαφος. Κατεβείτε πιο αργά από αυτό το σημάδι."
   },
   "HUD_WARNING_DESCENT_RATE": {
     "description": "Shown on HUD as a warning flasher",

@@ -1112,6 +1112,8 @@ local function displayBurnHudPanel(min, max, player, systemView, toggleSize)
 	ui.setNextWindowPos(anchor, "Always", Vector2(1, 1))
 
 	ui.window("BurnHud", windowFlags, function()
+		-- for the panels stacked above it (the ascent guidance's)
+		gameView.burnHudPanelTop = ui.getWindowPos().y
 		drawTitle(totals, hasRows)
 		ui.separator()
 
@@ -1168,6 +1170,7 @@ end
 -- min/max is the HUD area for this side of the screen, with the space used by
 -- the modules above it already clipped away by the sidebar
 local function displayBurnHud(min, max)
+	gameView.burnHudPanelTop = nil
 	if not shouldShowHud() then return end
 	if not visibilityLoaded then loadVisibility() end
 
