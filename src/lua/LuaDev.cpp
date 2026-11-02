@@ -8,6 +8,7 @@
 #include "LuaObject.h"
 #include "MathUtil.h"
 #include "Pi.h"
+#include "Planet.h"
 #include "Ship.h"
 #include "Space.h"
 #include "WorldView.h"
@@ -15,6 +16,7 @@
 #include "galaxy/GalaxyCache.h"
 #include "galaxy/GalaxyGenerator.h"
 #include "galaxy/Sector.h"
+#include "surface/Excursion.h"
 #include <algorithm>
 #include <sstream>
 
@@ -404,6 +406,65 @@ static int l_dev_teleport_near_body(lua_State *l)
 	return 0;
 }
 
+/*
+ * Put a ship on a planet or moon of the current system at a latitude and
+ * longitude (radians, as Body:GetGroundPosition gives them): landed if
+ * altitude is 0 or less, else that many metres above the terrain, at rest
+ * relative to the ground, level and facing north. The ship must be flying
+ * or landed, with the player aboard if it is the player's.
+ *
+ * > Dev.PlaceOnSurface(ship, body, latitude, longitude, altitude)
+ */
+static int l_dev_place_on_surface(lua_State *l)
+{
+	if (!Pi::game || !Pi::game->GetSpace())
+		return luaL_error(l, "Dev.PlaceOnSurface only works when there is a game running");
+
+	Ship *ship = LuaObject<Ship>::CheckFromLua(1);
+	Body *body = LuaObject<Body>::CheckFromLua(2);
+	const double latitude = luaL_checknumber(l, 3);
+	const double longitude = luaL_checknumber(l, 4);
+	const double altitude = luaL_checknumber(l, 5);
+
+	const Ship::FlightState state = ship->GetFlightState();
+	if (state != Ship::FLYING && state != Ship::LANDED)
+		return luaL_error(l, "Dev.PlaceOnSurface: the ship must be flying or landed");
+	if (ship->IsType(ObjectType::PLAYER) && Pi::game->GetExcursion()->IsOffShip())
+		return luaL_error(l, "Dev.PlaceOnSurface: get back aboard first");
+	if (!body->IsType(ObjectType::PLANET))
+		return luaL_error(l, "Dev.PlaceOnSurface: %s is not a planet or moon", body->GetLabel().c_str());
+	Planet *planet = static_cast<Planet *>(body);
+	if (altitude <= 0.0 && planet->GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_ROCKY_PLANET)
+		return luaL_error(l, "Dev.PlaceOnSurface: %s has no surface to land on", body->GetLabel().c_str());
+
+	ship->AIClearInstructions();
+	if (state == Ship::LANDED)
+		ship->OnTakeoff(Frame::GetFrame(ship->GetFrame())->GetBody());
+
+	if (altitude <= 0.0) {
+		ship->SetLandedOn(planet, float(latitude), float(longitude));
+		return 0;
+	}
+
+	// as SetLandedOn
+	const vector3d up(cos(latitude) * sin(longitude), sin(latitude), cos(latitude) * cos(longitude));
+	// level, facing north (ships look along -z); any way at the poles
+	vector3d north = vector3d(0.0, 1.0, 0.0) - up * up.y;
+	if (north.LengthSqr() < 1e-12)
+		north = vector3d(0.0, 0.0, 1.0) - up * up.z;
+	north = north.Normalized();
+	const vector3d right = up.Cross(-north).Normalized();
+
+	ship->SetFrame(Frame::GetFrame(planet->GetFrame())->GetRotFrame());
+	ship->SetFlightState(Ship::FLYING);
+	ship->ClearThrusterState();
+	ship->SetPosition(up * (planet->GetTerrainHeight(up) + altitude));
+	ship->SetOrient(matrix3x3d::FromVectors(right, up));
+	ship->SetVelocity(vector3d(0.0));
+	ship->SetAngVelocity(vector3d(0.0));
+	return 0;
+}
+
 void LuaDev::Register()
 {
 	lua_State *l = Lua::manager->GetLuaState();
@@ -415,6 +476,7 @@ void LuaDev::Register()
 		{ "SetCameraOffset", l_dev_set_camera_offset },
 		{ "FindSystemsWithStarType", l_dev_find_systems_with_star_type },
 		{ "TeleportNearBody", l_dev_teleport_near_body },
+		{ "PlaceOnSurface", l_dev_place_on_surface },
 		{ 0, 0 }
 	};
 
