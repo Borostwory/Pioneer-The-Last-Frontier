@@ -703,19 +703,159 @@ local function displayReticuleLandingAssist()
 	end
 end
 
+-- the planet the ship flies over, whose gravity braking works against
+local function gravityPlanet()
+	local body = player.frameBody
+	if body and (body.superType == "ROCKY_PLANET" or body.superType == "GAS_GIANT") then
+		return body
+	end
+end
+
+-- whether body stands on planet's surface, held up against its gravity: a
+-- surface starport, or a ship landed or docked at one. Orbiting things fall
+-- with the ship, so gravity does not change braking towards them
+local function isOnSurface(body, planet)
+	if body.frameBody ~= planet then return false end
+	if body:IsStation() then return body:IsGroundStation() end
+	if body:IsShip() then
+		if body:IsLanded() then return true end
+		local station = body:IsDocked() and body:GetDockedWith()
+		return station and station:IsGroundStation() or false
+	end
+	return false
+end
+
+-- the distance to stop from speed at full thrust accel, with gravity pulling
+-- along the motion at along (m/s², positive speeding it up); math.huge when
+-- the thrust cannot stop it
+local function stoppingDistance(speed, accel, along)
+	local decel = accel - along
+	if decel <= 0 then return math.huge end
+	return speed * speed / (2 * decel)
+end
+
+-- seconds allowed for turning round before a braking burn starts, and for
+-- reacting when the ship already points the right way
+local brakeTurnTime = 3
+local brakeReactTime = 0.5
+-- the nose counts as pointing retrograde within this many degrees of it
+local brakeAlignedAngle = 10
+
+-- the altitude lost stopping a fall: coast seconds without thrust (turning
+-- round), then full thrust accel - against the velocity (retrograde) or
+-- straight up (the up thrusters) - stepped in the plane of the motion until
+-- the descent stops. Gravity is the planet's own, mu / r^2, growing on the
+-- way down - from high above a big planet it grows many times over during
+-- the stop - less the lift of the sideways speed (v_t^2 / r). A retrograde
+-- burn's thrust that kills the sideways speed does not slow the fall, so it
+-- loses far more height than the descent alone would. Gives up once the
+-- drop passes limit (the ground is hit anyway), or math.huge after 4000 steps
+local function stopDrop(radius, descent, horizontal, accel, mu, coast, retrograde, limit)
+	local r, vr, vt = radius, -descent, horizontal
+
+	local function step(dt, thrust)
+		local ar = -mu / (r * r) + vt * vt / r
+		local at = -vr * vt / r
+		if thrust then
+			if retrograde then
+				local speed = math.sqrt(vr * vr + vt * vt)
+				if speed > 0 then
+					ar = ar - accel * vr / speed
+					at = at - accel * vt / speed
+				end
+			else
+				ar = ar + accel
+			end
+		end
+		vr = vr + ar * dt
+		vt = math.max(0, vt + at * dt)
+		r = r + vr * dt
+	end
+
+	for _ = 1, 20 do
+		step(coast / 20, false)
+	end
+
+	-- some 200 steps over the stop, as long as it would take under today's gravity
+	local speed = math.sqrt(vr * vr + vt * vt)
+	local net = math.max(accel - mu / (r * r), accel * 0.1)
+	local dt = math.max(0.01, speed / net / 200)
+	for _ = 1, 4000 do
+		if vr >= 0 or radius - r > limit then
+			return radius - r
+		end
+		step(dt, true)
+	end
+	return math.huge
+end
+
+-- stopping the fall onto planet before the ground: the altitude lost with
+-- the main engine burning retrograde (after turning round, unless already
+-- pointing that way) and on the up thrusters, which leave the sideways speed
+-- be; then the descent rate and the height above the ground
+local function groundBraking(planet, gravity)
+	local velocity = player:GetVelocityRelTo(planet)
+	local position = player:GetPositionRelTo(planet)
+	local radius = position:length()
+	local up = position:normalized()
+	local speed = velocity:length()
+	local descent = math.max(0, -up:dot(velocity))
+	local horizontal = (velocity - up * velocity:dot(up)):length()
+	local altitude = player:GetAltitudeRelTo(planet)
+	-- the planet's gravitational parameter, from the gravity here
+	local mu = gravity * radius * radius
+	-- past twice the height the gauge reads red all the same
+	local limit = 2 * math.max(altitude, 1)
+
+	local inShip = Engine.WorldSpaceToShipSpace(-planet:GetVelocityRelTo(player)):normalized()
+	local aligned = speed > 0 and inShip:dot(Vector3(0, 0, 1)) > math.cos(math.rad(brakeAlignedAngle))
+	local brake = stopDrop(radius, descent, horizontal, player:GetAcceleration("forward"), mu,
+		aligned and brakeReactTime or brakeTurnTime, true, limit)
+	local brakeUp = stopDrop(radius, descent, horizontal, player:GetAcceleration("up"), mu,
+		brakeReactTime, false, limit)
+
+	return brake, brakeUp, descent, altitude
+end
+
+-- "~1.2 km", or a dash when the ship cannot stop
+local function formatBrakeDistance(distance)
+	return distance == math.huge and "—" or "~" .. ui.Format.Distance(distance)
+end
+
 local function makeTargetData(target, inv_approach)
 	local velocity = player:GetVelocityRelTo(target)
 	local position = player:GetPositionRelTo(target)
+	local speed = velocity:length()
 
 	local approach_speed = math.trunc(position:normalized():dot(inv_approach and velocity or -velocity))
 
+	-- braking at full thrust, main engine and retro thrusters; over a planet
+	-- against its gravity
+	local forward = player:GetAcceleration("forward")
+	local planet = gravityPlanet()
+	local gravity = planet and Gravity.GetGravityAtBody(player)
+	local brake, brakeRetro
+	if gravity and target == planet then
+		brake, brakeRetro = groundBraking(planet, gravity)
+	elseif gravity and isOnSurface(target, planet) then
+		-- gravity speeds the motion up by its part along it (falling towards
+		-- the pad) or slows it (climbing towards it)
+		local down = planet:GetPositionRelTo(player):normalized()
+		local along = gravity * (-target:GetVelocityRelTo(player)):normalized():dot(down)
+		brake = stoppingDistance(speed, forward, along)
+		brakeRetro = stoppingDistance(speed, player:GetAcceleration("reverse"), along)
+	else
+		brake = player:GetDistanceToZeroV(speed, "forward")
+		brakeRetro = player:GetDistanceToZeroV(speed, "reverse")
+	end
+
 	return {
-		ship_speed = velocity:length(),
+		ship_speed = speed,
 		-- positive values indicate closure unless inv_approach is true
 		-- flush negative zero to positive zero
 		approach_speed = approach_speed == -0.0 and 0 or approach_speed,
-		brake_distance = player:GetDistanceToZeroV(velocity:length(), "forward"),
-		brake_distance_retro = player:GetDistanceToZeroV(velocity:length(), "reverse"),
+		brake_distance = brake,
+		brake_distance_retro = brakeRetro,
 		distance = player:GetAltitudeRelTo(target)
 	}
 end
@@ -756,7 +896,7 @@ local function displayFrameData(frame, radius, tooltip)
 				textShadowedRight(ui.Format.Distance(data.distance) .. " ".. ui.get_icon_glyph(dist_icon))
 				ui.setItemTooltip(lui.HUD_DISTANCE_TO_SURFACE_OF_TARGET)
 
-				textShadowedRight("~" .. ui.Format.Distance(data.brake_distance) .. " " .. ui.get_icon_glyph(icons.nav_radial_in))
+				textShadowedRight(formatBrakeDistance(data.brake_distance) .. " " .. ui.get_icon_glyph(icons.nav_radial_in))
 				ui.setItemTooltip(lui.HUD_BRAKE_DISTANCE_MAIN_THRUSTERS)
 
 			end)
@@ -848,7 +988,7 @@ local function displayDetailData(target, data, radius, tooltip)
 				ui.textShadowed(ui.get_icon_glyph(dist_icon) .. " " .. ui.Format.Distance(data.distance))
 				ui.setItemTooltip(lui.HUD_DISTANCE_TO_SURFACE_OF_TARGET)
 
-				ui.textShadowed(ui.get_icon_glyph(icons.nav_radial_in) .. " ~" .. ui.Format.Distance(data.brake_distance))
+				ui.textShadowed(ui.get_icon_glyph(icons.nav_radial_in) .. " " .. formatBrakeDistance(data.brake_distance))
 				ui.setItemTooltip(lui.HUD_BRAKE_DISTANCE_MAIN_THRUSTERS)
 			end)
 
@@ -1488,24 +1628,40 @@ local function displayReticule()
 	end
 
 	local targetData = nil
+	local gaugeTarget = nil
 
 	if reticuleTarget == "navTarget" and navTarget then
-		targetData = makeTargetData(navTarget)
+		targetData, gaugeTarget = makeTargetData(navTarget), navTarget
 		displayDetailData(navTarget, targetData, radius, lui.HUD_CURRENT_NAV_TARGET)
 	elseif reticuleTarget == "combatTarget" and combatTarget then
-		targetData = makeTargetData(combatTarget)
+		targetData, gaugeTarget = makeTargetData(combatTarget), combatTarget
 		displayDetailData(combatTarget, targetData, radius, lui.HUD_CURRENT_COMBAT_TARGET)
 	end
 
 	if not targetData and frame then
-		targetData = makeTargetData(frame)
+		targetData, gaugeTarget = makeTargetData(frame), frame
 	end
 
-	-- current speed of approach
-	if targetData and targetData.approach_speed > 0 and player:GetFlightState() == "FLYING" then
-		displayReticuleBrakeGauge(
-			targetData.brake_distance / targetData.distance,
-			targetData.brake_distance_retro / targetData.distance)
+	-- braking for the target while closing on it
+	local brakeRatio, brakeRatioRetro
+	if targetData and targetData.approach_speed > 0 then
+		brakeRatio = targetData.brake_distance / targetData.distance
+		brakeRatioRetro = targetData.brake_distance_retro / targetData.distance
+	end
+	-- over a planet, falling, the ground has to be cleared too whatever the
+	-- target is (a spaceport kilometres away says nothing about the ground):
+	-- the gauge shows the closer call
+	local planet = gravityPlanet()
+	local gravity = planet and gaugeTarget ~= planet and Gravity.GetGravityAtBody(player)
+	if gravity then
+		local brake, brakeUp, descent, altitude = groundBraking(planet, gravity)
+		if descent > 0 and altitude > 0 then
+			brakeRatio = math.max(brakeRatio or 0, brake / altitude)
+			brakeRatioRetro = math.max(brakeRatioRetro or 0, brakeUp / altitude)
+		end
+	end
+	if brakeRatio and player:GetFlightState() == "FLYING" then
+		displayReticuleBrakeGauge(brakeRatio, brakeRatioRetro)
 	end
 
 	displayFlightAssist(radius)
