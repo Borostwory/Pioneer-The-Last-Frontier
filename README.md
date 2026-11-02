@@ -118,6 +118,21 @@ KSP-inspired direction markers, coloured in the heading-lock menu.
   <a href=".github/images/screens/direction-markers.jpg"><img src=".github/images/screens/direction-markers.jpg" width="49%" alt="Direction markers in the heading-lock menu"></a>
 </p>
 
+### Ascent Guidance
+
+From the ground to a circular orbit. Set the orbit altitude and the launch
+heading in the ascent guidance panel (a button on the right of the HUD), lift
+off and keep the nose on the orange diamond. It climbs straight up, flies the
+gravity turn, then burns along the horizon into orbit – or, with a strong
+engine, has you cut and coast to apoapsis and plans the circularization burn
+for you to fly by hand or with Auto Burn. East is the cheapest heading; the
+panel shows the inclination any heading gives, polar and retrograde included.
+
+<p>
+  <a href=".github/images/screens/ascent-guidance-ready.jpg"><img src=".github/images/screens/ascent-guidance-ready.jpg" width="49%" alt="Ascent guidance panel, landed on Europa"></a>
+  <a href=".github/images/screens/ascent-guidance-climb.jpg"><img src=".github/images/screens/ascent-guidance-climb.jpg" width="49%" alt="Climbing off Europa with the guidance director"></a>
+</p>
+
 ### Olympus Village
 
 The Frontier: Elite II starport: six pads round a control tower, with
