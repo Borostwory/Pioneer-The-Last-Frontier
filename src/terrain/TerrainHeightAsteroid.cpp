@@ -2,13 +2,14 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 #include "Terrain.h"
+#include "TerrainAsteroid.h"
 #include "TerrainFeature.h"
 #include "TerrainNoise.h"
 
 using namespace TerrainNoise;
 using namespace TerrainFeature;
 
-// Banded/Ridged pattern mountainous terrain, could pass for desert
+// Rubble pile: rounded boulder humps and a few large craters
 
 template <>
 const char *TerrainHeightFractal<TerrainHeightAsteroid>::GetHeightFractalName() const { return "Asteroid"; }
@@ -17,9 +18,18 @@ template <>
 TerrainHeightFractal<TerrainHeightAsteroid>::TerrainHeightFractal(const SystemBody *body) :
 	Terrain(body)
 {
-	SetFracDef(0, m_maxHeightInMeters * 0.05, 1e6, 10000.0);
-	const double height = m_maxHeightInMeters * 0.3;
-	SetFracDef(1, height, m_rand.Double(4.0, 20.0) * height);
+	const double r = m_planetRadius;
+	const double lobeWidth = m_rand.Double(1.2, 2.5) * r;
+	SetFracDef(0, m_maxHeightInMeters, lobeWidth, lobeWidth / 8.0);
+	SetFracDef(1, m_rand.Double(0.0, TerrainAsteroid::MAX_STRETCH) * m_maxHeightInMeters, r);
+	m_quatDefs[1].SetAxisAngle(m_rand.Double(0.0, DEG2RAD(360.0)), GetVector3Random(m_rand));
+
+	// humps
+	SetFracDef(2, m_maxHeightInMeters * 0.1, m_rand.Double(0.15, 0.3) * r);
+	// craters
+	const double craterWidth = m_rand.Double(0.4, 0.8) * r;
+	SetFracDef(3, m_maxHeightInMeters * 0.08, craterWidth, craterWidth / 8.0);
+	m_quatDefs[3].SetAxisAngle(m_rand.Double(0.0, DEG2RAD(360.0)), GetVector3Random(m_rand));
 }
 
 template <>
@@ -27,7 +37,9 @@ void TerrainHeightFractal<TerrainHeightAsteroid>::GetBaseHeights(const vector3d 
 {
 	for (size_t i = 0; i < count; i++) {
 		const vector3d &p = vP[i];
-		const double n = octavenoise(m_fracdef[0], 0.4, p) * dunes_octavenoise(m_fracdef[1], 0.5, p) * m_maxHeight;
-		heightsOut[i] = (n > 0.0 ? n : 0.0);
+		double n = TerrainAsteroid::shape(m_fracdef[0], m_fracdef[1], m_quatDefs[1], p);
+		n += 0.15 * (billow_octavenoise(m_fracdef[2], 0.5, p) - 0.38);
+		n += crater_function(m_fracdef[3], m_quatDefs[3] * p);
+		heightsOut[i] = Clamp(n, 0.0, 1.0) * m_maxHeight;
 	}
 }

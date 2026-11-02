@@ -17,6 +17,7 @@
 #include "lua/LuaNameGen.h"
 #include "profiler/Profiler.h"
 
+#include <cmath>
 #include <functional>
 
 static const fixed SUN_MASS_TO_EARTH_MASS = fixed(332998, 1); // XXX Duplication from StarSystem.cpp
@@ -682,6 +683,12 @@ void StarSystemRandomGenerator::PickPlanetType(SystemBody *sbody, Random &rand)
 		// If the cube-root continues to underflow, pre-shift vol left by 6 bits, then post-shift the result by 2 bits.
 		// sbody->m_radius = (fixedf<48>::CubeRootOf(vol << 6) >> 2) * MM_TO_EARTH_RAD;
 		sbody->m_radius = fixedf<48>::CubeRootOf(vol) * MM_TO_EARTH_RAD;
+		// CubeRootOf overflows and fails to converge for some small volumes
+		// (rocks of 16-30 km gave radii up to 8000 km); only those take the
+		// double cube root, so every other body keeps its radius
+		const double radius = std::cbrt(vol.ToDouble()) * MM_TO_EARTH_RAD.ToDouble();
+		if (std::abs(sbody->GetRadiusAsFixed().ToDouble() - radius) > 0.01 * radius)
+			sbody->m_radius = fixed::FromDouble(radius);
 	} else if (sbody->GetMassAsFixed() < ONEEUMASS) {
 		// smaller than 1 Earth mass is almost certainly a rocky body
 		sbody->m_radius = fixed::FromDouble(pow(sbody->GetMassAsFixed().ToDouble(), 0.3));

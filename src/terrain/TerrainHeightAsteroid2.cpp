@@ -2,13 +2,14 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 #include "Terrain.h"
+#include "TerrainAsteroid.h"
 #include "TerrainFeature.h"
 #include "TerrainNoise.h"
 
 using namespace TerrainNoise;
 using namespace TerrainFeature;
 
-// Banded/Ridged pattern mountainous terrain, could pass for desert
+// Fractured rock: sharp ridges, rougher in some regions than others
 
 template <>
 const char *TerrainHeightFractal<TerrainHeightAsteroid2>::GetHeightFractalName() const { return "Asteroid2"; }
@@ -17,12 +18,16 @@ template <>
 TerrainHeightFractal<TerrainHeightAsteroid2>::TerrainHeightFractal(const SystemBody *body) :
 	Terrain(body)
 {
-	SetFracDef(0, m_maxHeightInMeters * 0.05, 1e6, 10000.0);
-	const double height = m_maxHeightInMeters * 0.3;
-	SetFracDef(1, height, m_rand.Double(4.0, 20.0) * height);
-	SetFracDef(2, m_maxHeightInMeters, m_rand.Double(50.0, 100.0) * m_maxHeightInMeters);
-	SetFracDef(3, m_maxHeightInMeters * 0.07, 1e6, 100.0);
-	SetFracDef(4, m_maxHeightInMeters * 0.05, 8e5, 100.0);
+	const double r = m_planetRadius;
+	const double lobeWidth = m_rand.Double(1.2, 2.5) * r;
+	SetFracDef(0, m_maxHeightInMeters, lobeWidth, lobeWidth / 8.0);
+	SetFracDef(1, m_rand.Double(0.0, TerrainAsteroid::MAX_STRETCH) * m_maxHeightInMeters, r);
+	m_quatDefs[1].SetAxisAngle(m_rand.Double(0.0, DEG2RAD(360.0)), GetVector3Random(m_rand));
+
+	// ridges
+	SetFracDef(2, m_maxHeightInMeters * 0.1, m_rand.Double(0.15, 0.3) * r);
+	// where the ridges are rough
+	SetFracDef(3, m_maxHeightInMeters, m_rand.Double(0.4, 0.8) * r, 0.1 * r);
 }
 
 template <>
@@ -30,9 +35,9 @@ void TerrainHeightFractal<TerrainHeightAsteroid2>::GetBaseHeights(const vector3d
 {
 	for (size_t i = 0; i < count; i++) {
 		const vector3d &p = vP[i];
-		double n = voronoiscam_octavenoise(6, 0.2 * octavenoise(m_fracdef[0], 0.3, p), 15.0 * octavenoise(m_fracdef[1], 0.5, p), p) *
-			0.75 * ridged_octavenoise(16.0 * octavenoise(m_fracdef[2], 0.275, p), 0.4 * ridged_octavenoise(m_fracdef[3], 0.4, p), 4.0 * octavenoise(m_fracdef[4], 0.35, p), p);
-		n *= m_maxHeight;
-		heightsOut[i] = (n > 0.0 ? n : 0.0);
+		double n = TerrainAsteroid::shape(m_fracdef[0], m_fracdef[1], m_quatDefs[1], p);
+		const double roughness = 0.1 + 0.2 * octavenoise(m_fracdef[3], 0.5, p);
+		n += roughness * (ridged_octavenoise(m_fracdef[2], 0.5, p) - 0.65);
+		heightsOut[i] = Clamp(n, 0.0, 1.0) * m_maxHeight;
 	}
 }

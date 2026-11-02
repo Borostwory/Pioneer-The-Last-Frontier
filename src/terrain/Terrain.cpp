@@ -22,6 +22,10 @@ namespace {
 	constexpr double SITE_MARGIN_M = 30.0;
 	// the slope back to the natural ground: as wide as the level disc's radius, at least this
 	constexpr double SITE_BLEND_MIN_M = 300.0;
+	// asteroids' relief at most this fraction of their radius: the height
+	// formula reaches the whole radius below ~170 km, and a height field that
+	// tall gave spiky blobs
+	constexpr double ASTEROID_RELIEF_PER_RADIUS = 0.4;
 } // namespace
 
 // static instancer. selects the best height and color classes for the body
@@ -503,6 +507,8 @@ Terrain::Terrain(const SystemBody *body) :
 		// max mountain height for earth-like planet (same mass, radius)
 		m_maxHeightInMeters = std::max(100.0, (9000.0 * rad * rad * (m_volcanic + 0.5)) / (body->GetMass() * 6.64e-12));
 		m_maxHeightInMeters = std::min(rad, m_maxHeightInMeters); // small asteroid case
+		if (body->GetType() == SystemBody::TYPE_PLANET_ASTEROID)
+			m_maxHeightInMeters = std::min(m_maxHeightInMeters, ASTEROID_RELIEF_PER_RADIUS * rad);
 	}
 	// and then in sphere normalized jizz
 	m_maxHeight = m_maxHeightInMeters / rad;
