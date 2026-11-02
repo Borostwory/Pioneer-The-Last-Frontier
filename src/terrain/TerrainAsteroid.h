@@ -23,6 +23,12 @@ namespace TerrainAsteroid {
 	constexpr double LOBES_WEIGHT = 0.55;
 	// the most the stretch takes of the relief
 	constexpr double MAX_STRETCH = 0.4;
+	// persistence of the landforms' octaves: at 0.5 each octave is as steep
+	// as the one before, so the finest were as steep as the largest and the
+	// surface looked crumpled; below 0.5 rock smooths out at small scales.
+	// The fractals scale their landforms by 0.5 / DETAIL_PERSISTENCE so the
+	// largest octave keeps its height.
+	constexpr double DETAIL_PERSISTENCE = 0.4;
 
 	// broad lobes in [0, 1]: octave noise only spreads about +-0.12 around
 	// 0.5, so widen it and ease into the limits rather than cutting them flat

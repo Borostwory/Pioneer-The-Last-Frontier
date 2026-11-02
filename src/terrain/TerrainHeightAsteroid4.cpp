@@ -27,7 +27,7 @@ TerrainHeightFractal<TerrainHeightAsteroid4>::TerrainHeightFractal(const SystemB
 	// grooves
 	SetFracDef(2, m_maxHeightInMeters * 0.08, m_rand.Double(0.2, 0.4) * r);
 	// rough texture
-	SetFracDef(3, m_maxHeightInMeters * 0.05, m_rand.Double(0.1, 0.2) * r);
+	SetFracDef(3, m_maxHeightInMeters * 0.05, m_rand.Double(0.25, 0.4) * r);
 }
 
 template <>
@@ -37,8 +37,8 @@ void TerrainHeightFractal<TerrainHeightAsteroid4>::GetBaseHeights(const vector3d
 		const vector3d &p = vP[i];
 		double n = TerrainAsteroid::shape(m_fracdef[0], m_fracdef[1], m_quatDefs[1], p);
 		// sqrt(|noise|) drops steeply where the noise crosses zero: the grooves
-		n += 0.06 * (voronoiscam_octavenoise(m_fracdef[2], 0.5, p) - 1.3);
-		n += 0.1 * (ridged_octavenoise(m_fracdef[3], 0.5, p) - 0.65);
+		n += 0.075 * (voronoiscam_octavenoise(m_fracdef[2], TerrainAsteroid::DETAIL_PERSISTENCE, p) - 1.1);
+		n += 0.08 * (ridged_octavenoise(m_fracdef[3], TerrainAsteroid::DETAIL_PERSISTENCE, p) - 0.74);
 		heightsOut[i] = Clamp(n, 0.0, 1.0) * m_maxHeight;
 	}
 }

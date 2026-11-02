@@ -42,7 +42,7 @@ void TerrainHeightFractal<TerrainHeightAsteroid3>::GetBaseHeights(const vector3d
 	for (size_t i = 0; i < count; i++) {
 		const vector3d &p = vP[i];
 		double n = TerrainAsteroid::shape(m_fracdef[0], m_fracdef[1], m_quatDefs[1], p);
-		n += 0.25 * (octavenoise(m_fracdef[2], 0.5, p) - 0.5);
+		n += 0.31 * (octavenoise(m_fracdef[2], TerrainAsteroid::DETAIL_PERSISTENCE, p) - 0.5);
 		n += crater_function(m_fracdef[3], m_quatDefs[3] * p);
 		n += crater_function(m_fracdef[4], m_quatDefs[4] * p);
 		heightsOut[i] = Clamp(n, 0.0, 1.0) * m_maxHeight;

@@ -25,7 +25,7 @@ TerrainHeightFractal<TerrainHeightAsteroid2>::TerrainHeightFractal(const SystemB
 	m_quatDefs[1].SetAxisAngle(m_rand.Double(0.0, DEG2RAD(360.0)), GetVector3Random(m_rand));
 
 	// ridges
-	SetFracDef(2, m_maxHeightInMeters * 0.1, m_rand.Double(0.15, 0.3) * r);
+	SetFracDef(2, m_maxHeightInMeters * 0.1, m_rand.Double(0.25, 0.4) * r);
 	// where the ridges are rough
 	SetFracDef(3, m_maxHeightInMeters, m_rand.Double(0.4, 0.8) * r, 0.1 * r);
 }
@@ -36,8 +36,8 @@ void TerrainHeightFractal<TerrainHeightAsteroid2>::GetBaseHeights(const vector3d
 	for (size_t i = 0; i < count; i++) {
 		const vector3d &p = vP[i];
 		double n = TerrainAsteroid::shape(m_fracdef[0], m_fracdef[1], m_quatDefs[1], p);
-		const double roughness = 0.1 + 0.2 * octavenoise(m_fracdef[3], 0.5, p);
-		n += roughness * (ridged_octavenoise(m_fracdef[2], 0.5, p) - 0.65);
+		const double roughness = 0.08 + 0.16 * octavenoise(m_fracdef[3], 0.5, p);
+		n += roughness * (ridged_octavenoise(m_fracdef[2], TerrainAsteroid::DETAIL_PERSISTENCE, p) - 0.74);
 		heightsOut[i] = Clamp(n, 0.0, 1.0) * m_maxHeight;
 	}
 }
