@@ -160,6 +160,20 @@ yellow barrier gates. It turns up at random around any world.
   <a href=".github/images/screens/cuboct-station-hangar-entrance.jpg"><img src=".github/images/screens/cuboct-station-hangar-entrance.jpg" width="49%" alt="The slot entrance and approach scaffold"></a>
 </p>
 
+### Hyperjump Route Planner
+
+Auto Route on the sector map is much faster: a long route that used to freeze
+the game for seconds is now planned in moments, because each star sector
+along the way is generated once instead of again for every jump considered.
+It also never picks a jump beyond your drive's range. A toggle in Route Info
+shows only the route: every other system shrinks to a small grey star and
+loses its label.
+
+<p>
+  <a href=".github/images/screens/route-focus-off.jpg"><img src=".github/images/screens/route-focus-off.jpg" width="49%" alt="A planned route on the sector map"></a>
+  <a href=".github/images/screens/route-focus-on.jpg"><img src=".github/images/screens/route-focus-on.jpg" width="49%" alt="The same route with only the route systems shown"></a>
+</p>
+
 ### And more
 
 - **Hyperspace** – a relativistic jump effect and new jump sounds.
@@ -196,8 +210,6 @@ they don't overwrite each other:
 | System  | Folder |
 |---------|--------|
 | Windows | `Documents\PioneerTLF` |
-| macOS   | `~/Library/Application Support/PioneerTLF` |
-| Linux   | `~/.local/share/pioneertlf` (or `$XDG_DATA_HOME/pioneertlf`) |
 
 To build from source instead, use the `the-last-frontier` branch; see
 [COMPILING.txt](COMPILING.txt).
