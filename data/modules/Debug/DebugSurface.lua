@@ -32,6 +32,11 @@ local state = {
 	longitude = 0.0, -- degrees
 	landed = true,
 	altitude = 1.0,  -- km
+
+	-- what the text fields hold, as typed or pasted
+	latText = "0",
+	lonText = "0",
+	altText = "1",
 }
 
 --=============================================================================
@@ -75,6 +80,35 @@ local function refreshBodies()
 	end
 end
 
+local function formatNumber(v)
+	return string.format("%.4f", v):gsub("0+$", ""):gsub("%.$", "")
+end
+
+-- show the values in the text fields after they were set otherwise
+local function updateTexts()
+	state.latText = formatNumber(state.latitude)
+	state.lonText = formatNumber(state.longitude)
+	state.altText = formatNumber(state.altitude)
+end
+
+-- Degrees from text: decimal ("-56.5492"), or degrees, minutes and seconds
+-- as the HUD shows them ("S 056°32'57\"", "56 32 57 S"); S and W, or a
+-- leading minus, make it negative. nil if there is no number.
+local function parseDegrees(text)
+	local numbers = {}
+	for n in text:gmatch("%d+%.?%d*") do
+		table.insert(numbers, tonumber(n))
+	end
+	if #numbers == 0 then return nil end
+
+	local value = numbers[1] + (numbers[2] or 0) / 60 + (numbers[3] or 0) / 3600
+	local upper = text:upper()
+	if upper:find("[SW]") or text:match("^%s*%-") then
+		value = -value
+	end
+	return value
+end
+
 local function selectedBody()
 	return state.bodyIdx and state.bodies[state.bodyIdx]
 end
@@ -90,6 +124,7 @@ local function useCurrentPosition()
 	if lat then
 		state.latitude = math.rad2deg(lat)
 		state.longitude = math.rad2deg(lon)
+		updateTexts()
 	end
 end
 
@@ -97,6 +132,7 @@ local function randomPosition()
 	-- uniform over the sphere
 	state.latitude = math.rad2deg(math.asin(Engine.rand:Number(-1, 1)))
 	state.longitude = Engine.rand:Number(-180, 180)
+	updateTexts()
 end
 
 local function go()
@@ -132,13 +168,32 @@ local function drawBodyList()
 	end)
 end
 
-local function drawPosition()
-	local width = ui.getContentRegion().x * 0.5
+-- a text field for degrees; the parsed value (or the text's problem) beside it
+local function degreesField(label, key, textKey, limit)
+	ui.nextItemWidth(ui.getContentRegion().x * 0.4)
+	local text, changed = ui.inputText(label, state[textKey], {})
+	if changed then
+		state[textKey] = text
+		local value = parseDegrees(text)
+		if value and math.abs(value) <= limit then
+			state[key] = value
+		end
+	end
 
-	ui.nextItemWidth(width)
-	state.latitude = ui.dragFloat("Latitude (deg)", state.latitude, 0.1, -90, 90, "%.4f")
-	ui.nextItemWidth(width)
-	state.longitude = ui.dragFloat("Longitude (deg)", state.longitude, 0.1, -180, 180, "%.4f")
+	ui.sameLine()
+	local value = parseDegrees(state[textKey])
+	if not value then
+		ui.textColored(colors.alertYellow, "not a number")
+	elseif math.abs(value) > limit then
+		ui.textColored(colors.alertYellow, "out of range")
+	else
+		ui.textColored(colors.fontDim, string.format("= %.4f", state[key]))
+	end
+end
+
+local function drawPosition()
+	degreesField("Latitude##surfaceLat", "latitude", "latText", 90)
+	degreesField("Longitude##surfaceLon", "longitude", "lonText", 180)
 
 	if ui.button("Random") then
 		randomPosition()
@@ -150,9 +205,10 @@ local function drawPosition()
 	ui.sameLine()
 	if ui.button("Equator, 0") then
 		state.latitude, state.longitude = 0.0, 0.0
+		updateTexts()
 	end
 
-	ui.textColored(colors.fontDim, "Ctrl+click a field to type a value.")
+	ui.textColored(colors.fontDim, "Type or paste degrees: -56.5492, or as the HUD shows them: S 056°32'57\" (S and W are negative).")
 end
 
 local function drawAltitude(entry)
@@ -165,16 +221,30 @@ local function drawAltitude(entry)
 
 	if state.landed and canLand(entry.sbody) then return end
 
-	ui.nextItemWidth(ui.getContentRegion().x * 0.5)
-	state.altitude = ui.dragFloat("Height above ground (km)", state.altitude, 0.01, 0.005, 10000, "%.3f")
+	ui.nextItemWidth(ui.getContentRegion().x * 0.4)
+	local text, changed = ui.inputText("Height above ground (km)##surfaceAlt", state.altText, {})
+	if changed then
+		state.altText = text
+		local value = tonumber(text)
+		if value and value > 0 then
+			state.altitude = value
+		end
+	end
 
 	for i, km in ipairs(presets) do
 		if i > 1 then ui.sameLine() end
 		local label = km < 1 and "{} m" % { math.floor(km * 1000 + 0.5) } or "{} km" % { km }
 		if ui.button("{}##preset{}" % { label, i }) then
 			state.altitude = km
+			updateTexts()
 		end
 	end
+end
+
+-- the text fields hold usable degrees (what Go would use)
+local function validPosition()
+	local lat, lon = parseDegrees(state.latText), parseDegrees(state.lonText)
+	return lat and lon and math.abs(lat) <= 90 and math.abs(lon) <= 180
 end
 
 local function drawGo(entry)
@@ -183,6 +253,8 @@ local function drawGo(entry)
 		ui.textColored(colors.alertYellow, "Get back aboard the ship first")
 	elseif flightState ~= "FLYING" and flightState ~= "LANDED" then
 		ui.textColored(colors.alertYellow, "Undock first (ship is {})" % { flightState:lower() })
+	elseif not validPosition() then
+		ui.textColored(colors.alertYellow, "Fix the latitude or longitude first")
 	elseif ui.button("Put the ship on {}" % { entry.sbody.name }) then
 		go()
 	end
