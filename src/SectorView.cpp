@@ -92,6 +92,10 @@ public:
 		if (std::find_if(sv.m_route.begin(), sv.m_route.end(), [system](const SystemPath &a) { return system.IsSameSystem(a); }) != sv.m_route.end())
 			return DisplayModes::ALWAYS;
 
+		// with the route highlighted, everything else is just a small grey star
+		if (sv.m_routeFocus && !sv.m_route.empty())
+			return DisplayModes::HIDE_LABEL | DisplayModes::DIM;
+
 		// hide labels outside of hyperjump range if option is set
 		RefCountedPtr<const Sector> sec1 = sv.m_game.GetGalaxy()->GetSector(system);
 		RefCountedPtr<const Sector> sec2 = sv.m_game.GetGalaxy()->GetSector(sv.m_current);

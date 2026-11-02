@@ -43,6 +43,8 @@ public:
 	void SetHyperspaceTarget(const SystemPath &path);
 	void SetDrawOutRangeLabels(bool value) { m_drawOutRangeLabels = value; }
 	void SetAutomaticSystemSelection(bool value) { m_automaticSystemSelection = value; }
+	// shrink and grey out the systems off the planned route, and hide their labels
+	void SetRouteFocus(bool value) { m_routeFocus = value; }
 	void ResetHyperspaceTarget();
 	void ResetView();
 
@@ -95,6 +97,7 @@ private:
 	bool m_automaticSystemSelection;
 	bool m_drawOutRangeLabels;
 	bool m_drawRouteLines;
+	bool m_routeFocus = false;
 	bool m_inSystem;
 	bool m_setupLines;
 	float m_playerHyperspaceRange;

@@ -35,6 +35,9 @@ static const int DRAW_RAD = 5;
 static const float FAR_THRESHOLD = 7.5f;
 static const float FAR_LIMIT = 36.f;
 static const float FAR_MAX = 46.f;
+// stars of systems flagged DIM (e.g. off the route while the route is highlighted)
+static const float DIM_STAR_SCALE = 0.2f;
+static const Color DIM_STAR_COLOR = Color(110, 110, 110, 255);
 
 class SectorMap::Label {
 public:
@@ -846,6 +849,7 @@ void SectorMap::PutFactionLabels(const vector3f &origin)
 	PROFILE_SCOPED()
 	for (auto it = m_visibleFactions.begin(); it != m_visibleFactions.end(); ++it) {
 		if ((*it)->hasHomeworld && m_hiddenFactions.find((*it)) == m_hiddenFactions.end()) {
+			if (m_context.callbacks->GetDisplayMode((*it)->homeworld) & m_context.DIM) continue;
 			Sector::System sys = GetCached((*it)->homeworld)->m_systems[(*it)->homeworld.systemIndex];
 			if ((m_pos * Sector::SIZE - sys.GetFullPosition()).Length() > (m_zoomClamped / FAR_THRESHOLD) * OUTER_RADIUS) continue;
 
@@ -961,6 +965,7 @@ void SectorMap::DrawNearSector(const int sx, const int sy, const int sz, const m
 		auto showMode = m_context.callbacks->GetDisplayMode(i->GetPath());
 
 		bool can_skip = !(showMode & m_context.ALWAYS);
+		const bool dim = showMode & m_context.DIM;
 
 		// if the system belongs to a faction we've chosen to temporarily hide
 		// then skip it if we can
@@ -989,7 +994,7 @@ void SectorMap::DrawNearSector(const int sx, const int sy, const int sz, const m
 		matrix4x4f systrans = trans * matrix4x4f::Translation(i->GetPosition().x, i->GetPosition().y, i->GetPosition().z);
 		m_context.renderer->SetTransform(systrans);
 
-		if ((m_drawVerticalLines && (i->GetPopulation() > 0 || m_drawUninhabitedLabels)) || !can_skip) {
+		if (!dim && ((m_drawVerticalLines && (i->GetPopulation() > 0 || m_drawUninhabitedLabels)) || !can_skip)) {
 
 			const Color light(128, 128, 128);
 			const Color dark(51, 51, 51);
@@ -1018,14 +1023,15 @@ void SectorMap::DrawNearSector(const int sx, const int sy, const int sz, const m
 
 		// fallback to M-class star scaling if the system doesn't have any stars (degenerate case)
 		SystemBodyType::BodyType starType = (*i).GetNumStars() > 0 ? (*i).GetStarType(0) : SystemBodyType::TYPE_STAR_M;
-		systrans.Scale((StarSystem::starScale[starType]));
+		systrans.Scale(dim ? DIM_STAR_SCALE : StarSystem::starScale[starType]);
 		m_context.renderer->SetTransform(systrans);
 
 		const Uint8 *col = StarSystem::starColors[starType];
-		AddStarBillboard(systrans, vector3f(0.f), Color(col[0], col[1], col[2], 255), 0.5f);
+		const Color starColor = dim ? DIM_STAR_COLOR : Color(col[0], col[1], col[2], 255);
+		AddStarBillboard(systrans, vector3f(0.f), starColor, 0.5f);
 
 		// add label
-		if (!(showMode & m_context.HIDE_LABEL)) PutSystemLabel(*i, showMode & m_context.SHADOW_LABEL);
+		if (!dim && !(showMode & m_context.HIDE_LABEL)) PutSystemLabel(*i, showMode & m_context.SHADOW_LABEL);
 	}
 }
 

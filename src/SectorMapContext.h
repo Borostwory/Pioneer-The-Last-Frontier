@@ -27,7 +27,9 @@ public:
 		DEFAULT =           0,
 		ALWAYS =       1 << 0,
 		HIDE_LABEL =   1 << 1,
-		SHADOW_LABEL = 1 << 2
+		SHADOW_LABEL = 1 << 2,
+		// de-emphasised: a small grey star with no leg, label or faction label
+		DIM =          1 << 3
 	};
 	class Callbacks {
 	public:

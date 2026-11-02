@@ -60,7 +60,8 @@ local settings =
 	draw_vertical_lines=false,
 	draw_out_range_labels=false,
 	draw_uninhabited_labels=true,
-	automatic_system_selection=true
+	automatic_system_selection=true,
+	route_focus=false
 }
 
 local loaded_data = nil
@@ -131,6 +132,7 @@ local onGameStart = function ()
 	sectorView:SetDrawOutRangeLabels(settings.draw_out_range_labels)
 	sectorView:GetMap():SetDrawUninhabitedLabels(settings.draw_uninhabited_labels)
 	sectorView:GetMap():SetDrawVerticalLines(settings.draw_vertical_lines)
+	sectorView:SetRouteFocus(settings.route_focus == true)
 	sectorView:GetMap():SetLabelParams("sector-map", font.size, 2.0, svColor.LABEL_HIGHLIGHT, svColor.LABEL_SHADE)
 
 	-- allow hyperjump planner to register its events:
@@ -684,6 +686,11 @@ local routeView = {
 				if route[jumpIndex] then
 					hyperJumpPlanner.removeJump(jumpIndex)
 				end
+			end
+
+			if ui.iconButton("RouteFocus", icons.route, lui.HIGHLIGHT_ROUTE, settings.route_focus == true) then
+				settings.route_focus = not settings.route_focus
+				sectorView:SetRouteFocus(settings.route_focus)
 			end
 
 		end)

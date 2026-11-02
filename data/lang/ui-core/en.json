@@ -1359,6 +1359,10 @@
     "description": "Game settings option: for graphics resolution",
     "message": "High"
   },
+  "HIGHLIGHT_ROUTE": {
+    "description": "UI-button in the sector map's route info: toggle shrinking and greying out the systems not in the planned route and hiding their labels",
+    "message": "Show only route systems"
+  },
   "HUD_2D_RADAR": {
     "description": "Popup text: the name of the azimuthal equidistant projection radar",
     "message": "2D azimuthal equidistant projection"
