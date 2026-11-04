@@ -558,7 +558,7 @@ local saturn_moons = {
 		:rings(false),
 	CustomSystemBody:new('Rhea', 'PLANET_TERRESTRIAL')
 		:radius(f(12,100))
-		:mass(f(406,100000000))
+		:mass(f(386,1000000))
 		:semi_major_axis(f(352,100000))
 		:rotation_period(f(452,100))
 		:temp(81)
