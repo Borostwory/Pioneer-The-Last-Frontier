@@ -29,6 +29,17 @@ layout(std140) uniform BaseSphereData {
 	Eclipse eclipse;
 };
 
+// The scattering tables hold the path through the air, not how dense the air is, so a trace
+// of air would redden the sun as much as Earth's does, and would count as air for the
+// brightening of airless bodies. Below this density (kg/m3), 0 for none to 1 for full air.
+#define THIN_AIR_DENSITY 0.3
+
+float airShare()
+{
+	// (the density reaches the shaders times 1e-5, SystemBody::CalcAtmosphereParams)
+	return clamp(geosphereAtmosFogDensity / (THIN_AIR_DENSITY * 1e-5), 0.0, 1.0);
+}
+
 // NOTE: you must include attributes.glsl first!
 
 // Common code to calculate the diffuse light term for a planet's surface

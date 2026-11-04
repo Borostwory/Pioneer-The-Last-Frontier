@@ -75,6 +75,8 @@ namespace PlanetPhysics {
 		double transitionDiameter = 0.0; // km
 		double cratering = 0.0; // 0..1 of saturation
 		double shellStrength = 0.0; // 0..1
+		bool basin = false; // one great basin on the old crust
+		bool hemispheres = false; // two-toned, like Iapetus
 		const char *analogue = "";
 	};
 
@@ -86,6 +88,7 @@ namespace PlanetPhysics {
 		double frozen = 0.0;
 		double wetness = 0.0;
 		double wear = 0.0;
+		double wearLarge = 0.0, wearSmall = 0.0; // of craters, from air, liquid and life
 		double equatorTemperature = 0.0;
 		double poleTemperature = 0.0;
 		double ice = 0.0;

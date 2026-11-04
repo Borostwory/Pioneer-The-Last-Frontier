@@ -87,6 +87,10 @@ public:
 	// The landforms of the GPU detail tiles (rolling, ridged, dunes, craters).
 	// False: go by the height fractal's name, as classic bodies do.
 	virtual bool GetTileStyle(float[4]) const { return false; }
+	// The largest craters the tiles may draw, in metres; 0: by the planet's size.
+	virtual double GetTileCraterTop() const { return 0.0; }
+	// True: all detail is fixed in space, so the shaders leave out what they size by the view
+	virtual bool HasFixedDetail() const { return false; }
 	// what the Terrain Debug window shows of a body's geology
 	virtual std::vector<std::string> GetGeologyInfo() const { return {}; }
 

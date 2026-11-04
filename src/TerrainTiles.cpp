@@ -6,6 +6,7 @@
 #include "GeoPatch.h"
 #include "GeoPatchContext.h"
 #include "GeoSphere.h"
+#include "terrain/Terrain.h"
 #include "core/Log.h"
 #include "core/StringHash.h"
 #include "galaxy/SystemBody.h"
@@ -233,7 +234,9 @@ void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patc
 	const float *style = sphere->GetTileStyle();
 	int count = BAND_OCTAVES;
 	if (style[3] > 0.0f) {
-		const int top = int(std::floor(std::log2(std::max(radius * CRATER_TOP_PER_RADIUS / ladderBase, 1.0))));
+		const double craterTop = sphere->GetTerrain()->GetTileCraterTop();
+		const double largest = craterTop > 0.0 ? craterTop : radius * CRATER_TOP_PER_RADIUS;
+		const int top = int(std::floor(std::log2(std::max(largest / ladderBase, 1.0))));
 		count = std::min(std::max(top - finest + 1, BAND_OCTAVES), MAX_OCTAVES);
 	}
 
@@ -257,5 +260,6 @@ void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patc
 			vector3f(float(PositiveMod(centre.x / wave, 256.0)), float(PositiveMod(centre.y / wave, 256.0)), float(PositiveMod(centre.z / wave, 256.0))), 0.0f);
 	}
 	m->SetPushConstant("TileStyle"_hash, vector3f(style[0], style[1], style[2]), style[3]);
+	m->SetPushConstant("TileCraterTop"_hash, float(sphere->GetTerrain()->GetTileCraterTop()));
 	r->DrawBuffer(m_triangle.get(), m);
 }

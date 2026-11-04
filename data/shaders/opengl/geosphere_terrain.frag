@@ -119,7 +119,7 @@ void main(void)
 		dist, tnorm, surfaceUp, altitude, hasWater, tile.w, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	// (the patterns stand in for detail the baked surface has)
-	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - max(farWeight, surfaceWeight));
+	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - max(farWeight, surfaceWeight)) * (1.0 - MaterialLook.y);
 	if (patternWeight > 0.0) {
 		float rock, ice, lava;
 		vec4 pw = terrainPatternWeights(materialSlots, rock, ice, lava);

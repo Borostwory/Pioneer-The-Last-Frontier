@@ -25,8 +25,11 @@ uniform vec4 TileOrigin0;
 uniform vec4 TileOrigin1;
 uniform vec4 TileOrigin2;
 uniform vec4 TileOrigin3;
-// weights of the styles: rolling, ridged, dunes, craters
+// weights of the styles: rolling, ridged, dunes, craters (how many of them, at most 1)
 uniform vec4 TileStyle;
+// the largest wavelength the tile may hold, in metres; 0: no limit. The mesh draws everything larger,
+// and the band follows the distance, so without this the ground's texture keeps its size on screen
+uniform float TileCraterTop;
 
 // as TerrainTiles::MAX_OCTAVES
 #define TILE_MAX_OCTAVES 16
@@ -78,7 +81,7 @@ void main(void)
 		// the shortest octave is close to the texel size: weaker
 		float w = (i == 0) ? 0.6 : 1.0;
 		vec4 o = vec4(0.0);
-		if (i < band) {
+		if (i < band && (TileCraterTop <= 0.0 || lambda <= TileCraterTop * 1.01)) {
 			if (TileStyle.x > 0.0)
 				o += TileStyle.x * tileRolling(q, salt, accumulated);
 			if (TileStyle.y > 0.0)
@@ -86,12 +89,12 @@ void main(void)
 			if (TileStyle.z > 0.0)
 				o += TileStyle.z * tileDunes(q, salt);
 		}
-		if (TileStyle.w > 0.0) {
+		if (TileStyle.w > 0.0 && (TileCraterTop <= 0.0 || lambda <= TileCraterTop * 1.01)) {
 			// faded craters do not count towards the nesting
 			float allowed = 1.0 - smoothstep(CRATER_MAX_NEST - 0.75, CRATER_MAX_NEST, nest);
 			if (allowed > 0.0) {
 				float inside;
-				o += TileStyle.w * allowed * tileCraters(q, salt, 0.35, inside);
+				o += allowed * tileCraters(q, salt, 0.35 * min(TileStyle.w, 1.0), inside);
 				nest += allowed * inside;
 			}
 		}

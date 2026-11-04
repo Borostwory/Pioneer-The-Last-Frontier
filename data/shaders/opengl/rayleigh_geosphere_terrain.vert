@@ -45,17 +45,8 @@ out float surfaceHeight;
 out vec3 waterSkyLight;
 #endif
 
-// The scattering tables hold the path through the air, not how dense the air is,
-// so without this a trace of air would redden the sun as much as Earth's does.
-// Below this density (kg/m3) the loss of light along a ray scales down with it;
-// the glow of the sky itself stays.
-#define THIN_AIR_DENSITY 0.3
-
-float airShare()
-{
-	// (the density reaches the shaders times 1e-5, SystemBody::CalcAtmosphereParams)
-	return clamp(geosphereAtmosFogDensity / (THIN_AIR_DENSITY * 1e-5), 0.0, 1.0);
-}
+// y: 1 on the physical generator's bodies
+uniform vec4 MaterialLook;
 
 void main(void)
 {
@@ -125,7 +116,10 @@ void main(void)
 		vec4 lightColor = toLinear(uLight[i].diffuse);
 
 		// sunlight reaching the surface
-		vec3 sunLight = lightColor.xyz * uneclipsed * intensity;
+		// (the physical generator's colours are the ground's real ones, so its bodies get a gentler
+		// falloff: close-in worlds don't burn out, and an ice moon of Jupiter still reads as ice)
+		float sunIntensity = MaterialLook.y > 0.5 ? sqrt(intensity) : intensity;
+		vec3 sunLight = lightColor.xyz * uneclipsed * sunIntensity;
 #ifdef ATMOSPHERE
 		// Atmospheric outscattering along the ray between the light source to the point on terrain
 		sunLight *= pow(calculateRayTransmittance(P, L, scatterLUT), vec3(airShare()));

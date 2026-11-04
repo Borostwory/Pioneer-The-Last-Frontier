@@ -98,6 +98,13 @@ uniform vec4 PatchTile;
 #define MATERIAL_BEACH_TOP 8.0
 #define MATERIAL_BEACH_FULL 2.0
 
+// detail fixed in space (MaterialLook.y): textures stay fine ground grain, with a tile
+// no larger than this level, so no pattern in a photo grows with the distance;
+// the generic relief stops at the far distance
+#define MATERIAL_FIXED_MAX_LEVEL 6.0
+#define MATERIAL_FIXED_RELIEF_NEAR 500.0
+#define MATERIAL_FIXED_RELIEF_FAR 3000.0
+
 // how far along their bumps two materials blend (in height units 0..1)
 #define MATERIAL_BLEND_DEPTH 0.2
 
@@ -271,6 +278,8 @@ MaterialMapping materialMapping(vec3 eyepos, vec3 dpdx, vec3 dpdy, vec3 up)
 	// not blow the tiles up)
 	float footprint = sqrt(length(m.relDx) * length(m.relDy));
 	m.level = log2(max(footprint * MATERIAL_TEXTURE_SIZE * MATERIAL_FINE_PIXELS_PER_TEXEL, 1.0));
+	if (MaterialLook.y > 0.5)
+		m.level = min(m.level, MATERIAL_FIXED_MAX_LEVEL);
 	return m;
 }
 
@@ -421,7 +430,10 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 		if (layer < 0)
 			continue;
 		float wi = (i == m1) ? n1 : (i == m2) ? n2 : w[i];
-		shifted += contrast * (wi - w0[i]) * materialColour(layer);
+		// (with detail fixed in space, the vertex colours are the materials' own; these
+		// generic colours would turn floors tan and the walls of dark moons white)
+		if (MaterialLook.y < 0.5)
+			shifted += contrast * (wi - w0[i]) * materialColour(layer);
 		// up close, lava is a dark crust (the colour fractals paint it in
 		// its glow colour) and only its cracks glow
 		if (layer == MATERIAL_LAVA)
@@ -534,6 +546,8 @@ vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots[MAT
 		// surface below: fading them where it is the far texture left patches
 		// without a surface tile smooth next to those with one
 		slope = tile.xyz * clamp(roughness / 0.1, 0.5, 1.6) / roughness;
+	} else if (MaterialLook.y > 0.5) {
+		slope = vec3(0.0);
 	} else {
 		slope = mix(reliefTileSlope(m, k), reliefTileSlope(m, k + 1.0), level - k);
 	}
@@ -543,6 +557,8 @@ vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots[MAT
 	float footprint = sqrt(length(m.relDx) * length(m.relDy));
 	float finerTexel = exp2(level - 3.0) / RELIEF_TEXTURE_SIZE;
 	float finer = 0.6 * smoothstep(0.5, 1.0, finerTexel / footprint);
+	if (MaterialLook.y > 0.5)
+		finer *= 1.0 - smoothstep(MATERIAL_FIXED_RELIEF_NEAR, MATERIAL_FIXED_RELIEF_FAR, distMetres);
 	if (finer > 0.0) {
 		float l = clamp(level - 3.0, 0.0, MATERIAL_MAX_LEVEL - 1.0);
 		float kf = floor(l);
@@ -599,7 +615,7 @@ float materialBackscatter(vec4 look, vec3 V, vec3 L)
 #ifdef ATMOSPHERE
 	return 1.0;
 #else
-	return 1.0 + 0.35 * look.w * pow(max(dot(V, L), 0.0), 8.0);
+	return 1.0 + 0.15 * look.w * pow(max(dot(V, L), 0.0), 8.0);
 #endif
 }
 

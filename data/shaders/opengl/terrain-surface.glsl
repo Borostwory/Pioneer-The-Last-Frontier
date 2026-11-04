@@ -17,7 +17,8 @@
 // x: vegetation hue, y: sand hue (both 0..1), z: amount of life; for the
 // material colours of terrain-materials.glsl
 uniform vec4 SurfaceMaterial;
-// x: strength of the ice's cracks 0..1; w: how many material slots the body uses
+// x: strength of the ice's cracks 0..1; y: 1 if the body's detail is fixed in space,
+// so what is sized by the view stays out; w: how many material slots the body uses
 uniform vec4 MaterialLook;
 
 // pattern cell size as a fraction of the view distance

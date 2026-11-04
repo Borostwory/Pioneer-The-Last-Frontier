@@ -5,6 +5,7 @@
 #define _SPHERECELLS_H
 
 #include "../vector3.h"
+#include "FracDef.h"
 #include "TerrainNoise.h"
 
 #include <cmath>

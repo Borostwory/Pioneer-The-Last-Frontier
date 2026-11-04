@@ -119,7 +119,7 @@ void main(void)
 		dist, baseNormal, surfaceUp, altitude, hasWater, tile.w, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	// (the patterns stand in for detail the baked surface has)
-	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - max(farWeight, surfaceWeight));
+	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - max(farWeight, surfaceWeight)) * (1.0 - MaterialLook.y);
 	if (patternWeight > 0.0) {
 		float rock, ice, lava;
 		vec4 pw = terrainPatternWeights(materialSlots, rock, ice, lava);
@@ -173,6 +173,10 @@ void main(void)
 	vec3 land = albedo * detailMul.rgb * light * backscatter * materialShadowTint(lightWeights, light) + materialGlint;
 #ifdef TERRAIN_WITH_LAVA
 	land += material.emission.xyz * float(NUM_LIGHTS);
+#endif
+#ifdef ATMOSPHERE
+	// a trace of air shouldn't leave a moon half as bright as an airless one
+	land *= mix(2.0, 1.0, airShare());
 #endif
 	land = land * viewTransmittance + viewInscatter;
 #ifndef ATMOSPHERE

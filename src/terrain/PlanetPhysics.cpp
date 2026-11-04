@@ -157,6 +157,15 @@ namespace PlanetPhysics {
 		else
 			it.cratering = (0.8 + 0.4 * cratersDraw) * (1.0 - 0.8 * it.siliconActivity);
 		it.shellStrength = std::max(it.iceActivity >= 0.05 ? std::sqrt(it.iceActivity) : 0.0, it.past ? 0.25 : 0.0);
+		// what marks this body. An equatorial ridge and rifts come with later layers, so they only choose here
+		if (!it.plates && it.heatPipe <= 0.5) {
+			const bool canRift = it.past || it.contraction > 0.3;
+			const int pick = rng.Int32(canRift ? 3 : 2);
+			if (pick == 1 && ice && !it.past && it.iceActivity < 0.05 && rng.Double() < 0.3)
+				it.hemispheres = true;
+			else if (pick < 2)
+				it.basin = true;
+		}
 		if (ice)
 			it.analogue = it.iceActivity >= 0.3 ? "Europa" : (it.iceActivity >= 0.05 && core.radius < 0.1) ? "Enceladus" :
 				(it.past && core.radius > 0.2)                                                             ? "Ganymede" :
@@ -255,6 +264,9 @@ namespace PlanetPhysics {
 		else
 			st.ground = M::SOIL;
 
+		// wear on craters, from air, liquid and life only
+		st.wearSmall = std::min(1.0, st.wear + 0.3 * s.life * st.air);
+		st.wearLarge = std::min(1.0, 0.5 * st.wear + 0.1 * s.life * st.air);
 		st.lapse = s.airDensity > 0.01 ? it.gravity / 1000.5 : 0.0;
 		// rivers and lakes need air and rain: a liquid at a temperature it can fall at
 		if (st.sea > 0.0 && st.weather) {
