@@ -15,8 +15,8 @@
 static const char s_saveDirName[] = "savefiles";
 
 // SAVEBUMP: increment before release after breaking saved-game compatibility
-// Last incremented: 02/2026 prior to 02-03-2026 release
-static const int s_saveVersion = 92;
+// Last incremented: 11/2026 for Sol's new moons, which renumber its later bodies
+static const int s_saveVersion = 93;
 
 // A simple job to load a savegame into a Json object
 class LoadGameToJsonJob : public Job
