@@ -45,6 +45,18 @@ out float surfaceHeight;
 out vec3 waterSkyLight;
 #endif
 
+// The scattering tables hold the path through the air, not how dense the air is,
+// so without this a trace of air would redden the sun as much as Earth's does.
+// Below this density (kg/m3) the loss of light along a ray scales down with it;
+// the glow of the sky itself stays.
+#define THIN_AIR_DENSITY 0.3
+
+float airShare()
+{
+	// (the density reaches the shaders times 1e-5, SystemBody::CalcAtmosphereParams)
+	return clamp(geosphereAtmosFogDensity / (THIN_AIR_DENSITY * 1e-5), 0.0, 1.0);
+}
+
 void main(void)
 {
 	gl_Position = matrixTransform();
@@ -116,7 +128,7 @@ void main(void)
 		vec3 sunLight = lightColor.xyz * uneclipsed * intensity;
 #ifdef ATMOSPHERE
 		// Atmospheric outscattering along the ray between the light source to the point on terrain
-		sunLight *= calculateRayTransmittance(P, L, scatterLUT);
+		sunLight *= pow(calculateRayTransmittance(P, L, scatterLUT), vec3(airShare()));
 #endif
 		lightAtSurface[i] = sunLight;
 		// start with diffuse terrain color
@@ -156,10 +168,11 @@ void main(void)
 		vec3 inscattering = calculateRayInscattering(opticalDistance, P, -eyenorm, dist * geosphereInvRadius, L, lightColor.xyz, densityLUT, scatterLUT);
 
 		// Apply the optical transmittance of the terrain -> view vector to our accumulated light
-		terrain *= calcTransmittance(opticalDistance);
+		vec3 viewLoss = pow(calcTransmittance(opticalDistance), vec3(airShare()));
+		terrain *= viewLoss;
 		// And add the (pre-damped) inscattering over the same length. We multiply by 4 to fake multiple scattering.
 		terrain += inscattering * 4;
-		viewTransmittance = calcTransmittance(opticalDistance);
+		viewTransmittance = viewLoss;
 		viewInscatter += inscattering * 4;
 
 #endif // ATMOSPHERE

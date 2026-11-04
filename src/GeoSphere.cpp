@@ -83,6 +83,7 @@ void GeoSphere::InitGeoSphere()
 	s_patchContext.Reset(new GeoPatchContext(detail_edgeLen[Pi::detail.planets > 4 ? 4 : Pi::detail.planets]));
 	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 15.0f)), 1.0, 30.0);
 	s_lodForeshortening = ReadLodForeshortening();
+	Terrain::SetGenerator(Pi::config->Int("TerrainGenerator", 0));
 }
 
 //static
@@ -442,6 +443,12 @@ double GeoSphere::GetDeepestVertexSpacing() const
 // terrain, rolling eroded hills elsewhere.
 void GeoSphere::SetUpTileStyle()
 {
+	float style[4];
+	if (m_terrain->GetTileStyle(style)) {
+		for (int i = 0; i < 4; i++)
+			m_tileStyle[i] = style[i];
+		return;
+	}
 	const std::string name = m_terrain->GetHeightFractalName();
 	auto has = [&](const char *s) { return name.find(s) != std::string::npos; };
 	float rolling = 1.0f, ridged = 0.0f, dunes = 0.0f, craters = 0.0f;

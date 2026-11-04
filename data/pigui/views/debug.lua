@@ -32,6 +32,7 @@ end
 ---@field show function? Return true if the tab should be visible
 ---@field draw function Render the contents of the debug tab
 ---@field module string? Module name to hot reload, automatically filled
+---@field mod boolean? Part of The Last Frontier: shown inside its tab, not in the main tab bar
 
 -- Register a new tab to the debug view
 ---@param name string
@@ -51,9 +52,9 @@ function debugView.registerTab(name, tab)
 	end)
 end
 
-function debugView.drawTabs(delta)
+local function drawTabs(delta, mod)
 	for i, tab in ipairs(debugView.tabs) do
-		if not tab.show or tab.show() then
+		if (tab.mod or false) == mod and (not tab.show or tab.show()) then
 			if drawTab(tab, i, delta) then
 
 				if ui.ctrlHeld() and ui.isKeyReleased(string.byte 'r') then
@@ -67,6 +68,15 @@ function debugView.drawTabs(delta)
 
 end
 
+function debugView.drawTabs(delta)
+	drawTabs(delta, false)
+end
+
+function debugView.drawFrontierTabs(delta)
+	drawTabs(delta, true)
+end
+
 ui.registerHandler('debug-tabs', debugView.drawTabs)
+ui.registerHandler('frontier-debug-tabs', debugView.drawFrontierTabs)
 
 return debugView

@@ -4,6 +4,7 @@
 #include "Terrain.h"
 #include "TerrainErosion.h"
 #include "TerrainNoise.h"
+#include "TerrainPhysical.h"
 
 #include "FileSystem.h"
 #include "FloatComparison.h"
@@ -27,6 +28,19 @@ namespace {
 	// tall gave spiky blobs
 	constexpr double ASTEROID_RELIEF_PER_RADIUS = 0.4;
 } // namespace
+
+static int s_generator = 0;
+
+void Terrain::SetGenerator(const int generator)
+{
+	s_generator = generator;
+}
+
+void Terrain::GetSurface(const vector3d &p, const double height, const vector3d &normal, vector3d &colourOut, uint8_t weightsOut[TerrainMaterialTable::SLOT_COUNT]) const
+{
+	colourOut = GetColor(p, height, normal);
+	m_materials.Classify(colourOut, weightsOut);
+}
 
 // static instancer. selects the best height and color classes for the body
 Terrain *Terrain::InstanceTerrain(const SystemBody *body)
@@ -156,6 +170,12 @@ Terrain *Terrain::InstanceTerrain(const SystemBody *body)
 	}
 
 	case SystemBody::TYPE_PLANET_TERRESTRIAL: {
+
+		if (s_generator == 1) {
+			Terrain *terrain = new TerrainPhysical(body);
+			terrain->AddStarportSites(body);
+			return terrain;
+		}
 
 		//Over-ride:
 		//gi = InstanceGenerator<TerrainHeightAsteroid3,TerrainColorRock>;

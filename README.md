@@ -194,7 +194,7 @@ loses its label.
 - **Hyperspace** – a relativistic jump effect and new jump sounds.
 - **Audio** – wind, rover and hyperspace sounds, and new thruster and landing
   gear sounds.
-- **Developer Tools** – travel tab, GPU timers and terrain debugging.
+- **Developer Tools** – a tab of their own in the debug window: travel, surface and hangar tools, GPU timers and terrain debugging.
 
 
 ## Bugs

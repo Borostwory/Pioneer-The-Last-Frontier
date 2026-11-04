@@ -116,14 +116,13 @@ inline void setSurface(GeoVertexSurface &r, const Terrain *terrain, const vector
 		materials.Single(-1, r.materials);
 		return;
 	}
-	const vector3d colour = terrain->GetColor(p, height, normal);
+	vector3d colour;
+	terrain->GetSurface(p, height, normal, colour, r.materials);
 	const double altitude = SurfaceAltitude(terrain, p, height, colour);
 	setColour(r, colour, altitude);
 	// under water: the beach material, for the shore
 	if (altitude < 0.0)
 		materials.Single(materials.BeachSlot(), r.materials);
-	else
-		materials.Classify(colour, r.materials);
 }
 
 bool ColourSlopeNormals(const Terrain *terrain, const vector3d *points, const int gridWidth, const int x0, const int x1, const int y0, const int y1, std::vector<vector3d> &out)

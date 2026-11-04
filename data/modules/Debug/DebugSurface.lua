@@ -269,6 +269,7 @@ Event.Register("onGameEnd", function()
 end)
 
 debugView.registerTab("DebugSurface", {
+	mod = true,
 	label = "Surface",
 	icon = icons.rocky_planet,
 	show = function() return Game.player ~= nil and Game.system ~= nil and not Game.InHyperspace() end,

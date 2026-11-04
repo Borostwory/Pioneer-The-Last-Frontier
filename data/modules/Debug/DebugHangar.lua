@@ -144,6 +144,7 @@ local function newRecord(def)
 end
 
 debugView.registerTab("debug-hangar", {
+	mod = true,
 	icon = ui.theme.icons.hangar,
 	label = "Hangar",
 	show = function() return Game.player ~= nil end,

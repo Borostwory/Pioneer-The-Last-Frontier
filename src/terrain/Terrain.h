@@ -41,6 +41,11 @@ public:
 
 	static Terrain *InstanceTerrain(const SystemBody *body);
 
+	// 1: terrestrial bodies without a height map use the physical surface
+	// generator (TerrainPhysical); 0: the classic height and colour fractals.
+	// Bodies made after the call follow it.
+	static void SetGenerator(int generator);
+
 	virtual ~Terrain();
 
 	void SetFracDef(const unsigned int index, const double featureHeightMeters, const double featureWidthMeters, const double smallestOctaveMeters = 20.0);
@@ -63,6 +68,9 @@ public:
 	// the terrain is drawn there.
 	void ProtectSite(const SystemBody *starport, const vector3d &p);
 	virtual vector3d GetColor(const vector3d &p, double height, const vector3d &norm) const = 0;
+	// The colour and material weights of a point, worked out together. By default
+	// the colour fractal's colour, with the weights read back from it.
+	virtual void GetSurface(const vector3d &p, double height, const vector3d &normal, vector3d &colourOut, uint8_t weightsOut[TerrainMaterialTable::SLOT_COUNT]) const;
 
 	virtual const char *GetHeightFractalName() const = 0;
 	virtual const char *GetColorFractalName() const = 0;
@@ -76,6 +84,11 @@ public:
 	const TerrainMaterialTable &GetMaterialTable() const { return m_materials; }
 	// how strongly the ICE material shows its cracks, 0..1
 	virtual float GetIceCrackStrength() const { return 0.7f; }
+	// The landforms of the GPU detail tiles (rolling, ridged, dunes, craters).
+	// False: go by the height fractal's name, as classic bodies do.
+	virtual bool GetTileStyle(float[4]) const { return false; }
+	// what the Terrain Debug window shows of a body's geology
+	virtual std::vector<std::string> GetGeologyInfo() const { return {}; }
 
 	Uint32 GetSurfaceEffects() const { return m_surfaceEffects; }
 

@@ -15,6 +15,8 @@
 #include "Space.h"
 #include "TerrainFarTexture.h"
 #include "TerrainSurfaceTiles.h"
+#include "galaxy/SystemBody.h"
+#include "terrain/Terrain.h"
 #include "core/Log.h"
 #include "graphics/Renderer.h"
 #include "graphics/Stats.h"
@@ -367,6 +369,11 @@ void PerfInfo::DrawPerfWindow()
 
 			PiGui::RunHandler(Pi::GetFrameTime(), "debug-tabs");
 
+			if (BeginDebugTab(s_planetIcon, "The Last Frontier")) {
+				DrawFrontierTab();
+				EndDebugTab();
+			}
+
 			ImGui::EndTabBar();
 		}
 	}
@@ -470,14 +477,6 @@ void PerfInfo::DrawRendererStats()
 	ImGui::Text("%u cached render states", numRenderStates);
 	ImGui::Text("%u cached textures, using %.3f MB VRAM", numCachedTextures, double(cachedTextureMemUsage) / scale_MB);
 
-	const std::vector<Graphics::Renderer::GpuTiming> &gpuTimings = Pi::renderer->GetGpuTimings();
-	if (!gpuTimings.empty()) {
-		ImGui::Spacing();
-		ImGui::SeparatorText("GPU time (ms, a few frames old)");
-		for (const Graphics::Renderer::GpuTiming &t : gpuTimings)
-			ImGui::Text("%*s%s: %.2f", t.depth * 2, "", t.name.c_str(), t.milliseconds);
-	}
-
 	if (ImGui::Button("Open Texture Cache Viewer"))
 		m_state->textureCacheViewerOpen = true;
 
@@ -550,13 +549,6 @@ void PerfInfo::DrawWorldViewStats()
 		Pi::player->GetModel()->SetDebugFlags(m_state->playerModelDebugFlags);
 	}
 	/* clang-format on */
-
-	// the rover can be deployed without the surface rover equipment (Excursion)
-	bool alwaysRover = Pi::config->Int("DebugAlwaysAllowRover", 0) != 0;
-	if (ImGui::Checkbox("Always Allow Rover", &alwaysRover)) {
-		Pi::config->SetInt("DebugAlwaysAllowRover", alwaysRover ? 1 : 0);
-		Pi::config->Save();
-	}
 
 	if (Pi::player->GetNavTarget() && Pi::player->GetNavTarget()->GetSystemBody()) {
 		const auto *sbody = Pi::player->GetNavTarget()->GetSystemBody();
@@ -668,33 +660,78 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 	bool showSort = debugFlags & Flags::DEBUG_SORTGEOPATCHES;
 	bool showWire = debugFlags & Flags::DEBUG_WIREFRAME;
 	//bool showFace = debugFlags & Flags::DEBUG_FACELABELS;
-	bool showDepth = debugFlags & Flags::DEBUG_PATCHDEPTH;
-	bool noBandLimit = debugFlags & Flags::DEBUG_NOBANDLIMIT;
 
 	bool changed = ImGui::Checkbox("Distance Sort GeoPatches", &showSort);
 	changed |= ImGui::Checkbox("Show Wireframe", &showWire);
 	//changed |= ImGui::Checkbox("Show Face IDs", &showFace);
-	bool regenerate = ImGui::Checkbox("Colour Patches by Depth", &showDepth);
-	regenerate |= ImGui::Checkbox("Disable Noise Band Limit (A/B)", &noBandLimit);
-	changed |= regenerate;
 
 	/* clang-format off */
 	if (changed) {
-		debugFlags = (showSort ? Flags::DEBUG_SORTGEOPATCHES : 0)
-			| (showWire ? Flags::DEBUG_WIREFRAME : 0)
-			//| (showFace ? Flags::DEBUG_FACELABELS : 0)
-			| (showDepth ? Flags::DEBUG_PATCHDEPTH : 0)
-			| (noBandLimit ? Flags::DEBUG_NOBANDLIMIT : 0);
+		debugFlags = (debugFlags & ~uint32_t(Flags::DEBUG_SORTGEOPATCHES | Flags::DEBUG_WIREFRAME))
+			| (showSort ? Flags::DEBUG_SORTGEOPATCHES : 0)
+			| (showWire ? Flags::DEBUG_WIREFRAME : 0);
+			//| (showFace ? Flags::DEBUG_FACELABELS : 0);
 		GeoSphere::SetDebugFlags(debugFlags);
 		Pi::config->SetInt("SortGeoPatches", showSort ? 1 : 0);
 
 		Pi::config->Save();
 	}
 	/* clang-format on */
+}
+
+// The Last Frontier's own debug features: terrain and GPU here, and the tabs
+// registered from Lua with mod = true (pigui/views/debug.lua)
+void PiGui::PerfInfo::DrawFrontierTab()
+{
+	if (ImGui::BeginTabBar("FrontierTabs")) {
+		if (BeginDebugTab(s_planetIcon, "Terrain and GPU")) {
+			DrawFrontierTerrain();
+			DrawGeology();
+			EndDebugTab();
+		}
+
+		PiGui::RunHandler(Pi::GetFrameTime(), "frontier-debug-tabs");
+
+		ImGui::EndTabBar();
+	}
+}
+
+void PiGui::PerfInfo::DrawFrontierTerrain()
+{
+	// the rover can be deployed without the surface rover equipment (Excursion)
+	bool alwaysRover = Pi::config->Int("DebugAlwaysAllowRover", 0) != 0;
+	if (ImGui::Checkbox("Always Allow Rover", &alwaysRover)) {
+		Pi::config->SetInt("DebugAlwaysAllowRover", alwaysRover ? 1 : 0);
+		Pi::config->Save();
+	}
+
+	const std::vector<Graphics::Renderer::GpuTiming> &gpuTimings = Pi::renderer->GetGpuTimings();
+	if (!gpuTimings.empty()) {
+		ImGui::Spacing();
+		ImGui::SeparatorText("GPU time (ms, a few frames old)");
+		for (const Graphics::Renderer::GpuTiming &t : gpuTimings)
+			ImGui::Text("%*s%s: %.2f", t.depth * 2, "", t.name.c_str(), t.milliseconds);
+	}
+
+	ImGui::Spacing();
+	ImGui::SeparatorText("Terrain");
+
+	using Flags = GeoSphere::DebugFlags;
+	uint32_t debugFlags = GeoSphere::GetDebugFlags();
+	bool showDepth = debugFlags & Flags::DEBUG_PATCHDEPTH;
+	bool noBandLimit = debugFlags & Flags::DEBUG_NOBANDLIMIT;
+	bool regenerate = ImGui::Checkbox("Colour Patches by Depth", &showDepth);
+	regenerate |= ImGui::Checkbox("Disable Noise Band Limit (A/B)", &noBandLimit);
 
 	// these options are baked into patches when they are generated, so rebuild them all
-	if (regenerate)
+	if (regenerate) {
+		debugFlags = (debugFlags & ~uint32_t(Flags::DEBUG_PATCHDEPTH | Flags::DEBUG_NOBANDLIMIT)) |
+			(showDepth ? Flags::DEBUG_PATCHDEPTH : 0) |
+			(noBandLimit ? Flags::DEBUG_NOBANDLIMIT : 0);
+		GeoSphere::SetDebugFlags(debugFlags);
+		Pi::config->Save();
 		Pi::OnChangeDetailLevel();
+	}
 
 	// how early terrain patches subdivide (also in the settings window); applies live
 	float lodDistance = float(GeoSphere::GetLodDistanceScale());
@@ -753,6 +790,36 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 	ImGui::Text("Generation CPU time: %.1f ms total, %.1f us per patch", totalMs, perPatchUs);
 	if (ImGui::Button("Reset Patch Stats"))
 		ResetGeoPatchGenStats();
+}
+
+void PiGui::PerfInfo::DrawGeology()
+{
+	ImGui::Spacing();
+	ImGui::SeparatorText("Geology");
+
+	// bodies already made keep their generator, so this applies from the next start
+	bool physical = Pi::config->Int("TerrainGenerator", 0) == 1;
+	if (ImGui::Checkbox("Physical surface generator (applies after a restart)", &physical)) {
+		Pi::config->SetInt("TerrainGenerator", physical ? 1 : 0);
+		Pi::config->Save();
+	}
+
+	if (!Pi::player || !Pi::game || Pi::player->GetFlightState() == Ship::HYPERSPACE)
+		return;
+	const SystemBody *body = Frame::GetFrame(Pi::player->GetFrame())->GetSystemBody();
+	if (!body || body->GetSuperType() != SystemBody::SUPERTYPE_ROCKY_PLANET)
+		return;
+
+	// made once per body: a look at its data, not the one being drawn
+	static const SystemBody *s_body = nullptr;
+	static RefCountedPtr<Terrain> s_terrain;
+	if (body != s_body) {
+		s_body = body;
+		s_terrain.Reset(Terrain::InstanceTerrain(body));
+	}
+	ImGui::Text("%s: height %s, colour %s", body->GetName().c_str(), s_terrain->GetHeightFractalName(), s_terrain->GetColorFractalName());
+	for (const std::string &line : s_terrain->GetGeologyInfo())
+		ImGui::TextUnformatted(line.c_str());
 }
 
 void PerfInfo::DrawImGuiStats()

@@ -283,6 +283,7 @@ Event.Register("onGameEnd", function()
 end)
 
 debugView.registerTab("DebugTravel", {
+	mod = true,
 	label = "Travel",
 	icon = icons.galaxy_map,
 	show = function() return Game.player ~= nil and not Game.InHyperspace() end,
