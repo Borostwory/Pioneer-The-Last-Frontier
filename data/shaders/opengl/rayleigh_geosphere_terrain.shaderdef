@@ -56,6 +56,9 @@ PushConstant vec4 ReliefScale binding=10
 PushConstant vec4 PatchTile binding=11
 PushConstant vec4 FarTexture binding=12
 PushConstant vec4 PatchSurface binding=13
+PushConstant vec4 MaterialSlots2 binding=14
+PushConstant vec4 MaterialSlots3 binding=15
+PushConstant vec4 MaterialLook binding=16
 
 Vertex "rayleigh_geosphere_terrain.vert"
 Fragment "rayleigh_geosphere_terrain.frag"

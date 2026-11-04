@@ -15,8 +15,12 @@ out float dist;
 // the body's material weights (terrain-materials.glsl)
 layout(location = 10) in vec4 a_materials0;
 layout(location = 11) in vec4 a_materials1;
+layout(location = 12) in vec4 a_materials2;
+layout(location = 13) in vec4 a_materials3;
 out vec4 materialWeights0;
 out vec4 materialWeights1;
+out vec4 materialWeights2;
+out vec4 materialWeights3;
 
 #ifdef TERRAIN_WITH_WATER
 // encoded altitude above sea level, for the per-pixel water (terrain-water.glsl)
@@ -34,6 +38,8 @@ void main(void)
 	vertexColor = vec4(a_color.rgb, 1.0);
 	materialWeights0 = a_materials0;
 	materialWeights1 = a_materials1;
+	materialWeights2 = a_materials2;
+	materialWeights3 = a_materials3;
 #ifdef TERRAIN_WITH_WATER
 	surfaceHeight = a_color.a * 2.0 - 1.0;
 #endif

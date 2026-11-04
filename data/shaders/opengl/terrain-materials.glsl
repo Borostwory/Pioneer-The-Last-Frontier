@@ -6,14 +6,17 @@
 // The planet keeps its colours from the colour fractals (the vertex colour);
 // this adds, per pixel:
 // - material detail from photo textures (rock, gravel, sand, soil, grass,
-//   forest, snow, ice, basalt, lava, ash, regolith, salt), greyscale so any
+//   forest, snow, ice, basalt, lava, ash, regolith, salt, tundra, dirty ice,
+//   cooled lava flows, cracked mud, dust, metal), greyscale so any
 //   palette works (scripts/make_terrain_materials.py), the two strongest
 //   materials of a pixel blended along their bumps so borders look natural;
-// - materials the vertex colour cannot show: rock on steep slopes, snow
+// - materials the vertex colour cannot show: bare ground on steep slopes, snow
 //   sliding off them, beaches along the shore. These shift the colour too;
-// - the glow of lava, from the lava texture's emission.
+// - the glow of lava, from the lava texture's emission;
+// - how the materials take the light: gloss on ice, lava and metal, blue
+//   shadows on ice, backscatter on airless regolith and dust.
 //
-// Each body has up to eight materials (its slots, TerrainMaterialTable in
+// Each body has up to sixteen materials (its slots, TerrainMaterialTable in
 // the C++); every vertex carries a weight per slot, from the colour fractal.
 // Textures are mapped in planet-fixed coordinates, projected onto the cube
 // face under the pixel (blended across the face edges), at power-of-two tile
@@ -30,10 +33,12 @@ uniform sampler2DArray terrainMaterials;
 // double precision)
 uniform vec4 MaterialOrigin;
 uniform vec4 MaterialOriginCoarse;
-// texture layer of each of the body's eight material slots (-1: unused)
+// texture layer of each of the body's sixteen material slots (-1: unused)
 uniform vec4 MaterialSlots0;
 uniform vec4 MaterialSlots1;
-// slots for rock on steep slopes, beaches, snow and lava (-1: none)
+uniform vec4 MaterialSlots2;
+uniform vec4 MaterialSlots3;
+// slots for bare steep ground, beaches, snow and lava (-1: none)
 uniform vec4 MaterialSpecial;
 
 // the atlas of terrain detail tiles (TerrainTiles in the C++, terrain-tile.glsl)
@@ -58,8 +63,19 @@ uniform vec4 PatchTile;
 #define MATERIAL_ASH 10
 #define MATERIAL_REGOLITH 11
 #define MATERIAL_SALT 12
+#define MATERIAL_TUNDRA 13
+#define MATERIAL_DIRTY_ICE 14
+#define MATERIAL_LAVA_FLOW 15
+#define MATERIAL_CRACKED_MUD 16
+#define MATERIAL_DUST 17
+#define MATERIAL_METAL 18
+#define MATERIAL_FOREST_FAR 19
 
-#define MATERIAL_SLOTS 8
+#define MATERIAL_SLOTS 16
+// the weights come as this many vec4 (materialWeights0.. in the shaders)
+#define MATERIAL_SLOT_GROUPS 4
+// slots this body uses; the rest are empty
+#define MATERIAL_USED_SLOTS int(MaterialLook.w)
 
 #define MATERIAL_TEXTURE_SIZE 1024.0
 // on-screen size of a texel in pixels: grain, and mottling from the same
@@ -92,7 +108,15 @@ uniform vec4 PatchTile;
 // lava glow: average emission of the lava texture (used where it is not
 // sampled), and the glow's colour and strength
 #define MATERIAL_LAVA_MEAN_EMISSION 0.1
-#define MATERIAL_LAVA_GLOW vec3(2.6, 0.75, 0.12)
+#define MATERIAL_LAVA_GLOW vec3(4.0, 1.15, 0.18)
+// glow stops just short of the sea: altitude (metres) where it starts and is full
+#define MATERIAL_GLOW_SHORE_LOW 2.0
+#define MATERIAL_GLOW_SHORE_HIGH 30.0
+
+// FOREST turns from its forest floor to its canopy between these tile levels
+// (from some hundreds of metres up to a few km)
+#define MATERIAL_FOREST_NEAR_LEVEL 7.0
+#define MATERIAL_FOREST_FAR_LEVEL 10.0
 
 vec3 materialHsv(float h, float s, float v)
 {
@@ -117,6 +141,12 @@ vec3 materialColour(int m)
 	if (m == MATERIAL_LAVA) return vec3(0.15, 0.06, 0.04);
 	if (m == MATERIAL_ASH) return vec3(0.18, 0.17, 0.16);
 	if (m == MATERIAL_REGOLITH) return vec3(0.45, 0.44, 0.42);
+	if (m == MATERIAL_TUNDRA) return materialHsv(vegHue, 0.30, 0.36);
+	if (m == MATERIAL_DIRTY_ICE) return vec3(0.33, 0.31, 0.28);
+	if (m == MATERIAL_LAVA_FLOW) return vec3(0.09, 0.07, 0.07);
+	if (m == MATERIAL_CRACKED_MUD) return vec3(0.55, 0.46, 0.35);
+	if (m == MATERIAL_DUST) return materialHsv(sandHue, 0.35, 0.55);
+	if (m == MATERIAL_METAL) return vec3(0.42, 0.40, 0.37);
 	return vec3(0.85, 0.83, 0.78);
 }
 
@@ -134,24 +164,29 @@ vec4 terrainTileSample(vec2 uv)
 // texture layer of a slot (-1: unused)
 int materialSlotLayer(int slot)
 {
-	return int(slot < 4 ? MaterialSlots0[slot] : MaterialSlots1[slot - 4]);
+	vec4 group = slot < 8 ? (slot < 4 ? MaterialSlots0 : MaterialSlots1) : (slot < 12 ? MaterialSlots2 : MaterialSlots3);
+	return int(group[slot & 3]);
+}
+
+// a vertex's weight of a slot
+float materialSlotWeight(vec4 slots[MATERIAL_SLOT_GROUPS], int slot)
+{
+	return slots[slot >> 2][slot & 3];
 }
 
 // slot weights with this pixel's slope and altitude: steep ground becomes
-// rock, snow slides off it, the shore becomes beach
-void terrainSlotWeights(vec4 slots0, vec4 slots1, float slope, float altitude, bool hasWater, out float w[MATERIAL_SLOTS])
+// the body's bare ground, snow slides off it, the shore becomes beach
+void terrainSlotWeights(vec4 slots[MATERIAL_SLOT_GROUPS], float slope, float altitude, bool hasWater, out float w[MATERIAL_SLOTS])
 {
-	for (int i = 0; i < 4; ++i) {
-		w[i] = slots0[i];
-		w[i + 4] = slots1[i];
-	}
+	for (int i = 0; i < MATERIAL_SLOTS; ++i)
+		w[i] = materialSlotWeight(slots, i);
 	int rockSlot = int(MaterialSpecial.x), beachSlot = int(MaterialSpecial.y);
 	int snowSlot = int(MaterialSpecial.z), lavaSlot = int(MaterialSpecial.w);
 
 	float steep = smoothstep(MATERIAL_ROCK_SLOPE_START, MATERIAL_ROCK_SLOPE_FULL, slope);
 	if (rockSlot >= 0 && steep > 0.0) {
 		float moved = 0.0;
-		for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
 			if (i == rockSlot || i == lavaSlot)
 				continue;
 			float k = (i == snowSlot) ? 0.7 * steep : steep;
@@ -165,8 +200,10 @@ void terrainSlotWeights(vec4 slots0, vec4 slots1, float slope, float altitude, b
 		float beach = smoothstep(MATERIAL_BEACH_TOP, MATERIAL_BEACH_FULL, altitude) * (1.0 - steep);
 		if (beach > 0.0) {
 			float moved = 0.0;
-			for (int i = 0; i < MATERIAL_SLOTS; ++i) {
-				if (i == beachSlot || i == rockSlot || i == snowSlot || i == lavaSlot)
+			for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
+				int layer = materialSlotLayer(i);
+				// (lava's crust and ash stay black down to the water)
+				if (i == beachSlot || i == rockSlot || i == snowSlot || i == lavaSlot || layer == MATERIAL_ASH || layer == MATERIAL_LAVA_FLOW)
 					continue;
 				moved += beach * w[i];
 				w[i] *= 1.0 - beach;
@@ -178,20 +215,26 @@ void terrainSlotWeights(vec4 slots0, vec4 slots1, float slope, float altitude, b
 
 // pattern weights for the procedural surface patterns (terrain-surface.glsl)
 // from the slots: x water (none, it is shaded separately), y sand, z
-// vegetation, w snow; the rest is rock
-vec4 terrainPatternWeights(vec4 slots0, vec4 slots1, out float rock)
+// vegetation, w snow; ice and lava have their own; the rest is rock
+vec4 terrainPatternWeights(vec4 slots[MATERIAL_SLOT_GROUPS], out float rock, out float ice, out float lava)
 {
 	vec4 p = vec4(0.0);
 	rock = 0.0;
-	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
-		float w = i < 4 ? slots0[i] : slots1[i - 4];
+	ice = 0.0;
+	lava = 0.0;
+	for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
+		float w = materialSlotWeight(slots, i);
 		int m = materialSlotLayer(i);
-		if (m == MATERIAL_SAND || m == MATERIAL_SALT || m == MATERIAL_ASH)
+		if (m == MATERIAL_SAND || m == MATERIAL_SALT || m == MATERIAL_ASH || m == MATERIAL_DUST)
 			p.y += w;
-		else if (m == MATERIAL_GRASS || m == MATERIAL_FOREST)
+		else if (m == MATERIAL_GRASS || m == MATERIAL_FOREST || m == MATERIAL_TUNDRA)
 			p.z += w;
-		else if (m == MATERIAL_SNOW || m == MATERIAL_ICE)
+		else if (m == MATERIAL_SNOW)
 			p.w += w;
+		else if (m == MATERIAL_ICE)
+			ice += w;
+		else if (m == MATERIAL_LAVA)
+			lava += w;
 		else if (m >= 0)
 			rock += w;
 	}
@@ -262,24 +305,46 @@ vec3 materialSample(int layer, MaterialMapping m, float level)
 	level = clamp(level, 0.0, MATERIAL_MAX_LEVEL - 1.0);
 	float k = floor(level);
 	vec3 r = mix(materialTileSample(layer, m, k), materialTileSample(layer, m, k + 1.0), level - k);
-	return vec3(r.x, r.y * 2.0, r.z);
+	// forest: its floor on foot, its canopy from the air
+	if (layer == MATERIAL_FOREST) {
+		float canopy = smoothstep(MATERIAL_FOREST_NEAR_LEVEL, MATERIAL_FOREST_FAR_LEVEL, m.level);
+		if (canopy > 0.0)
+			r = mix(r, mix(materialTileSample(MATERIAL_FOREST_FAR, m, k), materialTileSample(MATERIAL_FOREST_FAR, m, k + 1.0), level - k), canopy);
+	}
+	r.y *= 2.0;
+	// the ice photo has its cracks built in: as strong as this body's are
+	if (layer == MATERIAL_ICE) {
+		r.y = 1.0 + (r.y - 1.0) * MaterialLook.x;
+		r.z = 0.5 + (r.z - 0.5) * MaterialLook.x;
+	}
+	return r;
+}
+
+// how far each material's bumps stand out
+float materialBumpStrength(int m)
+{
+	if (m == MATERIAL_DUST) return 0.25;
+	if (m == MATERIAL_LAVA || m == MATERIAL_ICE) return 0.35;
+	if (m == MATERIAL_SNOW || m == MATERIAL_ASH) return 0.5;
+	if (m == MATERIAL_SAND || m == MATERIAL_LAVA_FLOW) return 0.6;
+	return 1.0;
 }
 
 // Colour multiplier for the terrain (rgb, around 1): material detail and the
-// colour shifts from slope rock, snow and beaches; and the lava glow (a,
+// colour shifts from steep ground, snow and beaches; and the lava glow (a,
 // times MATERIAL_LAVA_GLOW, added after lighting).
-// slots0, slots1: the vertex's slot weights; albedo: unlit vertex colour;
+// slots: the vertex's slot weights; albedo: unlit vertex colour;
 // mapping: materialMapping() of the pixel; normal, up: view space;
 // altitude: metres above sea level (only used with water); landform: from
 // the detail tile (0.5 without one): bare rock on crests and rims.
 // bump: the blended texture height (x, 0..1) and its scale in metres (y),
 // for terrainBumpNormal()
-vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMapping mapping,
+vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, MaterialMapping mapping,
 	float distMetres, vec3 normal, vec3 up, float altitude, bool hasWater, float landform, out vec2 bump)
 {
 	bump = vec2(0.5, 0.0);
 	int lavaSlot = int(MaterialSpecial.w);
-	float lavaWeight = lavaSlot < 0 ? 0.0 : (lavaSlot < 4 ? slots0[lavaSlot] : slots1[lavaSlot - 4]);
+	float lavaWeight = lavaSlot < 0 ? 0.0 : materialSlotWeight(slots, lavaSlot);
 	float farGlow = lavaWeight * MATERIAL_LAVA_MEAN_EMISSION;
 
 	float contrast = 1.0 - smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, distMetres);
@@ -291,13 +356,14 @@ vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMappin
 	// this pixel's slope and altitude
 	float w0[MATERIAL_SLOTS];
 	float w[MATERIAL_SLOTS];
-	terrainSlotWeights(slots0, slots1, 0.0, MATERIAL_BEACH_TOP, hasWater, w0);
-	terrainSlotWeights(slots0, slots1, slope, altitude, hasWater, w);
+	terrainSlotWeights(slots, 0.0, MATERIAL_BEACH_TOP, hasWater, w0);
+	terrainSlotWeights(slots, slope, altitude, hasWater, w);
+	int usedSlots = MATERIAL_USED_SLOTS;
 	int rockSlot = int(MaterialSpecial.x);
 	float crest = 0.6 * smoothstep(0.7, 0.9, landform);
 	if (rockSlot >= 0 && crest > 0.0) {
 		float moved = 0.0;
-		for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		for (int i = 0; i < usedSlots; ++i) {
 			if (i == rockSlot || i == int(MaterialSpecial.w))
 				continue;
 			moved += crest * w[i];
@@ -308,7 +374,7 @@ vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMappin
 
 	// the two strongest slots
 	int m1 = 0, m2 = 1;
-	for (int i = 1; i < MATERIAL_SLOTS; ++i) {
+	for (int i = 1; i < usedSlots; ++i) {
 		if (w[i] > w[m1]) {
 			m2 = m1;
 			m1 = i;
@@ -317,7 +383,7 @@ vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMappin
 		}
 	}
 	float landWeight = 0.0;
-	for (int i = 0; i < MATERIAL_SLOTS; ++i)
+	for (int i = 0; i < usedSlots; ++i)
 		landWeight += w[i];
 	if (landWeight < 1e-3)
 		return vec4(1.0, 1.0, 1.0, farGlow);
@@ -350,7 +416,7 @@ vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMappin
 	// colour: shift by the materials gained and lost against the vertex
 	// colour; near the camera only, so planets keep their look from afar
 	vec3 shifted = albedo;
-	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+	for (int i = 0; i < usedSlots; ++i) {
 		int layer = materialSlotLayer(i);
 		if (layer < 0)
 			continue;
@@ -368,7 +434,8 @@ vec4 terrainMaterialDetail(vec4 slots0, vec4 slots1, vec3 albedo, MaterialMappin
 
 	// the bumps, the rest of the land flat
 	bump.x = (n1 * d1.z + n2 * d2.z + 0.5 * (landWeight - total)) / landWeight;
-	bump.y = contrast * MATERIAL_BUMP_HEIGHT * exp2(mapping.level);
+	float bumps = (n1 * (l1 >= 0 ? materialBumpStrength(l1) : 1.0) + n2 * (l2 >= 0 ? materialBumpStrength(l2) : 1.0) + (landWeight - total)) / landWeight;
+	bump.y = contrast * MATERIAL_BUMP_HEIGHT * exp2(mapping.level) * bumps;
 	detail = 1.0 + (detail - 1.0) * contrast;
 
 	// lava glow: the texture's emission near the camera, its average further out
@@ -403,15 +470,17 @@ uniform vec4 ReliefScale;
 // slope RMS of each material's relief below the mesh
 float materialRoughness(int m)
 {
-	if (m == MATERIAL_ROCK || m == MATERIAL_BASALT) return 0.17;
-	if (m == MATERIAL_LAVA) return 0.12;
-	if (m == MATERIAL_GRAVEL || m == MATERIAL_ASH) return 0.11;
+	if (m == MATERIAL_ROCK) return 0.17;
+	if (m == MATERIAL_BASALT) return 0.12;
+	if (m == MATERIAL_GRAVEL) return 0.11;
+	if (m == MATERIAL_DIRTY_ICE) return 0.10;
 	if (m == MATERIAL_FOREST) return 0.09;
-	if (m == MATERIAL_SOIL || m == MATERIAL_REGOLITH) return 0.07;
-	if (m == MATERIAL_GRASS) return 0.06;
+	if (m == MATERIAL_SOIL || m == MATERIAL_CRACKED_MUD) return 0.07;
+	if (m == MATERIAL_REGOLITH || m == MATERIAL_GRASS || m == MATERIAL_TUNDRA) return 0.06;
+	if (m == MATERIAL_ASH || m == MATERIAL_LAVA_FLOW || m == MATERIAL_METAL) return 0.05;
 	if (m == MATERIAL_SAND || m == MATERIAL_SNOW) return 0.04;
-	if (m == MATERIAL_ICE) return 0.03;
-	return 0.025;
+	if (m == MATERIAL_SALT) return 0.025;
+	return 0.02; // lava, ice and dust are the smoothest
 }
 
 // planet-fixed slope from one cube-face projection
@@ -436,18 +505,18 @@ vec3 reliefTileSlope(MaterialMapping m, float level)
 }
 
 // The surface normal with the relief added. normal, up: view space;
-// m: materialMapping() of the pixel; slots0, slots1: the vertex's material
+// m: materialMapping() of the pixel; slots: the vertex's material
 // weights; tile: terrainTileSample(), which replaces the generic relief's
 // longer waves where the patch has a tile; baseScale: the detail of the
 // surface below (the vertices, or the baked surface of terrain-far.glsl) as
 // a fraction of the vertex spacing: the relief starts below that
-vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots0, vec4 slots1, float distMetres, vec4 tile, float baseScale)
+vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots[MATERIAL_SLOT_GROUPS], float distMetres, vec4 tile, float baseScale)
 {
 	float roughness = 0.0;
-	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+	for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
 		int layer = materialSlotLayer(i);
 		if (layer >= 0)
-			roughness += (i < 4 ? slots0[i] : slots1[i - 4]) * materialRoughness(layer);
+			roughness += materialSlotWeight(slots, i) * materialRoughness(layer);
 	}
 	roughness *= mix(1.0, RELIEF_FAR_STRENGTH, smoothstep(RELIEF_NEAR_DIST, RELIEF_FAR_DIST, distMetres));
 	if (roughness < 0.005)
@@ -485,6 +554,66 @@ vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots0, v
 	slope = mat3(cloudAxisX.xyz, cloudAxisY.xyz, cloudAxisZ.xyz) * slope * roughness;
 	slope -= up * dot(slope, up);
 	return normalize(normal - slope);
+}
+
+// ---------------------------------------------------------------- how materials take the light
+
+// x: ice, y: lava, z: metal, w: regolith and dust, from the vertex's weights
+vec4 materialLightWeights(vec4 slots[MATERIAL_SLOT_GROUPS])
+{
+	vec4 look = vec4(0.0);
+	for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
+		int m = materialSlotLayer(i);
+		float w = materialSlotWeight(slots, i);
+		if (m == MATERIAL_ICE)
+			look.x += w;
+		else if (m == MATERIAL_LAVA)
+			look.y += w;
+		else if (m == MATERIAL_METAL)
+			look.z += w;
+		else if (m == MATERIAL_REGOLITH || m == MATERIAL_DUST)
+			look.w += w;
+	}
+	return look;
+}
+
+// sun glint on ice, lava and metal, weaker from afar so that a whole moon
+// doesn't carry one highlight. N, V, L: view space, unit length
+float materialGloss(vec4 look, vec3 N, vec3 V, vec3 L, float distMetres)
+{
+	float weight = look.x + look.y + look.z;
+	if (weight < 0.01)
+		return 0.0;
+	float NdotL = dot(N, L);
+	if (NdotL <= 0.0)
+		return 0.0;
+	float strength = 0.35 * look.x + 0.5 * look.y + 0.6 * look.z;
+	float shine = (80.0 * look.x + 40.0 * look.y + 60.0 * look.z) / weight;
+	float distant = mix(1.0, 0.3, smoothstep(RELIEF_NEAR_DIST, RELIEF_FAR_DIST, distMetres));
+	return strength * distant * pow(max(dot(N, normalize(V + L)), 0.0), shine) * smoothstep(0.0, 0.1, NdotL);
+}
+
+// powder with no air brightens with the sun behind the viewer; a multiplier for the light
+float materialBackscatter(vec4 look, vec3 V, vec3 L)
+{
+#ifdef ATMOSPHERE
+	return 1.0;
+#else
+	return 1.0 + 0.35 * look.w * pow(max(dot(V, L), 0.0), 8.0);
+#endif
+}
+
+// ice is slightly blue where it lies in shadow; light: the light it gets
+vec3 materialShadowTint(vec4 look, vec3 light)
+{
+	float shadow = 1.0 - clamp(dot(light, vec3(0.3, 0.59, 0.11)), 0.0, 1.0);
+	return mix(vec3(1.0), vec3(0.85, 0.93, 1.1), look.x * shadow);
+}
+
+// lava's glow stops over water and just short of it
+float materialGlowOverWater(float waterMask, float altitude)
+{
+	return (1.0 - waterMask) * smoothstep(MATERIAL_GLOW_SHORE_LOW, MATERIAL_GLOW_SHORE_HIGH, altitude);
 }
 
 // ---------------------------------------------------------------- bump lighting

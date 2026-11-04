@@ -40,6 +40,8 @@ in vec3 varyingNormal;
 in vec4 vertexColor;
 in vec4 materialWeights0;
 in vec4 materialWeights1;
+in vec4 materialWeights2;
+in vec4 materialWeights3;
 
 #ifdef TERRAIN_WITH_LAVA
 in vec4 varyingEmission;
@@ -111,15 +113,17 @@ void main(void)
 	MaterialMapping mapping = materialMapping(varyingEyepos, materialDx, materialDy, surfaceUp);
 	vec4 tile = terrainTileSample(texCoord0);
 	vec2 bump;
-	vec4 surfaceMaterial = terrainMaterialDetail(materialWeights0, materialWeights1, albedo.rgb, mapping,
+	vec4 materialSlots[MATERIAL_SLOT_GROUPS] = vec4[MATERIAL_SLOT_GROUPS](materialWeights0, materialWeights1, materialWeights2, materialWeights3);
+	vec4 lightWeights = materialLightWeights(materialSlots);
+	vec4 surfaceMaterial = terrainMaterialDetail(materialSlots, albedo.rgb, mapping,
 		dist, tnorm, surfaceUp, altitude, hasWater, tile.w, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	// (the patterns stand in for detail the baked surface has)
 	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - max(farWeight, surfaceWeight));
 	if (patternWeight > 0.0) {
-		float rock;
-		vec4 pw = terrainPatternWeights(materialWeights0, materialWeights1, rock);
-		detailMul.rgb *= mix(1.0, terrainSurfacePatternFor(varyingEyepos, dist, pw, rock), patternWeight);
+		float rock, ice, lava;
+		vec4 pw = terrainPatternWeights(materialSlots, rock, ice, lava);
+		detailMul.rgb *= mix(1.0, terrainSurfacePatternFor(varyingEyepos, dist, pw, rock, ice, lava), patternWeight);
 	}
 
 	// the streets and paved ground of the nearest city, dusted with the
@@ -141,7 +145,7 @@ void main(void)
 
 	// the relief between the mesh and the pixel
 	vec3 meshNormal = tnorm;
-	tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialWeights0, materialWeights1, dist, tile, baseScale);
+	tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialSlots, dist, tile, baseScale);
 	// and the bumps of the material textures, but for the smooth paving
 	tnorm = terrainBumpNormal(tnorm, materialDx, materialDy, bump);
 	tnorm = normalize(mix(tnorm, meshNormal, pavingSmoothing));
@@ -161,6 +165,8 @@ void main(void)
 
 #if (NUM_LIGHTS > 0)
 	vec3 V = normalize(eyeposScaled - geosphereCenter);
+	vec3 materialGlint = vec3(0.0);
+	float backscatter = 1.0;
 	// shadows of ships, stations and buildings from the main star
 	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
 
@@ -173,6 +179,8 @@ void main(void)
 		uneclipsed *= cloudShadowTerrain(clouds, eyeposScaled - geosphereCenter, L, max(dist * CLOUD_SHADOW_PIXEL_ANGLE, 1.0));
 #endif
 		CalcPlanetDiffuse(diff, uLight[i].diffuse, L, tnorm, uneclipsed);
+		materialGlint += uLight[i].diffuse.rgb * uneclipsed * materialGloss(lightWeights, tnorm, -eyenorm, L, dist);
+		backscatter = max(backscatter, materialBackscatter(lightWeights, -eyenorm, L));
 
 #ifdef TERRAIN_WITH_WATER
 		if (waterMask > 0.0)
@@ -183,6 +191,8 @@ void main(void)
 	// Use the detail value to multiply the final colour before lighting
 	vec4 ambient = scene.ambient * albedo;
 	vec4 final = albedo * detailMul * diff;
+	final.rgb *= backscatter * materialShadowTint(lightWeights, diff.rgb);
+	final.rgb += materialGlint;
 
 #ifdef TERRAIN_WITH_WATER
 	vec3 waterReflect = vec3(0.0);
@@ -212,10 +222,18 @@ void main(void)
 	final = ambient + final * 2.0;
 #endif
 
+#ifdef TERRAIN_WITH_LAVA
+	// lava glows, in shadow and at night too; not across the water
+	float lavaGlowMask = 1.0;
+#ifdef TERRAIN_WITH_WATER
+	lavaGlowMask = materialGlowOverWater(waterMask, altitude);
+#endif
+#endif
+
 	frag_color =
 		material.emission +
 #ifdef TERRAIN_WITH_LAVA
-		varyingEmission + vec4(surfaceMaterial.a * MATERIAL_LAVA_GLOW, 0.0) +
+		lavaGlowMask * (varyingEmission + vec4(surfaceMaterial.a * MATERIAL_LAVA_GLOW, 0.0)) +
 #endif
 		final;
 

@@ -14,7 +14,7 @@
 // (data/shaders/opengl/terrain-materials.glsl).
 //
 // Each rocky colour fractal lists which colours it paints for which material
-// (the "families", mostly its palette arrays). A body uses at most eight
+// (the "families", mostly its palette arrays). A body uses at most sixteen
 // materials, its slots; every vertex stores a weight per slot, from how close
 // its colour is to each family. The shader maps slots to texture layers.
 class TerrainMaterialTable {
@@ -35,10 +35,19 @@ public:
 		ASH,
 		REGOLITH,
 		SALT,
+		TUNDRA,
+		DIRTY_ICE,
+		LAVA_FLOW,
+		CRACKED_MUD,
+		DUST,
+		METAL,
+		// not a material of its own: FOREST seen from the air, which the shader
+		// blends to by distance, in FOREST's slot
+		FOREST_FAR,
 		LAYER_COUNT
 	};
 
-	static constexpr int SLOT_COUNT = 8;
+	static constexpr int SLOT_COUNT = 16;
 
 	// Adds colours the colour fractal paints for a material (none: a slot for
 	// materials only the shader places, like rock on steep slopes).
@@ -52,8 +61,11 @@ public:
 	// slot of a layer, or -1
 	int SlotOf(Layer layer) const;
 
-	// slots the shader moves weight to: bare rock on steep slopes (rock, else
-	// basalt), beaches (sand, else salt), glowing lava; -1 where the body has none
+	// what bare steep ground is on this body, by default rock, else basalt
+	void SetSteep(Layer layer);
+
+	// slots the shader moves weight to: bare steep ground (see SetSteep), beaches
+	// (sand, else salt), glowing lava; -1 where the body has none
 	int RockSlot() const;
 	int BeachSlot() const;
 	int LavaSlot() const { return SlotOf(LAVA); }
@@ -74,6 +86,7 @@ private:
 
 	Layer m_layers[SLOT_COUNT] = {};
 	int m_slotCount = 0;
+	int m_steepSlot = -1;
 	std::vector<Family> m_families;
 };
 

@@ -209,7 +209,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 				++pNorm; // next normal
 
 				vtxPtr->col = pColr->col; // alpha: altitude above sea level, see EncodeAltitude()
-				std::copy(pColr->materials, pColr->materials + 8, vtxPtr->materials);
+				std::copy(pColr->materials, pColr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 				++pColr; // next colour
 
 				// uv coords
@@ -239,7 +239,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv;
-			std::copy(vtxInr->materials, vtxInr->materials + 8, vtxPtr->materials);
+			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 		}
 		// right-edge
 		for (Sint32 y = 1; y < edgeLen - 1; y++) {
@@ -254,7 +254,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv;
-			std::copy(vtxInr->materials, vtxInr->materials + 8, vtxPtr->materials);
+			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 		}
 		// ----------------------------------------------------
 		const Sint32 innerTop = 1;
@@ -275,7 +275,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv;
-			std::copy(vtxInr->materials, vtxInr->materials + 8, vtxPtr->materials);
+			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 		}
 		// bottom-edge
 		for (Sint32 x = 1; x < edgeLen - 1; x++) {
@@ -290,7 +290,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv;
-			std::copy(vtxInr->materials, vtxInr->materials + 8, vtxPtr->materials);
+			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 		}
 		// ----------------------------------------------------
 		// corners

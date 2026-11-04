@@ -42,8 +42,15 @@ int TerrainMaterialTable::SlotOf(const Layer layer) const
 	return -1;
 }
 
+void TerrainMaterialTable::SetSteep(const Layer layer)
+{
+	m_steepSlot = AddSlot(layer);
+}
+
 int TerrainMaterialTable::RockSlot() const
 {
+	if (m_steepSlot >= 0)
+		return m_steepSlot;
 	const int rock = SlotOf(ROCK);
 	return rock >= 0 ? rock : SlotOf(BASALT);
 }

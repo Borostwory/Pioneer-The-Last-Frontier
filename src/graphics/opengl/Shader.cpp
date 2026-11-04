@@ -152,9 +152,9 @@ std::string Shader::GetProgramDefines(const MaterialDescriptor &desc)
 	if (desc.lighting && desc.dirLights > 0)
 		ss << stringf("#define INV_NUM_LIGHTS %0{f}\n", 1.0f / float(desc.dirLights));
 
-	if (desc.effect == EFFECT_GEOSPHERE_TERRAIN_WITH_LAVA)
+	if (desc.effect == EFFECT_GEOSPHERE_TERRAIN_WITH_LAVA || desc.effect == EFFECT_GEOSPHERE_TERRAIN_WITH_LAVA_AND_WATER)
 		ss << "#define TERRAIN_WITH_LAVA\n";
-	if (desc.effect == EFFECT_GEOSPHERE_TERRAIN_WITH_WATER)
+	if (desc.effect == EFFECT_GEOSPHERE_TERRAIN_WITH_WATER || desc.effect == EFFECT_GEOSPHERE_TERRAIN_WITH_LAVA_AND_WATER)
 		ss << "#define TERRAIN_WITH_WATER\n";
 	if (desc.effect == EFFECT_BILLBOARD_ATLAS)
 		ss << "#define USE_SPRITE_ATLAS\n";

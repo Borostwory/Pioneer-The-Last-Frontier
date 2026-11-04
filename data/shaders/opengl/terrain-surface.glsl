@@ -2,7 +2,8 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 // Procedural surface patterns for the terrain shaders: waves on water, ripples
-// on sand, clumps on vegetation, stones on rock, soft drifts on snow.
+// on sand, clumps on vegetation, stones on rock, soft drifts on snow, cracks
+// in ice, a dark crust with brighter cracks on lava.
 //
 // The surface type weights come from the body's material slots
 // (terrainPatternWeights() in terrain-materials.glsl). Patterns are 3D noise in planet-fixed coordinates, so unlike the tiling
@@ -16,6 +17,8 @@
 // x: vegetation hue, y: sand hue (both 0..1), z: amount of life; for the
 // material colours of terrain-materials.glsl
 uniform vec4 SurfaceMaterial;
+// x: strength of the ice's cracks 0..1; w: how many material slots the body uses
+uniform vec4 MaterialLook;
 
 // pattern cell size as a fraction of the view distance
 #define SURFACE_CELL_PER_DIST 0.012
@@ -29,6 +32,8 @@ uniform vec4 SurfaceMaterial;
 #define SURFACE_VEGETATION_CONTRAST 0.22
 #define SURFACE_ROCK_CONTRAST 0.28
 #define SURFACE_SNOW_CONTRAST 0.05
+#define SURFACE_ICE_CONTRAST 0.3
+#define SURFACE_LAVA_CONTRAST 0.45
 
 // patterns around 1.0; q is the planet-fixed position in pattern cells
 float surfaceWaterPattern(vec3 q, float t)
@@ -66,7 +71,23 @@ float surfaceSnowPattern(vec3 q)
 	return 1.0 + SURFACE_SNOW_CONTRAST * cloudGradNoise(q);
 }
 
-float surfacePatternAt(vec3 q, vec4 w, float rock, float t)
+// thin lines where bent noise crosses zero
+float surfaceCracks(vec3 q, float width)
+{
+	return smoothstep(width, 0.0, abs(cloudGradNoise(q + 0.6 * cloudGradNoise(q * 0.37))));
+}
+
+float surfaceIcePattern(vec3 q)
+{
+	return 1.0 + SURFACE_ICE_CONTRAST * (0.1 * cloudGradNoise(q * 0.5) - MaterialLook.x * surfaceCracks(q * 0.8, 0.05));
+}
+
+float surfaceLavaPattern(vec3 q)
+{
+	return 1.0 + SURFACE_LAVA_CONTRAST * (surfaceCracks(q * 0.7, 0.08) * 1.4 - 0.25 + 0.3 * cloudGradNoise(q * 2.0));
+}
+
+float surfacePatternAt(vec3 q, vec4 w, float rock, float ice, float lava, float t)
 {
 	float m = 0.0;
 	if (w.x > 0.01) m += w.x * surfaceWaterPattern(q, t);
@@ -74,16 +95,18 @@ float surfacePatternAt(vec3 q, vec4 w, float rock, float t)
 	if (w.z > 0.01) m += w.z * surfaceVegetationPattern(q);
 	if (w.w > 0.01) m += w.w * surfaceSnowPattern(q);
 	if (rock > 0.01) m += rock * surfaceRockPattern(q);
+	if (ice > 0.01) m += ice * surfaceIcePattern(q);
+	if (lava > 0.01) m += lava * surfaceLavaPattern(q);
 	// weights below the thresholds contribute a neutral 1.0
 	float used = (w.x > 0.01 ? w.x : 0.0) + (w.y > 0.01 ? w.y : 0.0) + (w.z > 0.01 ? w.z : 0.0) +
-		(w.w > 0.01 ? w.w : 0.0) + (rock > 0.01 ? rock : 0.0);
+		(w.w > 0.01 ? w.w : 0.0) + (rock > 0.01 ? rock : 0.0) + (ice > 0.01 ? ice : 0.0) + (lava > 0.01 ? lava : 0.0);
 	return m + (1.0 - used);
 }
 
 // Pattern multiplier for the surface colour, around 1.0, for given surface
-// type weights (w: water, sand, vegetation, snow; rock).
+// type weights (w: water, sand, vegetation, snow; rock, ice, lava).
 // eyepos is the view-space position in metres.
-float terrainSurfacePatternFor(vec3 eyepos, float distMetres, vec4 w, float rock)
+float terrainSurfacePatternFor(vec3 eyepos, float distMetres, vec4 w, float rock, float ice, float lava)
 {
 	// planet-fixed position on the unit sphere
 	vec3 P = eyepos * geosphereInvRadius - geosphereCenter;
@@ -95,7 +118,7 @@ float terrainSurfacePatternFor(vec3 eyepos, float distMetres, vec4 w, float rock
 	float cell0 = SURFACE_MIN_CELL * exp2(k);
 	float t = cloudTime.x;
 
-	float a = surfacePatternAt(pf * (geosphereRadius / cell0), w, rock, t);
-	float b = surfacePatternAt(pf * (geosphereRadius / (cell0 * 2.0)), w, rock, t);
+	float a = surfacePatternAt(pf * (geosphereRadius / cell0), w, rock, ice, lava, t);
+	float b = surfacePatternAt(pf * (geosphereRadius / (cell0 * 2.0)), w, rock, ice, lava, t);
 	return mix(a, b, f);
 }

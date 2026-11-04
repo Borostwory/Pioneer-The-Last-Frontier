@@ -8,6 +8,7 @@
 
 #include "Color.h"
 #include "graphics/VertexBuffer.h"
+#include "terrain/TerrainMaterials.h"
 #include "vector3.h"
 
 #include <cstddef>
@@ -21,7 +22,7 @@
 // (TerrainMaterialTable, terrain-materials.glsl)
 struct GeoVertexSurface {
 	Color4ub col;
-	Uint8 materials[8];
+	Uint8 materials[TerrainMaterialTable::SLOT_COUNT];
 };
 
 class GeoPatchContext : public RefCounted {
@@ -31,17 +32,19 @@ public:
 		vector3f norm;
 		Color4ub col;
 		vector2f uv;
-		Uint8 materials[8];
+		Uint8 materials[TerrainMaterialTable::SLOT_COUNT];
 	};
 
-	// position, normal, colour, uv, and the material weights as two normalised
-	// UBYTE4 at locations 10 and 11 (a_materials0/1 in the terrain shaders)
+	// position, normal, colour, uv, and the material weights as four normalised
+	// UBYTE4 at locations 10 to 13 (a_materials0..3 in the terrain shaders)
 	static Graphics::VertexFormatDesc GetVertexFormat()
 	{
 		Graphics::VertexFormatDesc desc = Graphics::VertexFormatDesc::FromAttribSet(
 			Graphics::ATTRIB_POSITION | Graphics::ATTRIB_NORMAL | Graphics::ATTRIB_DIFFUSE | Graphics::ATTRIB_UV0);
 		desc.attribs[4] = { Graphics::ATTRIB_FORMAT_UBYTE4, 10, 0, uint16_t(offsetof(VBOVertex, materials)) };
 		desc.attribs[5] = { Graphics::ATTRIB_FORMAT_UBYTE4, 11, 0, uint16_t(offsetof(VBOVertex, materials) + 4) };
+		desc.attribs[6] = { Graphics::ATTRIB_FORMAT_UBYTE4, 12, 0, uint16_t(offsetof(VBOVertex, materials) + 8) };
+		desc.attribs[7] = { Graphics::ATTRIB_FORMAT_UBYTE4, 13, 0, uint16_t(offsetof(VBOVertex, materials) + 12) };
 		desc.bindings[0].stride = sizeof(VBOVertex);
 		return desc;
 	}

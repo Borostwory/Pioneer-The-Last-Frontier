@@ -74,6 +74,8 @@ public:
 	// which materials the colour fractal paints, and with which colours;
 	// empty for stars and gas giants
 	const TerrainMaterialTable &GetMaterialTable() const { return m_materials; }
+	// how strongly the ICE material shows its cracks, 0..1
+	virtual float GetIceCrackStrength() const { return 0.7f; }
 
 	Uint32 GetSurfaceEffects() const { return m_surfaceEffects; }
 

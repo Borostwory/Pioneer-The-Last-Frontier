@@ -5,8 +5,9 @@
 """Generates the terrain material textures (data/textures/terrain/*.dds) used
 by data/shaders/opengl/terrain-materials.glsl.
 
-The sources are CC0 photo materials from ambientCG (https://ambientcg.com),
-1K-JPG downloads, unpacked one folder per asset:
+The sources are CC0 photo materials from ambientCG (https://ambientcg.com) and
+Poly Haven (https://polyhaven.com), 1K downloads, one folder per asset, with
+the files named the same way for both:
     <source_dir>/Rock030/Rock030_1K-JPG_Color.jpg
     <source_dir>/Rock030/Rock030_1K-JPG_Displacement.jpg
     ...
@@ -18,7 +19,8 @@ shader doubles it); the displacement map in alpha, used to blend materials
 along their bumps; the emission map, where there is one (lava), in red.
 DXT5 with a full mipmap chain, as texture arrays need DDS.
 
-usage: python make_terrain_materials.py <source_dir> <output_dir>
+usage: python make_terrain_materials.py <source_dir> <output_dir> [layer ...]
+(only the named layers, when given)
 needs numpy and Pillow (11 or later, for DXT5 encoding)
 """
 
@@ -31,21 +33,28 @@ import numpy as np
 from PIL import Image
 
 # layer order must match the MATERIAL_* indices in terrain-materials.glsl
-# (output name, ambientCG asset, contrast: standard deviation of log brightness)
+# (output name, asset, contrast: standard deviation of log brightness)
 MATERIALS = [
     ("rock", "Rock030", 0.30),
     ("gravel", "Ground110", 0.32),
     ("sand", "Ground097", 0.14),
     ("soil", "Ground109", 0.24),
     ("grass", "Grass004", 0.26),
-    ("forest", "Moss002", 0.34),
+    ("forest", "forest_floor", 0.34),
     ("snow", "Snow008A", 0.08),
-    ("ice", "Snow014", 0.10),
+    ("ice", "Ice003", 0.12),
     ("basalt", "Rock035", 0.30),
     ("lava", "Lava001", 0.35),
-    ("ash", "Gravel024", 0.30),
+    ("ash", "moon_dusted_03", 0.18),
     ("regolith", "Ground099", 0.16),
     ("salt", "Ground101", 0.10),
+    ("tundra", "Moss002", 0.34),
+    ("dirty_ice", "snow_03", 0.22),
+    ("lava_flow", "Lava003", 0.30),
+    ("cracked_mud", "mud_cracked_dry_03", 0.30),
+    ("dust", "moon_dusted_03", 0.10),
+    ("metal", "Metal059C", 0.20),
+    ("forest_far", "Moss003", 0.34),
 ]
 
 SIZE = 1024
@@ -80,11 +89,15 @@ def detail_and_height(src_dir, asset, contrast):
     d *= contrast / max(d.std(), 1e-6)
     detail = np.clip(0.5 * np.exp(d - np.log(np.mean(np.exp(d)))), 0.0, 1.0)
 
-    disp = load(os.path.join(src_dir, asset, f"{asset}_1K-JPG_Displacement.jpg"))
-    if disp.ndim == 3:
-        disp = disp[..., 0]
-    lo, hi = np.percentile(disp, [1.0, 99.0])
-    height = np.clip((disp - lo) / max(hi - lo, 1e-6), 0.0, 1.0)
+    disp_path = os.path.join(src_dir, asset, f"{asset}_1K-JPG_Displacement.jpg")
+    if os.path.exists(disp_path):
+        disp = load(disp_path)
+        if disp.ndim == 3:
+            disp = disp[..., 0]
+        lo, hi = np.percentile(disp, [1.0, 99.0])
+        height = np.clip((disp - lo) / max(hi - lo, 1e-6), 0.0, 1.0)
+    else:
+        height = np.full(lum.shape, 0.5)
 
     emission = np.zeros_like(height)
     emission_path = os.path.join(src_dir, asset, f"{asset}_1K-JPG_Emission.jpg")
@@ -135,8 +148,11 @@ def mip_chain(rgba):
 
 def main():
     src_dir, out_dir = sys.argv[1], sys.argv[2]
+    only = set(sys.argv[3:])
     os.makedirs(out_dir, exist_ok=True)
     for name, asset, contrast in MATERIALS:
+        if only and name not in only:
+            continue
         detail, height, emission = detail_and_height(src_dir, asset, contrast)
         v = np.round(detail * 255.0)
         rgba = np.stack([np.round(emission * 255.0), v, v, np.round(height * 255.0)], axis=-1).astype(np.uint8)

@@ -289,7 +289,7 @@ float cityGardenDetail(vec4 garden, MaterialMapping mapping, float distMetres, o
 		float w = garden[k];
 		if (w < 0.02)
 			continue;
-		int layer = k == 0 ? MATERIAL_GRASS : k == 1 ? MATERIAL_FOREST : MATERIAL_SOIL;
+		int layer = k == 0 ? MATERIAL_GRASS : k == 1 ? MATERIAL_TUNDRA : MATERIAL_SOIL;
 		vec3 f = materialSample(layer, mapping, mapping.level);
 		vec3 c = materialSample(layer, mapping, coarse);
 		detail += w * f.y * c.y;
