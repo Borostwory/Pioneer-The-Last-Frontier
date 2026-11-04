@@ -12,7 +12,7 @@
 			],
 			"atmosDensity": "f0/0",
 			"atmosOxidizing": "f0/0",
-			"averageTemp": 5700,
+			"averageTemp": 5772,
 			"axialTilt": "f0/0",
 			"children": [
 				1,
@@ -84,7 +84,7 @@
 			"type": "PLANET_TERRESTRIAL",
 			"volatileIces": "f0/85899345",
 			"volatileLiquid": "f0/0",
-			"volcanicity": "f0/2147483648"
+			"volcanicity": "f0/0"
 		},
 		{
 			"agricultural": "f0/0",
@@ -99,7 +99,7 @@
 			"atmosDensity": "f64/3972844717",
 			"atmosOxidizing": "f0/515396075",
 			"averageTemp": 735,
-			"axialTilt": "f0/194899886",
+			"axialTilt": "f3/413236383",
 			"eccentricity": "f0/30064771",
 			"hasRings": false,
 			"humanActivity": "f0/0",
@@ -522,7 +522,7 @@
 			"humanActivity": "f0/0",
 			"inclination": "f0/385675994",
 			"life": "f0/0",
-			"mass": "f0/51539607",
+			"mass": "f0/52828098",
 			"metallicity": "f0/0",
 			"name": "Moon",
 			"orbitalOffset": "f1/1244416494",
@@ -833,7 +833,7 @@
 			"orbitalPhase": "f3/2058261697",
 			"parent": 16,
 			"population": "f0/0",
-			"radius": "f0/9019431",
+			"radius": "f0/7461152",
 			"rotationPeriod": "f0/1370094567",
 			"rotationPhase": "f0/0",
 			"seed": 439771126,
@@ -841,7 +841,7 @@
 			"type": "PLANET_ASTEROID",
 			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",
-			"volcanicity": "f0/3221225472"
+			"volcanicity": "f0/0"
 		},
 		{
 			"agricultural": "f0/0",
@@ -904,19 +904,19 @@
 			"mass": "f0/1",
 			"metallicity": "f0/3006477107",
 			"name": "Deimos",
-			"orbitalOffset": "f5/736397179",
-			"orbitalPhase": "f3/2058261697",
+			"orbitalOffset": "f0/3523182067",
+			"orbitalPhase": "f3/2931936755",
 			"parent": 16,
 			"population": "f0/0",
-			"radius": "f0/5153960",
+			"radius": "f0/4175013",
 			"rotationPeriod": "f1/1129576398",
 			"rotationPhase": "f0/0",
-			"seed": 439771126,
+			"seed": 1877081201,
 			"semiMajorAxis": "f0/673450",
 			"type": "PLANET_ASTEROID",
 			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",
-			"volcanicity": "f1/0"
+			"volcanicity": "f0/0"
 		},
 		{
 			"agricultural": "f0/0",
@@ -966,7 +966,7 @@
 			],
 			"atmosDensity": "f0/0",
 			"atmosOxidizing": "f0/0",
-			"averageTemp": 164,
+			"averageTemp": 230,
 			"axialTilt": "f0/0",
 			"eccentricity": "f0/957777707",
 			"hasRings": false,
@@ -1017,7 +1017,7 @@
 			"parent": 0,
 			"population": "f0/0",
 			"radius": "f0/171798691",
-			"rotationPeriod": "f7/3435973836",
+			"rotationPeriod": "f0/1395864371",
 			"rotationPhase": "f0/0",
 			"seed": 910770044,
 			"semiMajorAxis": "f2/3313996765",
@@ -1146,10 +1146,10 @@
 				155,
 				122,
 				97,
-				204
+				13
 			],
-			"ringsMaxRadius": "f1/759779714",
-			"ringsMinRadius": "f1/505088154",
+			"ringsMaxRadius": "f1/3602051634",
+			"ringsMinRadius": "f1/3204139828",
 			"rotationPeriod": "f0/1717986918",
 			"rotationPhase": "f0/0",
 			"seed": 786424632,
@@ -1191,7 +1191,7 @@
 			"seed": 4294967198,
 			"semiMajorAxis": "f0/3676492",
 			"type": "PLANET_ASTEROID",
-			"volatileIces": "f100/0",
+			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",
 			"volcanicity": "f0/0"
 		},
@@ -1221,7 +1221,7 @@
 			"orbitalPhase": "f5/1155684482",
 			"parent": 29,
 			"population": "f0/0",
-			"radius": "f0/14516989",
+			"radius": "f0/5521792",
 			"rotationPeriod": "f0/1281188744",
 			"rotationPhase": "f0/0",
 			"seed": 4294963315,
@@ -1229,7 +1229,7 @@
 			"type": "PLANET_ASTEROID",
 			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",
-			"volcanicity": "f1/0"
+			"volcanicity": "f0/0"
 		},
 		{
 			"agricultural": "f0/0",
@@ -1265,7 +1265,7 @@
 			"type": "PLANET_ASTEROID",
 			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",
-			"volcanicity": "f1/0"
+			"volcanicity": "f0/0"
 		},
 		{
 			"agricultural": "f0/0",
@@ -1304,7 +1304,7 @@
 			"type": "PLANET_ASTEROID",
 			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",
-			"volcanicity": "f1/0"
+			"volcanicity": "f0/0"
 		},
 		{
 			"agricultural": "f0/0",
@@ -1352,7 +1352,7 @@
 				178,
 				255
 			],
-			"atmosDensity": "f0/429496729",
+			"atmosDensity": "f0/64424509",
 			"atmosOxidizing": "f0/515396075",
 			"averageTemp": 130,
 			"axialTilt": "f0/0",
@@ -1363,7 +1363,7 @@
 			"hasRings": false,
 			"humanActivity": "f0/0",
 			"inclination": "f0/165664518",
-			"life": "f0/429496729",
+			"life": "f0/0",
 			"mass": "f0/64424509",
 			"metallicity": "f0/3865470566",
 			"name": "Io",
@@ -1379,7 +1379,7 @@
 			"type": "PLANET_TERRESTRIAL",
 			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",
-			"volcanicity": "f0/3006477107"
+			"volcanicity": "f0/3435973837"
 		},
 		{
 			"agricultural": "f0/0",
@@ -1427,7 +1427,7 @@
 				255,
 				255
 			],
-			"atmosDensity": "f0/368293444",
+			"atmosDensity": "f0/64424509",
 			"atmosOxidizing": "f1/0",
 			"averageTemp": 102,
 			"axialTilt": "f0/0",
@@ -1450,10 +1450,10 @@
 			"rotationPeriod": "f3/2362232012",
 			"rotationPhase": "f0/0",
 			"seed": 2102431459,
-			"semiMajorAxis": "f0/18940805",
+			"semiMajorAxis": "f0/19267320",
 			"type": "PLANET_TERRESTRIAL",
 			"volatileIces": "f1/0",
-			"volatileLiquid": "f0/3865470566",
+			"volatileLiquid": "f0/0",
 			"volcanicity": "f0/0"
 		},
 		{
@@ -1502,9 +1502,9 @@
 				255,
 				255
 			],
-			"atmosDensity": "f0/436690799",
+			"atmosDensity": "f0/64424509",
 			"atmosOxidizing": "f1/0",
-			"averageTemp": 180,
+			"averageTemp": 110,
 			"axialTilt": "f0/0",
 			"children": [
 				40
@@ -1528,7 +1528,7 @@
 			"semiMajorAxis": "f0/30923764",
 			"type": "PLANET_TERRESTRIAL",
 			"volatileIces": "f0/3006477107",
-			"volatileLiquid": "f0/1288490188",
+			"volatileLiquid": "f0/0",
 			"volcanicity": "f0/0"
 		},
 		{
@@ -1659,7 +1659,7 @@
 			"humanActivity": "f0/0",
 			"inclination": "f0/3559163501",
 			"life": "f0/0",
-			"mass": "f0/0",
+			"mass": "f0/1",
 			"metallicity": "f0/8589934",
 			"name": "Themisto",
 			"orbitalOffset": "f2/761054520",
@@ -1739,14 +1739,14 @@
 			"parent": 29,
 			"population": "f0/0",
 			"radius": "f0/57294863",
-			"rotationPeriod": "f129/3521873182",
+			"rotationPeriod": "f0/1391569404",
 			"rotationPhase": "f0/0",
 			"seed": 1344978,
 			"semiMajorAxis": "f0/328994494",
 			"type": "PLANET_ASTEROID",
 			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",
-			"volcanicity": "f1/0"
+			"volcanicity": "f0/0"
 		},
 		{
 			"agricultural": "f0/0",
@@ -1775,7 +1775,7 @@
 			"parent": 29,
 			"population": "f0/0",
 			"radius": "f0/12111807",
-			"rotationPeriod": "f12/3951369912",
+			"rotationPeriod": "f0/2147483648",
 			"rotationPhase": "f0/0",
 			"seed": 3934,
 			"semiMajorAxis": "f0/336295939",
@@ -1839,7 +1839,7 @@
 			"humanActivity": "f0/0",
 			"inclination": "f0/2113909240",
 			"life": "f0/0",
-			"mass": "f0/45",
+			"mass": "f0/1",
 			"metallicity": "f0/34359738",
 			"name": "Aega",
 			"orbitalOffset": "f0/58748266",
@@ -1901,7 +1901,7 @@
 			],
 			"ringsMaxRadius": "f2/1644972474",
 			"ringsMinRadius": "f1/1279900254",
-			"rotationPeriod": "f0/1717986918",
+			"rotationPeriod": "f0/1906965479",
 			"rotationPhase": "f0/0",
 			"seed": 174249538,
 			"semiMajorAxis": "f9/2499670966",
@@ -1942,7 +1942,7 @@
 			"seed": 1431129037,
 			"semiMajorAxis": "f0/8589934",
 			"type": "PLANET_TERRESTRIAL",
-			"volatileIces": "f0/0",
+			"volatileIces": "f0/3865470566",
 			"volatileLiquid": "f0/0",
 			"volcanicity": "f0/0"
 		},
@@ -1965,7 +1965,7 @@
 			"humanActivity": "f0/0",
 			"inclination": "f0/1424265",
 			"life": "f0/0",
-			"mass": "f0/1408749",
+			"mass": "f0/787566",
 			"metallicity": "f0/2147483648",
 			"name": "Dione",
 			"orbitalOffset": "f0/3195711946",
@@ -1978,7 +1978,7 @@
 			"seed": 3732948941,
 			"semiMajorAxis": "f0/10823317",
 			"type": "PLANET_TERRESTRIAL",
-			"volatileIces": "f0/0",
+			"volatileIces": "f0/3006477107",
 			"volatileLiquid": "f0/0",
 			"volcanicity": "f0/0"
 		},
@@ -1992,7 +1992,7 @@
 				255,
 				255
 			],
-			"atmosDensity": "f0/431429464",
+			"atmosDensity": "f0/64424509",
 			"atmosOxidizing": "f0/0",
 			"averageTemp": 81,
 			"axialTilt": "f0/0",
@@ -2014,7 +2014,7 @@
 			"seed": 2273638334,
 			"semiMajorAxis": "f0/15118284",
 			"type": "PLANET_TERRESTRIAL",
-			"volatileIces": "f0/0",
+			"volatileIces": "f0/3006477107",
 			"volatileLiquid": "f0/0",
 			"volcanicity": "f0/0"
 		},
@@ -2028,7 +2028,7 @@
 				102,
 				255
 			],
-			"atmosDensity": "f14/4058744087",
+			"atmosDensity": "f5/1717986918",
 			"atmosOxidizing": "f0/2576980377",
 			"averageTemp": 94,
 			"axialTilt": "f0/0",
@@ -2215,7 +2215,7 @@
 			],
 			"atmosDensity": "f0/0",
 			"atmosOxidizing": "f0/0",
-			"averageTemp": 115,
+			"averageTemp": 73,
 			"axialTilt": "f0/0",
 			"eccentricity": "f0/670014898",
 			"hasRings": false,
@@ -2322,7 +2322,7 @@
 			"seed": 1238441829,
 			"semiMajorAxis": "f0/5484673",
 			"type": "PLANET_TERRESTRIAL",
-			"volatileIces": "f0/0",
+			"volatileIces": "f0/2576980378",
 			"volatileLiquid": "f0/0",
 			"volcanicity": "f0/0"
 		},
@@ -2372,7 +2372,7 @@
 				255,
 				255
 			],
-			"atmosDensity": "f0/431429464",
+			"atmosDensity": "f0/64424509",
 			"atmosOxidizing": "f0/0",
 			"averageTemp": 70,
 			"axialTilt": "f0/0",
@@ -2394,7 +2394,7 @@
 			"seed": 3375230666,
 			"semiMajorAxis": "f0/12511239",
 			"type": "PLANET_TERRESTRIAL",
-			"volatileIces": "f0/0",
+			"volatileIces": "f0/2147483648",
 			"volatileLiquid": "f0/0",
 			"volcanicity": "f0/0"
 		},
@@ -2430,7 +2430,7 @@
 			"seed": 2123607039,
 			"semiMajorAxis": "f0/16750372",
 			"type": "PLANET_TERRESTRIAL",
-			"volatileIces": "f0/0",
+			"volatileIces": "f0/1717986918",
 			"volatileLiquid": "f0/0",
 			"volcanicity": "f0/0"
 		},
@@ -2474,7 +2474,7 @@
 			],
 			"ringsMaxRadius": "f2/1546188226",
 			"ringsMinRadius": "f2/837518622",
-			"rotationPeriod": "f0/3221225472",
+			"rotationPeriod": "f0/2881923056",
 			"rotationPhase": "f0/0",
 			"seed": 1365118457,
 			"semiMajorAxis": "f30/446676598",
@@ -2529,7 +2529,7 @@
 				255,
 				255
 			],
-			"atmosDensity": "f0/429496729",
+			"atmosDensity": "f0/64424509",
 			"atmosOxidizing": "f0/214748364",
 			"averageTemp": 38,
 			"axialTilt": "f0/0",
@@ -2552,7 +2552,7 @@
 			"rotationPeriod": "f5/3758096384",
 			"rotationPhase": "f0/0",
 			"seed": 1809800440,
-			"semiMajorAxis": "f0/101833674",
+			"semiMajorAxis": "f0/10186329",
 			"type": "PLANET_TERRESTRIAL",
 			"volatileIces": "f1/0",
 			"volatileLiquid": "f0/0",
@@ -2640,10 +2640,10 @@
 				0,
 				0
 			],
-			"atmosDensity": "f0/0",
+			"atmosDensity": "f0/64424509",
 			"atmosOxidizing": "f0/0",
 			"averageTemp": 44,
-			"axialTilt": "f0/2218860251",
+			"axialTilt": "f2/405423878",
 			"children": [
 				70,
 				71
@@ -2651,7 +2651,7 @@
 			"eccentricity": "f0/1069446856",
 			"hasRings": false,
 			"humanActivity": "f0/0",
-			"inclination": "f0/890540488",
+			"inclination": "f0/1286336261",
 			"life": "f0/0",
 			"mass": "f0/9019431",
 			"metallicity": "f0/0",
@@ -2733,10 +2733,10 @@
 			"parent": 69,
 			"population": "f0/0",
 			"radius": "f0/386547056",
-			"rotationPeriod": "f0/2576980377",
+			"rotationPeriod": "f6/1663105826",
 			"rotationPhase": "f0/0",
 			"seed": 3353189046,
-			"semiMajorAxis": "f0/503370",
+			"semiMajorAxis": "f0/562717",
 			"type": "PLANET_TERRESTRIAL",
 			"volatileIces": "f1/0",
 			"volatileLiquid": "f0/0",
