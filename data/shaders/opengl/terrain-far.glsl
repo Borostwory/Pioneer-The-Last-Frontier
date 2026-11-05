@@ -47,6 +47,22 @@ float terrainFarTexelRatio(float distMetres, float facing)
 
 #ifdef FRAGMENT_SHADER
 
+// Seen from afar, the slopes of a whole planet are too gentle to catch the light, and the land reads as flat
+// paint. Where detail is fixed in space, the lighting takes them this many times as steep from afar. It changes
+// only the light, not the ground, and it's gone by the time the ground is near.
+#define FAR_RELIEF_SLOPES 4.0
+#define FAR_RELIEF_NEAR 2.0e4
+#define FAR_RELIEF_FAR 3.0e5
+
+vec3 terrainFarRelief(vec3 normal, vec3 up, float distMetres)
+{
+	if (MaterialLook.y < 0.5)
+		return normal;
+	float along = dot(normal, up);
+	float slopes = mix(1.0, FAR_RELIEF_SLOPES, smoothstep(FAR_RELIEF_NEAR, FAR_RELIEF_FAR, distMetres));
+	return normalize(up * along + (normal - up * along) * slopes);
+}
+
 // rgb: colour, a: altitude above sea level as in the vertex alpha
 uniform samplerCube farColour;
 // rgb: the normal minus the radial direction, planet-fixed, signed sqrt

@@ -25,6 +25,7 @@
 #include "terrain/TerrainPhysicalHydro.h"
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <sstream>
 #include <vector>
@@ -549,6 +550,22 @@ static int l_dev_make_terrain_map(lua_State *l)
 		}
 		terrain->GetHeights(&dirs[size_t(r) * W], &heights[size_t(r) * W], W);
 	});
+	// relief as the planet lab shows it, scaled by this body's own steepest slopes
+	std::vector<float> slopes;
+	slopes.reserve(dirs.size() / 16);
+	for (int r = 0; r < H; r += 4) {
+		const int north = std::max(r - 1, 0), south = std::min(r + 1, H - 1);
+		const double across = 2.0 * spacing * std::max(cos(M_PI / 2.0 - (r + 0.5) / H * M_PI), 0.05);
+		const double along = double(south - north) * spacing;
+		for (int c = 0; c < W; c += 4) {
+			const double slopeEast = (heights[size_t(r) * W + (c + 1) % W] - heights[size_t(r) * W + (c + W - 1) % W]) / across;
+			const double slopeNorth = (heights[size_t(north) * W + c] - heights[size_t(south) * W + c]) / along;
+			slopes.push_back(float(sqrt(slopeEast * slopeEast + slopeNorth * slopeNorth)));
+		}
+	}
+	const size_t steepAt = size_t(0.98 * double(slopes.size() - 1));
+	std::nth_element(slopes.begin(), slopes.begin() + steepAt, slopes.end());
+	const double steep = std::max(double(slopes[steepAt]), 1e-5);
 	ParallelRows(H, [&](const int r) {
 		TerrainNoise::ScopedBandLimit bandLimit(maxFrequency);
 		const int north = std::max(r - 1, 0), south = std::min(r + 1, H - 1);
@@ -565,11 +582,14 @@ static int l_dev_make_terrain_map(lua_State *l)
 			const vector3d colour = terrain->GetColor(dirs[i], heights[i], normal);
 			// lit from the north-west, so that the relief shows
 			const double slopeEast = (heights[e] - heights[w]) / across, slopeNorth = (heights[n] - heights[s]) / along;
-			const double light = std::max(std::min(1.0 + 12.0 * (slopeEast - slopeNorth), 1.6), 0.4);
+			const double shade = std::max(std::min(0.55 + (-slopeEast + slopeNorth) * 0.7 / steep * 0.4, 1.0), 0.0);
+			const double light = 0.35 + 1.25 * shade;
+			// (the terrain's colours are in linear light, as the shaders take them)
+			const auto toScreen = [light](const double v) { return std::pow(std::max(std::min(v * light, 1.0), 0.0), 1.0 / 2.2) * 255.0; };
 			unsigned char *pixel = &pixels[i * 4];
-			pixel[0] = (unsigned char)(std::max(std::min(colour.x * light, 1.0), 0.0) * 255.0);
-			pixel[1] = (unsigned char)(std::max(std::min(colour.y * light, 1.0), 0.0) * 255.0);
-			pixel[2] = (unsigned char)(std::max(std::min(colour.z * light, 1.0), 0.0) * 255.0);
+			pixel[0] = (unsigned char)toScreen(colour.x);
+			pixel[1] = (unsigned char)toScreen(colour.y);
+			pixel[2] = (unsigned char)toScreen(colour.z);
 			pixel[3] = 255;
 		}
 	});

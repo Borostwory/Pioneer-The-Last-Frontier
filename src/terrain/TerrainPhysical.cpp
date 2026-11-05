@@ -827,8 +827,6 @@ void TerrainPhysical::BuildBorders()
 	const double spacing = 2.0 * M_PI / W;
 	const double reachKm = std::min(40.0 + 160.0 * m_state.air, radiusKm * 0.12);
 	const double stepCells = std::min(reachKm / radiusKm / spacing / STEPS, 7.0);
-	if (stepCells < 0.25)
-		return;
 
 	struct Carried {
 		M::Layer layer;
@@ -842,7 +840,7 @@ void TerrainPhysical::BuildBorders()
 
 	const size_t cells = size_t(W) * H;
 	std::vector<std::vector<float>> shareMaps(carried.size(), std::vector<float>(cells));
-	std::vector<float> windX(cells), windY(cells);
+	std::vector<float> windX(cells), windY(cells), heights(cells), onLand(cells);
 	ParallelRows(H, [&](const int r) {
 		TerrainNoise::ScopedBandLimit bandLimit(0.5 / spacing);
 		const double latitude = M_PI / 2.0 - (r + 0.5) / H * M_PI;
@@ -860,6 +858,8 @@ void TerrainPhysical::BuildBorders()
 			Paint(p, point, shares);
 			for (size_t k = 0; k < carried.size(); k++)
 				shareMaps[k][i] = float(shares[carried[k].layer]);
+			heights[i] = float(point.height);
+			onLand[i] = point.underSea ? 0.f : 1.f;
 			const double meridional = 0.35 * side * band + 0.6 * point.g.warp;
 			const double length = std::max(std::sqrt(zonal * zonal + meridional * meridional), 1e-6);
 			// in cells, on the map: east along columns, north against rows
@@ -867,6 +867,47 @@ void TerrainPhysical::BuildBorders()
 			windY[i] = float(-meridional / length);
 		}
 	});
+
+	// How much lower or higher the ground lies than what is around it, at two sizes, each scaled by its own
+	// range on this body. It's on land only, so that a coast isn't taken for a rise.
+	{
+		constexpr int w = W / 2, h = H / 2;
+		constexpr double SIZES[2] = { 1.5, 5.0 }; // in cells of this map
+		TerrainHydro::Field height, land;
+		height.Resize(w, h);
+		land.Resize(w, h);
+		for (int r = 0; r < H; r++) {
+			for (int c = 0; c < W; c++) {
+				const size_t i = size_t(r) * W + c;
+				height.At(r / 2, c / 2) += 0.25f * heights[i] * onLand[i];
+				land.At(r / 2, c / 2) += 0.25f * onLand[i];
+			}
+		}
+		TerrainHydro::Field blurred[4] = { height, land, height, land };
+		ParallelRows(4, [&](const int k) { blurred[k].Blur(SIZES[k / 2]); });
+		m_landform.Resize(w, h);
+		for (int k = 0; k < 2; k++) {
+			std::vector<float> difference(land.values.size(), 0.f), sizes;
+			for (size_t i = 0; i < difference.size(); i++) {
+				if (land.values[i] < 0.25f)
+					continue;
+				difference[i] = height.values[i] / land.values[i] - blurred[2 * k].values[i] / std::max(blurred[2 * k + 1].values[i], 0.01f);
+				sizes.push_back(std::abs(difference[i]));
+			}
+			if (sizes.empty())
+				continue;
+			const size_t at = size_t(0.98 * double(sizes.size() - 1));
+			std::nth_element(sizes.begin(), sizes.begin() + at, sizes.end());
+			const float range = std::max(sizes[at], 1.f);
+			for (size_t i = 0; i < difference.size(); i++)
+				m_landform.values[i] += 0.5f * land.values[i] * difference[i] / range;
+		}
+		for (float &v : m_landform.values)
+			v = std::clamp(v, -1.f, 1.f);
+		m_landform.FindRange();
+	}
+	if (stepCells < 0.25)
+		return;
 	const auto sample = [](const std::vector<float> &a, double x, double y) {
 		y = std::clamp(y, 0.0, double(H - 1));
 		x -= std::floor(x / W) * W;
@@ -1313,7 +1354,7 @@ void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::
 		m += 0.55 * m_hydro.corridor.Smooth(point.place);
 	// The noise keeps the edges of deserts and forests from following anything smooth, such as
 	// a valley's distance or a line of equal height, which would draw straight lines and arcs.
-	m += 0.1 * std::clamp(Fbm(p, 60.0, 8, m_noiseSeed + 73, 0.6) / 0.35, -1.0, 1.0);
+	m += 0.1 * std::clamp(Fbm(p, 60.0, 8, m_noiseSeed + 73, 0.6) / 0.35, -1.0, 1.0) + 0.06 * std::clamp(Fbm(p, 9.0, 4, m_noiseSeed + 74, 0.55) / 0.35, -1.0, 1.0);
 	if (point.carved) {
 		// Water gathers on valley floors, so they are greener than the ridges. This grows with the valleys,
 		// which only begin at some height: all at once, it would draw an edge along that height.
@@ -1325,26 +1366,26 @@ void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::
 		paint(M::GRAVEL, Soft(alpine, 0.24, 0.06) * crest);
 	}
 	const double T = point.temperature - m_state.lapse * 0.6 * std::max(h0 - sea, 0.0);
-	const double desert = 1.0 - Soft(m, 0.13, 0.05);
+	const double desert = 1.0 - Soft(m, 0.10, 0.10);
 	const double hot = Soft(T, 280.0, 5.0);
 	// dune seas in the hot desert's lows; bare stony plains only where it is driest. (Not under the sea:
 	// sand there is drawn in place of the water, for barrier islands.)
 	if (desert > 0.0 && hot > 0.0 && !point.underSea) {
-		const double dunes = Soft(Fbm(p, 3.2, 3, m_noiseSeed + 71) - 0.9 * (h0 - sea) / m_reliefLimit, -0.05, 0.06);
+		const double dunes = Soft(Fbm(p, 3.2, 3, m_noiseSeed + 71) - 0.9 * (h0 - sea) / m_reliefLimit, -0.10, 0.20);
 		paint(M::SAND, desert * hot * dunes);
 	}
-	paint(M::GRAVEL, 1.0 - Soft(m, 0.05, 0.04));
+	paint(M::GRAVEL, 1.0 - Soft(m, 0.03, 0.08));
 	paint(M::SOIL, desert);
 	const double life = m_inputs.life;
 	if (life >= 0.02) {
 		// where life reaches: the wetter it must be, the less of it there is
 		const double need = 0.15 / std::pow(std::max(life, 0.03), 0.75);
-		const double green = Soft(m, need, 0.05);
+		const double green = Soft(m, need - 0.03, 0.10);
 		const double warm = Soft(T, 268.0, 2.0);
 		if (life >= 0.3) {
 			// rainforest and temperate forest where wet and warm, boreal forest where cold and wet,
 			// savanna and prairie where drier, tundra beyond the trees
-			const double trees = Soft(m, 0.42 + 0.1 * Soft(T, 292.0, 6.0), 0.05) * Soft(T, 270.0, 3.0);
+			const double trees = Soft(m, 0.38 + 0.1 * Soft(T, 292.0, 6.0), 0.12) * Soft(T, 270.0, 3.0);
 			paint(M::FOREST, green * trees);
 			paint(M::TUNDRA, green * (1.0 - warm));
 			paint(M::GRASS, green);
@@ -1353,7 +1394,7 @@ void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::
 			paint(M::TUNDRA, green);
 		}
 	}
-	paint(M::SOIL, 1.0 - Soft(m, 0.2, 0.05));
+	paint(M::SOIL, 1.0 - Soft(m, 0.17, 0.10));
 }
 
 // What lies on the ground, first come first served, as in the lab (materials.py, stage2)
@@ -1520,7 +1561,7 @@ double TerrainPhysical::AltitudeOf(const Point &point, const Shares &shares) con
 	return altitude;
 }
 
-vector3d TerrainPhysical::ColourFrom(const Point &point, const Shares &shares, const double altitude) const
+vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, const Shares &shares, const double altitude) const
 {
 	const Ground &g = point.g;
 	vector3d c(0.0, 0.0, 0.0);
@@ -1579,6 +1620,23 @@ vector3d TerrainPhysical::ColourFrom(const Point &point, const Shares &shares, c
 	}
 	if (shares[M::SOIL] > 0.0 && m_state.wetness > 0.0)
 		c = c * (1.0 - 0.3 * shares[M::SOIL] * std::clamp(point.rain, 0.0, 1.0));
+	if (m_state.weather) {
+		// Ground lit by the air shows its shape in its colour, at noon too: hollows and valley floors hold
+		// shade, damp and fine dark ground, and rises and crests are paler. Less so under snow and ice.
+		const double frozen = std::clamp(shares[M::SNOW] + shares[M::ICE], 0.0, 1.0);
+		const double strength = 1.0 - 0.6 * frozen;
+		double shape = m_landform.Empty() ? 0.0 : 0.3 * m_landform.Smooth(point.place);
+		if (point.carved)
+			shape -= 0.14 * Soft(point.valleyRoom, 0.0, 300.0) * (point.valley - 0.4);
+		// Then what a colour of its own can't say: ground varies from place to place at every
+		// size, in how light it is and how warm, and the height of the land pales it a little.
+		const double light = std::clamp(Fbm(p, 4.0, 7, m_noiseSeed + 181, 0.62) / 0.35, -1.0, 1.0);
+		const double warm = std::clamp(Fbm(p, 6.0, 4, m_noiseSeed + 182, 0.6) / 0.35, -1.0, 1.0);
+		const double ground = m_seaLevel > NONE_LOW ? m_seaLevel : m_datum;
+		const double high = std::clamp((point.height - ground) / std::min(m_reliefLimit, 7000.0), 0.0, 1.0);
+		const double overall = 1.0 + strength * (shape + 0.16 * light + 0.12 * high);
+		c = Times(c, vector3d(overall * (1.0 + 0.08 * strength * warm), overall, overall * (1.0 - 0.1 * strength * warm)));
+	}
 	// dark sand seas, as on Mars and Titan
 	if (shares[M::SAND] > 0.0 && !m_sandSea.Empty())
 		c = c * (1.0 - 0.2 * shares[M::SAND] * Soft(m_sandSea.Smooth(point.place), 0.3, 0.4));
@@ -1618,7 +1676,7 @@ void TerrainPhysical::GetSurface(const vector3d &p, const double, const vector3d
 	}
 	Steep(q, normal, shares);
 	const double altitude = m_state.sea > 0.0 ? AltitudeOf(point, shares) : 1.0;
-	colourOut = ColourFrom(point, shares, altitude);
+	colourOut = ColourFrom(q, point, shares, altitude);
 
 	s_lastAltitude.owner = this;
 	s_lastAltitude.p = p;

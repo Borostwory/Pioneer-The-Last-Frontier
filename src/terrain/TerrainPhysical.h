@@ -121,7 +121,7 @@ private:
 	void Climate(const vector3d &p, const Point &point, const std::function<void(TerrainMaterialTable::Layer, double)> &paint) const;
 	void Steep(const vector3d &p, const vector3d &normal, Shares &shares) const;
 	double AltitudeOf(const Point &point, const Shares &shares) const;
-	vector3d ColourFrom(const Point &point, const Shares &shares, double altitude) const;
+	vector3d ColourFrom(const vector3d &p, const Point &point, const Shares &shares, double altitude) const;
 	void BuildLevels();
 	void BuildTones();
 	void BuildMaterials();
@@ -142,6 +142,7 @@ private:
 		TerrainHydro::Field loss; // where it scours it away, as a share of what is there; may be empty
 	};
 	std::vector<WindBorder> m_borders;
+	TerrainHydro::Field m_landform; // -1..1, ground lower or higher than what is around it
 	double m_valleyAmount = 0.0;
 	double m_valleySea = 0.0; // what valleys count their depth from
 	std::string m_sharesReadout;
