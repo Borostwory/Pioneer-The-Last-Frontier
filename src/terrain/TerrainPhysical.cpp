@@ -768,6 +768,9 @@ Terrain::SpeedTotals Terrain::GetSpeedTotals()
 	out.paintNanos = s_paintSpeed.nanoseconds;
 	out.chunks = TerrainValleys::ChunksBuilt();
 	out.chunkMicros = uint64_t(TerrainValleys::ChunkMilliseconds() * 1000.0);
+	static_assert(sizeof(out.chunksAtLevel) / sizeof(out.chunksAtLevel[0]) == TerrainValleys::LEVEL_COUNT);
+	for (int level = 0; level < TerrainValleys::LEVEL_COUNT; level++)
+		out.chunksAtLevel[level] = TerrainValleys::ChunksBuilt(level);
 	return out;
 }
 

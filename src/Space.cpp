@@ -1072,7 +1072,7 @@ static void CollideWithTerrain(Body *body, float timeStep)
 	if (altitude >= (terrain->GetMaxFeatureRadius() * 2.0))
 		return;
 
-	double terrHeight = terrain->GetTerrainHeight(body->GetPosition().Normalized());
+	double terrHeight = terrain->GetTerrainHeightFrom(body->GetPosition().Normalized(), body->GetPosition().Length());
 	if (altitude >= terrHeight)
 		return;
 

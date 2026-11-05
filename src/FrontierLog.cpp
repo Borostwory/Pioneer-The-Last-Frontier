@@ -15,7 +15,9 @@
 #include "TerrainFarTexture.h"
 #include "TerrainSurfaceTiles.h"
 #include "graphics/Renderer.h"
+#include "galaxy/SystemBody.h"
 #include "terrain/Terrain.h"
+#include "terrain/TerrainNoise.h"
 
 #include <algorithm>
 #include <atomic>
@@ -39,6 +41,8 @@ namespace {
 	double s_secondParts[FrontierLog::PART_COUNT] = {}; // ms, this second
 	std::atomic<long long> s_queryNanos(0);
 	std::atomic<int> s_queryCalls(0);
+	long long s_lastFrameEnd = 0; // when the last frame's update was over, for how long this frame took
+	long long s_jobsStart = 0, s_swapStart = 0;
 
 	struct State {
 		FILE *file = nullptr;
@@ -93,6 +97,7 @@ namespace {
 	struct Place {
 		const Planet *planet = nullptr;
 		vector3d up = vector3d(0.0, 0.0, 0.0);
+		double height = 0.0; // metres above the ground
 		std::string text;
 	};
 
@@ -116,7 +121,8 @@ namespace {
 		place.up = position.Normalized();
 		const double latitude = std::asin(std::clamp(place.up.y, -1.0, 1.0)) * 180.0 / M_PI;
 		const double longitude = std::atan2(place.up.x, place.up.z) * 180.0 / M_PI;
-		const double height = position.Length() - place.planet->GetTerrainHeight(place.up);
+		const double height = position.Length() - place.planet->GetTerrainHeightFrom(place.up, position.Length());
+		place.height = height;
 		const char *state = "flying";
 		switch (Pi::player->GetFlightState()) {
 		case Ship::DOCKED: state = "docked"; break;
@@ -161,6 +167,9 @@ namespace {
 		if (place.planet && (place.up - s.lastUp).LengthSqr() > 1e-14) {
 			s.lastUp = place.up;
 			const Terrain *terrain = place.planet->GetTerrain();
+			// at the detail that can be seen from here, so that this log doesn't hold up the game
+			const double spacing = place.height / 20.0;
+			TerrainNoise::ScopedBandLimit bandLimit(spacing > 1.0 ? 0.5 * place.planet->GetSystemBody()->GetRadius() / spacing : 0.0);
 			s.underShip = terrain ? OneLine(terrain->DescribePoint(place.up)) : std::string();
 		} else if (!place.planet) {
 			s.underShip.clear();
@@ -168,12 +177,13 @@ namespace {
 
 		const int frames = std::max(s.frames, 1);
 		WriteTime();
-		std::fprintf(s.file, "%s | fps %d, frame %.1f ms, longest %.1f, %d spikes | physics %.2f, terrain update %.2f (patches in %.2f, choosing %.2f, far %.2f), view %.2f, draw %.2f, flush %.2f, gui %.2f, height queries %.2f ms (%lld a frame)",
-			place.text.c_str(), s.frames, s.frameSum / frames, s.frameMax, s.spikes,
+		std::fprintf(s.file, "%s | accel %.0fx | fps %d, frame %.1f ms, longest %.1f, %d spikes | physics %.2f, terrain update %.2f (patches in %.2f, choosing %.2f, far %.2f), view %.2f, draw %.2f, flush %.2f, gui %.2f, jobs %.2f, swap %.2f, log %.2f, height queries %.2f ms (%lld a frame)",
+			place.text.c_str(), Pi::game ? double(Pi::game->GetTimeAccelRate()) : 1.0, s.frames, s.frameSum / frames, s.frameMax, s.spikes,
 			s_secondParts[FrontierLog::PART_STEP] / frames, s_secondParts[FrontierLog::PART_SPHERES] / frames,
 			s_secondParts[FrontierLog::PART_RESULTS] / frames, s_secondParts[FrontierLog::PART_LOD] / frames, s_secondParts[FrontierLog::PART_FAR] / frames,
 			s_secondParts[FrontierLog::PART_VIEW] / frames, s_secondParts[FrontierLog::PART_DRAW] / frames, s_secondParts[FrontierLog::PART_FLUSH] / frames,
-			s.guiSum / frames, s.querySum / frames, s.queryCallsSum / frames);
+			s.guiSum / frames, s_secondParts[FrontierLog::PART_JOBS] / frames, s_secondParts[FrontierLog::PART_SWAP] / frames, s_secondParts[FrontierLog::PART_LOG] / frames,
+			s.querySum / frames, s.queryCallsSum / frames);
 
 		const GeoPatchGenStats patches = GetGeoPatchGenStats();
 		const uint64_t patchCount = patches.patches >= s.patches.patches ? patches.patches - s.patches.patches : patches.patches;
@@ -192,11 +202,13 @@ namespace {
 		if (points > 0) {
 			const uint64_t valleyCalls = since(speed.valleyCalls, s.speed.valleyCalls);
 			const uint64_t paintCalls = since(speed.paintCalls, s.speed.paintCalls);
-			std::fprintf(s.file, " | point %.1f us, valleys %.1f, materials %.1f, chunks +%llu in %.0f ms",
+			std::fprintf(s.file, " | point %.1f us, valleys %.1f, materials %.1f, chunks +%llu in %.0f ms over all threads, by level",
 				double(since(speed.pointNanos, s.speed.pointNanos)) / double(points) / 1000.0,
 				valleyCalls ? double(since(speed.valleyNanos, s.speed.valleyNanos)) / double(valleyCalls) / 1000.0 : 0.0,
 				paintCalls ? double(since(speed.paintNanos, s.speed.paintNanos)) / double(paintCalls) / 1000.0 : 0.0,
 				(unsigned long long)since(speed.chunks, s.speed.chunks), double(since(speed.chunkMicros, s.speed.chunkMicros)) / 1000.0);
+			for (size_t level = 0; level < std::size(speed.chunksAtLevel); level++)
+				std::fprintf(s.file, " %llu", (unsigned long long)since(speed.chunksAtLevel[level], s.speed.chunksAtLevel[level]));
 		}
 		s.speed = speed;
 
@@ -256,8 +268,29 @@ void FrontierLog::SetEnabled(const bool enabled)
 	Pi::config->Save();
 }
 
-void FrontierLog::EndFrame(const double frameMs, const double physicsMs, const double guiMs)
+void FrontierLog::BeforeSwap()
 {
+	const long long now = NowNanos();
+	if (s_jobsStart != 0)
+		s_parts[PART_JOBS] += double(now - s_jobsStart) / 1e6;
+	s_jobsStart = 0; // only the game's frames set it
+	s_swapStart = now;
+}
+
+void FrontierLog::AfterSwap()
+{
+	if (s_swapStart != 0)
+		s_parts[PART_SWAP] += double(NowNanos() - s_swapStart) / 1e6;
+	s_swapStart = 0;
+}
+
+void FrontierLog::EndFrame(const double physicsMs, const double guiMs)
+{
+	// from the end of the last frame's update, with what came after it, as the game's own
+	// frame time at this point is the last frame's
+	const long long frameEnd = NowNanos();
+	const double frameMs = s_lastFrameEnd != 0 ? double(frameEnd - s_lastFrameEnd) / 1e6 : 0.0;
+	s_lastFrameEnd = frameEnd;
 	const double queryMs = double(s_queryNanos.exchange(0, std::memory_order_relaxed)) / 1e6;
 	const int queryCalls = s_queryCalls.exchange(0, std::memory_order_relaxed);
 	State &s = s_state;
@@ -267,12 +300,11 @@ void FrontierLog::EndFrame(const double frameMs, const double physicsMs, const d
 			s.spikes++;
 			if (s.spikesWritten < SPIKES_PER_SECOND) {
 				s.spikesWritten++;
-				// what's left over is mostly waiting for the screen or the graphics driver
-				const double known = physicsMs + guiMs + s_parts[PART_VIEW] + s_parts[PART_DRAW] + s_parts[PART_FLUSH];
+				const double known = physicsMs + guiMs + s_parts[PART_VIEW] + s_parts[PART_DRAW] + s_parts[PART_FLUSH] + s_parts[PART_JOBS] + s_parts[PART_SWAP] + s_parts[PART_LOG];
 				WriteTime();
-				std::fprintf(s.file, "SPIKE %.1f ms (usual %.1f): physics %.1f (step %.1f, terrain update %.1f: patches in %.1f, choosing %.1f, far %.1f), view %.1f, draw %.1f, flush %.1f, gui %.1f, height queries %.1f (%d), left over %.1f\n",
+				std::fprintf(s.file, "SPIKE %.1f ms (usual %.1f): physics %.1f (step %.1f, terrain update %.1f: patches in %.1f, choosing %.1f, far %.1f), view %.1f, draw %.1f, flush %.1f, gui %.1f, jobs %.1f, swap %.1f, log %.1f, height queries %.1f (%d), left over %.1f\n",
 					frameMs, s.usual, physicsMs, s_parts[PART_STEP], s_parts[PART_SPHERES], s_parts[PART_RESULTS], s_parts[PART_LOD], s_parts[PART_FAR],
-					s_parts[PART_VIEW], s_parts[PART_DRAW], s_parts[PART_FLUSH], guiMs, queryMs, queryCalls, std::max(frameMs - known, 0.0));
+					s_parts[PART_VIEW], s_parts[PART_DRAW], s_parts[PART_FLUSH], guiMs, s_parts[PART_JOBS], s_parts[PART_SWAP], s_parts[PART_LOG], queryMs, queryCalls, std::max(frameMs - known, 0.0));
 			}
 		} else {
 			s.usual = s.usual > 0.0 ? s.usual + 0.02 * (frameMs - s.usual) : frameMs;
@@ -293,6 +325,9 @@ void FrontierLog::EndFrame(const double frameMs, const double physicsMs, const d
 		}
 	}
 	std::fill(std::begin(s_parts), std::end(s_parts), 0.0);
+	// what this cost goes with the next frame, which it holds up
+	s_jobsStart = NowNanos();
+	s_parts[PART_LOG] = double(s_jobsStart - frameEnd) / 1e6;
 }
 
 void FrontierLog::Note(const std::string &text)

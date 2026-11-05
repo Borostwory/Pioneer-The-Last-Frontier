@@ -880,6 +880,7 @@ void Pi::App::OnWindowKeyboardFocusChanged(bool newFocus)
 void Pi::App::PreUpdate()
 {
 	PROFILE_SCOPED()
+	FrontierLog::AfterSwap();
 	Pi::frameTime = DeltaTime();
 }
 
@@ -887,6 +888,7 @@ void Pi::App::PostUpdate()
 {
 	PROFILE_SCOPED()
 
+	FrontierLog::BeforeSwap();
 	HandleRequests();
 }
 
@@ -1108,7 +1110,7 @@ void GameLoop::Update(float deltaTime)
 	Pi::GetMusicPlayer().Update();
 	Sound::Update(deltaTime);
 
-	FrontierLog::EndFrame(frame_time_real, phys_time, pigui_time);
+	FrontierLog::EndFrame(phys_time, pigui_time);
 
 	perfInfoDisplay->Update(deltaTime);
 	perfInfoDisplay->UpdateCounter(PiGui::PerfInfo::COUNTER_PHYS, phys_time);

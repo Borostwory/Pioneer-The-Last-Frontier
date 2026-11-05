@@ -33,6 +33,10 @@ public:
 	virtual bool OnCollision(Body *b, Uint32 flags, double relVel) override { return true; }
 	double GetMass() const override { return m_mass; }
 	double GetTerrainHeight(const vector3d &pos) const;
+	// GetTerrainHeight for something distance metres from the centre, along pos (unit), that only needs
+	// to know where it is from the ground: exact close to it, leaving out what's too small to matter
+	// from higher up. Asking for all of the detail everywhere a moving ship goes is costly on some terrains.
+	double GetTerrainHeightFrom(const vector3d &pos, double distance) const;
 	// The ground as drawn along pos (unit), metres from the centre: on the
 	// terrain mesh, whose vertices are tens of metres apart, so between them
 	// it can be metres above or below GetTerrainHeight, which stands in where

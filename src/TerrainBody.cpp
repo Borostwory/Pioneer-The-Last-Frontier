@@ -174,6 +174,33 @@ double TerrainBody::GetTerrainHeight(const vector3d &pos_) const
 	}
 }
 
+double TerrainBody::GetTerrainHeightFrom(const vector3d &pos, const double distance) const
+{
+	const Terrain *terrain = GetTerrain();
+	if (!terrain || !terrain->HasFixedDetail())
+		return GetTerrainHeight(pos);
+
+	constexpr double ROUGH_SPACING = 16000.0; // metres: detail this coarse needs no small features
+	constexpr double ROUGH_ERROR = 4000.0; // metres: how far above the rough ground the real ground may rise
+	constexpr double CLEARANCE_PER_SPACING = 20.0; // leaves out far less height than the clearance
+
+	const double radius = m_sbody->GetRadius();
+	double clearance = distance - m_maxFeatureHeight;
+	if (clearance <= 0.0) {
+		// below the highest ground there is: go by the ground here
+		double rough;
+		{
+			TerrainNoise::ScopedBandLimit bandLimit(0.5 * radius / ROUGH_SPACING);
+			rough = GetTerrainHeight(pos);
+		}
+		clearance = distance - rough - ROUGH_ERROR;
+		if (clearance <= 0.0)
+			return GetTerrainHeight(pos);
+	}
+	TerrainNoise::ScopedBandLimit bandLimit(0.5 * radius / std::min(clearance / CLEARANCE_PER_SPACING, ROUGH_SPACING));
+	return GetTerrainHeight(pos);
+}
+
 double TerrainBody::GetBaseTerrainHeight(const vector3d &pos_) const
 {
 	const double radius = m_sbody->GetRadius();

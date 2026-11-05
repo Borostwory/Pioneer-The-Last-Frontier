@@ -103,6 +103,7 @@ public:
 		uint64_t valleyCalls = 0, valleyNanos = 0;
 		uint64_t paintCalls = 0, paintNanos = 0;
 		uint64_t chunks = 0, chunkMicros = 0;
+		uint64_t chunksAtLevel[9] = {}; // valley chunks, largest valleys first
 	};
 	static SpeedTotals GetSpeedTotals();
 	// For the debug tools: the places of a kind of feature (river, fork, mouth, lake, coast, peak),

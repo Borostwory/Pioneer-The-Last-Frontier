@@ -284,11 +284,11 @@ double Body::GetAltitudeRelTo(const Body *relTo, AltitudeType altType)
 		double radius;
 		if (altType != AltitudeType::DEFAULT) {
 			radius = altType == AltitudeType::SEA_LEVEL ? terrain->GetSystemBody()->GetRadius() :
-														  terrain->GetTerrainHeight(surface_pos);
+														  terrain->GetTerrainHeightFrom(surface_pos, center_dist);
 		} else {
 			radius = terrain->GetSystemBody()->GetRadius();
 			if (center_dist <= 3.0 * terrain->GetMaxFeatureRadius()) {
-				radius = terrain->GetTerrainHeight(surface_pos);
+				radius = terrain->GetTerrainHeightFrom(surface_pos, center_dist);
 			}
 		}
 		double altitude = center_dist - radius;

@@ -11,10 +11,12 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class TerrainHydro;
@@ -97,6 +99,8 @@ public:
 	// for the debug window, over all bodies
 	static TerrainSpeedCounter &CutSpeed();
 	static uint64_t ChunksBuilt();
+	static uint64_t ChunksBuilt(int level);
+	// over all threads, so it can be more than the time that has passed
 	static double ChunkMilliseconds();
 	static void ResetStats();
 
@@ -142,10 +146,11 @@ private:
 	GroundAt m_ground;
 	KeepAt m_keep;
 
-	mutable std::shared_mutex m_lock; // of the chunk maps
-	mutable std::recursive_mutex m_buildLock; // one chunk is made at a time, and each only once
+	mutable std::shared_mutex m_lock; // of the chunks and the empty ones
 	mutable std::unordered_map<uint64_t, ChunkPtr> m_chunks[LEVEL_COUNT];
-	mutable size_t m_chunkCount = 0;
+	mutable std::unordered_set<uint64_t> m_empty[LEVEL_COUNT]; // no valleys there; takes next to no memory to remember
+	mutable std::mutex m_makingLock; // of the chunks being made
+	mutable std::unordered_map<uint64_t, std::shared_future<ChunkPtr>> m_making[LEVEL_COUNT];
 	mutable std::atomic<uint32_t> m_clock{ 0 };
 };
 

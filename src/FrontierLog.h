@@ -21,6 +21,9 @@ namespace FrontierLog {
 		PART_VIEW, // View::Update
 		PART_DRAW, // View::Draw3D
 		PART_FLUSH, // sending the frame to the renderer
+		PART_JOBS, // the finished jobs' work on the main thread
+		PART_SWAP, // showing the frame, and waiting for the screen and the graphics driver
+		PART_LOG, // writing this log
 		PART_COUNT
 	};
 
@@ -49,8 +52,11 @@ namespace FrontierLog {
 		long long m_start;
 	};
 
-	// at the end of each frame
-	void EndFrame(double frameMs, double physicsMs, double guiMs);
+	// at the end of each frame's update
+	void EndFrame(double physicsMs, double guiMs);
+	// around what comes between one frame's update and the next one's
+	void BeforeSwap();
+	void AfterSwap();
 	// a line in the log
 	void Note(const std::string &text);
 	// a line with everything about here, and a comment

@@ -1716,8 +1716,20 @@ void Ship::SpawnThrusterExhaustParticles(float timeStep)
 	const bool landableNaturalWorld = sbody && (sbody->GetSuperType() == SystemBodyType::SUPERTYPE_ROCKY_PLANET);
 	const double altitudeM = sbody ? (dist - sbody->GetRadius()) : 0.0;
 	const double plumeAltitudeCapM = sbody ? std::max(sbody->GetAtmRadius(), 1000.0) : 0.0;
-	double groundRadiusAtShip = landableNaturalWorld ? p->GetTerrainHeight(GetPosition().NormalizedSafe()) : 0.0;
-	Color dustTint = landableNaturalWorld ? p->GetDustColor(GetPosition().NormalizedSafe()) : Color(128, 128, 128, 255);
+
+	// Atmospheric exhaust plume - spawn only for ships close enough to the player.
+	constexpr double EXHAUST_MAX_PLAYER_DISTANCE_SQR = SfxParams::EXHAUST_MAX_PLAYER_DISTANCE * SfxParams::EXHAUST_MAX_PLAYER_DISTANCE;
+	const bool spawnExhaustForShip = !Pi::player || this == Pi::player || (GetPositionRelTo(Pi::player).LengthSqr() <= EXHAUST_MAX_PLAYER_DISTANCE_SQR);
+	if (!spawnExhaustForShip) {
+		// (before asking the terrain anything: this runs for every flying ship, on every step)
+		m_exhaustSpawner.ClearChannelState();
+		return;
+	}
+
+	double groundRadiusAtShip = landableNaturalWorld ? p->GetTerrainHeightFrom(GetPosition().NormalizedSafe(), dist) : 0.0;
+	// (exhaust from higher than this doesn't reach the ground to take its colour)
+	constexpr double DUST_TINT_MAX_HEIGHT = 5000.0;
+	Color dustTint = landableNaturalWorld && dist <= groundRadiusAtShip + DUST_TINT_MAX_HEIGHT ? p->GetDustColor(GetPosition().NormalizedSafe()) : Color(128, 128, 128, 255);
 	const bool overPad = TryGetLandingPadDustOverride(this, &groundRadiusAtShip, &dustTint);
 
 	// Slight per-spawn dust colour variation so dust clouds are less uniform.
@@ -1729,11 +1741,7 @@ void Ship::SpawnThrusterExhaustParticles(float timeStep)
 	// Exhaust plumes shown if the ship is within the atmosphere height, or within 1 km of the surface for ground-hugging / surface dust.
 	const bool lowAltitudePlumes = landableNaturalWorld && ((altitudeM <= plumeAltitudeCapM) || (dist <= groundRadiusAtShip + 1000.0));
 
-	// Atmospheric exhaust plume - spawn only for ships close enough to the player.
-	constexpr double EXHAUST_MAX_PLAYER_DISTANCE_SQR = SfxParams::EXHAUST_MAX_PLAYER_DISTANCE * SfxParams::EXHAUST_MAX_PLAYER_DISTANCE;
-	const bool spawnExhaustForShip = !Pi::player || this == Pi::player || (GetPositionRelTo(Pi::player).LengthSqr() <= EXHAUST_MAX_PLAYER_DISTANCE_SQR);
-
-	if (!spawnExhaustForShip || !lowAltitudePlumes) {
+	if (!lowAltitudePlumes) {
 		// We're not adding any exhaust this tick. Clear the thruster exhaust channels so there is no stale state.
 		m_exhaustSpawner.ClearChannelState();
 		return;

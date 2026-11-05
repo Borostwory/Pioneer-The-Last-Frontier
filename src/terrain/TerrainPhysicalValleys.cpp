@@ -39,9 +39,13 @@ namespace {
 	constexpr double JOIN_REACH = 10.0; // larger valleys to join are looked for this far around a chunk
 	constexpr double SHAPE_END = 0.61; // beyond this a valley has no effect, however the wobble stretches it
 
-	constexpr size_t MAX_CHUNKS = 3000; // about 100 MB at most; the least used go first
+	// About 150 MB at most on a body. Each level has its own limit, so a pass over a whole body at one
+	// level doesn't push out the small valleys around the ship. The largest valleys, which all the
+	// others join, are all kept: there are only a few thousand of those chunks on a body.
+	constexpr size_t MAX_CHUNKS_PER_LEVEL = 1000;
 
 	std::atomic<uint64_t> s_chunksBuilt(0);
+	std::atomic<uint64_t> s_chunksAtLevel[TerrainValleys::LEVEL_COUNT];
 	std::atomic<uint64_t> s_chunkMicroseconds(0);
 	TerrainSpeedCounter s_cutSpeed;
 
@@ -126,6 +130,11 @@ uint64_t TerrainValleys::ChunksBuilt()
 	return s_chunksBuilt.load(std::memory_order_relaxed);
 }
 
+uint64_t TerrainValleys::ChunksBuilt(const int level)
+{
+	return s_chunksAtLevel[level].load(std::memory_order_relaxed);
+}
+
 double TerrainValleys::ChunkMilliseconds()
 {
 	return double(s_chunkMicroseconds.load(std::memory_order_relaxed)) / 1000.0;
@@ -135,6 +144,8 @@ void TerrainValleys::ResetStats()
 {
 	s_cutSpeed.Reset();
 	s_chunksBuilt = 0;
+	for (auto &count : s_chunksAtLevel)
+		count = 0;
 	s_chunkMicroseconds = 0;
 }
 
@@ -148,9 +159,11 @@ void TerrainValleys::Build(const uint32_t noiseSeed, const double radiusKm, cons
 	m_hydro = hydro;
 	m_ground = std::move(ground);
 	m_keep = std::move(keep);
-	for (auto &level : m_chunks)
-		level.clear();
-	m_chunkCount = 0;
+	for (int level = 0; level < LEVEL_COUNT; level++) {
+		m_chunks[level].clear();
+		m_empty[level].clear();
+		m_making[level].clear();
+	}
 }
 
 TerrainValleys::ChunkPtr TerrainValleys::GetChunk(const int k, const int64_t cx, const int64_t cy, const int64_t cz) const
@@ -166,22 +179,37 @@ TerrainValleys::ChunkPtr TerrainValleys::GetChunk(const int k, const int64_t cx,
 	const uint32_t now = m_clock.fetch_add(1, std::memory_order_relaxed);
 	auto look = [&](ChunkPtr &out) {
 		std::shared_lock<std::shared_mutex> lock(m_lock);
+		if (m_empty[k].count(key) != 0)
+			return true;
 		const auto it = m_chunks[k].find(key);
 		if (it == m_chunks[k].end())
 			return false;
 		out = it->second;
-		if (out)
-			out->used.store(now, std::memory_order_relaxed);
+		out->used.store(now, std::memory_order_relaxed);
 		return true;
 	};
 	ChunkPtr chunk;
 	if (look(chunk))
 		return chunk;
 
-	// Another thread may be making this one, or one it needs: wait for it, as it's only ever made once
-	std::lock_guard<std::recursive_mutex> building(m_buildLock);
-	if (look(chunk))
-		return chunk;
+	// Chunks are made side by side, and a thread waits only if another is making the very chunk it needs.
+	// So the main thread doesn't queue behind everything others are making. A chunk needs only chunks of
+	// larger valleys, so no two threads can end up waiting for each other.
+	std::promise<ChunkPtr> promise;
+	std::shared_future<ChunkPtr> other;
+	{
+		std::lock_guard<std::mutex> making(m_makingLock);
+		// it may have been finished just now
+		if (look(chunk))
+			return chunk;
+		const auto it = m_making[k].find(key);
+		if (it != m_making[k].end())
+			other = it->second;
+		else
+			m_making[k].emplace(key, promise.get_future().share());
+	}
+	if (other.valid())
+		return other.get();
 
 	// the chunks of larger valleys that this one needs are timed as part of it
 	thread_local int depth = 0;
@@ -194,36 +222,40 @@ TerrainValleys::ChunkPtr TerrainValleys::GetChunk(const int k, const int64_t cx,
 		s_chunkMicroseconds.fetch_add(uint64_t(std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count()), std::memory_order_relaxed);
 	}
 	s_chunksBuilt.fetch_add(1, std::memory_order_relaxed);
+	s_chunksAtLevel[k].fetch_add(1, std::memory_order_relaxed);
 	if (chunk)
 		chunk->used.store(now, std::memory_order_relaxed);
 
-	std::unique_lock<std::shared_mutex> lock(m_lock);
-	if (m_chunkCount >= MAX_CHUNKS) {
-		// the older half. A thread still using one keeps it until it moves on; a chunk made again comes out the same.
-		std::vector<uint32_t> ages;
-		ages.reserve(m_chunkCount);
-		for (int level = 0; level < LEVEL_COUNT; level++) {
-			for (const auto &entry : m_chunks[level])
-				ages.push_back(entry.second ? entry.second->used.load(std::memory_order_relaxed) : 0u);
-		}
-		if (!ages.empty()) {
-			std::nth_element(ages.begin(), ages.begin() + ages.size() / 2, ages.end());
-			const uint32_t limit = ages[ages.size() / 2];
-			for (int level = 0; level < LEVEL_COUNT; level++) {
-				auto &map = m_chunks[level];
+	{
+		std::unique_lock<std::shared_mutex> lock(m_lock);
+		if (chunk) {
+			auto &map = m_chunks[k];
+			if (k > 0 && map.size() >= MAX_CHUNKS_PER_LEVEL) {
+				// the level's older half. A thread still using one keeps it until it moves on; a chunk made again comes out the same.
+				std::vector<uint32_t> ages;
+				ages.reserve(map.size());
+				for (const auto &entry : map)
+					ages.push_back(entry.second->used.load(std::memory_order_relaxed));
+				std::nth_element(ages.begin(), ages.begin() + ages.size() / 2, ages.end());
+				const uint32_t limit = ages[ages.size() / 2];
 				for (auto it = map.begin(); it != map.end();) {
-					if (!it->second || it->second->used.load(std::memory_order_relaxed) < limit) {
+					if (it->second->used.load(std::memory_order_relaxed) < limit)
 						it = map.erase(it);
-						m_chunkCount--;
-					} else {
+					else
 						++it;
-					}
 				}
 			}
+			map.emplace(key, chunk);
+		} else {
+			m_empty[k].insert(key);
 		}
 	}
-	if (m_chunks[k].emplace(key, chunk).second)
-		m_chunkCount++;
+	// only now, so that anyone not finding it here finds it above
+	{
+		std::lock_guard<std::mutex> making(m_makingLock);
+		m_making[k].erase(key);
+	}
+	promise.set_value(chunk);
 	return chunk;
 }
 
