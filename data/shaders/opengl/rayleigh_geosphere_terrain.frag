@@ -104,6 +104,11 @@ void main(void)
 		seaHeight = mix(seaHeight, surfaceTile.height, surfaceWeight);
 #endif
 	}
+	// The physical generator's colours are as seen on a screen. Lighting works in linear light, and
+	// the result is turned back for the screen at the end: without this, darks are lifted a lot
+	// more than brights, and every colour comes out pale and much like the others.
+	if (MaterialLook.y > 0.5)
+		albedo = toLinear(albedo);
 
 #if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
 	float altitude = terrainAltitude(seaHeight);

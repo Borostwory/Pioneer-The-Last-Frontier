@@ -162,6 +162,7 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 	BuildLevels();
 	BuildTones();
 	BuildMaterials();
+	BuildBorders();
 	BuildSandSeas();
 	BuildShares();
 
@@ -815,6 +816,164 @@ namespace {
 	}
 } // namespace
 
+// Soft materials spread downwind over what is next to them, up to hundreds of km, in streaks along
+// the wind, which is further than a patch can look. So it's worked out once, on a map.
+void TerrainPhysical::BuildBorders()
+{
+	if (!m_state.weather)
+		return;
+	static constexpr int W = 1080, H = 540, STEPS = 7;
+	const double radiusKm = m_core.radius * 6378.135;
+	const double spacing = 2.0 * M_PI / W;
+	const double reachKm = std::min(40.0 + 160.0 * m_state.air, radiusKm * 0.12);
+	const double stepCells = std::min(reachKm / radiusKm / spacing / STEPS, 7.0);
+	if (stepCells < 0.25)
+		return;
+
+	struct Carried {
+		M::Layer layer;
+		double power;
+	};
+	std::vector<Carried> carried;
+	for (const Carried &c : { Carried{ M::SAND, 1.0 }, Carried{ M::DUST, 0.8 }, Carried{ M::SNOW, 0.7 }, Carried{ M::ASH, 1.0 } }) {
+		if (c.layer != m_state.ground && m_slots[c.layer] >= 0)
+			carried.push_back(c);
+	}
+
+	const size_t cells = size_t(W) * H;
+	std::vector<std::vector<float>> shareMaps(carried.size(), std::vector<float>(cells));
+	std::vector<float> windX(cells), windY(cells);
+	ParallelRows(H, [&](const int r) {
+		TerrainNoise::ScopedBandLimit bandLimit(0.5 / spacing);
+		const double latitude = M_PI / 2.0 - (r + 0.5) / H * M_PI;
+		const double away = std::abs(latitude), side = latitude < 0.0 ? -1.0 : 1.0;
+		// bands of wind, from the body's turning, each blowing towards the next near its edge, bent by the land's warp
+		const double band = -1.0 + 2.0 * Soft(away, 0.42, 0.2);
+		const double zonal = band - 1.6 * Soft(away, 0.95, 0.2);
+		const double cosLat = std::max(std::cos(latitude), 0.12);
+		for (int c = 0; c < W; c++) {
+			const size_t i = size_t(r) * W + c;
+			const vector3d p = GridPoint(r, c, W, H);
+			Point point;
+			Evaluate(p, point);
+			Shares shares;
+			Paint(p, point, shares);
+			for (size_t k = 0; k < carried.size(); k++)
+				shareMaps[k][i] = float(shares[carried[k].layer]);
+			const double meridional = 0.35 * side * band + 0.6 * point.g.warp;
+			const double length = std::max(std::sqrt(zonal * zonal + meridional * meridional), 1e-6);
+			// in cells, on the map: east along columns, north against rows
+			windX[i] = float(zonal / length / cosLat);
+			windY[i] = float(-meridional / length);
+		}
+	});
+	const auto sample = [](const std::vector<float> &a, double x, double y) {
+		y = std::clamp(y, 0.0, double(H - 1));
+		x -= std::floor(x / W) * W;
+		const int ix = std::min(int(x), W - 1), iy = std::min(int(y), H - 1);
+		const int nextX = (ix + 1) % W, nextY = std::min(iy + 1, H - 1);
+		const double tx = x - ix, ty = y - iy;
+		const double top = a[size_t(iy) * W + ix] * (1.0 - tx) + a[size_t(iy) * W + nextX] * tx;
+		const double bottom = a[size_t(nextY) * W + ix] * (1.0 - tx) + a[size_t(nextY) * W + nextX] * tx;
+		return top * (1.0 - ty) + bottom * ty;
+	};
+
+	// streaks along the wind: noise fixed to the map's cells, smeared along it
+	TerrainHydro::Field noise;
+	noise.Resize(W, H);
+	Random rng(m_core.seed ^ 0x51u);
+	for (float &v : noise.values)
+		v = float(rng.Double());
+	noise.Blur(2.5);
+	std::vector<float> streak(cells);
+	ParallelRows(H, [&](const int r) {
+		for (int c = 0; c < W; c++) {
+			const size_t i = size_t(r) * W + c;
+			double sum = noise.values[i];
+			for (int k = 1; k < 12; k++) {
+				const double d = k * 0.5 * stepCells;
+				sum += sample(noise.values, c + windX[i] * d, r + windY[i] * d) + sample(noise.values, c - windX[i] * d, r - windY[i] * d);
+			}
+			streak[i] = float(sum);
+		}
+	});
+	std::vector<float> sorted(streak);
+	std::sort(sorted.begin(), sorted.end());
+	const double low = sorted[cells / 20], high = std::max(double(sorted[cells - 1 - cells / 20]), low + 1e-6);
+	for (size_t i = 0; i < cells; i++)
+		streak[i] = float(std::clamp((streak[i] - low) / (high - low), 0.0, 1.0));
+
+	for (size_t k = 0; k < carried.size(); k++) {
+		const std::vector<float> &share = shareMaps[k];
+		if (*std::max_element(share.begin(), share.end()) < 0.05f)
+			continue;
+		WindBorder border;
+		border.layer = carried[k].layer;
+		border.gain.Resize(W, H);
+		const bool scoured = carried[k].layer == M::SNOW;
+		if (scoured)
+			border.loss.Resize(W, H);
+		const double power = carried[k].power * (0.45 + 0.55 * m_state.air);
+		ParallelRows(H, [&](const int r) {
+			for (int c = 0; c < W; c++) {
+				const size_t i = size_t(r) * W + c;
+				double down = 0.0;
+				for (int s = 1; s <= STEPS; s++) {
+					const double d = s * stepCells;
+					down = std::max(down, sample(share, c - windX[i] * d, r - windY[i] * d) * (1.0 - double(s - 1) / STEPS));
+				}
+				// the wind carries it where the streak says so, weaker at the far end
+				border.gain.values[i] = float(Soft(down * power, 0.2 + 0.7 * streak[i], 0.08));
+				if (scoured) {
+					const double up = sample(share, c + windX[i] * 2.0 * stepCells, r + windY[i] * 2.0 * stepCells);
+					border.loss.values[i] = float(Soft(1.0 - up, 0.35 + 0.5 * streak[i], 0.1));
+				}
+			}
+		});
+		border.gain.Blur(0.7);
+		border.gain.FindRange();
+		if (scoured)
+			border.loss.FindRange();
+		m_borders.push_back(std::move(border));
+	}
+}
+
+void TerrainPhysical::WindBorders(const vector3d &p, const Point &point, Shares &shares) const
+{
+	if (m_borders.empty() || point.underSea || point.lakeField > 0.5 || point.smallLakeEdge < 0.0 || point.sideEdge < 0.0 || (point.hasRiver && point.river.distance < 0.0))
+		return;
+	double fine = 0.0;
+	bool hasFine = false;
+	for (const WindBorder &border : m_borders) {
+		const double gain = border.gain.Smooth(point.place);
+		const double loss = border.loss.Empty() ? 0.0 : border.loss.Smooth(point.place);
+		if (gain < 0.01 && loss < 0.01)
+			continue;
+		// the map's edge, finer close up
+		if (!hasFine) {
+			fine = 0.1 * std::clamp(Fbm(p, 64.0, 7, m_noiseSeed + 172, 0.6) / 0.35, -1.0, 1.0);
+			hasFine = true;
+		}
+		const double amount = Soft(gain + fine, 0.3, 0.3);
+		// (snow doesn't drift over ice)
+		const bool snow = border.layer == M::SNOW;
+		if (amount > 0.0) {
+			for (int i = 0; i < M::LAYER_COUNT; i++) {
+				if (i == border.layer || (snow && i == M::ICE) || shares[i] <= 0.0)
+					continue;
+				const double moved = shares[i] * amount;
+				shares[i] -= moved;
+				shares[border.layer] += moved;
+			}
+		}
+		if (loss >= 0.01) {
+			const double scoured = shares[border.layer] * Soft(loss + fine, 0.3, 0.3);
+			shares[border.layer] -= scoured;
+			shares[m_state.ground] += scoured;
+		}
+	}
+}
+
 // Dunes need a sand sea, so there are none on beaches and barrier islands.
 void TerrainPhysical::BuildSandSeas()
 {
@@ -1272,8 +1431,10 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 
 	// dry basins and deltas
 	if (!m_hydro.dry.Empty()) {
-		const double d = m_hydro.dry.Smooth(point.place);
-		if (d > 0.0) {
+		const double field = m_hydro.dry.Smooth(point.place);
+		if (field > 0.0) {
+			// (the field is coarse and smooth: without this, its edges are simple rings)
+			const double d = field + 0.3 * Soft(field, 0.0, 0.2) * std::clamp(Fbm(p, 40.0, 6, m_noiseSeed + 173, 0.6) / 0.35, -1.0, 1.0);
 			paint(M::SALT, Soft(d, 0.85, 0.1));
 			paint(M::CRACKED_MUD, Soft(d, 0.35, 0.15));
 		}
@@ -1300,18 +1461,21 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 			Climate(p, point, paint);
 		} else {
 			const double edge = std::max(0.012 * m_reliefLimit, 10.0);
+			// the lows, on a surface that wanders, or their edges are simple rings of equal height
+			const double lowness = -g.base + 3.0 * edge * std::clamp(Fbm(p, 40.0, 6, m_noiseSeed + 173, 0.6) / 0.35, -1.0, 1.0);
 			if (m_core.temperature > 450.0) {
-				paint(M::DUST, Soft(-g.base, m_sandLevel, edge));
+				paint(M::DUST, Soft(lowness, m_sandLevel, edge));
 			} else {
 				if (m_interior.fossil || m_core.temperature < 400.0) {
-					paint(M::SALT, Soft(-g.base, m_saltLevel, edge));
-					paint(M::CRACKED_MUD, Soft(-g.base, m_mudLevel, edge));
+					paint(M::SALT, Soft(lowness, m_saltLevel, edge));
+					paint(M::CRACKED_MUD, Soft(lowness, m_mudLevel, edge));
 				}
-				paint(M::SAND, Soft(-g.base, m_sandLevel, edge));
+				paint(M::SAND, Soft(lowness, m_sandLevel, edge));
 			}
 		}
 	}
 	paint(ground, 1.0);
+	WindBorders(p, point, shares);
 }
 
 // Steep ground is bare rock on worlds with weather, with the slope at a fixed scale, so
@@ -1405,6 +1569,19 @@ vector3d TerrainPhysical::ColourFrom(const Point &point, const Shares &shares, c
 	// shades with a cause: the crustal units on hard ground, fresh ejecta and rays with no air to dull them
 	const double hard = shares[M::REGOLITH] + shares[M::ROCK] + shares[M::BASALT] + shares[M::DIRTY_ICE] + shares[M::ICE];
 	c = c * (1.0 + 0.13 * (g.unitClass - 0.5) * hard);
+	// Soft ground shows what lies under it: older units are darker and redder. They fade out towards a unit's
+	// edge, as loose ground has no sharp edges of its own. Wet soil is darker.
+	const double soft = shares[M::SOIL] + shares[M::SAND] + shares[M::DUST] + shares[M::GRAVEL] + shares[M::GRASS] + shares[M::FOREST] + shares[M::TUNDRA] + shares[M::CRACKED_MUD] + shares[M::SALT];
+	if (soft > 0.0) {
+		const double unit = (g.unitClass - 0.5) * Soft(g.unitEdge, 0.0, 1.0);
+		const double shade = soft * 0.28 * unit;
+		c = Times(c, vector3d(1.0 + 0.8 * shade + 0.1 * soft * unit, 1.0 + 0.8 * shade, 1.0 + 0.8 * shade - 0.12 * soft * unit));
+	}
+	if (shares[M::SOIL] > 0.0 && m_state.wetness > 0.0)
+		c = c * (1.0 - 0.3 * shares[M::SOIL] * std::clamp(point.rain, 0.0, 1.0));
+	// dark sand seas, as on Mars and Titan
+	if (shares[M::SAND] > 0.0 && !m_sandSea.Empty())
+		c = c * (1.0 - 0.2 * shares[M::SAND] * Soft(m_sandSea.Smooth(point.place), 0.3, 0.4));
 	if (!m_state.weather)
 		c = c * (1.0 + 0.3 * g.craters.ejecta + 0.55 * g.craters.rays);
 	return vector3d(std::clamp(c.x, 0.0, 1.0), std::clamp(c.y, 0.0, 1.0), std::clamp(c.z, 0.0, 1.0));

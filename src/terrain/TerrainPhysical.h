@@ -102,6 +102,9 @@ private:
 	double CutValleys(const vector3d &p, Point &point, double plainGround, double calm) const;
 	void BuildShares();
 	void BuildSandSeas();
+	void BuildBorders();
+	// soft materials carried over what lies beside them, by the wind, as worked out on the map
+	void WindBorders(const vector3d &p, const Point &point, Shares &shares) const;
 	double OwnRelief(const vector3d &p, const Ground &g) const;
 	// metres above the ground, on the sand of a sand sea; calm: 0..1, 0 at a river
 	double Dunes(const vector3d &p, const Point &point, double calm) const;
@@ -133,6 +136,12 @@ private:
 	TerrainValleys m_valleys;
 	TerrainHydro::Field m_ground; // the ground on a grid, which all else keeps to
 	TerrainHydro::Field m_sandSea; // the share of sand within about 60 km; empty if there is none
+	struct WindBorder {
+		int layer = 0;
+		TerrainHydro::Field gain; // where the wind carries it
+		TerrainHydro::Field loss; // where it scours it away, as a share of what is there; may be empty
+	};
+	std::vector<WindBorder> m_borders;
 	double m_valleyAmount = 0.0;
 	double m_valleySea = 0.0; // what valleys count their depth from
 	std::string m_sharesReadout;
