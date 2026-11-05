@@ -33,6 +33,10 @@ local featureKinds = {
 	{ id = "smalllake", label = "Small lake", size = "across", around = true },
 	{ id = "coast", label = "Coast" },
 	{ id = "peak", label = "Mountain", size = "above sea" },
+	{ id = "volcano", label = "Volcano", size = "across" },
+	{ id = "lavafield", label = "Lava field", size = "across" },
+	{ id = "patera", label = "Patera", size = "across" },
+	{ id = "block", label = "Mountain block", size = "across" },
 }
 
 local state = {

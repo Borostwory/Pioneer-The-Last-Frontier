@@ -10,6 +10,7 @@
 #include "TerrainPhysicalHydro.h"
 #include "TerrainPhysicalPlates.h"
 #include "TerrainPhysicalValleys.h"
+#include "TerrainPhysicalVolcanoes.h"
 
 #include <array>
 #include <vector>
@@ -59,6 +60,9 @@ private:
 		double unitClass = 0.0;
 		double unitEdge = 1.0;
 		double tessera = 0.0;
+		double block = 0.0; // 0..1, on one of Io's mountain blocks
+		double patera = 0.0; // 0..1, on a patera's floor
+		double pateraLava = 0.0; // 0..1, the same, if lava lies in it
 	};
 	// everything worked out for a point, heights and water together
 	struct Point {
@@ -83,6 +87,8 @@ private:
 		double smallLakeRadius = 0.0; // metres
 		vector3d smallLakePlace = vector3d(0.0, 0.0, 0.0);
 		double smallLakeEdge = 1e30; // metres from its shore, below 0 in it
+		TerrainVolcanoes::Sample volcano;
+		double lavaField = -1e30; // what decides where lava lies
 	};
 	enum class MoonStyle {
 		MOTTLED,
@@ -97,6 +103,10 @@ private:
 	// the water's height in a small lake, the same in every view
 	double SmallLakeLevel(const vector3d &place, double radius) const;
 	double Temperature(const vector3d &p, double warp) const;
+	// lava lies flat, within the depth limit, and the floors of craters and pits are level
+	double SettleLava(const Point &point, double h) const;
+	void BuildLavaFields(const TerrainHydro::Field &ground, const std::vector<float> &areas);
+	void BuildPlumes();
 	double Coast(const vector3d &p, const Point &point, double plainGround) const;
 	// cuts the valleys into point.g.base and returns the peaks along the ridges; calm: 0..1, how much of them
 	double CutValleys(const vector3d &p, Point &point, double plainGround, double calm) const;
@@ -134,6 +144,13 @@ private:
 	TerrainPlates m_plates;
 	TerrainHydro m_hydro;
 	TerrainValleys m_valleys;
+	TerrainVolcanoes m_volcanoes;
+	TerrainHydro::Field m_lavaField; // empty if there is no lava; the fine noise is added at each point
+	double m_lavaLevel = 1e30, m_moltenLevel = 1e30, m_flowLevel = 1e30, m_oldLevel = 1e30, m_ashLevel = 1e30, m_cryoLevel = 1e30, m_iceClearLevel = 1e30;
+	double m_lavaSeaLevel = 0.0; // metres, where most of the surface is molten
+	bool m_plainsAreBasalt = false; // old plains show as basalt, not under air and weather, which wear them away
+	bool m_lavaAroundVolcanoes = false; // lava lies only around each volcano (TerrainVolcanoes::Sample::field); not so on Io and lava planets, with no field
+	TerrainHydro::Field m_plumeRed, m_plumeWhite; // 0..1, the deposits around Io's largest vents; empty if none
 	TerrainHydro::Field m_ground; // the ground on a grid, which all else keeps to
 	TerrainHydro::Field m_sandSea; // the share of sand within about 60 km; empty if there is none
 	struct WindBorder {

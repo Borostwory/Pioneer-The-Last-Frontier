@@ -307,6 +307,17 @@ vec3 materialTileSample(int layer, MaterialMapping m, float level)
 	return r;
 }
 
+// Soft, uneven patches of brighter and duller glow for lava seen from afar, kilometres across, from the lava
+// texture itself, averaged a long way down; around 1.
+float materialLavaPatches(MaterialMapping m)
+{
+	float level = 13.0;
+	vec3 origin = fract(MaterialOriginCoarse.xyz * exp2(MATERIAL_MAX_LEVEL - level));
+	vec3 q = m.rel / exp2(level) + origin * 5.0;
+	float e = textureGrad(terrainMaterials, vec3(materialPlaneUV(q, m.axes.x), float(MATERIAL_LAVA)), vec2(0.03, 0.0), vec2(0.0, 0.03)).r;
+	return clamp(1.0 + (e - 0.078) * 12.0, 0.25, 2.0);
+}
+
 // emission (x), detail (y, mean 1) and height (z) of one material at a tile
 // level, blended between the two power-of-two sizes around it
 vec3 materialSample(int layer, MaterialMapping m, float level)
@@ -453,7 +464,14 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 
 	// lava glow: the texture's emission near the camera, its average further out
 	float glow = (l1 == MATERIAL_LAVA ? n1 * d1.x : 0.0) + (l2 == MATERIAL_LAVA ? n2 * d2.x : 0.0);
-	glow = mix(farGlow, glow, contrast);
+	if (MaterialLook.y > 0.5) {
+		// (detail fixed in space has a small tile, whose bright cracks repeat as a grid if seen from any distance:
+		// the cracks only up close, and uneven patches beyond that)
+		float patches = lavaWeight > 0.0 ? mix(1.0, materialLavaPatches(mapping), contrast) : 1.0;
+		glow = mix(farGlow * patches, glow, 1.0 - smoothstep(800.0, 3000.0, distMetres));
+	} else {
+		glow = mix(farGlow, glow, contrast);
+	}
 	return vec4(colourMul * detail, glow);
 }
 

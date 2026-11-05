@@ -159,6 +159,8 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 	m_craters.Build(m_core, m_interior, m_state, m_noiseSeed);
 	if (m_interior.plates)
 		m_plates.Build(m_core.seed);
+	m_plainsAreBasalt = m_interior.plains > 0.02 && !m_state.sulphur && m_state.wear < 0.2;
+	m_volcanoes.BuildConstructs(m_core, m_interior, m_noiseSeed, m_reliefLimit);
 	BuildLevels();
 	BuildTones();
 	BuildMaterials();
@@ -168,7 +170,7 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 
 	if (m_state.sea > 0.0)
 		m_surfaceEffects |= EFFECT_WATER;
-	if (m_state.ground == M::LAVA)
+	if (m_slots[M::LAVA] >= 0)
 		m_surfaceEffects |= EFFECT_LAVA;
 	m_sealevel = m_state.sea;
 	m_buildMilliseconds = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
@@ -194,7 +196,7 @@ void TerrainPhysical::BuildMaterials()
 		if (m_state.weather)
 			m_materials.Add(M::SAND);
 	} else {
-		if (m_interior.plains > 0.02 && !m_state.sulphur && m_state.wear < 0.2)
+		if (m_plainsAreBasalt)
 			m_materials.Add(M::BASALT);
 		if (m_interior.lid)
 			m_materials.Add(M::ROCK);
@@ -225,6 +227,22 @@ void TerrainPhysical::BuildMaterials()
 			}
 		}
 	}
+	if (!cryo && (!m_volcanoes.Vents().empty() || !m_volcanoes.Paterae().empty() || m_moltenLevel < NONE_HIGH)) {
+		bool lava = m_moltenLevel < NONE_HIGH || !m_volcanoes.Lakes().empty();
+		for (const TerrainVolcanoes::Vent &vent : m_volcanoes.Vents())
+			lava = lava || vent.erupting;
+		if (lava || m_state.glow > 0.3)
+			m_materials.Add(M::LAVA);
+		m_materials.Add(M::LAVA_FLOW);
+		m_materials.Add(M::BASALT);
+		if (m_state.active)
+			m_materials.Add(M::ASH);
+	} else if (cryo && m_lavaLevel < NONE_HIGH) {
+		m_materials.Add(M::ICE);
+		m_materials.Add(M::SNOW);
+	}
+	if (!m_volcanoes.Blocks().empty())
+		m_materials.Add(M::ROCK);
 	// bare steep ground is the crust's material; a sea has beaches
 	m_materials.SetSteep(cryo ? M::ICE : M::ROCK);
 	if (m_state.sea > 0.0)
@@ -269,6 +287,9 @@ void TerrainPhysical::BuildLevels()
 	if (seaShare > 0.0)
 		m_seaLevel = WeightedLevelAbove(ground.values, areas, std::max(1.0 - seaShare, 0.001));
 
+	m_volcanoes.BuildVents(m_core, m_inputs, m_interior, m_state, m_reliefLimit, m_seaLevel, m_plates.Active() ? &m_plates : nullptr,
+		[&ground](const vector3d &p) { return ground.Linear(TerrainHydro::PlaceOf(p)); });
+
 	m_hydro.BuildSlope(ground, m_planetRadius);
 	const bool asteroid = m_core.asteroid;
 	const bool wet = m_state.rain > 0.02 && m_state.sea > 0.0 && m_state.weather && !asteroid;
@@ -285,7 +306,28 @@ void TerrainPhysical::BuildLevels()
 		params.wet = wet;
 		if (wet)
 			m_hydro.BuildMoisture(params, ground, [this](const vector3d &p) { return Warp(p); });
-		m_hydro.BuildDrainage(params, ground);
+		// rivers find their way around volcanoes, not across them
+		TerrainHydro::Field routed = ground;
+		const std::vector<TerrainVolcanoes::Vent> &vents = m_volcanoes.Vents();
+		if (!vents.empty()) {
+			const double sea = m_seaLevel;
+			const float rise = float(0.15 * m_reliefLimit);
+			// (at least a cell of the grid, or the map wouldn't see a small volcano)
+			const double cosCell = std::cos(2.0 * M_PI / W);
+			ParallelRows(H, [&](const int r) {
+				for (int c = 0; c < W; c++) {
+					const vector3d p = GridPoint(r, c, W, H);
+					for (const TerrainVolcanoes::Vent &vent : vents) {
+						if (p.Dot(vent.centre) >= std::min(vent.cosReach, cosCell) && ground.At(r, c) >= sea) {
+							routed.At(r, c) = ground.At(r, c) + rise;
+							break;
+						}
+					}
+				}
+			});
+			routed.FindRange();
+		}
+		m_hydro.BuildDrainage(params, routed);
 	}
 
 	// the sea floods the land with its coasts, so its level is set on that
@@ -326,6 +368,9 @@ void TerrainPhysical::BuildLevels()
 			return std::max(shore - m_hydro.valley.Smooth(point.place) + (g.craters.small + g.small) * KeepOf(m_state.ground) + OwnRelief(p, g), sea);
 		});
 	}
+
+	BuildLavaFields(ground, areas);
+	BuildPlumes();
 
 	// the valley network, where water runs now or once did
 	m_valleyAmount = wet ? 1.0 : (fossil ? 0.3 : 0.0);
@@ -407,7 +452,7 @@ void TerrainPhysical::BuildLevels()
 	}
 
 	// room for what the coarse grid can't see
-	m_maxHeightInMeters = std::min(std::max(100.0, double(ground.high) - m_datum + 0.25 * m_reliefLimit), m_planetRadius);
+	m_maxHeightInMeters = std::min(std::max(100.0, double(ground.high) - m_datum + 0.25 * m_reliefLimit + m_volcanoes.Tallest()), m_planetRadius);
 	m_maxHeight = m_maxHeightInMeters / m_planetRadius;
 	m_invMaxHeight = 1.0 / m_maxHeight;
 }
@@ -448,7 +493,8 @@ void TerrainPhysical::BuildTones()
 	set(M::ICE, vector3d(0.70, 0.82, 0.90));
 	set(M::DIRTY_ICE, vector3d(0.33, 0.31, 0.28));
 	set(M::BASALT, vector3d(0.12, 0.11, 0.11));
-	set(M::LAVA, vector3d(1.3, 0.42, 0.08));
+	// a dark cooled crust; the glow is the shader's, from the lava texture's cracks, and a dim average from afar
+	set(M::LAVA, vector3d(0.07, 0.045, 0.04));
 	set(M::LAVA_FLOW, vector3d(0.09, 0.07, 0.07));
 	set(M::ASH, vector3d(0.17, 0.16, 0.16));
 	set(M::REGOLITH, rock * 1.05);
@@ -603,6 +649,13 @@ TerrainPhysical::Ground TerrainPhysical::GroundAt(const vector3d &p) const
 		h += g.plains * std::max(m_floodLevel - before, 0.0) * 0.9;
 	}
 
+	// what the interior built stands on the plains: old shields, and Io's mountain blocks and paterae
+	const TerrainVolcanoes::Construct built = m_volcanoes.ConstructAt(p);
+	h += built.height;
+	g.block = built.block;
+	g.patera = built.patera;
+	g.pateraLava = built.pateraLava;
+
 	g.large = h;
 	g.base = h + g.craters.large;
 	g.small = 0.08 * env * Fbm(p, 18.0, 5, m_noiseSeed + 41, 0.55);
@@ -688,7 +741,7 @@ double TerrainPhysical::CutValleys(const vector3d &p, Point &point, const double
 double TerrainPhysical::Keep(const Ground &g) const
 {
 	const double ground = KeepOf(m_state.ground);
-	if (m_slots[M::BASALT] < 0 || g.plains <= 0.0)
+	if (!m_plainsAreBasalt || g.plains <= 0.0)
 		return ground;
 	return ground + (KeepOf(M::BASALT) - ground) * g.plains;
 }
@@ -1251,25 +1304,44 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 		// switches on and off along the valleys' distance lines, far inland
 		out.coast = Coast(p, out, plainGround);
 	}
+	out.volcano = m_volcanoes.At(p);
+	const TerrainVolcanoes::Sample &volcano = out.volcano;
+	if (m_lavaAroundVolcanoes)
+		out.lavaField = volcano.field;
+	else if (!m_lavaField.Empty())
+		out.lavaField = m_lavaField.Smooth(out.place) + 0.25 * Fbm(p, 64.0, 7, m_noiseSeed + 92, 0.6);
 	// valleys and peaks die away towards a river, so what is beside it stays near its level
 	out.hasRiver = m_hydro.RiverAt(p, out.river);
 	const double calm = out.hasRiver ? std::clamp(out.river.trueDistance / out.river.valley, 0.0, 1.0) : 1.0;
-	const double peaks = m_valleyAmount > 0.0 ? CutValleys(p, out, plainGround, calm) : 0.0;
-	const double relief = ((g.craters.small + g.small) * Keep(g) + OwnRelief(p, g)) * out.quiet;
+	// no valleys across a volcano or fresh lava, and no water on a volcano
+	const double fresh = m_oldLevel < NONE_HIGH ? Soft(out.lavaField, m_oldLevel - 0.08, 0.08) : 0.0;
+	const double uncut = (1.0 - volcano.influence) * (1.0 - fresh);
+	const double peaks = m_valleyAmount > 0.0 ? CutValleys(p, out, plainGround, calm * uncut) : 0.0;
+	const bool lavaCovers = volcano.lava > 0.5 || volcano.flow > 0.5 || out.lavaField >= m_flowLevel || out.lavaField >= m_moltenLevel;
+	const bool noWater = volcano.nearby || lavaCovers;
+	if (noWater) {
+		out.hasRiver = false;
+		out.sideEdge = 1e30;
+		out.smallLakeRatio = 1e30;
+	}
+	// a volcano keeps its own shape
+	const double relief = ((g.craters.small + g.small) * Keep(g) + OwnRelief(p, g)) * out.quiet * (1.0 - volcano.smooth);
 
 	if (m_state.sea <= 0.0) {
 		// the surface of a frozen sea is level; relief fades in on land
-		const double ground = g.base - valley + peaks;
+		const double ground = g.base - valley + peaks + volcano.height;
 		if (m_seaLevel > NONE_LOW)
 			out.height = std::max(ground, m_seaLevel) + relief * Soft(ground - m_seaLevel, 0.0, 0.02 * m_reliefLimit);
 		else
 			out.height = ground + relief;
-		out.shore = g.base;
+		out.shore = g.base + volcano.height;
+		out.height = SettleLava(out, out.height);
 		out.height += Dunes(p, out, calm);
 		return;
 	}
 
-	out.shore = g.base + out.coast;
+	// (a volcano counts as ground for the sea, so it can make an island; the sea's level was set without them)
+	out.shore = g.base + out.coast + volcano.height;
 	out.underSea = out.shore < m_seaLevel;
 	if (out.underSea) {
 		// the sea floor stays flat at sea level; the real depth travels in the altitude
@@ -1285,7 +1357,7 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 	// the map's lakes are flat, with flat ground beside them, so the ground meets the water at its edge
 	if (!m_hydro.lake.Empty()) {
 		const double field = m_hydro.lake.Smooth(out.place);
-		if (field > 0.0) {
+		if (field > 0.0 && !noWater) {
 			out.lakeField = field + WaterEdge(p);
 			const double surface = m_hydro.surface.Smooth(out.place);
 			const double plain = Soft(out.lakeField, 0.08, 0.42);
@@ -1327,8 +1399,174 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 			}
 		}
 	}
-	out.height = std::max(h, m_seaLevel);
+	out.height = std::max(SettleLava(out, h), m_seaLevel);
 	out.height += Dunes(p, out, calm);
+}
+
+double TerrainPhysical::SettleLava(const Point &point, const double h) const
+{
+	const TerrainVolcanoes::Sample &volcano = point.volcano;
+	double out = h;
+	if (m_moltenLevel < NONE_HIGH && !m_ground.Empty()) {
+		const double share = Soft(point.lavaField, m_moltenLevel, 0.02) * (1.0 - volcano.slope);
+		if (share > 0.0) {
+			// Lava flows downhill, so it doesn't stand above the ground around it: it lies at the map's smooth
+			// ground there, a little lower, or at the ground itself where that is lower. Only where most of the
+			// surface is molten is there one sea, whose level high ground is cut down to.
+			const double env = m_reliefLimit;
+			const double settled = m_state.molten > 0.5 ? h + std::max(m_lavaSeaLevel - h, -0.25 * env) : std::min(h, m_ground.Smooth(point.place) - 0.004 * std::min(env, 7000.0));
+			out = h + (settled - h) * share;
+		}
+	}
+	// (a mountain block stands above any floor that reaches it)
+	if (volcano.floor > 0.0)
+		out += (std::min(out, volcano.level) - out) * std::clamp(volcano.floor, 0.0, 1.0) * (1.0 - point.g.block);
+	return out;
+}
+
+// Where lava lies. Around the vents and in the lows; on a lava planet, mostly in the lows. Each kind of lava takes
+// a share of the surface, from the physics, so the levels are found on the map.
+void TerrainPhysical::BuildLavaFields(const TerrainHydro::Field &ground, const std::vector<float> &areas)
+{
+	const std::vector<vector3d> &places = m_volcanoes.FieldPlaces();
+	if (m_state.lava <= 0.0 || places.empty())
+		return;
+	// Except on a world like Io or a lava planet, lava lies close around each volcano: the map's grid is far
+	// too coarse for that, so each volcano works it out at the point. These are values of Sample::field.
+	m_lavaAroundVolcanoes = !m_interior.iceCrust && !m_state.sulphur && !m_state.forcedLava && m_interior.heatPipe <= 0.5 && m_state.lavaPlanet <= 0.5;
+	if (m_lavaAroundVolcanoes) {
+		m_lavaLevel = 0.25;
+		m_flowLevel = 0.6;
+		m_oldLevel = 0.4;
+		m_iceClearLevel = 0.25;
+		return;
+	}
+	const int W = ground.width, H = ground.height;
+	const double spread = m_volcanoes.FieldSpread();
+	const double cosReach = std::cos(std::min(3.0 * spread, M_PI));
+	const double env = m_reliefLimit;
+	const double lowness = 0.3 + 2.5 * m_state.lavaPlanet;
+	const double sea = m_seaLevel;
+	m_lavaField.Resize(W, H);
+	std::vector<float> values(size_t(W) * H);
+	ParallelRows(H, [&](const int r) {
+		TerrainNoise::ScopedBandLimit bandLimit(GROUND_MAX_FREQUENCY);
+		for (int c = 0; c < W; c++) {
+			const vector3d p = GridPoint(r, c, W, H);
+			double sum = 0.0;
+			for (const vector3d &place : places) {
+				const double cosine = p.Dot(place);
+				if (cosine < cosReach)
+					continue;
+				const double d = std::acos(std::clamp(cosine, -1.0, 1.0)) / spread;
+				sum += std::exp(-d * d);
+			}
+			// (a lava planet's seas lie in the lows, not around its volcanoes, which stand on the high ground)
+			const double v = sum * (1.0 - m_state.lavaPlanet) - lowness * ground.At(r, c) / env + 0.25 * Warp(p) + 0.45 * Fbm(p, 5.0, 3, m_noiseSeed + 91);
+			m_lavaField.At(r, c) = float(v);
+			const bool land = sea <= NONE_LOW || ground.At(r, c) >= sea;
+			values[size_t(r) * W + c] = land ? float(v + 0.25 * Fbm(p, 64.0, 7, m_noiseSeed + 92, 0.6)) : -1e20f;
+		}
+	});
+	m_lavaField.FindRange();
+
+	std::vector<int> order(values.size());
+	for (size_t i = 0; i < order.size(); i++)
+		order[i] = int(i);
+	std::sort(order.begin(), order.end(), [&values](const int a, const int b) { return values[a] > values[b]; });
+	std::vector<double> sums(order.size());
+	double total = 0.0, sum = 0.0;
+	for (const float a : areas)
+		total += a;
+	for (size_t i = 0; i < order.size(); i++) {
+		sum += areas[order[i]];
+		sums[i] = sum / total;
+	}
+	const auto levelAt = [&](const double share) {
+		if (share <= 0.0)
+			return NONE_HIGH;
+		const size_t i = std::min(size_t(std::lower_bound(sums.begin(), sums.end(), share) - sums.begin()), order.size() - 1);
+		return double(values[order[i]]);
+	};
+
+	const double volcanicity = std::clamp(m_inputs.volcanicity, 0.0, 1.0);
+	const double molten = m_state.molten;
+	// (on a world like Io, sulphur settles over all but the youngest lava, which stays yellow)
+	const double sulphurCover = m_state.sulphur ? 0.25 : 1.0;
+	const double bare = sulphurCover * (m_state.forcedLava ? m_state.lava - molten : (m_state.lava - molten) * (1.0 - 0.7 * m_state.wear));
+	const double young = m_state.forcedLava ? 0.75 : (m_state.active ? 0.35 + 0.4 * Soft(volcanicity, 0.3, 0.6) : 0.0);
+	m_lavaLevel = levelAt(m_state.lava);
+	if (m_interior.iceCrust) {
+		m_cryoLevel = levelAt(0.2 * m_state.lava);
+		return;
+	}
+	// Seas only where it's a lava planet; otherwise it lies in lakes around the vents (TerrainVolcanoes)
+	const bool seas = m_state.glow > 0.3 && (molten > 0.3 || m_state.lavaPlanet > 0.5);
+	const double onField = seas ? molten : 0.0;
+	m_moltenLevel = levelAt(onField);
+	if (m_state.active && bare > 0.0) {
+		m_flowLevel = levelAt(onField + bare * young);
+		m_oldLevel = levelAt(onField + bare);
+		m_ashLevel = levelAt(onField + bare + sulphurCover * 0.12 * std::sqrt(volcanicity) * (1.0 - m_state.sea));
+	}
+	m_iceClearLevel = levelAt(std::min(1.0, m_state.lava * 1.3 + 0.01));
+	if (seas)
+		m_ground = ground;
+	if (molten > 0.5)
+		m_lavaSeaLevel = WeightedLevelAbove(ground.values, areas, 0.65);
+}
+
+// Colour only, on Io: red rings around the largest vents (Pele), white frost halos around others (Prometheus).
+void TerrainPhysical::BuildPlumes()
+{
+	if (!m_state.sulphur)
+		return;
+	std::vector<const TerrainVolcanoes::Vent *> erupting;
+	for (const TerrainVolcanoes::Vent &vent : m_volcanoes.Vents()) {
+		if (vent.erupting)
+			erupting.push_back(&vent);
+	}
+	if (erupting.empty())
+		return;
+	std::sort(erupting.begin(), erupting.end(), [](const TerrainVolcanoes::Vent *a, const TerrainVolcanoes::Vent *b) { return a->km > b->km; });
+	const size_t reds = std::min(erupting.size(), size_t(4));
+	const size_t whites = std::min(erupting.size(), size_t(12));
+	const int W = GROUND_WIDTH, H = W / 2;
+	m_plumeRed.Resize(W, H);
+	m_plumeWhite.Resize(W, H);
+	ParallelRows(H, [&](const int r) {
+		TerrainNoise::ScopedBandLimit bandLimit(GROUND_MAX_FREQUENCY);
+		for (int c = 0; c < W; c++) {
+			const vector3d p = GridPoint(r, c, W, H);
+			const double uneven = std::clamp(Fbm(p, 24.0, 4, m_noiseSeed + 95, 0.55) / 0.35, -1.0, 1.0);
+			double red = 0.0, white = 0.0;
+			for (size_t i = 0; i < whites; i++) {
+				const TerrainVolcanoes::Vent &vent = *erupting[i];
+				const double cosine = p.Dot(vent.centre);
+				if (cosine < 0.8)
+					continue;
+				const double angle = std::acos(std::clamp(cosine, -1.0, 1.0));
+				if (i < reds) {
+					// wider across than high, and open on one side, as plumes fall
+					const double ringRadius = 0.27 + 0.11 * vent.seed;
+					const double theta = std::atan2(p.Dot(vent.axisB), p.Dot(vent.axisA));
+					const double d = (angle - ringRadius * (1.0 + 0.16 * std::sin(2.0 * theta + vent.seed * 40.0)) + 0.012 * uneven) / 0.03;
+					red = std::max(red, std::exp(-d * d) * (0.55 + 0.45 * std::sin(theta + vent.seed * 90.0)));
+				} else {
+					// fallen frost: fading with distance, in streaks out from the vent
+					const double haloRadius = 0.07 + 0.07 * vent.seed;
+					const double theta = std::atan2(p.Dot(vent.axisB), p.Dot(vent.axisA));
+					const double streaks = 0.5 + 0.5 * std::sin((14.0 + 10.0 * vent.seed) * theta + 2.5 * uneven + vent.seed * 60.0);
+					const double fall = std::max(1.0 - angle / haloRadius, 0.0);
+					white = std::max(white, std::pow(fall, 1.5) * (0.35 + 0.65 * streaks));
+				}
+			}
+			m_plumeRed.At(r, c) = float(red);
+			m_plumeWhite.At(r, c) = float(white);
+		}
+	});
+	m_plumeRed.FindRange();
+	m_plumeWhite.FindRange();
 }
 
 void TerrainPhysical::GetBaseHeights(const vector3d *vP, double *heightsOut, const size_t count) const
@@ -1348,7 +1586,8 @@ void TerrainPhysical::GetBaseHeights(const vector3d *vP, double *heightsOut, con
 void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::function<void(M::Layer, double)> &paint) const
 {
 	const double sea = m_seaLevel > NONE_LOW ? m_seaLevel : 0.0;
-	const double h0 = point.g.base;
+	// (a volcano's height cools too, so plants stop on its way up)
+	const double h0 = point.g.base + point.volcano.height;
 	double m = point.rain;
 	if (!m_hydro.corridor.Empty())
 		m += 0.55 * m_hydro.corridor.Smooth(point.place);
@@ -1430,8 +1669,42 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 	}
 
 	// a frozen sea
-	if (m_state.sea <= 0.0 && m_state.frozen > 0.0 && g.base < m_seaLevel)
+	if (m_state.sea <= 0.0 && m_state.frozen > 0.0 && g.base + point.volcano.height < m_seaLevel)
 		paint(M::ICE, 1.0);
+
+	// Volcanoes and lava come before ice: lava clears a band around itself, and flows lie on a volcano's snow.
+	const TerrainVolcanoes::Sample &volcano = point.volcano;
+	paint(M::ROCK, g.block);
+	paint(M::LAVA, volcano.lava);
+	paint(M::ROCK, volcano.rock);
+	paint(M::LAVA_FLOW, volcano.flow);
+	paint(M::BASALT, volcano.old);
+	paint(M::ASH, volcano.ash);
+	const double lavaField = point.lavaField;
+	if ((!m_lavaField.Empty() || m_lavaAroundVolcanoes) && !point.underSea) {
+		const double edge = 0.02;
+		if (cryo) {
+			paint(M::SNOW, Soft(lavaField, m_cryoLevel, edge));
+			paint(M::ICE, Soft(lavaField, m_lavaLevel, edge));
+		} else {
+			// (not on a volcano's slopes, which it would run off; its flows are there instead)
+			paint(M::LAVA, Soft(lavaField, m_moltenLevel, edge) * (1.0 - volcano.slope));
+			if (m_flowLevel < NONE_HIGH) {
+				// (around a volcano, it lies beyond the slopes; on them are its own flows, and its own ground)
+				const double room = m_lavaAroundVolcanoes ? 1.0 - volcano.slope : 1.0;
+				paint(M::LAVA_FLOW, Soft(lavaField, m_flowLevel, edge) * room);
+				paint(M::BASALT, Soft(lavaField, m_oldLevel, edge) * room);
+				// (ash thins out, with no edge)
+				paint(M::ASH, Soft(lavaField, m_ashLevel, 0.12));
+			}
+		}
+	}
+	// Io's paterae have dark floors, and a few hold lava
+	if (g.patera > 0.0) {
+		if (m_state.glow > 0.3)
+			paint(M::LAVA, 0.95 * g.pateraLava * (1.0 - volcano.slope));
+		paint(M::BASALT, 0.95 * g.patera);
+	}
 
 	const double thin = (cryo && airless) || m_iceLevel < NONE_HIGH ? Thinning(p, g) : 0.0;
 	if (cryo && airless) {
@@ -1455,10 +1728,14 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 	// ice and snow, coldest first
 	if (m_iceLevel < NONE_HIGH) {
 		const double spread = m_state.equatorTemperature - m_state.poleTemperature;
-		const double field = cryo ? CrustIceField(p, g) + 0.1 * thin : IceField(p, g) + 0.08 * spread * thin;
+		// (a volcano's height cools, so tall ones have white tops)
+		Ground withVolcano = g;
+		withVolcano.base += volcano.height;
+		const double field = cryo ? CrustIceField(p, g) + 0.1 * thin : IceField(p, withVolcano) + 0.08 * spread * thin;
 		const double edge = cryo ? 0.015 : 1.5;
-		const double core = Soft(field, m_iceCoreLevel, edge);
-		const double all = Soft(field, m_iceLevel, edge);
+		const double cleared = m_iceClearLevel < NONE_HIGH && (!m_lavaField.Empty() || m_lavaAroundVolcanoes) ? 1.0 - Soft(lavaField, m_iceClearLevel, 0.02) * (1.0 - volcano.slope) : 1.0;
+		const double core = Soft(field, m_iceCoreLevel, edge) * cleared;
+		const double all = Soft(field, m_iceLevel, edge) * cleared;
 		if (cryo && m_state.ice < 1.0) {
 			paint(M::ICE, all);
 		} else {
@@ -1491,7 +1768,7 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 		if (m_state.weather)
 			paint(M::SAND, Soft(DuneField(p, g), m_beltLevel, 0.025));
 	} else {
-		if (m_slots[M::BASALT] >= 0)
+		if (m_plainsAreBasalt)
 			paint(M::BASALT, g.plains);
 		if (m_interior.lid)
 			paint(M::ROCK, g.tessera);
@@ -1532,7 +1809,8 @@ void TerrainPhysical::Steep(const vector3d &p, const vector3d &normal, Shares &s
 		return;
 	double moved = 0.0;
 	for (int i = 0; i < M::LAYER_COUNT; i++) {
-		if (i == M::ROCK || shares[i] <= 0.0)
+		// (lava runs down steep ground, and stays there)
+		if (i == M::ROCK || i == M::LAVA || i == M::LAVA_FLOW || shares[i] <= 0.0)
 			continue;
 		const double k = (i == M::SNOW ? 0.7 : 1.0) * steep * shares[i];
 		shares[i] -= k;
@@ -1580,6 +1858,14 @@ vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, cons
 	for (int i = 0; i < M::LAYER_COUNT; i++) {
 		if (shares[i] > 0.0)
 			c += m_tones[i] * shares[i];
+	}
+	// what the plumes laid down; not on molten lava, which is younger
+	if (!m_plumeRed.Empty()) {
+		const double uncovered = 1.0 - shares[M::LAVA];
+		const double red = 0.6 * m_plumeRed.Smooth(point.place) * uncovered;
+		const double white = 0.45 * std::clamp(m_plumeWhite.Smooth(point.place), 0.0, 1.0) * uncovered;
+		c = c * (1.0 - red) + Times(vector3d(0.50, 0.15, 0.06), m_tint) * m_bright * red;
+		c = c * (1.0 - white) + Times(vector3d(0.92, 0.90, 0.82), m_tint) * m_bright * white;
 	}
 	// plants: wetter is deeper green; drier grass turns straw; cold forest is darker and bluer
 	const double plants = shares[M::FOREST] + shares[M::GRASS] + shares[M::TUNDRA];
@@ -1706,6 +1992,39 @@ double TerrainPhysical::GetSurfaceAltitude(const vector3d &p, const double heigh
 std::vector<Terrain::Feature> TerrainPhysical::FindFeatures(const std::string &kind, const vector3d &around) const
 {
 	std::vector<Feature> out;
+	if (kind == "volcano") {
+		// those erupting first
+		for (const bool erupting : { true, false }) {
+			for (const TerrainVolcanoes::Vent &vent : m_volcanoes.Vents()) {
+				if (vent.erupting == erupting)
+					out.push_back({ vent.centre, 2000.0 * vent.km });
+			}
+		}
+		return out;
+	}
+	if (kind == "patera" || kind == "block") {
+		for (const TerrainVolcanoes::Item &item : kind == "patera" ? m_volcanoes.Paterae() : m_volcanoes.Blocks())
+			out.push_back({ item.centre, 2.0 * item.radius * m_planetRadius });
+		return out;
+	}
+	if (kind == "lavafield") {
+		for (const TerrainVolcanoes::Item &lake : m_volcanoes.Lakes())
+			out.push_back({ lake.centre, 2.0 * lake.radius * m_planetRadius });
+		if (m_lavaField.Empty() || m_moltenLevel >= NONE_HIGH)
+			return out;
+		const int W = m_lavaField.width, H = m_lavaField.height;
+		const int step = 3;
+		for (int r = 0; r < H; r += step) {
+			for (int c = 0; c < W; c += step) {
+				if (m_lavaField.At(r, c) < m_moltenLevel + 0.1)
+					continue;
+				if (m_seaLevel > NONE_LOW && m_ground.At(r, c) < m_seaLevel)
+					continue;
+				out.push_back({ GridPoint(r, c, W, H), 2.0 * M_PI * m_planetRadius / W * step });
+			}
+		}
+		return out;
+	}
 	if (kind == "smalllake") {
 		if (!m_valleys.Active())
 			return out;
@@ -1884,6 +2203,11 @@ std::string TerrainPhysical::DescribePoint(const vector3d &p0) const
 		snprintf(line, sizeof(line), "\n%s (%.2f; 1 is a valley floor)", point.valley > 0.5 ? "Valley" : "Ridge", point.valley);
 		out += line;
 	}
+	if (point.volcano.kind >= 0) {
+		static const char *const kinds[] = { "cone", "shield", "pit" };
+		snprintf(line, sizeof(line), "\nOn a %s, %s", kinds[point.volcano.kind], point.volcano.erupting ? "erupting" : "quiet");
+		out += line;
+	}
 	std::string materials;
 	for (int k = 0; k < M::LAYER_COUNT; k++) {
 		if (shares[k] >= 0.05) {
@@ -1973,7 +2297,7 @@ bool TerrainPhysical::GetTileStyle(float style[4]) const
 	style[0] = m_state.ground == M::ROCK ? 0.3f : 0.15f;
 	style[1] = 0.0f;
 	style[2] = 0.0f;
-	const double craters = std::clamp(m_interior.cratering * (1.0 - 0.97 * m_state.wearSmall), 0.0, 1.0);
+	const double craters = std::clamp(m_interior.cratering * (1.0 - 0.97 * m_state.wearSmall) * (1.0 - m_state.lavaPlanet), 0.0, 1.0);
 	// (a young surface such as Europa's has next to none, and the tiles can't place so few)
 	style[3] = craters < 0.05 ? 0.0f : float(craters);
 	return true;
@@ -1989,6 +2313,13 @@ std::vector<std::string> TerrainPhysical::GetGeologyInfo() const
 		snprintf(line, sizeof(line), "Levels: no sea, datum %.0f m, highest %.0f m above it", m_datum, m_maxHeightInMeters);
 	out.emplace_back(line);
 	snprintf(line, sizeof(line), "Craters: %d listed, %d smaller sizes on lattices, down to %.1f km", int(m_craters.ListedCount()), int(m_craters.SizeCount()), TerrainCraters::SMALLEST_KM);
+	out.emplace_back(line);
+	int erupting = 0, kinds[3] = { 0, 0, 0 };
+	for (const TerrainVolcanoes::Vent &vent : m_volcanoes.Vents()) {
+		kinds[vent.kind]++;
+		erupting += vent.erupting ? 1 : 0;
+	}
+	snprintf(line, sizeof(line), "Volcanoes: %d cones, %d shields, %d pits, %d erupting; %d lava lakes; %d blocks, %d paterae; tallest %.0f m", kinds[0], kinds[1], kinds[2], erupting, int(m_volcanoes.Lakes().size()), int(m_volcanoes.Blocks().size()), int(m_volcanoes.Paterae().size()), m_volcanoes.Tallest());
 	out.emplace_back(line);
 	snprintf(line, sizeof(line), "Plates: %s; river pieces %d; rain %s; valleys %.1f; built in %.0f ms", m_plates.Active() ? "yes" : "no", int(m_hydro.RiverPieces()), m_hydro.HasMoisture() ? "yes" : "no", m_valleyAmount, m_buildMilliseconds);
 	out.emplace_back(line);

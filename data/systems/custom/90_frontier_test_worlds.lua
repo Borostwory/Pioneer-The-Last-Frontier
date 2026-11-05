@@ -98,6 +98,44 @@ local mars = CustomSystemBody:new('Test Mars', 'PLANET_TERRESTRIAL')
 	:ice_cover(f(3,10))
 	:life(f(0,1))
 
+-- a volcanic super-Earth: plates, sea and many volcanoes, some erupting
+local volcanic = CustomSystemBody:new('Test Volcanic', 'PLANET_TERRESTRIAL')
+	:seed(320771)
+	:radius(f(16,10))
+	:mass(f(5,1))
+	:temp(285)
+	:semi_major_axis(f(105,100))
+	:eccentricity(f(1,100))
+	:orbital_phase_at_start(fixed.deg2rad(f(70,1)))
+	:rotation_period(f(1,1))
+	:axial_tilt(fixed.deg2rad(f(18,1)))
+	:metallicity(f(1,2))
+	:volcanicity(f(8,10))
+	:atmos_density(f(1,1))
+	:atmos_oxidizing(f(99,100))
+	:ocean_cover(f(4,10))
+	:ice_cover(f(2,10))
+	:life(f(5,10))
+
+-- volcanicity 1: lava seas in the lows, with the highest ground standing above them
+local lavaWorld = CustomSystemBody:new('Test Lava', 'PLANET_TERRESTRIAL')
+	:seed(884213)
+	:radius(f(9,10))
+	:mass(f(7,10))
+	:temp(900)
+	:semi_major_axis(f(6,10))
+	:eccentricity(f(1,100))
+	:orbital_phase_at_start(fixed.deg2rad(f(120,1)))
+	:rotation_period(f(3,1))
+	:axial_tilt(fixed.deg2rad(f(5,1)))
+	:metallicity(f(6,10))
+	:volcanicity(f(1,1))
+	:atmos_density(f(1,100))
+	:atmos_oxidizing(f(1,10))
+	:ocean_cover(f(0,1))
+	:ice_cover(f(0,1))
+	:life(f(0,1))
+
 local venus = CustomSystemBody:new('Test Venus', 'PLANET_TERRESTRIAL')
 	:seed(613440353)
 	:radius(f(95,100))
@@ -159,6 +197,8 @@ s:bodies(star, {
 	venus,
 	titan,
 	frozen,
+	volcanic,
+	lavaWorld,
 })
 
 s:add_to_sector(0,1,0,v(0.500,0.100,0.500))
