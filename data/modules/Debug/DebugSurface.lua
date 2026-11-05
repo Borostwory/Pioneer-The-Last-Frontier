@@ -37,6 +37,8 @@ local featureKinds = {
 	{ id = "lavafield", label = "Lava field", size = "across" },
 	{ id = "patera", label = "Patera", size = "across" },
 	{ id = "block", label = "Mountain block", size = "across" },
+	{ id = "line", label = "Crack or scarp", size = "long" },
+	{ id = "chaos", label = "Chaos" },
 }
 
 local state = {

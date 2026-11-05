@@ -8,6 +8,7 @@
 #include "Terrain.h"
 #include "TerrainPhysicalCraters.h"
 #include "TerrainPhysicalHydro.h"
+#include "TerrainPhysicalLines.h"
 #include "TerrainPhysicalPlates.h"
 #include "TerrainPhysicalValleys.h"
 #include "TerrainPhysicalVolcanoes.h"
@@ -88,6 +89,9 @@ private:
 		vector3d smallLakePlace = vector3d(0.0, 0.0, 0.0);
 		double smallLakeEdge = 1e30; // metres from its shore, below 0 in it
 		TerrainVolcanoes::Sample volcano;
+		TerrainLines::Sample lines;
+		double crustRubble = 0.0; // 0..1, the rubble of chaos on an active shell
+		double crustCrack = 0.0; // 0..1, a crack of the ground map there
 		double lavaField = -1e30; // what decides where lava lies
 	};
 	enum class MoonStyle {
@@ -116,6 +120,10 @@ private:
 	// soft materials carried over what lies beside them, by the wind, as worked out on the map
 	void WindBorders(const vector3d &p, const Point &point, Shares &shares) const;
 	double OwnRelief(const vector3d &p, const Ground &g) const;
+	// where chaos lies on an active shell, 0..1
+	double CrustChaos(const vector3d &p) const;
+	// metres above the ground, from the maps of an active shell's rough ground (tools/europa-tiles); they average out to nothing
+	double CrustMaps(const vector3d &p, Point &point) const;
 	// metres above the ground, on the sand of a sand sea; calm: 0..1, 0 at a river
 	double Dunes(const vector3d &p, const Point &point, double calm) const;
 	double Keep(const Ground &g) const;
@@ -145,6 +153,7 @@ private:
 	TerrainHydro m_hydro;
 	TerrainValleys m_valleys;
 	TerrainVolcanoes m_volcanoes;
+	TerrainLines m_lines;
 	TerrainHydro::Field m_lavaField; // empty if there is no lava; the fine noise is added at each point
 	double m_lavaLevel = 1e30, m_moltenLevel = 1e30, m_flowLevel = 1e30, m_oldLevel = 1e30, m_ashLevel = 1e30, m_cryoLevel = 1e30, m_iceClearLevel = 1e30;
 	double m_lavaSeaLevel = 0.0; // metres, where most of the surface is molten
@@ -189,6 +198,7 @@ private:
 	vector3d m_seaTone, m_lakeTone, m_riverTone, m_shallowTone;
 	vector3d m_vegetation, m_tint;
 	double m_bright = 1.0;
+	double m_iceDirt = 0.0; // 0..1, the dirt on the ice of an active shell, in patches
 };
 
 #endif // _TERRAINPHYSICAL_H

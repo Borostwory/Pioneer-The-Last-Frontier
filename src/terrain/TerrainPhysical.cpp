@@ -23,6 +23,7 @@ using M = TerrainMaterialTable;
 namespace {
 	constexpr double NONE_LOW = -1e30;
 	constexpr double NONE_HIGH = 1e30;
+	constexpr double CRUST_ROOM = 1000.0; // metres the maps of an active shell's ground may reach from its level
 	// points the levels are set from, spread evenly over the sphere
 	constexpr int LEVEL_SAMPLES = 4096;
 	// their band limit: features finer than they can see are left out
@@ -161,6 +162,7 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 		m_plates.Build(m_core.seed);
 	m_plainsAreBasalt = m_interior.plains > 0.02 && !m_state.sulphur && m_state.wear < 0.2;
 	m_volcanoes.BuildConstructs(m_core, m_interior, m_noiseSeed, m_reliefLimit);
+	m_lines.Build(m_core, m_interior, m_noiseSeed);
 	BuildLevels();
 	BuildTones();
 	BuildMaterials();
@@ -243,6 +245,8 @@ void TerrainPhysical::BuildMaterials()
 	}
 	if (!m_volcanoes.Blocks().empty())
 		m_materials.Add(M::ROCK);
+	if (m_lines.IsActiveShell())
+		m_materials.Add(M::SALT);
 	// bare steep ground is the crust's material; a sea has beaches
 	m_materials.SetSteep(cryo ? M::ICE : M::ROCK);
 	if (m_state.sea > 0.0)
@@ -351,7 +355,7 @@ void TerrainPhysical::BuildLevels()
 	}
 
 	// land is above 0; the sea floor lies at 0 on water worlds
-	m_datum = m_state.sea > 0.0 ? m_seaLevel : double(ground.low) - 0.15 * m_reliefLimit;
+	m_datum = m_state.sea > 0.0 ? m_seaLevel : double(ground.low) - 0.15 * m_reliefLimit - m_lines.Deepest() - (m_lines.IsActiveShell() ? CRUST_ROOM : 0.0);
 
 	if (wet) {
 		const double sea = m_seaLevel;
@@ -452,7 +456,7 @@ void TerrainPhysical::BuildLevels()
 	}
 
 	// room for what the coarse grid can't see
-	m_maxHeightInMeters = std::min(std::max(100.0, double(ground.high) - m_datum + 0.25 * m_reliefLimit + m_volcanoes.Tallest()), m_planetRadius);
+	m_maxHeightInMeters = std::min(std::max(100.0, double(ground.high) - m_datum + 0.25 * m_reliefLimit + m_volcanoes.Tallest() + m_lines.Tallest() + (m_lines.IsActiveShell() ? CRUST_ROOM : 0.0)), m_planetRadius);
 	m_maxHeight = m_maxHeightInMeters / m_planetRadius;
 	m_invMaxHeight = 1.0 / m_maxHeight;
 }
@@ -511,7 +515,9 @@ void TerrainPhysical::BuildTones()
 		// how much dark dust is mixed into the ice: none on active, freshly
 		// resurfaced shells, a lot on old quiet ones, set by the seed
 		const double draw = rng.Double();
-		const double grime = m_interior.iceActivity >= 0.05 ? 0.0 : std::min(1.0, std::pow(draw, 0.7) * 0.85);
+		// (a large active shell has had time to gather some; a small one like Enceladus is kept clean by its plumes)
+		m_iceDirt = m_interior.iceActivity >= 0.05 && m_core.radius >= 0.1 ? 0.4 : 0.0;
+		const double grime = m_interior.iceActivity >= 0.05 ? m_iceDirt : std::min(1.0, std::pow(draw, 0.7) * 0.85);
 		if (m_state.ground == M::ICE) {
 			set(M::ICE, m_tones[M::ICE] * (1.0 - 0.62 * grime) + vector3d(0.30, 0.28, 0.25) * 0.62 * grime);
 			set(M::SNOW, m_tones[M::SNOW] * (1.0 - 0.45 * grime) + vector3d(0.42, 0.40, 0.37) * 0.45 * grime);
@@ -756,12 +762,12 @@ namespace {
 		double mean = 0.0;
 		std::vector<std::vector<uint16_t>> copies;
 
-		bool Load(const char *path)
+		bool Load(const char *path, const bool oneByte = false)
 		{
 			RefCountedPtr<FileSystem::FileData> file = FileSystem::gameDataFiles.ReadFile(path);
 			if (!file)
 				return false;
-			const size_t count = file->GetSize() / 2;
+			const size_t count = file->GetSize() / (oneByte ? 1 : 2);
 			const int side = int(std::lround(std::sqrt(double(count))));
 			if (side < 2 || size_t(side) * side != count || (side & (side - 1)) != 0)
 				return false;
@@ -769,7 +775,7 @@ namespace {
 			copies.emplace_back(count);
 			double sum = 0.0;
 			for (size_t i = 0; i < count; i++) {
-				copies[0][i] = uint16_t(int(bytes[2 * i]) | (int(bytes[2 * i + 1]) << 8));
+				copies[0][i] = oneByte ? uint16_t(int(bytes[i]) * 257) : uint16_t(int(bytes[2 * i]) | (int(bytes[2 * i + 1]) << 8));
 				sum += copies[0][i];
 			}
 			for (int n = side; n > 1; n /= 2) {
@@ -866,6 +872,45 @@ namespace {
 			total += weights[k];
 		}
 		return total > 0.0 ? sum / total : 0.0;
+	}
+
+	// The rough ground of an active shell, from tools/europa-tiles. Each map is 61.44 km across. (A tile reads in
+	// thousandths, so 65535 reads as this.)
+	constexpr double CRUST_FULL = 65.535;
+	constexpr double CRUST_CELL_KM = 0.03;
+	// metres, as the tool printed
+	constexpr double CRUST_PLAINS_TOP = 744.0;
+	constexpr double CRUST_CHAOS_TOPS[4] = { 929.3, 1022.9, 847.3, 424.2 };
+	// each kind of chaos lies its own way
+	constexpr double CRUST_CHAOS_ANGLES[4] = { 1.1, 0.2, 2.4, 1.7 };
+	enum CrustMap {
+		CRUST_PLAINS,
+		CRUST_PLAINS_MASK,
+		CRUST_CHAOS, // and its mask, then the same for the other three kinds
+		CRUST_MAP_COUNT = CRUST_CHAOS + 8
+	};
+
+	const DuneTile *CrustTiles()
+	{
+		static const std::array<DuneTile, CRUST_MAP_COUNT> tiles = [] {
+			std::array<DuneTile, CRUST_MAP_COUNT> loaded;
+			loaded[CRUST_PLAINS].Load("terrain/europa_plains.bin");
+			loaded[CRUST_PLAINS_MASK].Load("terrain/europa_plains_mask.bin", true);
+			loaded[CRUST_CHAOS].Load("terrain/europa_chaos.bin");
+			loaded[CRUST_CHAOS + 1].Load("terrain/europa_chaos_mask.bin", true);
+			loaded[CRUST_CHAOS + 2].Load("terrain/europa_chaos_large.bin");
+			loaded[CRUST_CHAOS + 3].Load("terrain/europa_chaos_large_mask.bin", true);
+			loaded[CRUST_CHAOS + 4].Load("terrain/europa_chaos_rubble.bin");
+			loaded[CRUST_CHAOS + 5].Load("terrain/europa_chaos_rubble_mask.bin", true);
+			loaded[CRUST_CHAOS + 6].Load("terrain/europa_chaos_fresh.bin");
+			loaded[CRUST_CHAOS + 7].Load("terrain/europa_chaos_fresh_mask.bin", true);
+			return loaded;
+		}();
+		for (const DuneTile &tile : tiles) {
+			if (tile.size == 0)
+				return nullptr;
+		}
+		return tiles.data();
 	}
 } // namespace
 
@@ -1153,6 +1198,84 @@ double TerrainPhysical::Dunes(const vector3d &p, const Point &point, const doubl
 	return std::max(metres * height - std::min(metres * typical, room), -room);
 }
 
+double TerrainPhysical::CrustChaos(const vector3d &p) const
+{
+	// (at full detail, or its edge would move from one patch to the next)
+	TerrainNoise::ScopedBandLimit fullDetail(0.0);
+	const double radiusKm = m_core.radius * 6378.135;
+	return Soft(Fbm(p, std::max(radiusKm / 240.0, 2.0), 4, m_noiseSeed + 314, 0.55), 0.1, 0.1);
+}
+
+double TerrainPhysical::CrustMaps(const vector3d &p, Point &point) const
+{
+	const DuneTile *tiles = CrustTiles();
+	if (!tiles)
+		return 0.0;
+	const double radiusKm = m_core.radius * 6378.135;
+	const double maxFrequency = TerrainNoise::s_maxFrequency;
+	const double samples = maxFrequency > 0.0 ? 0.5 / maxFrequency * radiusKm : 0.0;
+
+	// Bent, so that the tile's repeats don't line up, and turned differently region by region. At full detail, or
+	// all this would move from one patch to the next.
+	const double chaos = CrustChaos(p);
+	vector3d shift(0.0, 0.0, 0.0);
+	double second;
+	{
+		TerrainNoise::ScopedBandLimit fullDetail(0.0);
+		const double bend = radiusKm / 80.0;
+		shift = vector3d(14.0 * Fbm(p, bend, 3, m_noiseSeed + 311), 14.0 * Fbm(p, bend, 3, m_noiseSeed + 312), 14.0 * Fbm(p, bend, 3, m_noiseSeed + 313));
+		second = Soft(Fbm(p, std::max(radiusKm / 170.0, 2.0), 3, m_noiseSeed + 315), -0.05, 0.1);
+	}
+	const auto layer = [&](const int map, const double top, const double angle, double &mask) {
+		const DuneTile &tile = tiles[map];
+		mask = DuneTileAt(tiles[map + 1], p, radiusKm, shift, CRUST_CELL_KM, angle, samples) / CRUST_FULL;
+		return (DuneTileAt(tile, p, radiusKm, shift, CRUST_CELL_KM, angle, samples) - tile.mean) / CRUST_FULL * top;
+	};
+	double metres = 0.0, mask = 0.0;
+	if (chaos < 1.0) {
+		if (second < 1.0) {
+			metres += (1.0 - chaos) * (1.0 - second) * layer(CRUST_PLAINS, CRUST_PLAINS_TOP, 0.4, mask);
+			point.crustCrack += (1.0 - chaos) * (1.0 - second) * mask;
+		}
+		if (second > 0.0) {
+			metres += (1.0 - chaos) * second * layer(CRUST_PLAINS, CRUST_PLAINS_TOP, 1.9, mask);
+			point.crustCrack += (1.0 - chaos) * second * mask;
+		}
+	}
+	if (chaos > 0.0) {
+		// Region by region its own kind of chaos and its own turn, and the brown goes with what is there. From afar
+		// it is broad and uneven, or the map's rubble would repeat as a lace.
+		double kind, other, turn, broad;
+		{
+			TerrainNoise::ScopedBandLimit fullDetail(0.0);
+			const double regions = std::max(radiusKm / 300.0, 2.0);
+			kind = Soft(Fbm(p, regions, 3, m_noiseSeed + 316), -0.03, 0.06);
+			other = Soft(Fbm(p, regions, 3, m_noiseSeed + 317), -0.03, 0.06);
+			turn = Soft(Fbm(p, regions, 3, m_noiseSeed + 318), -0.03, 0.06);
+			broad = Soft(Fbm(p, std::max(radiusKm / 35.0, 4.0), 4, m_noiseSeed + 319, 0.6), -0.25, 0.5);
+		}
+		double rubble = 0.0, typical = 0.0;
+		for (int style = 0; style < 4; style++) {
+			const double share = ((style & 1) ? kind : 1.0 - kind) * ((style & 2) ? other : 1.0 - other);
+			if (share < 0.005)
+				continue;
+			const int map = CRUST_CHAOS + 2 * style;
+			typical += share * tiles[map + 1].mean / CRUST_FULL;
+			for (int way = 0; way < 2; way++) {
+				const double weight = share * (way ? turn : 1.0 - turn);
+				if (weight < 0.005)
+					continue;
+				metres += chaos * weight * layer(map, CRUST_CHAOS_TOPS[style], CRUST_CHAOS_ANGLES[style] + 2.1 * way, mask);
+				rubble += weight * mask;
+			}
+		}
+		const double close = 1.0 - Soft(samples, 0.4, 1.1);
+		point.crustRubble = chaos * (close * rubble + (1.0 - close) * std::min(1.3 * typical * (0.45 + 0.55 * broad), 1.0));
+	}
+	// a small moon has less relief
+	return metres * std::min(0.4 * m_reliefLimit / CRUST_ROOM, 1.0);
+}
+
 double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 {
 	const double cap = 0.05 * m_reliefLimit;
@@ -1164,6 +1287,11 @@ double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 	double out = 0.0;
 	switch (m_state.ground) {
 	case M::ROCK: out = own(cap, fMin * 1.5, 5, 201, true); break;
+	case M::ICE:
+		// the broken crust of an active shell is low but rough
+		if (m_lines.IsActiveShell())
+			out = own(0.7 * cap, fMin * 1.5, 4, 211, false);
+		break;
 	case M::DIRTY_ICE: out = own(0.35 * cap, fMin * 2.0, 3, 202, false) + own(0.25 * cap, fMin * 9.0, 5, 208, true); break;
 	case M::GRAVEL: out = own(0.2 * cap, fMin * 8.0, 3, 203, false); break;
 	case M::LAVA_FLOW: out = own(0.25 * cap, fMin * 2.0, 3, 204, false); break;
@@ -1306,6 +1434,11 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 	}
 	out.volcano = m_volcanoes.At(p);
 	const TerrainVolcanoes::Sample &volcano = out.volcano;
+	out.lines = m_lines.At(p);
+	// cliffs and cracks are sharp on bare ground only: weather wears them down, and a volcano buries them
+	double lineHeight = out.lines.height * (1.0 - 0.85 * m_state.wearSmall) * (1.0 - volcano.influence);
+	if (m_lines.IsActiveShell())
+		lineHeight += CrustMaps(p, out);
 	if (m_lavaAroundVolcanoes)
 		out.lavaField = volcano.field;
 	else if (!m_lavaField.Empty())
@@ -1335,7 +1468,7 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 		else
 			out.height = ground + relief;
 		out.shore = g.base + volcano.height;
-		out.height = SettleLava(out, out.height);
+		out.height = SettleLava(out, out.height) + lineHeight;
 		out.height += Dunes(p, out, calm);
 		return;
 	}
@@ -1399,7 +1532,7 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 			}
 		}
 	}
-	out.height = std::max(SettleLava(out, h), m_seaLevel);
+	out.height = std::max(SettleLava(out, h) + lineHeight, m_seaLevel);
 	out.height += Dunes(p, out, calm);
 }
 
@@ -1669,6 +1802,16 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 		}
 	}
 
+	// An active shell: clean pale ice on domes, reddish salts along its lines and in its freckles, and
+	// a soft low stain over one side, fading into the clean ice
+	if (m_lines.IsActiveShell()) {
+		paint(M::ICE, point.lines.pale);
+		const double uneven = std::clamp(Fbm(p, 1.6, 4, m_noiseSeed + 301, 0.55) / 0.35, -1.0, 1.0);
+		const double stain = 0.42 * Soft(p.Dot(m_lines.StainAxis()) + 0.3 * uneven, 0.1, 0.8);
+		// (the rubble of chaos is brown, the plates in it are not)
+		paint(M::SALT, std::max({ 0.9 * point.lines.band, stain, 0.75 * point.crustRubble }));
+	}
+
 	// a frozen sea
 	if (m_state.sea <= 0.0 && m_state.frozen > 0.0 && g.base + point.volcano.height < m_seaLevel)
 		paint(M::ICE, 1.0);
@@ -1860,6 +2003,19 @@ vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, cons
 		if (shares[i] > 0.0)
 			c += m_tones[i] * shares[i];
 	}
+	// thin dark cracks, and the dark floors of deep fractures
+	if (m_lines.IsActiveShell()) {
+		// dirt in uneven patches at all sizes, so the ice isn't one even tone
+		if (m_iceDirt > 0.0) {
+			const double dirt = 0.5 + 0.5 * std::clamp(Fbm(p, 7.0, 9, m_noiseSeed + 321, 0.62) / 0.35, -1.0, 1.0);
+			const double share = 0.55 * m_iceDirt * 2.0 * dirt;
+			c = c * (1.0 - share) + Times(vector3d(0.27, 0.235, 0.20), m_tint) * m_bright * share;
+		}
+		c = c * (1.0 - 0.6 * std::max(point.lines.crack, point.crustCrack)) * (1.0 - 0.35 * point.lines.dark);
+		const double slot = point.lines.slot;
+		const vector3d floorTone = point.lines.slotBlue ? vector3d(0.30, 0.55, 0.66) : vector3d(0.28, 0.13, 0.06);
+		c = c * (1.0 - slot) + Times(floorTone, m_tint) * m_bright * slot;
+	}
 	// what the plumes laid down; not on molten lava, which is younger
 	if (!m_plumeRed.Empty()) {
 		const double uncovered = 1.0 - shares[M::LAVA];
@@ -2001,6 +2157,21 @@ std::vector<Terrain::Feature> TerrainPhysical::FindFeatures(const std::string &k
 					out.push_back({ vent.centre, 2000.0 * vent.km });
 			}
 		}
+		return out;
+	}
+	if (kind == "chaos") {
+		if (!m_lines.IsActiveShell())
+			return out;
+		for (int i = 0; i < 3000 && out.size() < 300; i++) {
+			const vector3d place = EvenPoint(i, 3000);
+			if (CrustChaos(place) > 0.95)
+				out.push_back({ place, 2.0 * std::sqrt(4.0 * M_PI / 3000.0) * m_planetRadius });
+		}
+		return out;
+	}
+	if (kind == "line") {
+		for (const std::pair<vector3d, double> &middle : m_lines.Middles())
+			out.push_back({ middle.first, middle.second * m_planetRadius });
 		return out;
 	}
 	if (kind == "patera" || kind == "block") {
@@ -2321,6 +2492,10 @@ std::vector<std::string> TerrainPhysical::GetGeologyInfo() const
 		erupting += vent.erupting ? 1 : 0;
 	}
 	snprintf(line, sizeof(line), "Volcanoes: %d cones, %d shields, %d pits, %d erupting; %d lava lakes; %d blocks, %d paterae; tallest %.0f m", kinds[0], kinds[1], kinds[2], erupting, int(m_volcanoes.Lakes().size()), int(m_volcanoes.Blocks().size()), int(m_volcanoes.Paterae().size()), m_volcanoes.Tallest());
+	out.emplace_back(line);
+	if (m_lines.IsActiveShell())
+		out.emplace_back(CrustTiles() ? "Ground maps: loaded" : "Ground maps: MISSING");
+	snprintf(line, sizeof(line), "Lines: %d large, %d fine, %d domes; tallest %.0f m, deepest %.0f m", int(m_lines.LineCount()), int(m_lines.FineCount()), int(m_lines.DomeCount()), m_lines.Tallest(), m_lines.Deepest());
 	out.emplace_back(line);
 	snprintf(line, sizeof(line), "Plates: %s; river pieces %d; rain %s; valleys %.1f; built in %.0f ms", m_plates.Active() ? "yes" : "no", int(m_hydro.RiverPieces()), m_hydro.HasMoisture() ? "yes" : "no", m_valleyAmount, m_buildMilliseconds);
 	out.emplace_back(line);

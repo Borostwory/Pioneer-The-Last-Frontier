@@ -157,7 +157,7 @@ namespace PlanetPhysics {
 		else
 			it.cratering = (0.8 + 0.4 * cratersDraw) * (1.0 - 0.8 * it.siliconActivity);
 		it.shellStrength = std::max(it.iceActivity >= 0.05 ? std::sqrt(it.iceActivity) : 0.0, it.past ? 0.25 : 0.0);
-		// what marks this body. An equatorial ridge and rifts come with later layers, so they only choose here
+		// what marks this body
 		if (!it.plates && it.heatPipe <= 0.5) {
 			const bool canRift = it.past || it.contraction > 0.3;
 			const int pick = rng.Int32(canRift ? 3 : 2);
@@ -165,6 +165,14 @@ namespace PlanetPhysics {
 				it.hemispheres = true;
 			else if (pick < 2)
 				it.basin = true;
+			else
+				it.rift = true;
+		}
+		// old, small, slow-spinning ice bodies can be two-toned, like Iapetus
+		if (ice && !it.past && it.iceActivity < 0.05 && core.radius > 0.05 && core.radius < 0.2 && core.rotationDays > 20.0 && rng.Double() < 0.5) {
+			it.hemispheres = true;
+			it.basin = false;
+			it.rift = false;
 		}
 		if (ice)
 			it.analogue = it.iceActivity >= 0.3 ? "Europa" : (it.iceActivity >= 0.05 && core.radius < 0.1) ? "Enceladus" :

@@ -77,6 +77,7 @@ namespace PlanetPhysics {
 		double shellStrength = 0.0; // 0..1
 		bool basin = false; // one great basin on the old crust
 		bool hemispheres = false; // two-toned, like Iapetus
+		bool rift = false; // one great rift
 		const char *analogue = "";
 	};
 
