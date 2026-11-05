@@ -17,10 +17,17 @@
 #include "galaxy/GalaxyCache.h"
 #include "galaxy/GalaxyGenerator.h"
 #include "galaxy/Sector.h"
+#include "graphics/Renderer.h"
+#include "graphics/Texture.h"
 #include "surface/Excursion.h"
 #include "terrain/Terrain.h"
+#include "terrain/TerrainNoise.h"
+#include "terrain/TerrainPhysicalHydro.h"
 #include <algorithm>
+#include <chrono>
+#include <cstdio>
 #include <sstream>
+#include <vector>
 
 /*
  * Lua commands used in development & debugging
@@ -472,12 +479,19 @@ static int l_dev_place_on_surface(lua_State *l)
  * { lat, lon, size } (radians, metres). Empty if its terrain has none, as with
  * the classic generator. Kinds: river, fork, mouth, lake, coast, peak.
  *
- * > Dev.GetTerrainFeatures(body, kind)
+ * > Dev.GetTerrainFeatures(body, kind, latitude, longitude)
+ *
+ * Latitude and longitude (radians): the place that kinds looked for only
+ * around a place look around.
  */
 static int l_dev_get_terrain_features(lua_State *l)
 {
 	Body *body = LuaObject<Body>::CheckFromLua(1);
 	const std::string kind = luaL_checkstring(l, 2);
+	// (before the table goes on the stack, where a missing argument would find it)
+	const double latitude = luaL_optnumber(l, 3, 0.0);
+	const double longitude = luaL_optnumber(l, 4, 0.0);
+	const vector3d around(cos(latitude) * sin(longitude), sin(latitude), cos(latitude) * cos(longitude));
 	lua_newtable(l);
 	if (!body->IsType(ObjectType::PLANET))
 		return 1;
@@ -485,7 +499,7 @@ static int l_dev_get_terrain_features(lua_State *l)
 	if (!terrain)
 		return 1;
 	int index = 0;
-	for (const Terrain::Feature &feature : terrain->FindFeatures(kind)) {
+	for (const Terrain::Feature &feature : terrain->FindFeatures(kind, around)) {
 		lua_newtable(l);
 		// as Dev.PlaceOnSurface reads them
 		lua_pushnumber(l, asin(std::max(-1.0, std::min(1.0, feature.position.y))));
@@ -497,6 +511,126 @@ static int l_dev_get_terrain_features(lua_State *l)
 		lua_rawseti(l, -2, ++index);
 	}
 	return 1;
+}
+
+static RefCountedPtr<Graphics::Texture> s_terrainMap;
+
+/*
+ * Makes a map of a planet or moon, latitude and longitude on an image twice as
+ * wide as it is high, with north at the top and longitude -180 at the left, and
+ * returns it for ui.addImage. It holds up the game for a moment. There is one
+ * map at a time, which lasts until the next or Dev.ReleaseTerrainMap.
+ *
+ * > Dev.MakeTerrainMap(body)
+ */
+static int l_dev_make_terrain_map(lua_State *l)
+{
+	Body *body = LuaObject<Body>::CheckFromLua(1);
+	if (!body->IsType(ObjectType::PLANET))
+		return luaL_error(l, "Dev.MakeTerrainMap: %s is not a planet or moon", body->GetLabel().c_str());
+	const Terrain *terrain = static_cast<Planet *>(body)->GetTerrain();
+	if (!terrain)
+		return luaL_error(l, "Dev.MakeTerrainMap: %s has no terrain", body->GetLabel().c_str());
+
+	const auto start = std::chrono::steady_clock::now();
+	constexpr int W = 2048, H = 1024;
+	const double spacing = 2.0 * M_PI / W;
+	const double maxFrequency = 0.5 / spacing;
+	std::vector<vector3d> dirs(size_t(W) * H);
+	std::vector<double> heights(dirs.size());
+	std::vector<unsigned char> pixels(dirs.size() * 4);
+	ParallelRows(H, [&](const int r) {
+		TerrainNoise::ScopedBandLimit bandLimit(maxFrequency);
+		const double latitude = M_PI / 2.0 - (r + 0.5) / H * M_PI;
+		for (int c = 0; c < W; c++) {
+			const double longitude = (c + 0.5) / W * 2.0 * M_PI - M_PI;
+			// as Dev.PlaceOnSurface reads them
+			dirs[size_t(r) * W + c] = vector3d(cos(latitude) * sin(longitude), sin(latitude), cos(latitude) * cos(longitude));
+		}
+		terrain->GetHeights(&dirs[size_t(r) * W], &heights[size_t(r) * W], W);
+	});
+	ParallelRows(H, [&](const int r) {
+		TerrainNoise::ScopedBandLimit bandLimit(maxFrequency);
+		const int north = std::max(r - 1, 0), south = std::min(r + 1, H - 1);
+		const double across = 2.0 * spacing * std::max(cos(M_PI / 2.0 - (r + 0.5) / H * M_PI), 0.05);
+		const double along = double(south - north) * spacing;
+		for (int c = 0; c < W; c++) {
+			const size_t i = size_t(r) * W + c;
+			const size_t e = size_t(r) * W + (c + 1) % W, w = size_t(r) * W + (c + W - 1) % W;
+			const size_t n = size_t(north) * W + c, s = size_t(south) * W + c;
+			const auto position = [&](const size_t k) { return dirs[k] * (1.0 + heights[k]); };
+			vector3d normal = (position(e) - position(w)).Cross(position(n) - position(s)).Normalized();
+			if (normal.Dot(dirs[i]) < 0.0)
+				normal = -normal;
+			const vector3d colour = terrain->GetColor(dirs[i], heights[i], normal);
+			// lit from the north-west, so that the relief shows
+			const double slopeEast = (heights[e] - heights[w]) / across, slopeNorth = (heights[n] - heights[s]) / along;
+			const double light = std::max(std::min(1.0 + 12.0 * (slopeEast - slopeNorth), 1.6), 0.4);
+			unsigned char *pixel = &pixels[i * 4];
+			pixel[0] = (unsigned char)(std::max(std::min(colour.x * light, 1.0), 0.0) * 255.0);
+			pixel[1] = (unsigned char)(std::max(std::min(colour.y * light, 1.0), 0.0) * 255.0);
+			pixel[2] = (unsigned char)(std::max(std::min(colour.z * light, 1.0), 0.0) * 255.0);
+			pixel[3] = 255;
+		}
+	});
+
+	const vector3f size(float(W), float(H), 0.0f);
+	const Graphics::TextureDescriptor desc(Graphics::TEXTURE_RGBA_8888, size, Graphics::LINEAR_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
+	s_terrainMap.Reset(Pi::renderer->CreateTexture(desc));
+	s_terrainMap->Update(pixels.data(), size, Graphics::TEXTURE_RGBA_8888);
+
+	const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+	char note[160];
+	snprintf(note, sizeof(note), "made a map of %s in %.2f s", body->GetLabel().c_str(), seconds);
+	FrontierLog::Note(note);
+	lua_pushlightuserdata(l, s_terrainMap.Get());
+	return 1;
+}
+
+/*
+ * > Dev.ReleaseTerrainMap()
+ */
+static int l_dev_release_terrain_map(lua_State *l)
+{
+	s_terrainMap.Reset();
+	return 0;
+}
+
+/*
+ * Turns a planet or moon so that it's noon at a latitude and longitude
+ * (radians): the sun is as high there as it gets. The game's clock and the rest
+ * of the system stay as they are. What is on the body turns with it.
+ *
+ * > Dev.SetNoonAt(body, latitude, longitude)
+ */
+static int l_dev_set_noon_at(lua_State *l)
+{
+	Body *body = LuaObject<Body>::CheckFromLua(1);
+	const double longitude = luaL_checknumber(l, 3);
+	if (!body->IsType(ObjectType::PLANET))
+		return luaL_error(l, "Dev.SetNoonAt: %s is not a planet or moon", body->GetLabel().c_str());
+	Frame *rot = Frame::GetFrame(Frame::GetFrame(body->GetFrame())->GetRotFrame());
+	if (!rot->IsRotFrame())
+		return luaL_error(l, "Dev.SetNoonAt: %s doesn't turn", body->GetLabel().c_str());
+	// the nearest star
+	Body *star = nullptr;
+	double nearest = 0.0;
+	for (Body *b : Pi::game->GetSpace()->GetBodies()) {
+		if (!b->IsType(ObjectType::STAR))
+			continue;
+		const double distance = b->GetPositionRelTo(body).LengthSqr();
+		if (!star || distance < nearest) {
+			star = b;
+			nearest = distance;
+		}
+	}
+	if (!star)
+		return luaL_error(l, "Dev.SetNoonAt: there is no star");
+	const vector3d sun = star->GetPositionRelTo(rot->GetId());
+	const double turn = atan2(sun.x, sun.z) - longitude;
+	// (RotateY is backwards)
+	rot->SetOrient(rot->GetOrient() * matrix3x3d::RotateY(-turn), Pi::game->GetTime());
+	return 0;
 }
 
 /*
@@ -544,6 +678,9 @@ void LuaDev::Register()
 		{ "PlaceOnSurface", l_dev_place_on_surface },
 		{ "GetTerrainFeatures", l_dev_get_terrain_features },
 		{ "DescribeTerrain", l_dev_describe_terrain },
+		{ "MakeTerrainMap", l_dev_make_terrain_map },
+		{ "ReleaseTerrainMap", l_dev_release_terrain_map },
+		{ "SetNoonAt", l_dev_set_noon_at },
 		{ "LogNote", l_dev_log_note },
 		{ 0, 0 }
 	};

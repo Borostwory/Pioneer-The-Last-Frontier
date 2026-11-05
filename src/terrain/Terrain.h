@@ -112,7 +112,8 @@ public:
 		vector3d position;
 		double size;
 	};
-	virtual std::vector<Feature> FindFeatures(const std::string &kind) const { return {}; }
+	// (small lakes are looked for only around a place on the unit sphere: kind smalllake)
+	virtual std::vector<Feature> FindFeatures(const std::string &kind, const vector3d &around) const { return {}; }
 	virtual std::string DescribePoint(const vector3d &p) const { return {}; }
 
 	Uint32 GetSurfaceEffects() const { return m_surfaceEffects; }

@@ -48,6 +48,11 @@ namespace {
 	constexpr double WANDER_KM = 10.0; // km moved at most by all of them together, roughly
 	constexpr int WANDER_OCTAVES = 8;
 
+	// Small lakes: some of the hollows, the network's points with nowhere lower to flow
+	constexpr double LAKE_SHARE = 0.25; // of the hollows, on a level where all lines hold rivers
+	constexpr double LAKE_SHOW = 2.0; // it starts to grow in with this many samples across its radius, and is whole with one more
+	constexpr double LAKE_WOBBLE = 0.45; // of its radius, its shore in and out
+
 	// in spacings of the level
 	constexpr int CHUNK_CELLS = 8; // the side of a chunk
 	constexpr int HALO_CELLS = 5; // a site's neighbours can be in cells this far away
@@ -275,6 +280,43 @@ TerrainValleys::ChunkPtr TerrainValleys::GetChunk(const int k, const int64_t cx,
 	return chunk;
 }
 
+vector3d TerrainValleys::WanderOffset(const vector3d &p) const
+{
+	const double frequency = m_radiusKm / WANDER_CELL;
+	const double a = SphereCells::Fbm(p, frequency, WANDER_OCTAVES, m_seed + 161), b = SphereCells::Fbm(p, frequency, WANDER_OCTAVES, m_seed + 162);
+	return vector3d(a, b, -a - b) * WANDER_KM;
+}
+
+vector3d TerrainValleys::PlaceBeforeWander(const vector3d &place) const
+{
+	vector3d p = place;
+	for (int i = 0; i < 3; i++)
+		p = (place * m_radiusKm - WanderOffset(p)).Normalized();
+	return p;
+}
+
+void TerrainValleys::LakesAround(const vector3d &p, std::vector<LakeSpot> &out) const
+{
+	const vector3d q = p * m_radiusKm;
+	for (int k = 0; k < LEVEL_COUNT; k++) {
+		if (SIDE_SHARE[k] <= 0.0)
+			continue;
+		const double size = CHUNK_CELLS * SPACING[k];
+		const int64_t cx = FloorTo(q.x, size), cy = FloorTo(q.y, size), cz = FloorTo(q.z, size);
+		for (int64_t x = cx - 3; x <= cx + 3; x++) {
+			for (int64_t y = cy - 3; y <= cy + 3; y++) {
+				for (int64_t z = cz - 3; z <= cz + 3; z++) {
+					const ChunkPtr chunk = GetChunk(k, x, y, z);
+					if (!chunk)
+						continue;
+					for (const Lake &lake : chunk->lakes)
+						out.push_back({ lake.position * (1.0 / m_radiusKm), double(lake.radius) * 1000.0 });
+				}
+			}
+		}
+	}
+}
+
 TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx, const int64_t cy, const int64_t cz) const
 {
 	const double R = m_radiusKm;
@@ -358,6 +400,7 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 
 	const double sideWidth = SIDE_WIDTH_12 * std::pow(lam / 12.0, SIDE_WIDTH_POWER);
 	std::vector<Piece> pieces;
+	std::vector<Lake> lakes;
 	pieces.reserve(own.size() * (SAMPLES - 1));
 	std::vector<std::pair<double, int>> around;
 	const int count = int(sites.size());
@@ -403,8 +446,15 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 			end = sites[lowest].position;
 			flows = true;
 		}
-		if (!flows)
+		if (!flows) {
+			if (SphereCells::Hash(site.ix, site.iy, site.iz, sd + 33) * 0.5 + 0.5 < LAKE_SHARE * SIDE_SHARE[k]) {
+				Lake lake;
+				lake.position = site.position;
+				lake.radius = float((0.04 + 0.035 * (SphereCells::Hash(site.ix, site.iy, site.iz, sd + 31) * 0.5 + 0.5)) * lam);
+				lakes.push_back(lake);
+			}
 			continue;
+		}
 
 		// only what joins a river that is there holds one, so none starts or ends in the middle of nowhere
 		const bool river = joinsRiver && SphereCells::Hash(site.ix, site.iy, site.iz, sd + 77) * 0.5 + 0.5 < SIDE_SHARE[k];
@@ -440,12 +490,12 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 		if (!inside)
 			pieces.resize(before);
 	}
-	if (pieces.empty())
+	if (pieces.empty() && lakes.empty())
 		return nullptr;
 
 	// sorted into a grid, one spacing to the cell
 	std::shared_ptr<Chunk> chunk = std::make_shared<Chunk>();
-	vector3d boxLow = pieces[0].a, boxHigh = pieces[0].a;
+	vector3d boxLow = pieces.empty() ? lakes[0].position : pieces[0].a, boxHigh = boxLow;
 	double longest = 0.0;
 	for (const Piece &piece : pieces) {
 		for (const vector3d *v : { &piece.a, &piece.b }) {
@@ -479,6 +529,7 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 	chunk->pieces.resize(pieces.size());
 	for (const Piece &piece : pieces)
 		chunk->pieces[counts[cellOf(piece)]++] = piece;
+	chunk->lakes = std::move(lakes);
 	return chunk;
 }
 
@@ -545,6 +596,13 @@ void TerrainValleys::Refresh(const int k, LevelView &view, const vector3d &q, co
 		if (entry.first <= best + 2.0 * margin || (entry.second->width > 0.f && entry.first <= SIDE_VALLEY * lam + margin))
 			view.list.push_back(*entry.second);
 	}
+	view.lakes.clear();
+	for (const ChunkPtr &chunk : view.chunks) {
+		for (const Lake &lake : chunk->lakes) {
+			if ((q - lake.position).Length() <= LAKE_REACH / (1.0 - LAKE_WOBBLE) * lake.radius + margin)
+				view.lakes.push_back(lake);
+		}
+	}
 	view.centre = q;
 	view.margin = margin;
 }
@@ -571,11 +629,8 @@ TerrainValleys::Cut TerrainValleys::At(const vector3d &p, const double height, c
 	const double wideReach = std::pow(std::min(above / (2.0 * FULL), 1.0), 1.2);
 	const double narrowReach = std::min(above / FULL, 1.0);
 	vector3d q = p * m_radiusKm;
-	if (wander > 0.0) {
-		const double frequency = m_radiusKm / WANDER_CELL;
-		const double a = SphereCells::Fbm(p, frequency, WANDER_OCTAVES, m_seed + 161), b = SphereCells::Fbm(p, frequency, WANDER_OCTAVES, m_seed + 162);
-		q = (q + vector3d(a, b, -a - b) * (WANDER_KM * wander)).Normalized() * m_radiusKm;
-	}
+	if (wander > 0.0)
+		q = (q + WanderOffset(p) * wander).Normalized() * m_radiusKm;
 	double stretch = 0.0; // worked out when first needed
 	double depth = 0.0, expect = 0.0, drown = 0.0;
 	double quiet = 1.0, channel = 0.0;
@@ -648,6 +703,28 @@ TerrainValleys::Cut TerrainValleys::At(const vector3d &p, const double height, c
 						out.riverWidth = drawn;
 					}
 				}
+			}
+		}
+
+		for (const Lake &lake : view.lakes) {
+			const double radius = lake.radius;
+			// it grows in once the samples can show it, from its middle
+			const double grown = px > 0.0 ? std::clamp(radius / px - LAKE_SHOW, 0.0, 1.0) : 1.0;
+			if (grown <= 0.0)
+				continue;
+			const double away = (q - lake.position).Length();
+			if (away >= LAKE_REACH / (1.0 - LAKE_WOBBLE) * radius)
+				continue;
+			const double wobble = std::clamp(SphereCells::Fbm(p, m_radiusKm / radius, 5, m_seed + 171, 0.6) / 0.35, -1.0, 1.0);
+			const double ratio = away / (radius * grown) * (1.0 + LAKE_WOBBLE * wobble);
+			if (ratio < LAKE_REACH) {
+				const double flat = std::clamp((LAKE_REACH - ratio) / 1.2, 0.0, 1.0);
+				quiet = std::min(quiet, 1.0 - show * flat * flat * (3.0 - 2.0 * flat));
+			}
+			if (ratio < out.lakeRatio) {
+				out.lakeRatio = ratio;
+				out.lakeRadius = radius * 1000.0;
+				out.lakePlace = lake.position * (1.0 / m_radiusKm);
 			}
 		}
 	}

@@ -37,6 +37,7 @@ namespace {
 	constexpr double RIVER_DEEPEST = 30.0;
 	constexpr double RIVER_SLOPE = 0.12;
 	constexpr double RIVER_LEVEE = 300.0; // metres, at least, from a bank to ground lower than the river
+	thread_local bool t_findingLakeLevel = false;
 
 	double Soft(const double x, const double low, const double width)
 	{
@@ -654,6 +655,9 @@ double TerrainPhysical::CutValleys(const vector3d &p, Point &point, const double
 	point.sideEdge = cut.riverEdge;
 	point.sideWidth = cut.riverWidth;
 	point.quiet = cut.quiet;
+	point.smallLakeRatio = cut.lakeRatio;
+	point.smallLakeRadius = cut.lakeRadius;
+	point.smallLakePlace = cut.lakePlace;
 	point.valley = H > 0.0 ? std::clamp((cut.cut + cut.average) / std::max(0.55 * H, 1.0), 0.0, 1.0) : 0.0;
 	point.g.base -= cut.cut * calm;
 
@@ -784,6 +788,36 @@ void Terrain::ResetSpeedCounters()
 	TerrainValleys::ResetStats();
 }
 
+// The ground at its middle, at a detail set by the lake's size alone. (The patches around a lake are made at
+// many band limits, and they would have seams if each found a level of its own.)
+double TerrainPhysical::SmallLakeLevel(const vector3d &place, const double radius) const
+{
+	struct Known {
+		const TerrainPhysical *owner = nullptr;
+		double x = 0.0, y = 0.0, z = 0.0;
+		double level = 0.0;
+	};
+	thread_local Known known[8];
+	thread_local int next = 0;
+	for (const Known &k : known) {
+		if (k.owner == this && k.x == place.x && k.y == place.y && k.z == place.z)
+			return k.level;
+	}
+	TerrainNoise::ScopedBandLimit bandLimit(0.5 * m_planetRadius / (0.25 * radius));
+	t_findingLakeLevel = true;
+	Point point;
+	Evaluate(m_valleys.PlaceBeforeWander(place), point);
+	t_findingLakeLevel = false;
+	Known &slot = known[next];
+	next = (next + 1) % 8;
+	slot.owner = this;
+	slot.x = place.x;
+	slot.y = place.y;
+	slot.z = place.z;
+	slot.level = point.height;
+	return point.height;
+}
+
 void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 {
 	TerrainSampledTimer timer(s_pointSpeed);
@@ -839,6 +873,18 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 			h = surface + (h - surface) * (1.0 - plain);
 			if (out.lakeField > 0.5)
 				h = surface;
+		}
+	}
+
+	// Small lakes in the network's hollows: the ground is only cut down to the water, never lifted, so
+	// no lake stands up out of low ground. They keep clear of main rivers and the map's lakes.
+	if (out.smallLakeRatio < TerrainValleys::LAKE_REACH && calm >= 1.0 && out.lakeField <= 0.0 && !t_findingLakeLevel) {
+		const double level = std::max(SmallLakeLevel(out.smallLakePlace, out.smallLakeRadius), m_seaLevel + 1.0);
+		const double target = level + RIVER_SLOPE * std::max(out.smallLakeRatio - 1.0, 0.0) * out.smallLakeRadius;
+		h -= std::clamp(TerrainValleys::LAKE_REACH - out.smallLakeRatio, 0.0, 1.0) * std::max(h - target, 0.0);
+		if (out.smallLakeRatio < 1.0) {
+			h = std::min(h, level);
+			out.smallLakeEdge = (out.smallLakeRatio - 1.0) * out.smallLakeRadius;
 		}
 	}
 
@@ -899,8 +945,9 @@ void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::
 	const double T = point.temperature - m_state.lapse * 0.6 * std::max(h0 - sea, 0.0);
 	const double desert = 1.0 - Soft(m, 0.13, 0.025);
 	const double hot = Soft(T, 280.0, 5.0);
-	// dune seas in the hot desert's lows; bare stony plains only where it is driest
-	if (desert > 0.0 && hot > 0.0) {
+	// dune seas in the hot desert's lows; bare stony plains only where it is driest. (Not under the sea:
+	// sand there is drawn in place of the water, for barrier islands.)
+	if (desert > 0.0 && hot > 0.0 && !point.underSea) {
 		const double dunes = Soft(Fbm(p, 3.2, 3, m_noiseSeed + 71) - 0.9 * (h0 - sea) / m_reliefLimit, -0.05, 0.06);
 		paint(M::SAND, desert * hot * dunes);
 	}
@@ -944,12 +991,13 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 	const M::Layer ground = m_state.ground;
 
 	// barrier islands off low, smooth, sandy shores: separate islands at wandering depths, not one
-	// strip along a single depth
-	if (point.underSea && m_state.rain > 0.02) {
+	// strip along a single depth. Thin strips: not over a flat shelf, where one depth covers
+	// a wide area, nor in a low basin of a lake.
+	if (point.underSea && m_state.rain > 0.02 && (m_hydro.lake.Empty() || m_hydro.lake.Smooth(point.place) < 0.05)) {
 		const double raw = (m_seaLevel - point.shore) / m_reliefLimit;
-		if (raw < 0.016) {
+		if (raw < 0.012) {
 			const double depth = raw + 0.006 * Fbm(p, 40.0, 9, m_noiseSeed + 116, 0.6);
-			const double band = Soft(depth, 0.004, 0.002) * (1.0 - Soft(depth, 0.010, 0.002));
+			const double band = Soft(depth, 0.004, 0.001) * (1.0 - Soft(depth, 0.006, 0.001)) * Soft(m_hydro.slope.Linear(point.place), 0.0008, 0.0004);
 			if (band > 0.0) {
 				const double smooth = 1.0 - Soft(Fbm(p, 2.6, 3, m_noiseSeed + 111), -0.12, 0.3);
 				const double gate = Soft(Fbm(p, 16.0, 3, m_noiseSeed + 114), 0.03, 0.05) * Soft(Fbm(p, 70.0, 7, m_noiseSeed + 117, 0.6), 0.02, 0.03);
@@ -991,6 +1039,9 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 		if (cryo && m_state.ice < 1.0) {
 			paint(M::ICE, all);
 		} else {
+			// frozen lakes and rivers are bare ice, so they can still be told from the snow around them
+			if (point.lakeField > 0.5 || point.smallLakeEdge < 0.0 || point.sideEdge < 0.0 || (point.hasRiver && point.river.distance < 0.0))
+				paint(M::ICE, all);
 			paint(M::ICE, core);
 			paint(m_state.weather ? M::SNOW : M::ICE, all);
 		}
@@ -1076,6 +1127,8 @@ double TerrainPhysical::AltitudeOf(const Point &point, const Shares &shares) con
 			altitude = std::min(altitude, std::max(point.river.distance * RIVER_BANK, -RIVER_DEEPEST));
 		if (point.sideEdge < 1e29)
 			altitude = std::min(altitude, std::max(point.sideEdge * RIVER_BANK, -RIVER_DEEPEST));
+		if (point.smallLakeEdge < 0.0)
+			altitude = std::min(altitude, std::max(point.smallLakeEdge * RIVER_BANK, -RIVER_DEEPEST));
 	}
 	return altitude;
 }
@@ -1091,7 +1144,7 @@ vector3d TerrainPhysical::ColourFrom(const Point &point, const Shares &shares, c
 			const double e = std::pow(1.0 - d, 2.2);
 			c = (m_shallowTone * e + m_seaTone * (1.0 - e)) * (1.0 - 0.35 * d);
 		} else {
-			c = point.lakeField > 0.5 ? m_lakeTone : m_riverTone;
+			c = point.lakeField > 0.5 || point.smallLakeEdge < 0.0 ? m_lakeTone : m_riverTone;
 		}
 		return vector3d(std::clamp(c.x, 0.0, 0.05), std::clamp(c.y, 0.0, 1.0), std::clamp(c.z, 0.0, 1.0));
 	}
@@ -1192,9 +1245,31 @@ double TerrainPhysical::GetSurfaceAltitude(const vector3d &p, const double heigh
 	return AltitudeOf(point, shares);
 }
 
-std::vector<Terrain::Feature> TerrainPhysical::FindFeatures(const std::string &kind) const
+std::vector<Terrain::Feature> TerrainPhysical::FindFeatures(const std::string &kind, const vector3d &around) const
 {
 	std::vector<Feature> out;
+	if (kind == "smalllake") {
+		if (!m_valleys.Active())
+			return out;
+		std::vector<TerrainValleys::LakeSpot> spots;
+		m_valleys.LakesAround(around, spots);
+		std::sort(spots.begin(), spots.end(), [&around](const TerrainValleys::LakeSpot &a, const TerrainValleys::LakeSpot &b) {
+			return a.place.Dot(around) > b.place.Dot(around);
+		});
+		// only those that are there: some are under the sea, or too near a river
+		int tried = 0;
+		for (const TerrainValleys::LakeSpot &spot : spots) {
+			if (tried++ >= 200 || out.size() >= 30)
+				break;
+			TerrainNoise::ScopedBandLimit bandLimit(0.5 * m_planetRadius / (0.25 * spot.radius));
+			const vector3d place = m_valleys.PlaceBeforeWander(spot.place);
+			Point point;
+			Evaluate(place, point);
+			if (point.smallLakeEdge < 0.0)
+				out.push_back({ place, 2.0 * spot.radius });
+		}
+		return out;
+	}
 	if (kind == "river" || kind == "fork" || kind == "mouth") {
 		std::vector<TerrainHydro::RiverNode> all, forks, ends;
 		m_hydro.RiverNodes(all, forks, ends);
@@ -1326,6 +1401,9 @@ std::string TerrainPhysical::DescribePoint(const vector3d &p0) const
 			out = line;
 		} else if (point.hasRiver && point.river.distance < 0.0) {
 			snprintf(line, sizeof(line), "River%s, %.0f m wide, %.0f m from its middle", altitude < 0.0 ? "" : " (frozen)", 2.0 * point.river.halfWidth, point.river.centre);
+			out = line;
+		} else if (point.smallLakeEdge < 0.0) {
+			snprintf(line, sizeof(line), "Small lake%s, %.0f m across", altitude < 0.0 ? "" : " (frozen)", 2.0 * point.smallLakeRadius);
 			out = line;
 		} else if (point.sideEdge < 0.0) {
 			snprintf(line, sizeof(line), "Side river%s, %.0f m wide", altitude < 0.0 ? "" : " (frozen)", point.sideWidth);

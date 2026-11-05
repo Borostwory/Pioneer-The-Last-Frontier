@@ -42,7 +42,7 @@ public:
 	bool HasFixedDetail() const override { return true; }
 	bool HasWaterAround(const vector3d &p, double radiusMetres) const override;
 	std::vector<std::string> GetGeologyInfo() const override;
-	std::vector<Feature> FindFeatures(const std::string &kind) const override;
+	std::vector<Feature> FindFeatures(const std::string &kind, const vector3d &around) const override;
 	std::string DescribePoint(const vector3d &p) const override;
 
 private:
@@ -77,7 +77,11 @@ private:
 		TerrainHydro::River river;
 		double sideEdge = 1e30; // metres from the edge of a side river, below 0 in it
 		double sideWidth = 0.0; // metres
-		double quiet = 1.0; // 0 along a side river: small relief stays out of its way
+		double quiet = 1.0; // 0 along a side river or at a small lake: small relief stays out of its way
+		double smallLakeRatio = 1e30; // the distance to the nearest small lake's middle, in its radii; below 1 in it
+		double smallLakeRadius = 0.0; // metres
+		vector3d smallLakePlace = vector3d(0.0, 0.0, 0.0);
+		double smallLakeEdge = 1e30; // metres from its shore, below 0 in it
 	};
 	enum class MoonStyle {
 		MOTTLED,
@@ -89,6 +93,8 @@ private:
 
 	Ground GroundAt(const vector3d &p) const;
 	void Evaluate(const vector3d &p, Point &out) const;
+	// the water's height in a small lake, the same in every view
+	double SmallLakeLevel(const vector3d &place, double radius) const;
 	double Temperature(const vector3d &p, double warp) const;
 	double Coast(const vector3d &p, const Point &point, double plainGround) const;
 	// cuts the valleys into point.g.base and returns the peaks along the ridges; calm: 0..1, how much of them

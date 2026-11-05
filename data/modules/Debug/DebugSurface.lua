@@ -30,6 +30,7 @@ local featureKinds = {
 	{ id = "fork", label = "Y fork", size = "wide" },
 	{ id = "mouth", label = "River's end", size = "wide" },
 	{ id = "lake", label = "Lake", size = "across" },
+	{ id = "smalllake", label = "Small lake", size = "across", around = true },
 	{ id = "coast", label = "Coast" },
 	{ id = "peak", label = "Mountain", size = "above sea" },
 }
@@ -182,15 +183,19 @@ local function unitVector(lat, lon)
 	return math.cos(lat) * math.sin(lon), math.sin(lat), math.cos(lat) * math.cos(lon)
 end
 
-local function featuresOf(body, kindId)
+local function featuresOf(body, kind, lat, lon)
+	-- (what is only looked for around a place is looked for each time)
+	if kind.around then
+		return Dev.GetTerrainFeatures(body, kind.id, lat, lon)
+	end
 	if state.foundBody ~= body then
 		state.foundBody = body
 		state.found = {}
 	end
-	if not state.found[kindId] then
-		state.found[kindId] = Dev.GetTerrainFeatures(body, kindId)
+	if not state.found[kind.id] then
+		state.found[kind.id] = Dev.GetTerrainFeatures(body, kind.id)
 	end
-	return state.found[kindId]
+	return state.found[kind.id]
 end
 
 local function shipIsNear(entry)
@@ -207,7 +212,7 @@ local function makeList(entry, kind)
 	x0, y0, z0 = unitVector(lat, lon)
 
 	local list = {}
-	for i, feature in ipairs(featuresOf(entry.sbody.body, kind.id)) do
+	for i, feature in ipairs(featuresOf(entry.sbody.body, kind, lat, lon)) do
 		local x, y, z = unitVector(feature.lat, feature.lon)
 		list[i] = { feature = feature, closeness = x * x0 + y * y0 + z * z0 }
 	end
@@ -406,6 +411,76 @@ local function drawUnderShip(entry)
 	end
 end
 
+-- the map's click: there, with the sun high
+local function goFromMap(entry, lat, lon)
+	state.latitude, state.longitude = lat, lon
+	updateTexts()
+	local why = whyNotGo()
+	if why then
+		Notification.add(Notification.Type.Error, "Debug surface: " .. why)
+		return
+	end
+	local ok, err = pcall(Dev.SetNoonAt, entry.sbody.body, math.deg2rad(lat), math.deg2rad(lon))
+	if not ok then
+		Notification.add(Notification.Type.Error, "Debug surface: can't make it day there", tostring(err))
+	end
+	go()
+	Dev.LogNote(string.format("went from the map to lat %.4f lon %.4f, height %s", lat, lon, state.landed and "landed" or (state.altitude .. " km")))
+end
+
+local function drawMap(entry)
+	local body = entry.sbody.body
+	if not body or not canLand(entry.sbody) then return end
+
+	if ui.button("Make a map of {}" % { entry.sbody.name }) then
+		local ok, result = pcall(Dev.MakeTerrainMap, body)
+		if ok then
+			state.map = { body = body, id = result }
+		else
+			state.map = nil
+			Notification.add(Notification.Type.Error, "Debug surface: no map", tostring(result))
+		end
+	end
+
+	local map = state.map
+	if not map or map.body ~= body then return end
+
+	ui.sameLine()
+	if ui.button("Close the map") then
+		state.map = nil
+		Dev.ReleaseTerrainMap()
+		return
+	end
+
+	local width = ui.getContentRegion().x
+	local size = Vector2(width, width / 2)
+	local pos = ui.getCursorScreenPos()
+	ui.dummy(size)
+	ui.addImage(map.id, pos, pos + size, Vector2(0, 0), Vector2(1, 1), Color(255, 255, 255))
+
+	-- the ship
+	if shipIsNear(entry) then
+		local lat, lon = Game.player:GetGroundPosition()
+		if lat then
+			local at = pos + Vector2((lon / (2 * math.pi) + 0.5) * size.x, (0.5 - lat / math.pi) * size.y)
+			ui.addLine(at - Vector2(6, 0), at + Vector2(6, 0), Color(255, 255, 255), 2.0, false)
+			ui.addLine(at - Vector2(0, 6), at + Vector2(0, 6), Color(255, 255, 255), 2.0, false)
+		end
+	end
+
+	if ui.isItemHovered() then
+		local mouse = ui.getMousePos() - pos
+		local lat = (0.5 - mouse.y / size.y) * 180
+		local lon = (mouse.x / size.x - 0.5) * 360
+		ui.text(string.format("Click to go there, at noon: %.2f, %.2f", lat, lon))
+		if ui.isMouseClicked(0) then
+			goFromMap(entry, lat, lon)
+		end
+	else
+		ui.textColored(colors.fontDim, "Click to go there, at noon, at the height set below. The cross is the ship.")
+	end
+end
+
 local function drawGo(entry)
 	local why = whyNotGo()
 	if why then
@@ -429,6 +504,8 @@ Event.Register("onGameEnd", function()
 	state.list = {}
 	state.listIdx = 0
 	state.underShip = ""
+	state.map = nil
+	Dev.ReleaseTerrainMap()
 end)
 
 debugView.registerTab("DebugSurface", {
@@ -449,6 +526,8 @@ debugView.registerTab("DebugSurface", {
 			return
 		end
 
+		ui.separator()
+		drawMap(entry)
 		ui.separator()
 		drawFinder(entry)
 		ui.separator()

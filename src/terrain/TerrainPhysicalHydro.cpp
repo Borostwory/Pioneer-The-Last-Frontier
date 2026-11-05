@@ -31,6 +31,7 @@ namespace {
 	constexpr double SMALLEST_PIECE = 250.0;
 	constexpr double SETTLE_PIECE = 12000.0; // metres between the points a river's level is checked at
 	constexpr double SETTLE_ACROSS_ABOVE = 2000.0; // half widths above this, metres, are checked at the banks too
+	constexpr double MAX_LAKE_SHARE = 0.0005; // of the land, the most one lake on the map can cover: on New Hope, about 575 km across
 	// the grids
 	constexpr int MOISTURE_WIDTH = 240;
 
@@ -301,105 +302,175 @@ void TerrainHydro::BuildDrainage(const Params &P, const Field &h0)
 	const double sea = hasSea ? P.seaLevel : WeightedPercentile(h, area, 0.015);
 	const double low = P.seaShare > 0.0 ? WeightedPercentile(h0.values, area, std::max(P.seaShare * 0.72, 0.004)) : sea;
 
-	std::vector<float> fill = h;
-	std::vector<int> parent(N, -1), order;
-	order.reserve(N);
-	std::vector<char> done(N, 0);
+	std::vector<float> fill;
+	std::vector<int> parent, order;
+	std::vector<double> acc;
 	using Entry = std::pair<float, int>;
-	std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> heap;
-	for (size_t i = 0; i < N; i++) {
-		if (h0.values[i] < low) {
-			done[i] = 1;
-			heap.push({ h[i], int(i) });
-		}
-	}
-	if (heap.empty()) {
-		std::vector<float> uniform(N, 1.f);
-		const double lowest = WeightedPercentile(h0.values, uniform, 0.01);
+	// sinks: cells that water ends in besides the sea, and their levels
+	auto flood = [&](const std::vector<std::pair<int, float>> &sinks) {
+		fill = h;
+		parent.assign(N, -1);
+		order.clear();
+		order.reserve(N);
+		std::vector<char> done(N, 0);
+		std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> heap;
 		for (size_t i = 0; i < N; i++) {
-			if (h0.values[i] <= lowest) {
+			if (h0.values[i] < low) {
 				done[i] = 1;
 				heap.push({ h[i], int(i) });
 			}
 		}
-	}
-	while (!heap.empty()) {
-		const Entry top = heap.top();
-		heap.pop();
-		order.push_back(top.second);
-		const int r = top.second / W, c = top.second % W;
-		for (int dr = -1; dr <= 1; dr++) {
-			const int rr = r + dr;
-			if (rr < 0 || rr >= H)
-				continue;
-			for (int dc = -1; dc <= 1; dc++) {
-				if (dr == 0 && dc == 0)
-					continue;
-				const int cc = (c + dc + W) % W;
-				const size_t k = size_t(rr) * W + cc;
-				if (done[k])
-					continue;
-				done[k] = 1;
-				const float v = std::max(top.first, h[k]);
-				fill[k] = v;
-				parent[k] = top.second;
-				heap.push({ v, int(k) });
+		if (heap.empty()) {
+			std::vector<float> uniform(N, 1.f);
+			const double lowest = WeightedPercentile(h0.values, uniform, 0.01);
+			for (size_t i = 0; i < N; i++) {
+				if (h0.values[i] <= lowest) {
+					done[i] = 1;
+					heap.push({ h[i], int(i) });
+				}
 			}
 		}
-	}
+		for (const auto &sink : sinks) {
+			done[sink.first] = 1;
+			fill[sink.first] = sink.second;
+			heap.push({ sink.second, sink.first });
+		}
+		while (!heap.empty()) {
+			const Entry top = heap.top();
+			heap.pop();
+			order.push_back(top.second);
+			const int r = top.second / W, c = top.second % W;
+			for (int dr = -1; dr <= 1; dr++) {
+				const int rr = r + dr;
+				if (rr < 0 || rr >= H)
+					continue;
+				for (int dc = -1; dc <= 1; dc++) {
+					if (dr == 0 && dc == 0)
+						continue;
+					const int cc = (c + dc + W) % W;
+					const size_t k = size_t(rr) * W + cc;
+					if (done[k])
+						continue;
+					done[k] = 1;
+					const float v = std::max(top.first, h[k]);
+					fill[k] = v;
+					parent[k] = top.second;
+					heap.push({ v, int(k) });
+				}
+			}
+		}
 
-	std::vector<double> acc(N);
-	for (size_t i = 0; i < N; i++)
-		acc[i] = h0.values[i] >= low ? double(area[i]) * rain[i] : 0.0;
-	for (auto it = order.rbegin(); it != order.rend(); ++it) {
-		if (parent[*it] >= 0)
-			acc[parent[*it]] += acc[*it];
-	}
+		acc.assign(N, 0.0);
+		for (size_t i = 0; i < N; i++)
+			acc[i] = h0.values[i] >= low ? double(area[i]) * rain[i] : 0.0;
+		for (auto it = order.rbegin(); it != order.rend(); ++it) {
+			if (parent[*it] >= 0)
+				acc[parent[*it]] += acc[*it];
+		}
+	};
+	flood({});
 
 	// basins: where flooding raised the surface. Rain decides lake or dry flat
 	Field lakeGrid, dryGrid;
 	lakeGrid.Resize(W, H);
 	dryGrid.Resize(W, H);
 	{
-		std::vector<int> label(N, -1);
+		std::vector<int> label;
 		struct Basin {
 			double cells = 0.0, inflow = 0.0, rainSum = 0.0;
 			int count = 0;
+			bool holdsSink = false;
 		};
 		std::vector<Basin> basins;
-		std::vector<int> stack;
 		const double deep = 0.006 * env;
-		for (size_t i = 0; i < N; i++) {
-			if (label[i] >= 0 || fill[i] - h[i] <= deep)
-				continue;
-			const int id = int(basins.size());
-			basins.emplace_back();
-			Basin &basin = basins.back();
-			label[i] = id;
-			stack.push_back(int(i));
-			while (!stack.empty()) {
-				const int k = stack.back();
-				stack.pop_back();
-				basin.cells += area[k];
-				basin.inflow = std::max(basin.inflow, acc[k]);
-				basin.rainSum += rain[k];
-				basin.count++;
-				const int r = k / W, c = k % W;
-				const int around[4] = { r > 0 ? k - W : -1, r + 1 < H ? k + W : -1, c > 0 ? k - 1 : -1, c + 1 < W ? k + 1 : -1 };
-				for (const int n : around) {
-					if (n >= 0 && label[n] < 0 && fill[n] - h[n] > deep) {
-						label[n] = id;
-						stack.push_back(n);
+		auto findBasins = [&]() {
+			label.assign(N, -1);
+			basins.clear();
+			std::vector<int> stack;
+			for (size_t i = 0; i < N; i++) {
+				if (label[i] >= 0 || fill[i] - h[i] <= deep)
+					continue;
+				const int id = int(basins.size());
+				basins.emplace_back();
+				Basin &basin = basins.back();
+				label[i] = id;
+				stack.push_back(int(i));
+				while (!stack.empty()) {
+					const int k = stack.back();
+					stack.pop_back();
+					basin.cells += area[k];
+					basin.inflow = std::max(basin.inflow, acc[k]);
+					basin.rainSum += rain[k];
+					basin.count++;
+					const int r = k / W, c = k % W;
+					const int around[4] = { r > 0 ? k - W : -1, r + 1 < H ? k + W : -1, c > 0 ? k - 1 : -1, c + 1 < W ? k + 1 : -1 };
+					for (const int n : around) {
+						if (n >= 0 && label[n] < 0 && fill[n] - h[n] > deep) {
+							label[n] = id;
+							stack.push_back(n);
+						}
 					}
 				}
 			}
-		}
+		};
+		findBasins();
 		double landCells = 0.0;
 		for (size_t i = 0; i < N; i++) {
 			if (!hasSea || h0.values[i] >= sea)
 				landCells += area[i];
 		}
 		landCells = std::max(landCells, 1.0);
+		const double largestLake = MAX_LAKE_SHARE * landCells;
+		const auto wantsLake = [&](const Basin &b) {
+			return P.wet && b.rainSum / b.count >= 0.16 && b.inflow > 2.0 * b.cells;
+		};
+
+		// A basin too large to fill keeps a lake as large as it can be: its water rises from the lowest
+		// cell until it covers that much. Then it doesn't spill: all around drains to it, and the rivers
+		// are worked out again, so none runs across the ground it no longer covers.
+		std::vector<std::pair<int, float>> sinks;
+		for (int j = 0; j < int(basins.size()); j++) {
+			if (!wantsLake(basins[j]) || basins[j].cells <= largestLake)
+				continue;
+			int lowest = -1;
+			for (size_t i = 0; i < N; i++) {
+				if (label[i] == j && (lowest < 0 || h[i] < h[lowest]))
+					lowest = int(i);
+			}
+			std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> rising;
+			std::vector<char> seen(N, 0);
+			std::vector<int> covered;
+			rising.push({ h[lowest], lowest });
+			seen[lowest] = 1;
+			double grown = 0.0;
+			float level = h[lowest];
+			while (!rising.empty() && grown < largestLake) {
+				const int k = rising.top().second;
+				rising.pop();
+				covered.push_back(k);
+				grown += area[k];
+				level = std::max(level, h[k]);
+				const int r = k / W, c = k % W;
+				const int around[4] = { r > 0 ? k - W : -1, r + 1 < H ? k + W : -1, c > 0 ? k - 1 : -1, c + 1 < W ? k + 1 : -1 };
+				for (const int n : around) {
+					if (n >= 0 && !seen[n] && label[n] == j) {
+						seen[n] = 1;
+						rising.push({ h[n], n });
+					}
+				}
+			}
+			for (const int k : covered)
+				sinks.emplace_back(k, level);
+		}
+		if (!sinks.empty()) {
+			flood(sinks);
+			findBasins();
+			for (const auto &sink : sinks) {
+				if (label[sink.first] >= 0)
+					basins[label[sink.first]].holdsSink = true;
+			}
+		}
+
 		std::vector<int> ranked(basins.size());
 		std::iota(ranked.begin(), ranked.end(), 0);
 		std::sort(ranked.begin(), ranked.end(), [&](const int a, const int b) { return basins[a].cells > basins[b].cells; });
@@ -407,9 +478,14 @@ void TerrainHydro::BuildDrainage(const Params &P, const Field &h0)
 		double lakeArea = 0.0, dryArea = 0.0;
 		for (const int j : ranked) {
 			const Basin &b = basins[j];
+			// only its lowest part is water, the sinks: the hollows around it joined to them stay land
+			if (b.holdsSink) {
+				lakeArea += largestLake;
+				continue;
+			}
 			if (b.cells < 3.0)
 				continue;
-			if (P.wet && b.rainSum / b.count >= 0.16 && b.inflow > 2.0 * b.cells && lakeArea + b.cells < 0.035 * landCells) {
+			if (wantsLake(b) && b.cells <= largestLake && lakeArea + b.cells < 0.035 * landCells) {
 				kind[j] = 1;
 				lakeArea += b.cells;
 			} else if (dryArea + b.cells < 0.025 * landCells) {
@@ -425,6 +501,8 @@ void TerrainHydro::BuildDrainage(const Params &P, const Field &h0)
 			else if (kind[label[i]] == 2)
 				dryGrid.values[i] = 1.f;
 		}
+		for (const auto &sink : sinks)
+			lakeGrid.values[sink.first] = 1.f;
 	}
 
 	auto aboveSea = [&](Field &field) {

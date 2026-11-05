@@ -79,13 +79,17 @@ private:
 class TerrainValleys {
 public:
 	static constexpr int LEVEL_COUNT = 9;
+	static constexpr double LAKE_REACH = 2.5; // a small lake shapes the ground this many of its radii out
 
 	struct Cut {
 		double cut = 0.0; // metres below the map's height; below 0 on the ridges
 		double average = 0.0; // the depth the valleys remove on average here
 		double riverEdge = 1e30; // metres from the edge a side river is drawn with, below 0 in it
 		double riverWidth = 0.0; // metres, as it's drawn
-		double quiet = 1.0; // 0 along a side river: what's finer than it stays out of its way
+		double quiet = 1.0; // 0 along a side river or at a small lake: what's finer than it stays out of its way
+		double lakeRatio = 1e30; // the distance to the nearest small lake's middle in radii, as far as it's shown here; below 1 in it
+		double lakeRadius = 0.0; // metres
+		vector3d lakePlace = vector3d(0.0, 0.0, 0.0); // its middle in the network, on the unit sphere
 	};
 	// the height of the network's points, for one level: from the map and detail fixed in space
 	using GroundAt = std::function<double(const vector3d &p, double spacingKm)>;
@@ -100,6 +104,15 @@ public:
 	// bends to follow here: none on a main river, which stays where it is, so that side rivers meet it.
 	Cut At(const vector3d &p, double height, double fjord, double share, double wander) const;
 
+	// where on the body a place in the network is, having followed the network's bends. Follows the band limit.
+	vector3d PlaceBeforeWander(const vector3d &place) const;
+	// for the debug tools: the small lakes around a point, in the network; the smaller, the closer
+	struct LakeSpot {
+		vector3d place; // on the unit sphere
+		double radius; // metres
+	};
+	void LakesAround(const vector3d &p, std::vector<LakeSpot> &out) const;
+
 	// for the debug window, over all bodies
 	static TerrainSpeedCounter &CutSpeed();
 	static uint64_t ChunksBuilt();
@@ -113,13 +126,19 @@ private:
 		vector3d a, b; // km
 		float width = 0.f; // of the river along it, metres; 0: a dry valley
 	};
-	// the branches that start in a cube of the lattice, on a grid of their own for lookups
+	// water in a hollow of the network
+	struct Lake {
+		vector3d position; // km
+		float radius = 0.f; // km
+	};
+	// the branches that start in a cube of the lattice, on a grid of their own for lookups, and its lakes
 	struct Chunk {
 		vector3d low, high; // around the pieces
 		double pad = 0.0; // half the longest piece
 		int nx = 0, ny = 0, nz = 0;
 		std::vector<uint16_t> start; // where each grid cell's pieces begin
 		std::vector<Piece> pieces;
+		std::vector<Lake> lakes;
 		mutable std::atomic<uint32_t> used{ 0 };
 	};
 	using ChunkPtr = std::shared_ptr<const Chunk>;
@@ -132,6 +151,7 @@ private:
 		vector3d centre = vector3d(0.0, 0.0, 0.0);
 		double margin = -1.0;
 		std::vector<Piece> list;
+		std::vector<Lake> lakes;
 	};
 	struct ThreadView {
 		uint64_t owner = 0;
@@ -141,6 +161,8 @@ private:
 	ChunkPtr GetChunk(int k, int64_t cx, int64_t cy, int64_t cz) const;
 	ChunkPtr MakeChunk(int k, int64_t cx, int64_t cy, int64_t cz) const;
 	void Refresh(int k, LevelView &view, const vector3d &q, double margin) const;
+	// km, the bends of the network at p
+	vector3d WanderOffset(const vector3d &p) const;
 
 	uint64_t m_id = 0;
 	uint32_t m_seed = 0;
