@@ -75,6 +75,9 @@ private:
 		double valley = 0.0; // 0 on the ridges, 1 on the valley floors
 		bool hasRiver = false;
 		TerrainHydro::River river;
+		double sideEdge = 1e30; // metres from the edge of a side river, below 0 in it
+		double sideWidth = 0.0; // metres
+		double quiet = 1.0; // 0 along a side river: small relief stays out of its way
 	};
 	enum class MoonStyle {
 		MOTTLED,

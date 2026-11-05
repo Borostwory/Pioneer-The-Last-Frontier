@@ -649,8 +649,11 @@ double TerrainPhysical::CutValleys(const vector3d &p, Point &point, const double
 	if (H <= 0.0 && fjord <= 0.01)
 		return 0.0;
 	const double share = m_hydro.HasMoisture() ? std::clamp((m_hydro.moisture.Linear(point.place) - 0.05) / 0.25, 0.0, 1.0) : 1.0;
-	const TerrainValleys::Cut cut = m_valleys.At(p, H, fjord, share);
+	const TerrainValleys::Cut cut = m_valleys.At(p, H, fjord, share, calm);
 	point.carved = true;
+	point.sideEdge = cut.riverEdge;
+	point.sideWidth = cut.riverWidth;
+	point.quiet = cut.quiet;
 	point.valley = H > 0.0 ? std::clamp((cut.cut + cut.average) / std::max(0.55 * H, 1.0), 0.0, 1.0) : 0.0;
 	point.g.base -= cut.cut * calm;
 
@@ -664,7 +667,7 @@ double TerrainPhysical::CutValleys(const vector3d &p, Point &point, const double
 	const double shift = 8.0 / radiusKm;
 	const vector3d bent = (p + vector3d(Fbm(p, radiusKm / 40.0, 3, m_noiseSeed + 141, 0.5), Fbm(p, radiusKm / 40.0, 3, m_noiseSeed + 142, 0.5), Fbm(p, radiusKm / 40.0, 3, m_noiseSeed + 143, 0.5)) * shift).Normalized();
 	const double ridged = 1.0 - std::abs(Fbm(bent, radiusKm / 10.0, 7, m_noiseSeed + 131, 0.5)) / 0.22;
-	return 0.1 * H * (std::clamp(ridged, -1.0, 1.0) - 0.15) * std::pow(1.0 - point.valley, 1.5) * high * calm;
+	return 0.1 * H * (std::clamp(ridged, -1.0, 1.0) - 0.15) * std::pow(1.0 - point.valley, 1.5) * high * calm * cut.quiet;
 }
 
 double TerrainPhysical::Keep(const Ground &g) const
@@ -800,7 +803,7 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 	out.hasRiver = m_hydro.RiverAt(p, out.river);
 	const double calm = out.hasRiver ? std::clamp(out.river.trueDistance / out.river.valley, 0.0, 1.0) : 1.0;
 	const double peaks = m_valleyAmount > 0.0 ? CutValleys(p, out, plainGround, calm) : 0.0;
-	const double relief = (g.craters.small + g.small) * Keep(g) + OwnRelief(p, g);
+	const double relief = ((g.craters.small + g.small) * Keep(g) + OwnRelief(p, g)) * out.quiet;
 
 	if (m_state.sea <= 0.0) {
 		// the surface of a frozen sea is level; relief fades in on land
@@ -1071,6 +1074,8 @@ double TerrainPhysical::AltitudeOf(const Point &point, const Shares &shares) con
 			altitude = std::min(altitude, (0.5 - point.lakeField) * LAKE_DEPTH);
 		if (point.hasRiver)
 			altitude = std::min(altitude, std::max(point.river.distance * RIVER_BANK, -RIVER_DEEPEST));
+		if (point.sideEdge < 1e29)
+			altitude = std::min(altitude, std::max(point.sideEdge * RIVER_BANK, -RIVER_DEEPEST));
 	}
 	return altitude;
 }
@@ -1322,6 +1327,9 @@ std::string TerrainPhysical::DescribePoint(const vector3d &p0) const
 		} else if (point.hasRiver && point.river.distance < 0.0) {
 			snprintf(line, sizeof(line), "River%s, %.0f m wide, %.0f m from its middle", altitude < 0.0 ? "" : " (frozen)", 2.0 * point.river.halfWidth, point.river.centre);
 			out = line;
+		} else if (point.sideEdge < 0.0) {
+			snprintf(line, sizeof(line), "Side river%s, %.0f m wide", altitude < 0.0 ? "" : " (frozen)", point.sideWidth);
+			out = line;
 		} else if (point.hasRiver) {
 			snprintf(line, sizeof(line), "Land, %.0f m from a river %.0f m wide", point.river.distance, 2.0 * point.river.halfWidth);
 			out = line;
@@ -1368,6 +1376,8 @@ bool TerrainPhysical::HasWaterAround(const vector3d &p0, const double radiusMetr
 		Evaluate(q, point);
 		Shares shares;
 		Paint(q, point, shares);
+		// (a side river can run through a city; only the larger water can't)
+		point.sideEdge = 1e30;
 		return AltitudeOf(point, shares) < 0.0;
 	};
 	for (const double limit : limits) {

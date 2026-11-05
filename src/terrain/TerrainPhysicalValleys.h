@@ -83,6 +83,9 @@ public:
 	struct Cut {
 		double cut = 0.0; // metres below the map's height; below 0 on the ridges
 		double average = 0.0; // the depth the valleys remove on average here
+		double riverEdge = 1e30; // metres from the edge a side river is drawn with, below 0 in it
+		double riverWidth = 0.0; // metres, as it's drawn
+		double quiet = 1.0; // 0 along a side river: what's finer than it stays out of its way
 	};
 	// the height of the network's points, for one level: from the map and detail fixed in space
 	using GroundAt = std::function<double(const vector3d &p, double spacingKm)>;
@@ -93,8 +96,9 @@ public:
 	bool Active() const { return m_id != 0; }
 
 	// height: how much ground the valleys may cut into, metres. fjord: 0..1 where the main valleys also
-	// cut near the sea. share: the share of valleys that exist here.
-	Cut At(const vector3d &p, double height, double fjord, double share) const;
+	// cut near the sea. share: the share of valleys that exist here. wander: 0..1, how much of the network's
+	// bends to follow here: none on a main river, which stays where it is, so that side rivers meet it.
+	Cut At(const vector3d &p, double height, double fjord, double share, double wander) const;
 
 	// for the debug window, over all bodies
 	static TerrainSpeedCounter &CutSpeed();
@@ -107,6 +111,7 @@ public:
 private:
 	struct Piece {
 		vector3d a, b; // km
+		float width = 0.f; // of the river along it, metres; 0: a dry valley
 	};
 	// the branches that start in a cube of the lattice, on a grid of their own for lookups
 	struct Chunk {

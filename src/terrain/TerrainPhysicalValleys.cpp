@@ -32,6 +32,22 @@ namespace {
 	constexpr double MIN_PIXELS = 6.0; // a level shows only where it spans this many samples
 	constexpr double BENDS[8] = { 0.17, 0.1, 0.07, 0.05, 0.035, 0.025, 0.018, 0.013 }; // as a share of a branch's length
 
+	// Side rivers: branches that join a main river, or a larger side river. The rest stay dry valleys.
+	constexpr double SIDE_SHARE[TerrainValleys::LEVEL_COUNT] = { 1.0, 1.0, 0.8, 0.5, 0.25, 0.1, 0.04, 0.015, 0.0 };
+	constexpr double SIDE_WIDTH_12 = 22.0; // metres wide on a level spaced 12 km
+	constexpr double SIDE_WIDTH_POWER = 1.4; // above 1, so finer levels add less and less water
+	constexpr double SIDE_TIP = 0.08; // the width at its head, as a share of its full width
+	constexpr double SIDE_VALLEY = 0.1; // how far either side of it the ground is shaped to it, as a share of the spacing
+	constexpr double SIDE_CUT_SHARE = 0.006; // the dip it lies in, as a share of the spacing...
+	constexpr double SIDE_CUT = 40.0; // ...and the most that can be, in metres
+	constexpr double SIDE_SHOW = 0.3; // drawn once its width is this share of the samples' spacing
+
+	// the bends all lines of the network share, so branches stay on what they join: fixed in space, and
+	// from a larger one down to the smallest the samples show. A bend is about 1/16 as wide as it is long.
+	constexpr double WANDER_CELL = 60.0; // km, of the largest bend
+	constexpr double WANDER_KM = 10.0; // km moved at most by all of them together, roughly
+	constexpr int WANDER_OCTAVES = 8;
+
 	// in spacings of the level
 	constexpr int CHUNK_CELLS = 8; // the side of a chunk
 	constexpr int HALO_CELLS = 5; // a site's neighbours can be in cells this far away
@@ -309,6 +325,7 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 		m_hydro->RiverPoints(middle.Normalized(), std::min((0.87 * size + joinReach) / R, M_PI), 8000.0, parents, tangents);
 	for (vector3d &q : parents)
 		q = q * R;
+	std::vector<char> parentHoldsRiver(parents.size(), 1); // the main rivers, and of the rest those with water
 	for (int j = 0; j < k; j++) {
 		const double spacing = SPACING[j], chunkSize = CHUNK_CELLS * spacing;
 		const double outer = joinReach + BRANCH_MARGIN * spacing;
@@ -328,6 +345,7 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 						const vector3d along = piece.b - a;
 						parents.push_back(a);
 						tangents.push_back(along * (1.0 / std::max(along.Length(), 1e-9)));
+						parentHoldsRiver.push_back(piece.width > 0.f ? 1 : 0);
 					}
 				}
 			}
@@ -338,6 +356,7 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 	if (hasParents)
 		grid.Build(parents, middle, 0.5 * size + joinReach + 3.0 * lam, 3.0 * lam);
 
+	const double sideWidth = SIDE_WIDTH_12 * std::pow(lam / 12.0, SIDE_WIDTH_POWER);
 	std::vector<Piece> pieces;
 	pieces.reserve(own.size() * (SAMPLES - 1));
 	std::vector<std::pair<double, int>> around;
@@ -365,6 +384,7 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 		const bool hasLow = lowest != i;
 		vector3d end = site.position;
 		bool flows = false;
+		bool joinsRiver = false;
 		// or the larger valley nearby, a little downstream of its closest spot
 		if (hasParents) {
 			double d = 0.0;
@@ -373,7 +393,9 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 				const vector3d ahead = (parents[at] + tangents[at] * (0.8 * d)).Normalized() * R;
 				double ignored = 0.0;
 				const int to = grid.Nearest(ahead, ignored);
-				end = parents[to >= 0 ? to : at];
+				const int joined = to >= 0 ? to : at;
+				end = parents[joined];
+				joinsRiver = parentHoldsRiver[joined] != 0;
 				flows = true;
 			}
 		}
@@ -383,6 +405,9 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 		}
 		if (!flows)
 			continue;
+
+		// only what joins a river that is there holds one, so none starts or ends in the middle of nowhere
+		const bool river = joinsRiver && SphereCells::Hash(site.ix, site.iy, site.iz, sd + 77) * 0.5 + 0.5 < SIDE_SHARE[k];
 
 		// a curved branch from its head to where it joins
 		const vector3d run = end - site.position;
@@ -406,6 +431,9 @@ TerrainValleys::ChunkPtr TerrainValleys::MakeChunk(const int k, const int64_t cx
 			Piece piece;
 			piece.a = previous;
 			piece.b = q;
+			// thinning out to its head, or it ends in a blunt stub
+			if (river)
+				piece.width = float(sideWidth * (SIDE_TIP + (1.0 - SIDE_TIP) * std::pow((double(s) - 0.5) / (SAMPLES - 1), 0.6)));
 			pieces.push_back(piece);
 			previous = q;
 		}
@@ -511,16 +539,17 @@ void TerrainValleys::Refresh(const int k, LevelView &view, const vector3d &q, co
 			}
 		}
 	}
+	// (and rivers near enough to shape the ground here, even with a dry valley nearer)
 	view.list.clear();
 	for (const auto &entry : found) {
-		if (entry.first <= best + 2.0 * margin)
+		if (entry.first <= best + 2.0 * margin || (entry.second->width > 0.f && entry.first <= SIDE_VALLEY * lam + margin))
 			view.list.push_back(*entry.second);
 	}
 	view.centre = q;
 	view.margin = margin;
 }
 
-TerrainValleys::Cut TerrainValleys::At(const vector3d &p, const double height, const double fjord, const double share) const
+TerrainValleys::Cut TerrainValleys::At(const vector3d &p, const double height, const double fjord, const double share, const double wander) const
 {
 	Cut out;
 	if (m_id == 0)
@@ -541,9 +570,15 @@ TerrainValleys::Cut TerrainValleys::At(const vector3d &p, const double height, c
 	const double above = std::max(height, 0.0);
 	const double wideReach = std::pow(std::min(above / (2.0 * FULL), 1.0), 1.2);
 	const double narrowReach = std::min(above / FULL, 1.0);
-	const vector3d q = p * m_radiusKm;
+	vector3d q = p * m_radiusKm;
+	if (wander > 0.0) {
+		const double frequency = m_radiusKm / WANDER_CELL;
+		const double a = SphereCells::Fbm(p, frequency, WANDER_OCTAVES, m_seed + 161), b = SphereCells::Fbm(p, frequency, WANDER_OCTAVES, m_seed + 162);
+		q = (q + vector3d(a, b, -a - b) * (WANDER_KM * wander)).Normalized() * m_radiusKm;
+	}
 	double stretch = 0.0; // worked out when first needed
 	double depth = 0.0, expect = 0.0, drown = 0.0;
+	double quiet = 1.0, channel = 0.0;
 	for (int k = 0; k < LEVEL_COUNT; k++) {
 		const double lam = SPACING[k];
 		const double reach = k <= 2 ? wideReach : narrowReach;
@@ -560,11 +595,16 @@ TerrainValleys::Cut TerrainValleys::At(const vector3d &p, const double height, c
 		const double margin = std::min(lam / 3.0, std::max(lam / 24.0, 16.0 * px));
 		if (view.margin < 0.0 || (q - view.centre).LengthSqr() > view.margin * view.margin)
 			Refresh(k, view, q, margin);
-		double best = 1e30;
+		double best = 1e30, bestRiver = 1e30, riverWidth = 0.0;
 		for (const Piece &piece : view.list) {
 			const vector3d ab = piece.b - piece.a;
 			const double t = std::clamp((q - piece.a).Dot(ab) / std::max(ab.Dot(ab), 1e-12), 0.0, 1.0);
-			best = std::min(best, (q - (piece.a + ab * t)).LengthSqr());
+			const double squared = (q - (piece.a + ab * t)).LengthSqr();
+			best = std::min(best, squared);
+			if (piece.width > 0.f && squared < bestRiver) {
+				bestRiver = squared;
+				riverWidth = piece.width;
+			}
 		}
 		double cut = 0.0;
 		double shape = 0.0;
@@ -583,7 +623,33 @@ TerrainValleys::Cut TerrainValleys::At(const vector3d &p, const double height, c
 		}
 		if (k < 2)
 			drown += show * FJORD[k] * m_reliefLimit * fjord * shape;
-		depth += show * cut * reach + (1.0 - show) * mean;
+		// (near the river of a larger level, this level's ups and downs, which would run across it, die away)
+		depth += mean + show * (cut * reach - mean) * quiet;
+
+		if (bestRiver < 1e29) {
+			const double distance = std::sqrt(bestRiver);
+			const double valleyReach = SIDE_VALLEY * lam;
+			if (distance < valleyReach) {
+				const double closeness = 1.0 - distance / valleyReach;
+				const double flat = std::min(2.0 * closeness, 1.0);
+				quiet = std::min(quiet, 1.0 - show * flat * flat * (3.0 - 2.0 * flat));
+				channel = std::max(channel, show * std::min(SIDE_CUT_SHARE * lam * 1000.0, SIDE_CUT) * closeness * closeness);
+				// its real width once the samples can show that, and before that as wide as they can show,
+				// or it comes out as dashes. Its line stays the same.
+				double drawn = riverWidth;
+				if (px > 0.0) {
+					const double spacingMetres = px * 1000.0;
+					drawn = std::max(riverWidth, 1.5 * spacingMetres) * std::clamp((riverWidth / spacingMetres - SIDE_SHOW) / (0.5 * SIDE_SHOW), 0.0, 1.0);
+				}
+				if (drawn > 0.0) {
+					const double edge = distance * 1000.0 - 0.5 * drawn;
+					if (edge < out.riverEdge) {
+						out.riverEdge = edge;
+						out.riverWidth = drawn;
+					}
+				}
+			}
+		}
 	}
 	// inland valleys stay above the sea; only the fjord cut can take them below it
 	const double room = std::max((1.0 - FLOOR) * above, 1.0);
@@ -595,6 +661,7 @@ TerrainValleys::Cut TerrainValleys::At(const vector3d &p, const double height, c
 	// the whole-body map is the ground truth, so detail averages out to it: valleys lie below
 	// the map's height and ridges above it, by the valleys' average depth
 	out.average = limited(expect);
-	out.cut = limited(depth) + drown - out.average;
+	out.cut = limited(depth) + drown - out.average + channel;
+	out.quiet = quiet;
 	return out;
 }
