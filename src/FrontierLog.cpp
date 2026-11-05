@@ -193,7 +193,7 @@ namespace {
 		if (patchCount > 0)
 			std::fprintf(s.file, " at %.1f ms", double(patchMicros) / double(patchCount) / 1000.0);
 		if (const TerrainSurfaceTiles *tiles = TerrainSurfaceTiles::Instance())
-			std::fprintf(s.file, ", tiles %d (%d baking)", tiles->GetTileCount(), tiles->GetBakingCount());
+			std::fprintf(s.file, ", tiles %d (%d baking, %d waiting)", tiles->GetTileCount(), tiles->GetBakingCount(), tiles->GetWaitingCount());
 
 		// (the debug window's reset button can take the totals below the last ones)
 		const Terrain::SpeedTotals speed = Terrain::GetSpeedTotals();

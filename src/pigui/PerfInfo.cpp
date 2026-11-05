@@ -788,6 +788,25 @@ void PiGui::PerfInfo::DrawFrontierTerrain()
 	if (!TerrainFarTexture::GetLastBakeInfo().empty())
 		ImGui::Text("Last far texture: %s", TerrainFarTexture::GetLastBakeInfo().c_str());
 
+	// how a planet is drawn from high orbit (GeoSphere.cpp); changes at once, as
+	// the far texture stays baked while it isn't drawn. To time the tiles on
+	// their own, switch Far Terrain Texture off too.
+	int orbitSurface = std::max(0, std::min(2, Pi::config->Int("PlanetOrbitSurface", 0)));
+	if (ImGui::Combo("Orbit Surface", &orbitSurface, "Far texture\0" "Tiles\0" "Tiles, full detail\0")) {
+		Pi::config->SetInt("PlanetOrbitSurface", orbitSurface);
+		Pi::config->Save();
+		static const char *const names[] = { "far texture", "tiles", "tiles, full detail" };
+		FrontierLog::Note(std::string("orbit surface: ") + names[orbitSurface]);
+	}
+
+	// sharper tiles from the same texels (terrain-far.glsl); changes at once
+	bool bicubic = Pi::config->Int("TerrainTileBicubic", 1) != 0;
+	if (ImGui::Checkbox("Bicubic Tiles", &bicubic)) {
+		Pi::config->SetInt("TerrainTileBicubic", bicubic ? 1 : 0);
+		Pi::config->Save();
+		FrontierLog::Note(std::string("bicubic tiles: ") + (bicubic ? "on" : "off"));
+	}
+
 	// the patches' surface tiles (TerrainSurfaceTiles); off frees the atlas,
 	// for A/B comparison
 	bool surfaceTiles = TerrainSurfaceTiles::Enabled();
@@ -796,7 +815,7 @@ void PiGui::PerfInfo::DrawFrontierTerrain()
 		Pi::config->Save();
 	}
 	if (const TerrainSurfaceTiles *tiles = TerrainSurfaceTiles::Instance())
-		ImGui::Text("Surface tiles: %d in use, %d baking", tiles->GetTileCount(), tiles->GetBakingCount());
+		ImGui::Text("Surface tiles: %d in use, %d baking, %d waiting", tiles->GetTileCount(), tiles->GetBakingCount(), tiles->GetWaitingCount());
 
 	const GeoPatchGenStats stats = GetGeoPatchGenStats();
 	const double totalMs = double(stats.microseconds) / 1000.0;

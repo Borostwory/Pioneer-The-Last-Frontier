@@ -15,7 +15,8 @@
 // x: distance in metres where the patches' vertex spacing reaches the far
 // texture's texel size, the texture takes over fully at twice it; y:
 // fade-in, 0 to 1 (0: no texture bound); z: how much later patches seen
-// edge-on split (GeoSphere::GetLodForeshortening)
+// edge-on split (GeoSphere::GetLodForeshortening); w: 1 to read the surface
+// tiles with the bicubic filter
 uniform vec4 FarTexture;
 
 // largest normal offset stored (NORMAL_RANGE in TerrainFarTexture.cpp)
@@ -103,6 +104,38 @@ FarSurface terrainFarSample(vec3 up)
 	return terrainDecodeSurface(texture(farColour, dir), texture(farNormal, dir).xyz, dir, toView);
 }
 
+// A Catmull-Rom curve through the texels, in five reads of the linear filter: sharper than
+// the linear filter alone, from the same texels. It reads up to two texels away, so the
+// tiles have a border that wide (TILE_BORDER in TerrainSurfaceTiles.h).
+vec4 terrainTileCubic(sampler2D atlas, vec2 st)
+{
+	vec2 size = vec2(textureSize(atlas, 0));
+	vec2 position = st * size;
+	vec2 centre = floor(position - 0.5) + 0.5;
+	vec2 f = position - centre;
+	vec2 f2 = f * f;
+	vec2 f3 = f2 * f;
+	vec2 w0 = -0.5 * f3 + f2 - 0.5 * f;
+	vec2 w1 = 1.5 * f3 - 2.5 * f2 + 1.0;
+	vec2 w2 = -1.5 * f3 + 2.0 * f2 + 0.5 * f;
+	vec2 w3 = 0.5 * f3 - 0.5 * f2;
+	vec2 w12 = w1 + w2;
+	vec2 middle = (centre + w2 / w12) / size;
+	vec2 before = (centre - 1.0) / size;
+	vec2 after = (centre + 2.0) / size;
+	float up = w12.x * w0.y;
+	float left = w0.x * w12.y;
+	float mid = w12.x * w12.y;
+	float right = w3.x * w12.y;
+	float down = w12.x * w3.y;
+	vec4 sum = textureLod(atlas, vec2(middle.x, before.y), 0.0) * up
+		+ textureLod(atlas, vec2(before.x, middle.y), 0.0) * left
+		+ textureLod(atlas, middle, 0.0) * mid
+		+ textureLod(atlas, vec2(after.x, middle.y), 0.0) * right
+		+ textureLod(atlas, vec2(middle.x, after.y), 0.0) * down;
+	return clamp(sum / (up + left + mid + right + down), 0.0, 1.0);
+}
+
 // weight of this patch's surface tile
 float terrainTileWeight()
 {
@@ -116,6 +149,8 @@ FarSurface terrainTileSurface(vec2 uv, vec3 up)
 	mat3 toView = mat3(cloudAxisX.xyz, cloudAxisY.xyz, cloudAxisZ.xyz);
 	vec3 dir = normalize(transpose(toView) * up);
 	vec2 st = PatchSurface.xy + clamp(uv, 0.0, 1.0) * PatchSurface.z;
+	if (FarTexture.w > 0.5)
+		return terrainDecodeSurface(terrainTileCubic(surfaceTileColour, st), terrainTileCubic(surfaceTileNormal, st).xyz, dir, toView);
 	return terrainDecodeSurface(textureLod(surfaceTileColour, st, 0.0), textureLod(surfaceTileNormal, st, 0.0).xyz, dir, toView);
 }
 

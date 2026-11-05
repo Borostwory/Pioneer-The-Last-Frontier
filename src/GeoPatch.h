@@ -118,6 +118,9 @@ public:
 	// surface tile (TerrainSurfaceTiles): its slot in the atlas, -1 if none
 	int GetSurfaceSlot() const { return m_surfaceSlot; }
 	void SetSurfaceSlot(int slot) { m_surfaceSlot = slot; }
+	// Every vertex is far under the sea, on a terrain whose detail is fixed in space: the water
+	// hides what a surface tile would add, so it needs none.
+	bool IsDeepUnderSea() const { return m_deepUnderSea; }
 	// a corner (0..3) on the unit sphere
 	const vector3d &GetCorner(int i) const { return i == 0 ? m_corners->m_v0 : i == 1 ? m_corners->m_v1 : i == 2 ? m_corners->m_v2 : m_corners->m_v3; }
 	// The surface as drawn along dir (unit), in planet radii from the centre:
@@ -192,6 +195,7 @@ private:
 	bool m_hasJobRequest;
 	int m_tileSlot = -1;
 	int m_surfaceSlot = -1;
+	bool m_deepUnderSea = false;
 #if DEBUG_PATCHES
 #ifdef DEBUG_BOUNDING_SPHERES
 	std::unique_ptr<Graphics::Drawables::Sphere3D> m_boundsphere;

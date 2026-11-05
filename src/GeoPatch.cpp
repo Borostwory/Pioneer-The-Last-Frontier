@@ -183,6 +183,9 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 		const GeoVertexSurface *pColr = m_patchVBOData->m_colors.get();
 
 		double minh = DBL_MAX;
+		// (500 m leaves room for islands between the vertices)
+		static const unsigned char DEEP_UNDER_SEA = EncodeAltitude(-500.0);
+		bool deepUnderSea = m_geosphere->GetTerrain()->HasFixedDetail();
 
 		const vector3d v0 = m_corners->m_v0;
 		const vector3d v1 = m_corners->m_v1;
@@ -209,6 +212,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 				++pNorm; // next normal
 
 				vtxPtr->col = pColr->col; // alpha: altitude above sea level, see EncodeAltitude()
+				deepUnderSea = deepUnderSea && pColr->col.a <= DEEP_UNDER_SEA;
 				std::copy(pColr->materials, pColr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 				++pColr; // next colour
 
@@ -219,6 +223,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 				++vtxPtr; // next vertex
 			}
 		}
+		m_deepUnderSea = deepUnderSea;
 		const double minhScale = (minh + 1.0) * 0.999995;
 		// ----------------------------------------------------
 		const Sint32 innerLeft = 1;

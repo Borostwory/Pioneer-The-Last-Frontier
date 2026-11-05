@@ -38,11 +38,16 @@ namespace {
 	// a full atlas takes the tiles of patches out of view this long
 	static const std::chrono::milliseconds EVICT_UNSEEN(250);
 
-	// bakes queued or running at most, so the patch jobs keep most threads
+	// bakes queued or running at most: the threads the patch jobs leave free,
+	// and always a few, but one at a time while they fill the threads, so the
+	// mesh comes first
 	int MaxBakesInFlight()
 	{
-		static const int n = std::max(2, int(std::thread::hardware_concurrency()) / 3);
-		return n;
+		static const int threads = int(std::thread::hardware_concurrency());
+		const int patchJobs = GetQuadPatchJobsInFlight();
+		if (patchJobs >= threads)
+			return 1;
+		return std::max({ 2, threads / 3, threads - 1 - patchJobs });
 	}
 
 	// a point of the patch, as GetSpherePoint in GeoPatchJobs.cpp places it:
@@ -183,6 +188,12 @@ int TerrainSurfaceTiles::GetTileCount() const
 	return int(std::count(m_ready.begin(), m_ready.end(), true));
 }
 
+int TerrainSurfaceTiles::GetWaitingCount() const
+{
+	// (each planet in view reports in turn: a planet with none waiting mustn't hide the one that has)
+	return std::chrono::steady_clock::now() - m_waitingSeen < std::chrono::milliseconds(100) ? m_waiting : 0;
+}
+
 int TerrainSurfaceTiles::Allocate(GeoPatch *patch)
 {
 	if (m_free.empty()) {
@@ -257,15 +268,16 @@ void TerrainSurfaceTiles::Update(GeoSphere *sphere, const std::vector<std::pair<
 		}
 		const double spacing = patch->GetVertexSpacing();
 		const double dist = std::max(std::sqrt(v.first), 1e-9);
-		if (spacing / (dist * pixelAngle) >= MIN_VERTEX_PIXELS && (farTexel <= 0.0 || 0.5 * spacing < farTexel))
+		if (spacing / (dist * pixelAngle) >= MIN_VERTEX_PIXELS && (farTexel <= 0.0 || 0.5 * spacing < farTexel) && !patch->IsDeepUnderSea())
 			wanted.push_back(v);
 	}
+	if (!wanted.empty()) {
+		m_waiting = int(wanted.size());
+		m_waitingSeen = now;
+	}
 
-	// nearest first, a few at a time; one at a time while the patch jobs
-	// fill the threads, so the mesh comes first
-	int room = MaxBakesInFlight() - int(m_pending.size());
-	if (GetQuadPatchJobsInFlight() >= int(std::thread::hardware_concurrency()))
-		room = std::min(room, 1 - int(m_pending.size()));
+	// nearest first
+	const int room = MaxBakesInFlight() - int(m_pending.size());
 	if (wanted.empty() || room <= 0)
 		return;
 	const size_t count = std::min(wanted.size(), size_t(room));

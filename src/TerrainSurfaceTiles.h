@@ -31,14 +31,15 @@ namespace Graphics {
 //
 // Only patches whose vertices are a few pixels apart on screen get one, and
 // only where the tile is finer than the planet's far texture (from afar that
-// is sharper); nearest first, a few jobs at a time, and fewer while patch
-// jobs are waiting. Tiles fade in once uploaded. Mesh and collision are
-// unchanged.
+// is sharper), and not those deep under the sea; nearest first, on the
+// threads the patch jobs leave free. Tiles fade in once uploaded. Mesh and
+// collision are unchanged.
 class TerrainSurfaceTiles {
 public:
 	static constexpr int ATLAS_SIZE = 4096;
-	// texels around a tile for filtering across the patch edges
-	static constexpr int TILE_BORDER = 1;
+	// texels around a tile for filtering across the patch edges: the bicubic
+	// filter (terrain-far.glsl) reaches two texels from where it reads
+	static constexpr int TILE_BORDER = 2;
 	// patches get a tile once their vertices are this many pixels apart
 	static constexpr double MIN_VERTEX_PIXELS = 2.0;
 	// at most this many finished tiles uploaded per frame
@@ -71,6 +72,8 @@ public:
 	// tiles in use and being baked, for the Terrain Debug window
 	int GetTileCount() const;
 	int GetBakingCount() const { return int(m_pending.size()); }
+	// visible patches still waiting for a bake to start, for the log
+	int GetWaitingCount() const;
 
 	~TerrainSurfaceTiles();
 
@@ -103,6 +106,8 @@ private:
 	std::vector<bool> m_ready;
 	std::vector<int> m_free;
 	std::vector<Pending> m_pending;
+	int m_waiting = 0;
+	std::chrono::steady_clock::time_point m_waitingSeen;
 };
 
 #endif // _TERRAINSURFACETILES_H
