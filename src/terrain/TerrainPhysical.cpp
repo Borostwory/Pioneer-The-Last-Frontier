@@ -7,6 +7,7 @@
 #include "SphereCells.h"
 #include "TerrainErosion.h"
 
+#include "../FileSystem.h"
 #include "../Random.h"
 #include "../galaxy/SystemBody.h"
 
@@ -38,6 +39,11 @@ namespace {
 	constexpr double RIVER_SLOPE = 0.12;
 	constexpr double RIVER_LEVEE = 300.0; // metres, at least, from a bank to ground lower than the river
 	thread_local bool t_findingLakeLevel = false;
+
+	// Dunes come from heightmaps of a simulation (tools/dune-tiles), which join themselves
+	constexpr double DUNE_CELL_KM = 0.015; // the tile's cells, on the ground
+	constexpr double DUNE_SMALL = 0.25; // the tile again, this much smaller and lower, in the flats
+	constexpr double DUNE_SAMPLES = 1.5; // a patch reads the copy of the tile with cells this many of its samples wide
 
 	double Soft(const double x, const double low, const double width)
 	{
@@ -156,6 +162,7 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 	BuildLevels();
 	BuildTones();
 	BuildMaterials();
+	BuildSandSeas();
 	BuildShares();
 
 	if (m_state.sea > 0.0)
@@ -658,7 +665,10 @@ double TerrainPhysical::CutValleys(const vector3d &p, Point &point, const double
 	point.smallLakeRatio = cut.lakeRatio;
 	point.smallLakeRadius = cut.lakeRadius;
 	point.smallLakePlace = cut.lakePlace;
-	point.valley = H > 0.0 ? std::clamp((cut.cut + cut.average) / std::max(0.55 * H, 1.0), 0.0, 1.0) : 0.0;
+	// (As a share of what they may cut. Inlets don't count: they don't grow with that, so as it
+	// came to nothing, all the ground would turn into valley floor at once.)
+	point.valley = H > 0.0 ? std::clamp(cut.carved / std::max(0.55 * H, 1.0), 0.0, 1.0) : 0.0;
+	point.valleyRoom = H;
 	point.g.base -= cut.cut * calm;
 
 	// Peaks along the ridges, sharp where the noise crosses zero, none on the floors. They average out
@@ -680,6 +690,214 @@ double TerrainPhysical::Keep(const Ground &g) const
 	if (m_slots[M::BASALT] < 0 || g.plains <= 0.0)
 		return ground;
 	return ground + (KeepOf(M::BASALT) - ground) * g.plains;
+}
+
+namespace {
+	// A heightmap of dunes: heights in thousandths of a cell, on a grid that joins itself, with a chain of
+	// copies, each averaged to half the size. A patch reads the copy that suits its samples, so at every
+	// detail the tile keeps its shape and its average, as it fades towards that average from afar.
+	struct DuneTile {
+		int size = 0;
+		int levels = 0;
+		double mean = 0.0;
+		std::vector<std::vector<uint16_t>> copies;
+
+		bool Load(const char *path)
+		{
+			RefCountedPtr<FileSystem::FileData> file = FileSystem::gameDataFiles.ReadFile(path);
+			if (!file)
+				return false;
+			const size_t count = file->GetSize() / 2;
+			const int side = int(std::lround(std::sqrt(double(count))));
+			if (side < 2 || size_t(side) * side != count || (side & (side - 1)) != 0)
+				return false;
+			const unsigned char *bytes = reinterpret_cast<const unsigned char *>(file->GetData());
+			copies.emplace_back(count);
+			double sum = 0.0;
+			for (size_t i = 0; i < count; i++) {
+				copies[0][i] = uint16_t(int(bytes[2 * i]) | (int(bytes[2 * i + 1]) << 8));
+				sum += copies[0][i];
+			}
+			for (int n = side; n > 1; n /= 2) {
+				const std::vector<uint16_t> &from = copies.back();
+				std::vector<uint16_t> to(size_t(n / 2) * (n / 2));
+				for (int y = 0; y < n / 2; y++) {
+					for (int x = 0; x < n / 2; x++) {
+						const uint16_t *a = &from[size_t(2 * y) * n + 2 * x], *b = a + n;
+						to[size_t(y) * (n / 2) + x] = uint16_t((int(a[0]) + a[1] + b[0] + b[1] + 2) / 4);
+					}
+				}
+				copies.push_back(std::move(to));
+			}
+			levels = int(copies.size());
+			size = side;
+			mean = sum / double(count) * 0.001;
+			return true;
+		}
+		// smooth, and through the grid's points, so the crests stay sharp. x, y: in cells of the tile.
+		double Copy(const int k, const double x, const double y) const
+		{
+			const double scale = 1.0 / double(1 << k);
+			const double cx = (x + 0.5) * scale - 0.5, cy = (y + 0.5) * scale - 0.5;
+			const double fx = std::floor(cx), fy = std::floor(cy);
+			const double tx = cx - fx, ty = cy - fy;
+			const int n = size >> k, mask = n - 1;
+			const int ix = int(int64_t(fx) & mask), iy = int(int64_t(fy) & mask);
+			const auto weights = [](const double t, double w[4]) {
+				w[0] = t * (-0.5 + t * (1.0 - 0.5 * t));
+				w[1] = 1.0 + t * t * (-2.5 + 1.5 * t);
+				w[2] = t * (0.5 + t * (2.0 - 1.5 * t));
+				w[3] = t * t * (-0.5 + 0.5 * t);
+			};
+			double wx[4], wy[4];
+			weights(tx, wx);
+			weights(ty, wy);
+			const std::vector<uint16_t> &heights = copies[k];
+			double out = 0.0;
+			for (int j = 0; j < 4; j++) {
+				const uint16_t *row = &heights[size_t((iy + j - 1) & mask) * n];
+				double line = 0.0;
+				for (int i = 0; i < 4; i++)
+					line += wx[i] * row[(ix + i - 1) & mask];
+				out += wy[j] * line;
+			}
+			return out * 0.001;
+		}
+		// level: 0 is the tile itself; each one up has cells twice as wide
+		double At(const double x, const double y, const double level) const
+		{
+			if (level >= double(levels - 1))
+				return mean;
+			const int k = int(level);
+			const double t = level - k;
+			double out = Copy(k, x, y);
+			if (t > 0.01)
+				out += t * (Copy(k + 1, x, y) - out);
+			return std::max(out, 0.0);
+		}
+		double LevelFor(const double samplesKm, const double cellKm) const
+		{
+			return samplesKm > 0.0 ? std::log2(std::max(DUNE_SAMPLES * samplesKm / cellKm, 1.0)) : 0.0;
+		}
+	};
+
+	const DuneTile *DuneTiles()
+	{
+		static const std::array<DuneTile, 2> tiles = [] {
+			std::array<DuneTile, 2> loaded;
+			loaded[0].Load("terrain/dunes_medium.bin");
+			loaded[1].Load("terrain/dunes_rich.bin");
+			return loaded;
+		}();
+		return tiles[0].size > 0 && tiles[1].size > 0 ? tiles.data() : nullptr;
+	}
+
+	// A tile laid on the body from its three axes, whichever suits a place best, in cells at a scale, turned by an
+	// angle so that the wind differs. shift, km: bends what would otherwise be straight repeats.
+	double DuneTileAt(const DuneTile &tile, const vector3d &p, const double radiusKm, const vector3d &shift, const double cellKm, const double angle, const double samplesKm)
+	{
+		const double level = tile.LevelFor(samplesKm, cellKm);
+		if (level >= double(tile.levels - 1))
+			return tile.mean;
+		const vector3d q = p * radiusKm + shift;
+		const double c = std::cos(angle), s = std::sin(angle);
+		const double weights[3] = { Soft(std::abs(p.x), 0.45, 0.25), Soft(std::abs(p.y), 0.45, 0.25), Soft(std::abs(p.z), 0.45, 0.25) };
+		const double uses[3][2] = { { q.y, q.z }, { q.z, q.x }, { q.x, q.y } };
+		double sum = 0.0, total = 0.0;
+		for (int k = 0; k < 3; k++) {
+			if (weights[k] <= 0.0)
+				continue;
+			const double u = uses[k][0] / cellKm + 311.0 * k, v = uses[k][1] / cellKm + 173.0 * k;
+			sum += weights[k] * tile.At(c * u - s * v, s * u + c * v, level);
+			total += weights[k];
+		}
+		return total > 0.0 ? sum / total : 0.0;
+	}
+} // namespace
+
+// Dunes need a sand sea, so there are none on beaches and barrier islands.
+void TerrainPhysical::BuildSandSeas()
+{
+	if (!m_state.weather)
+		return;
+	constexpr int W = 360, H = 180;
+	TerrainHydro::Field sand;
+	sand.Resize(W, H);
+	ParallelRows(H, [&](const int r) {
+		TerrainNoise::ScopedBandLimit bandLimit(GROUND_MAX_FREQUENCY);
+		for (int c = 0; c < W; c++) {
+			const vector3d p = GridPoint(r, c, W, H);
+			Point point;
+			Evaluate(p, point);
+			Shares shares;
+			Paint(p, point, shares);
+			sand.At(r, c) = float(shares[M::SAND]);
+		}
+	});
+	const double cellKm = 2.0 * M_PI * m_core.radius * 6378.135 / W;
+	sand.Blur(std::max(60.0 / cellKm, 1.0));
+	sand.FindRange();
+	if (sand.high >= 0.3f)
+		m_sandSea = std::move(sand);
+}
+
+// They only rise above the ground, so they also lie on low plains at the sea's level, where nothing can go lower
+double TerrainPhysical::Dunes(const vector3d &p, const Point &point, const double calm) const
+{
+	if (m_sandSea.Empty() || calm <= 0.0 || point.quiet <= 0.0 || point.lakeField > 0.0 || point.smallLakeRatio < TerrainValleys::LAKE_REACH)
+		return 0.0;
+	const DuneTile *tiles = DuneTiles();
+	if (!tiles)
+		return 0.0;
+	const double radiusKm = m_core.radius * 6378.135;
+	const double maxFrequency = TerrainNoise::s_maxFrequency;
+	const double samples = maxFrequency > 0.0 ? 0.5 / maxFrequency * radiusKm : 0.0;
+
+	double amount = calm * point.quiet * Soft(m_sandSea.Smooth(point.place), 0.3, 0.3);
+	if (m_state.sea > 0.0)
+		amount *= Soft(point.shore - m_seaLevel, 0.0, 100.0);
+	if (amount <= 0.0)
+		return 0.0;
+	// only on sand, whatever lies beside it
+	Shares shares;
+	Paint(p, point, shares);
+	amount *= shares[M::SAND];
+	if (amount <= 0.0)
+		return 0.0;
+
+	// Bent, so that the tile's repeats don't line up, and two tiles with their winds at an angle, region by region.
+	// All of this at full detail, or the dunes would move and change height from one patch to the next.
+	vector3d shift(0.0, 0.0, 0.0);
+	double rich, size;
+	{
+		TerrainNoise::ScopedBandLimit fullDetail(0.0);
+		shift = vector3d(8.0 * Fbm(p, radiusKm / 60.0, 4, m_noiseSeed + 304), 8.0 * Fbm(p, radiusKm / 60.0, 4, m_noiseSeed + 305), 8.0 * Fbm(p, radiusKm / 60.0, 4, m_noiseSeed + 306));
+		rich = Soft(Fbm(p, radiusKm / 150.0, 3, m_noiseSeed + 307), -0.1, 0.2);
+		// lower in places, over a few dozen km
+		size = 0.55 + 0.45 * Soft(Fbm(p, radiusKm / 25.0, 4, m_noiseSeed + 303, 0.6), -0.2, 0.3);
+	}
+	double cells = 0.0, typical = 0.0;
+	if (rich < 1.0) {
+		cells += (1.0 - rich) * DuneTileAt(tiles[0], p, radiusKm, shift, DUNE_CELL_KM, 0.3, samples);
+		typical += (1.0 - rich) * tiles[0].mean;
+	}
+	if (rich > 0.0) {
+		cells += rich * DuneTileAt(tiles[1], p, radiusKm, shift, DUNE_CELL_KM, 1.0, samples);
+		typical += rich * tiles[1].mean;
+	}
+	double height = cells;
+	// smaller ones in the flats between them, which add nothing on average
+	const double flat = 1.0 - Soft(cells, 0.7 * typical, 0.6 * typical);
+	if (flat > 0.0)
+		height += flat * DUNE_SMALL * (DuneTileAt(tiles[0], p, radiusKm, shift, DUNE_SMALL * DUNE_CELL_KM, 2.2, samples) - tiles[0].mean);
+
+	// on bodies with little relief they are lower
+	const double limit = std::min(0.02 * m_reliefLimit / 150.0, 1.0);
+	const double metres = amount * size * limit * DUNE_CELL_KM * 1000.0;
+	// They average out to the ground, so that patches of any detail meet. The exception is low ground, which has
+	// no room to go lower: there they rise above it, or they would be cut off flat at the sea's level.
+	const double room = m_seaLevel > NONE_LOW ? std::max(point.height - m_seaLevel, 0.0) : 1e30;
+	return std::max(metres * height - std::min(metres * typical, room), -room);
 }
 
 double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
@@ -847,6 +1065,7 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 		else
 			out.height = ground + relief;
 		out.shore = g.base;
+		out.height += Dunes(p, out, calm);
 		return;
 	}
 
@@ -909,6 +1128,7 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 		}
 	}
 	out.height = std::max(h, m_seaLevel);
+	out.height += Dunes(p, out, calm);
 }
 
 void TerrainPhysical::GetBaseHeights(const vector3d *vP, double *heightsOut, const size_t count) const
@@ -932,10 +1152,13 @@ void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::
 	double m = point.rain;
 	if (!m_hydro.corridor.Empty())
 		m += 0.55 * m_hydro.corridor.Smooth(point.place);
+	// The noise keeps the edges of deserts and forests from following anything smooth, such as
+	// a valley's distance or a line of equal height, which would draw straight lines and arcs.
+	m += 0.1 * std::clamp(Fbm(p, 60.0, 8, m_noiseSeed + 73, 0.6) / 0.35, -1.0, 1.0);
 	if (point.carved) {
-		// water gathers on valley floors, so they are greener than the ridges. The noise keeps the
-		// edge from following the valley's distance, which would draw straight lines and arcs.
-		m += 0.4 * point.valley * point.valley - 0.12 * (1.0 - point.valley) + 0.1 * std::clamp(Fbm(p, 60.0, 8, m_noiseSeed + 73, 0.6) / 0.35, -1.0, 1.0);
+		// Water gathers on valley floors, so they are greener than the ridges. This grows with the valleys,
+		// which only begin at some height: all at once, it would draw an edge along that height.
+		m += Soft(point.valleyRoom, 0.0, 300.0) * (0.4 * point.valley * point.valley - 0.12 * (1.0 - point.valley));
 		// crests of high ground are bare, rock above scree
 		const double alpine = (h0 - sea) / std::min(m_reliefLimit, 7000.0) + 0.07 * Fbm(p, 40.0, 6, m_noiseSeed + 72, 0.6) / 0.35;
 		const double crest = 1.0 - Soft(point.valley, 0.35, 0.3);
@@ -943,7 +1166,7 @@ void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::
 		paint(M::GRAVEL, Soft(alpine, 0.24, 0.06) * crest);
 	}
 	const double T = point.temperature - m_state.lapse * 0.6 * std::max(h0 - sea, 0.0);
-	const double desert = 1.0 - Soft(m, 0.13, 0.025);
+	const double desert = 1.0 - Soft(m, 0.13, 0.05);
 	const double hot = Soft(T, 280.0, 5.0);
 	// dune seas in the hot desert's lows; bare stony plains only where it is driest. (Not under the sea:
 	// sand there is drawn in place of the water, for barrier islands.)
@@ -951,18 +1174,18 @@ void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::
 		const double dunes = Soft(Fbm(p, 3.2, 3, m_noiseSeed + 71) - 0.9 * (h0 - sea) / m_reliefLimit, -0.05, 0.06);
 		paint(M::SAND, desert * hot * dunes);
 	}
-	paint(M::GRAVEL, 1.0 - Soft(m, 0.05, 0.02));
+	paint(M::GRAVEL, 1.0 - Soft(m, 0.05, 0.04));
 	paint(M::SOIL, desert);
 	const double life = m_inputs.life;
 	if (life >= 0.02) {
 		// where life reaches: the wetter it must be, the less of it there is
 		const double need = 0.15 / std::pow(std::max(life, 0.03), 0.75);
-		const double green = Soft(m, need, 0.03);
+		const double green = Soft(m, need, 0.05);
 		const double warm = Soft(T, 268.0, 2.0);
 		if (life >= 0.3) {
 			// rainforest and temperate forest where wet and warm, boreal forest where cold and wet,
 			// savanna and prairie where drier, tundra beyond the trees
-			const double trees = Soft(m, 0.42 + 0.1 * Soft(T, 292.0, 6.0), 0.03) * Soft(T, 270.0, 3.0);
+			const double trees = Soft(m, 0.42 + 0.1 * Soft(T, 292.0, 6.0), 0.05) * Soft(T, 270.0, 3.0);
 			paint(M::FOREST, green * trees);
 			paint(M::TUNDRA, green * (1.0 - warm));
 			paint(M::GRASS, green);
@@ -971,7 +1194,7 @@ void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::
 			paint(M::TUNDRA, green);
 		}
 	}
-	paint(M::SOIL, 1.0 - Soft(m, 0.2, 0.03));
+	paint(M::SOIL, 1.0 - Soft(m, 0.2, 0.05));
 }
 
 // What lies on the ground, first come first served, as in the lab (materials.py, stage2)

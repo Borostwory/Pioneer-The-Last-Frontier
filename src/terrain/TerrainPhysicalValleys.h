@@ -84,6 +84,7 @@ public:
 	struct Cut {
 		double cut = 0.0; // metres below the map's height; below 0 on the ridges
 		double average = 0.0; // the depth the valleys remove on average here
+		double carved = 0.0; // metres the valleys themselves cut, without the inlets near the sea and the dips of rivers
 		double riverEdge = 1e30; // metres from the edge a side river is drawn with, below 0 in it
 		double riverWidth = 0.0; // metres, as it's drawn
 		double quiet = 1.0; // 0 along a side river or at a small lake: what's finer than it stays out of its way

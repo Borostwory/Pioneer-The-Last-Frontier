@@ -738,6 +738,7 @@ TerrainValleys::Cut TerrainValleys::At(const vector3d &p, const double height, c
 	// the whole-body map is the ground truth, so detail averages out to it: valleys lie below
 	// the map's height and ridges above it, by the valleys' average depth
 	out.average = limited(expect);
+	out.carved = limited(depth);
 	out.cut = limited(depth) + drown - out.average + channel;
 	out.quiet = quiet;
 	return out;

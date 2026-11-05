@@ -73,6 +73,7 @@ private:
 		double lakeField = 0.0;
 		bool carved = false; // valleys are cut here
 		double valley = 0.0; // 0 on the ridges, 1 on the valley floors
+		double valleyRoom = 0.0; // metres of ground the valleys may cut into here
 		bool hasRiver = false;
 		TerrainHydro::River river;
 		double sideEdge = 1e30; // metres from the edge of a side river, below 0 in it
@@ -100,7 +101,10 @@ private:
 	// cuts the valleys into point.g.base and returns the peaks along the ridges; calm: 0..1, how much of them
 	double CutValleys(const vector3d &p, Point &point, double plainGround, double calm) const;
 	void BuildShares();
+	void BuildSandSeas();
 	double OwnRelief(const vector3d &p, const Ground &g) const;
+	// metres above the ground, on the sand of a sand sea; calm: 0..1, 0 at a river
+	double Dunes(const vector3d &p, const Point &point, double calm) const;
 	double Keep(const Ground &g) const;
 	double Warp(const vector3d &p) const;
 	double Lag(const vector3d &p) const;
@@ -128,6 +132,7 @@ private:
 	TerrainHydro m_hydro;
 	TerrainValleys m_valleys;
 	TerrainHydro::Field m_ground; // the ground on a grid, which all else keeps to
+	TerrainHydro::Field m_sandSea; // the share of sand within about 60 km; empty if there is none
 	double m_valleyAmount = 0.0;
 	double m_valleySea = 0.0; // what valleys count their depth from
 	std::string m_sharesReadout;

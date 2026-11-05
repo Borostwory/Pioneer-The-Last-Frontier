@@ -335,7 +335,8 @@ float materialBumpStrength(int m)
 	if (m == MATERIAL_DUST) return 0.25;
 	if (m == MATERIAL_LAVA || m == MATERIAL_ICE) return 0.35;
 	if (m == MATERIAL_SNOW || m == MATERIAL_ASH) return 0.5;
-	if (m == MATERIAL_SAND || m == MATERIAL_LAVA_FLOW) return 0.6;
+	if (m == MATERIAL_SAND) return 0.25;
+	if (m == MATERIAL_LAVA_FLOW) return 0.6;
 	return 1.0;
 }
 
