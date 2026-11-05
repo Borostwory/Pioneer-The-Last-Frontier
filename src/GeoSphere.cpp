@@ -106,28 +106,39 @@ void GeoSphere::SetLodDistanceScale(const double scale)
 	s_lodDistanceScale = Clamp(scale, 1.0, 30.0);
 }
 
-// How a planet is drawn from high orbit, for comparing them (Terrain Debug,
-// config PlanetOrbitSurface): the far texture; the surface tiles alone, with
-// the far texture kept but not drawn, so switching is instant; or the tiles
-// with the detail distance kept up in high orbit too, as fine as at mid altitude.
+// How a planet is drawn from high orbit (Terrain Debug, config PlanetOrbitSurface).
+// Automatic: tiles with the detail distance kept up in high orbit, as fine as at
+// mid altitude, where detail is fixed in space, since they only compute what is on
+// screen; elsewhere the far texture. The others are for comparing them: the far
+// texture; the surface tiles alone; or the tiles with the detail kept up. With those
+// the far texture is kept even while it isn't drawn, so switching is instant.
 enum OrbitSurface {
+	ORBIT_AUTOMATIC = -1,
 	ORBIT_FAR_TEXTURE = 0,
 	ORBIT_TILES = 1,
 	ORBIT_TILES_FULL_DETAIL = 2
 };
 
-static int GetOrbitSurface()
+static int ChosenOrbitSurface()
 {
-	return Clamp(Pi::config->Int("PlanetOrbitSurface", ORBIT_FAR_TEXTURE), 0, 2);
+	return Clamp(Pi::config->Int("PlanetOrbitSurface", ORBIT_AUTOMATIC), int(ORBIT_AUTOMATIC), int(ORBIT_TILES_FULL_DETAIL));
+}
+
+static int GetOrbitSurface(const Terrain *terrain)
+{
+	const int chosen = ChosenOrbitSurface();
+	if (chosen != ORBIT_AUTOMATIC)
+		return chosen;
+	return terrain->HasFixedDetail() ? ORBIT_TILES_FULL_DETAIL : ORBIT_FAR_TEXTURE;
 }
 
 // The detail distance setting applies in full at mid altitude (about 200 to
 // 2,000 km on Earth), where it shows most. Near the ground the terrain close
 // by is already at full detail and the extra patches cost the most; in high
 // orbit the far texture (TerrainFarTexture) draws the detail instead of the
-// mesh. Both get a reduced value. Altitude is in planet radii, so this scales
-// with body size.
-static double LodDistanceAtAltitude(const double altitude)
+// mesh, if it is the one in use (keepHighOrbit false). Both get a reduced value.
+// Altitude is in planet radii, so this scales with body size.
+static double LodDistanceAtAltitude(const double altitude, const bool keepHighOrbit)
 {
 	auto smoothStep = [](const double edge0, const double edge1, const double x) {
 		const double t = Clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
@@ -135,7 +146,7 @@ static double LodDistanceAtAltitude(const double altitude)
 	};
 	const double peak = s_lodDistanceScale;
 	const double reduced = std::min(peak, std::max(4.0, peak * 0.35));
-	const double highOrbit = GetOrbitSurface() == ORBIT_TILES_FULL_DETAIL ? 1.0 : 1.0 - smoothStep(0.3, 1.0, altitude);
+	const double highOrbit = keepHighOrbit ? 1.0 : 1.0 - smoothStep(0.3, 1.0, altitude);
 	const double weight = smoothStep(0.003, 0.03, altitude) * highOrbit;
 	return reduced + (peak - reduced) * weight;
 }
@@ -537,7 +548,7 @@ void GeoSphere::Update()
 				ProcessSplitResults();
 			}
 			FrontierLog::Timed timed(FrontierLog::PART_LOD);
-			m_lodDistance = LodDistanceAtAltitude(m_tempCampos.Length() - 1.0);
+			m_lodDistance = LodDistanceAtAltitude(m_tempCampos.Length() - 1.0, GetOrbitSurface(m_terrain.Get()) == ORBIT_TILES_FULL_DETAIL);
 			for (int i = 0; i < NUM_PATCHES; i++) {
 				m_patches[i]->LODUpdate(m_tempCampos, m_tempFrustum);
 			}
@@ -622,7 +633,10 @@ void GeoSphere::SetCityGlowData(const vector3d &campos, Graphics::CityGlowDataBl
 // patches' vertices are further apart than its texels.
 void GeoSphere::SetFarTexture(const vector3d &campos, const double pixelAngle, const double spacingPerMetre)
 {
-	const int size = TerrainFarTexture::ConfiguredSize();
+	const int orbitSurface = GetOrbitSurface(m_terrain.Get());
+	// (no bake that nothing will draw, unless it's there to be compared)
+	const bool unused = ChosenOrbitSurface() == ORBIT_AUTOMATIC && orbitSurface != ORBIT_FAR_TEXTURE;
+	const int size = unused ? 0 : TerrainFarTexture::ConfiguredSize();
 	const bool star = GetSystemBody()->GetSuperType() == SystemBody::SUPERTYPE_STAR;
 	if (size == 0 || star || (m_farTexture && m_farTexture->GetSize() != size))
 		m_farTexture.reset();
@@ -655,7 +669,7 @@ void GeoSphere::SetFarTexture(const vector3d &campos, const double pixelAngle, c
 			// patches seen edge-on hand over up to half as far (terrain-far.glsl)
 			const double top = 1.0 + GetMaxFeatureHeight();
 			const double farthest = (std::sqrt(camDist * camDist - 1.0) + std::sqrt(top * top - 1.0)) * GetSystemBody()->GetRadius();
-			if (GetOrbitSurface() == ORBIT_FAR_TEXTURE && farthest > handover * (1.0 - 0.5 * GetLodForeshortening()) && !(s_debugFlags & DebugFlags::DEBUG_PATCHDEPTH))
+			if (orbitSurface == ORBIT_FAR_TEXTURE && farthest > handover * (1.0 - 0.5 * GetLodForeshortening()) && !(s_debugFlags & DebugFlags::DEBUG_PATCHDEPTH))
 				fade = m_farTexture->GetFade();
 		}
 	}
@@ -677,7 +691,7 @@ void GeoSphere::SetSurfaceTiles(const double pixelAngle)
 		tiles = TerrainSurfaceTiles::Get(2 * (s_patchContext->GetEdgeLen() - 3)); // twice the vertex gaps
 	if (tiles) {
 		// only where finer than the far texture, which is sharper from afar
-		const double farTexel = m_farTexture && GetOrbitSurface() == ORBIT_FAR_TEXTURE ? m_farTexture->GetTexelMetres() / GetSystemBody()->GetRadius() : 0.0;
+		const double farTexel = m_farTexture && GetOrbitSurface(m_terrain.Get()) == ORBIT_FAR_TEXTURE ? m_farTexture->GetTexelMetres() / GetSystemBody()->GetRadius() : 0.0;
 		tiles->Update(this, m_visiblePatches, pixelAngle, farTexel);
 	}
 	m_surfaceMaterial->SetTexture("surfaceTileColour"_hash, tiles ? tiles->GetColour() : nullptr);

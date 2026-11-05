@@ -78,9 +78,10 @@ local dry = CustomSystemBody:new('Test Dry', 'PLANET_TERRESTRIAL')
 	:ice_cover(f(5,100))
 	:life(f(0,1))
 
--- dust, sand in the basins, caps, dry lake floors
+-- dust, sand in the basins, caps, dry lake floors. This seed gives it highlands and lowlands, and old
+-- valleys: the two are a matter of chance on a world like this.
 local mars = CustomSystemBody:new('Test Mars', 'PLANET_TERRESTRIAL')
-	:seed(90215)
+	:seed(90220)
 	:radius(f(533,1000))
 	:mass(f(107,1000))
 	:temp(240)
