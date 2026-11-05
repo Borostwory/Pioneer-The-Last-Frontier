@@ -2,6 +2,7 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 #include "LuaDev.h"
+#include "FrontierLog.h"
 #include "Frame.h"
 #include "Game.h"
 #include "LuaConstants.h"
@@ -17,6 +18,7 @@
 #include "galaxy/GalaxyGenerator.h"
 #include "galaxy/Sector.h"
 #include "surface/Excursion.h"
+#include "terrain/Terrain.h"
 #include <algorithm>
 #include <sstream>
 
@@ -465,6 +467,69 @@ static int l_dev_place_on_surface(lua_State *l)
 	return 0;
 }
 
+/*
+ * The places of a kind of terrain feature on a planet or moon, as an array of
+ * { lat, lon, size } (radians, metres). Empty if its terrain has none, as with
+ * the classic generator. Kinds: river, fork, mouth, lake, coast, peak.
+ *
+ * > Dev.GetTerrainFeatures(body, kind)
+ */
+static int l_dev_get_terrain_features(lua_State *l)
+{
+	Body *body = LuaObject<Body>::CheckFromLua(1);
+	const std::string kind = luaL_checkstring(l, 2);
+	lua_newtable(l);
+	if (!body->IsType(ObjectType::PLANET))
+		return 1;
+	const Terrain *terrain = static_cast<Planet *>(body)->GetTerrain();
+	if (!terrain)
+		return 1;
+	int index = 0;
+	for (const Terrain::Feature &feature : terrain->FindFeatures(kind)) {
+		lua_newtable(l);
+		// as Dev.PlaceOnSurface reads them
+		lua_pushnumber(l, asin(std::max(-1.0, std::min(1.0, feature.position.y))));
+		lua_setfield(l, -2, "lat");
+		lua_pushnumber(l, atan2(feature.position.x, feature.position.z));
+		lua_setfield(l, -2, "lon");
+		lua_pushnumber(l, feature.size);
+		lua_setfield(l, -2, "size");
+		lua_rawseti(l, -2, ++index);
+	}
+	return 1;
+}
+
+/*
+ * What the terrain has at a latitude and longitude (radians), as text; an
+ * empty string if its generator can't say.
+ *
+ * > Dev.DescribeTerrain(body, latitude, longitude)
+ */
+static int l_dev_describe_terrain(lua_State *l)
+{
+	Body *body = LuaObject<Body>::CheckFromLua(1);
+	const double latitude = luaL_checknumber(l, 2);
+	const double longitude = luaL_checknumber(l, 3);
+	std::string text;
+	if (body->IsType(ObjectType::PLANET)) {
+		if (const Terrain *terrain = static_cast<Planet *>(body)->GetTerrain())
+			text = terrain->DescribePoint(vector3d(cos(latitude) * sin(longitude), sin(latitude), cos(latitude) * cos(longitude)));
+	}
+	lua_pushstring(l, text.c_str());
+	return 1;
+}
+
+/*
+ * Adds a line to frontier_log.txt.
+ *
+ * > Dev.LogNote(text)
+ */
+static int l_dev_log_note(lua_State *l)
+{
+	FrontierLog::Note(luaL_checkstring(l, 1));
+	return 0;
+}
+
 void LuaDev::Register()
 {
 	lua_State *l = Lua::manager->GetLuaState();
@@ -477,6 +542,9 @@ void LuaDev::Register()
 		{ "FindSystemsWithStarType", l_dev_find_systems_with_star_type },
 		{ "TeleportNearBody", l_dev_teleport_near_body },
 		{ "PlaceOnSurface", l_dev_place_on_surface },
+		{ "GetTerrainFeatures", l_dev_get_terrain_features },
+		{ "DescribeTerrain", l_dev_describe_terrain },
+		{ "LogNote", l_dev_log_note },
 		{ 0, 0 }
 	};
 

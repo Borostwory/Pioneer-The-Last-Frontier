@@ -3,7 +3,8 @@
 
 -- Debug tab to put the player's ship on any planet or moon of the current
 -- system: landed, or a given height above the ground, at any latitude and
--- longitude, for looking at terrain.
+-- longitude, for looking at terrain. Finds rivers and other features of the
+-- physical surface generator, and says what is under the ship.
 
 local Game   = require 'Game'
 local Event  = require 'Event'
@@ -23,6 +24,16 @@ local colors = ui.theme.colors
 -- heights to pick from, km
 local presets = { 0.03, 0.1, 0.3, 1, 3, 10, 30, 100 }
 
+-- what can be found; size says how to read a feature's size in metres
+local featureKinds = {
+	{ id = "river", label = "River", size = "wide" },
+	{ id = "fork", label = "Y fork", size = "wide" },
+	{ id = "mouth", label = "River's end", size = "wide" },
+	{ id = "lake", label = "Lake", size = "across" },
+	{ id = "coast", label = "Coast" },
+	{ id = "peak", label = "Mountain", size = "above sea" },
+}
+
 local state = {
 	system = nil,   ---@type SystemPath?
 	bodies = {},    -- { sbody = SystemBody, depth = integer }
@@ -37,6 +48,18 @@ local state = {
 	latText = "0",
 	lonText = "0",
 	altText = "1",
+
+	-- the feature finder
+	found = {},          -- kind id -> features of the body below
+	foundBody = nil,
+	kind = nil,          -- the kind in the list
+	list = {},           -- in the order they are visited
+	listIdx = 0,
+	largestFirst = false,
+
+	-- what is under the ship, read a few times a second
+	underShip = "",
+	underShipFrames = 0,
 }
 
 --=============================================================================
@@ -155,6 +178,70 @@ end
 
 --=============================================================================
 
+local function unitVector(lat, lon)
+	return math.cos(lat) * math.sin(lon), math.sin(lat), math.cos(lat) * math.cos(lon)
+end
+
+local function featuresOf(body, kindId)
+	if state.foundBody ~= body then
+		state.foundBody = body
+		state.found = {}
+	end
+	if not state.found[kindId] then
+		state.found[kindId] = Dev.GetTerrainFeatures(body, kindId)
+	end
+	return state.found[kindId]
+end
+
+local function shipIsNear(entry)
+	return Game.player.frameBody == entry.sbody.body
+end
+
+-- list the features of a kind, nearest the ship first (or the position in the fields, if it is
+-- away from the body), or largest first
+local function makeList(entry, kind)
+	local x0, y0, z0
+	local lat, lon
+	if shipIsNear(entry) then lat, lon = Game.player:GetGroundPosition() end
+	if not lat then lat, lon = math.deg2rad(state.latitude), math.deg2rad(state.longitude) end
+	x0, y0, z0 = unitVector(lat, lon)
+
+	local list = {}
+	for i, feature in ipairs(featuresOf(entry.sbody.body, kind.id)) do
+		local x, y, z = unitVector(feature.lat, feature.lon)
+		list[i] = { feature = feature, closeness = x * x0 + y * y0 + z * z0 }
+	end
+	if state.largestFirst then
+		table.sort(list, function(a, b) return a.feature.size > b.feature.size end)
+	else
+		table.sort(list, function(a, b) return a.closeness > b.closeness end)
+	end
+	state.kind = kind
+	state.list = list
+	state.listIdx = 0
+end
+
+local function formatLength(metres)
+	if metres >= 10000 then return string.format("%.0f km", metres / 1000) end
+	if metres >= 1000 then return string.format("%.1f km", metres / 1000) end
+	return string.format("%.0f m", metres)
+end
+
+-- to the next in the list, or the one before: the fields show it, and the ship goes if it can
+local function visit(step, canGo)
+	local count = #state.list
+	if count == 0 then return end
+	state.listIdx = (state.listIdx + step - 1) % count + 1
+	local feature = state.list[state.listIdx].feature
+	state.latitude = math.rad2deg(feature.lat)
+	state.longitude = math.rad2deg(feature.lon)
+	updateTexts()
+	if canGo then go() end
+	Dev.LogNote(string.format("went to %s %d of %d, size %.0f m, lat %.4f lon %.4f, height %s", state.kind.label, state.listIdx, count, feature.size, state.latitude, state.longitude, state.landed and "landed" or (state.altitude .. " km")))
+end
+
+--=============================================================================
+
 local function drawBodyList()
 	ui.child("surfaceBodyList", Vector2(0, ui.getTextLineHeightWithSpacing() * 10), function()
 		for i, entry in ipairs(state.bodies) do
@@ -162,6 +249,12 @@ local function drawBodyList()
 			local label = string.format("%s%s  [%s, %.0f km]##surfaceBody%d",
 				string.rep("    ", entry.depth), sbody.name, sbody.type:lower(), sbody.radius / 1000, i)
 			if ui.selectable(label, i == state.bodyIdx) then
+				if state.bodyIdx ~= i then
+					-- the list belongs to the body it was made on
+					state.kind = nil
+					state.list = {}
+					state.listIdx = 0
+				end
 				state.bodyIdx = i
 			end
 		end
@@ -247,12 +340,76 @@ local function validPosition()
 	return lat and lon and math.abs(lat) <= 90 and math.abs(lon) <= 180
 end
 
-local function drawGo(entry)
+-- nil if the ship can be put somewhere, else why not
+local function whyNotGo()
 	local flightState = Game.player:GetFlightState()
 	if Game.GetExcursionMode() ~= "ship" then
-		ui.textColored(colors.alertYellow, "Get back aboard the ship first")
+		return "Get back aboard the ship first"
 	elseif flightState ~= "FLYING" and flightState ~= "LANDED" then
-		ui.textColored(colors.alertYellow, "Undock first (ship is {})" % { flightState:lower() })
+		return "Undock first (ship is {})" % { flightState:lower() }
+	end
+	return nil
+end
+
+local function drawFinder(entry)
+	if not entry.sbody.body or not canLand(entry.sbody) then return end
+
+	ui.text("Find and go there, with the height set below:")
+	local canGo = whyNotGo() == nil
+	for i, kind in ipairs(featureKinds) do
+		if i > 1 then ui.sameLine() end
+		if ui.button("{}##find{}" % { kind.label, kind.id }) then
+			makeList(entry, kind)
+			visit(1, canGo)
+		end
+	end
+
+	local changed, value = ui.checkbox("Largest first (nearest to the ship if off)", state.largestFirst)
+	if changed then
+		state.largestFirst = value
+		if state.kind then makeList(entry, state.kind) end
+	end
+
+	if state.kind then
+		local count = #state.list
+		if count == 0 then
+			ui.textColored(colors.alertYellow, "None on this body: {}" % { state.kind.label:lower() })
+		else
+			if ui.button("Previous##find") then visit(-1, canGo) end
+			ui.sameLine()
+			if ui.button("Next##find") then visit(1, canGo) end
+			ui.sameLine()
+			if state.listIdx > 0 then
+				local at = state.list[state.listIdx]
+				local away = math.acos(math.max(-1, math.min(1, at.closeness))) * entry.sbody.radius
+				local size = state.kind.size and ", {} {}" % { formatLength(at.feature.size), state.kind.size } or ""
+				ui.text("{} {} of {}{}, was {} from the ship" % { state.kind.label, state.listIdx, count, size, formatLength(away) })
+			end
+		end
+	end
+end
+
+-- what is under the ship, if the terrain can say
+local function drawUnderShip(entry)
+	if not entry.sbody.body or not canLand(entry.sbody) or not shipIsNear(entry) then return end
+
+	state.underShipFrames = state.underShipFrames - 1
+	if state.underShipFrames <= 0 then
+		state.underShipFrames = 20
+		local lat, lon = Game.player:GetGroundPosition()
+		state.underShip = lat and Dev.DescribeTerrain(entry.sbody.body, lat, lon) or ""
+	end
+	if state.underShip ~= "" then
+		ui.separator()
+		ui.text("Under the ship:")
+		ui.text(state.underShip)
+	end
+end
+
+local function drawGo(entry)
+	local why = whyNotGo()
+	if why then
+		ui.textColored(colors.alertYellow, why)
 	elseif not validPosition() then
 		ui.textColored(colors.alertYellow, "Fix the latitude or longitude first")
 	elseif ui.button("Put the ship on {}" % { entry.sbody.name }) then
@@ -266,6 +423,12 @@ Event.Register("onGameEnd", function()
 	state.system = nil
 	state.bodies = {}
 	state.bodyIdx = nil
+	state.found = {}
+	state.foundBody = nil
+	state.kind = nil
+	state.list = {}
+	state.listIdx = 0
+	state.underShip = ""
 end)
 
 debugView.registerTab("DebugSurface", {
@@ -287,10 +450,13 @@ debugView.registerTab("DebugSurface", {
 		end
 
 		ui.separator()
+		drawFinder(entry)
+		ui.separator()
 		drawPosition()
 		ui.separator()
 		drawAltitude(entry)
 		ui.separator()
 		drawGo(entry)
+		drawUnderShip(entry)
 	end
 })

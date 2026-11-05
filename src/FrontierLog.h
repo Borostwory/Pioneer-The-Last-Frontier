@@ -1,0 +1,63 @@
+// Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+// Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+#ifndef _FRONTIERLOG_H
+#define _FRONTIERLOG_H
+
+#include <string>
+
+// A running record of the game for working on The Last Frontier, in frontier_log.txt in the
+// user's Pioneer folder (the last run's is frontier_log_previous.txt). Once a second: where
+// the ship is, what is under it, frame times and terrain speed. Any frame much longer than
+// usual gets its own line, with where its time went. Switched by the FrontierLog config key
+// and in the debug window. Everything here but TerrainQuery is for the main thread only.
+namespace FrontierLog {
+	enum Part {
+		PART_STEP, // Game::TimeStep
+		PART_SPHERES, // updating the terrain, of which:
+		PART_RESULTS, // taking finished patches
+		PART_LOD, // choosing which patches to split or merge
+		PART_FAR, // the far texture
+		PART_VIEW, // View::Update
+		PART_DRAW, // View::Draw3D
+		PART_FLUSH, // sending the frame to the renderer
+		PART_COUNT
+	};
+
+	// adds the time it lives to a part of this frame
+	class Timed {
+	public:
+		explicit Timed(Part part);
+		~Timed();
+		Timed(const Timed &) = delete;
+		Timed &operator=(const Timed &) = delete;
+
+	private:
+		Part m_part;
+		long long m_start;
+	};
+
+	// adds the time it lives to this frame's height queries, such as collision
+	class TerrainQuery {
+	public:
+		TerrainQuery();
+		~TerrainQuery();
+		TerrainQuery(const TerrainQuery &) = delete;
+		TerrainQuery &operator=(const TerrainQuery &) = delete;
+
+	private:
+		long long m_start;
+	};
+
+	// at the end of each frame
+	void EndFrame(double frameMs, double physicsMs, double guiMs);
+	// a line in the log
+	void Note(const std::string &text);
+	// a line with everything about here, and a comment
+	void Mark(const std::string &comment);
+
+	bool Enabled();
+	void SetEnabled(bool enabled);
+} // namespace FrontierLog
+
+#endif // _FRONTIERLOG_H

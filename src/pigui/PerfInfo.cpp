@@ -2,6 +2,7 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 #include "PerfInfo.h"
+#include "FrontierLog.h"
 #include "Frame.h"
 #include "Game.h"
 #include "GameConfig.h"
@@ -683,6 +684,20 @@ void PiGui::PerfInfo::DrawTerrainDebug()
 // registered from Lua with mod = true (pigui/views/debug.lua)
 void PiGui::PerfInfo::DrawFrontierTab()
 {
+	// the running record (FrontierLog), with a place for a comment about what is on screen
+	bool writeLog = FrontierLog::Enabled();
+	if (ImGui::Checkbox("Write frontier_log.txt", &writeLog))
+		FrontierLog::SetEnabled(writeLog);
+	ImGui::SameLine();
+	static char s_comment[256] = "";
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+	ImGui::InputText("##frontierComment", s_comment, sizeof(s_comment));
+	ImGui::SameLine();
+	if (ImGui::Button("Mark in log")) {
+		FrontierLog::Mark(s_comment);
+		s_comment[0] = 0;
+	}
+
 	if (ImGui::BeginTabBar("FrontierTabs")) {
 		if (BeginDebugTab(s_planetIcon, "Terrain and GPU")) {
 			DrawFrontierTerrain();
@@ -788,8 +803,10 @@ void PiGui::PerfInfo::DrawFrontierTerrain()
 	const double perPatchUs = stats.patches ? double(stats.microseconds) / double(stats.patches) : 0.0;
 	ImGui::Text("Patch generation: %llu jobs, %llu patches", (unsigned long long)stats.jobs, (unsigned long long)stats.patches);
 	ImGui::Text("Generation CPU time: %.1f ms total, %.1f us per patch", totalMs, perPatchUs);
-	if (ImGui::Button("Reset Patch Stats"))
+	if (ImGui::Button("Reset Patch Stats")) {
 		ResetGeoPatchGenStats();
+		Terrain::ResetSpeedCounters();
+	}
 }
 
 void PiGui::PerfInfo::DrawGeology()

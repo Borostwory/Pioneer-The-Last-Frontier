@@ -164,7 +164,9 @@ void TerrainCraters::AddSite(const Crater &crater, const double spacing, std::ve
 	s.ratio = crater.diameter / m_transition;
 	s.large = crater.diameter > 0.05 * m_radiusKm;
 	s.reach = crater.fresh > RAYS_FROM ? REACH_RAYS : REACH;
-	s.cosReach = std::cos(std::min(s.reach * angle, M_PI));
+	s.reachAngle = std::min(s.reach * angle, M_PI);
+	s.cosReach = std::cos(s.reachAngle);
+	s.sinReach = std::sin(s.reachAngle);
 
 	// old craters are shallow and broken even with no air; wear from air and water adds to that
 	const double age = std::pow(1.0 - crater.fresh, 2.0) * std::min(1.0, 0.35 + 8.0 / std::max(crater.diameter, 1.0)) * 0.75;
@@ -328,19 +330,46 @@ TerrainCraters::Sample TerrainCraters::At(const vector3d &p) const
 	if (m_listed.empty() && m_sizes.empty())
 		return out;
 
-	// Queries come in runs of nearby points, so the craters around the last one are kept per thread
-	thread_local Nearby nearby;
-	const double maxFrequency = TerrainNoise::s_maxFrequency;
-	if (nearby.owner != m_id || nearby.maxFrequency != maxFrequency || p.Dot(nearby.centre) < nearby.cosRadius) {
-		const double spacing = maxFrequency > 0.0 ? 0.5 / maxFrequency : 0.0;
-		const double radius = std::min(std::max(32.0 * spacing, 4.0 * SMALLEST_KM / m_radiusKm), M_PI);
-		Gather(p, radius, spacing, nearby.sites);
-		nearby.owner = m_id;
-		nearby.maxFrequency = maxFrequency;
-		nearby.centre = p;
-		nearby.cosRadius = std::cos(radius);
+	// Queries come in runs of nearby points, so the craters around them are kept per thread, for the few
+	// band limits a patch uses in turn. The radius covers a whole grid of two patches from its corner.
+	thread_local Nearby views[3];
+	thread_local uint32_t clock = 0;
+	const double band = SphereCells::RoundedBand(TerrainNoise::s_maxFrequency);
+	Nearby *view = nullptr;
+	for (Nearby &n : views) {
+		if (n.owner == m_id && n.band == band && p.Dot(n.centre) >= n.cosRadius) {
+			view = &n;
+			break;
+		}
 	}
-	for (const Site &site : nearby.sites)
-		Accumulate(site, p, out);
+	if (!view) {
+		view = &views[0];
+		for (Nearby &n : views) {
+			if (n.used < view->used)
+				view = &n;
+		}
+		const double spacing = band > 0.0 ? 0.5 / band : 0.0;
+		const double radius = std::min(std::max(100.0 * spacing, 4.0 * SMALLEST_KM / m_radiusKm), M_PI);
+		Gather(p, radius, spacing, view->sites);
+		view->owner = m_id;
+		view->band = band;
+		view->centre = p;
+		view->cosRadius = std::cos(radius);
+		view->cosMargin = 2.0;
+		view->margin = radius / 8.0;
+	}
+	view->used = ++clock;
+	if (p.Dot(view->activeCentre) < view->cosMargin) {
+		const double cosMargin = std::cos(view->margin), sinMargin = std::sin(view->margin);
+		view->active.clear();
+		for (const Site &site : view->sites) {
+			if (site.reachAngle + view->margin >= M_PI || p.Dot(site.centre) >= site.cosReach * cosMargin - site.sinReach * sinMargin)
+				view->active.push_back(&site);
+		}
+		view->activeCentre = p;
+		view->cosMargin = cosMargin;
+	}
+	for (const Site *site : view->active)
+		Accumulate(*site, p, out);
 	return out;
 }

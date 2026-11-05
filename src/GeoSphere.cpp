@@ -3,6 +3,8 @@
 
 #include "GeoSphere.h"
 
+#include "FrontierLog.h"
+
 #include "Aabb.h"
 #include "CityOnPlanet.h"
 
@@ -487,8 +489,10 @@ void GeoSphere::CalculateMaxPatchDepth()
 void GeoSphere::Update()
 {
 	// keeps a bake going while the planet is out of view (it fades in as drawn)
-	if (m_farTexture)
+	if (m_farTexture) {
+		FrontierLog::Timed timed(FrontierLog::PART_FAR);
 		m_farTexture->Update(0.0f);
+	}
 
 	switch (m_initStage) {
 	case eBuildFirstPatches:
@@ -512,7 +516,11 @@ void GeoSphere::Update()
 	} break;
 	case eDefaultUpdateState:
 		if (m_hasTempCampos) {
-			ProcessSplitResults();
+			{
+				FrontierLog::Timed timed(FrontierLog::PART_RESULTS);
+				ProcessSplitResults();
+			}
+			FrontierLog::Timed timed(FrontierLog::PART_LOD);
 			m_lodDistance = LodDistanceAtAltitude(m_tempCampos.Length() - 1.0);
 			for (int i = 0; i < NUM_PATCHES; i++) {
 				m_patches[i]->LODUpdate(m_tempCampos, m_tempFrustum);

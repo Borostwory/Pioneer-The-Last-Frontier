@@ -19,6 +19,7 @@
 #include "graphics/VertexArray.h"
 #include "graphics/VertexBuffer.h"
 #include "terrain/Terrain.h"
+#include "terrain/TerrainNoise.h"
 
 #include <algorithm>
 #include <cmath>
@@ -283,6 +284,11 @@ namespace {
 			std::vector<float> texels(HEIGHTMAP_WIDTH * HEIGHTMAP_HEIGHT, 0.0f);
 			std::vector<vector3d> points(sw);
 			std::vector<double> heights(sw);
+
+			// On the physical generator, only what this grid can show: at full detail it would ask for
+			// all of the body's smallest valleys, for samples tens of km apart. (On the others the
+			// floor stays as it was, for now.)
+			TerrainNoise::ScopedBandLimit bandLimit(m_terrain->HasFixedDetail() ? 0.5 * sw / (2.0 * M_PI) : 0.0);
 
 			for (int row = 0; row < sh; row++) {
 				const double lat = ((row + 0.5) / sh) * M_PI - 0.5 * M_PI;

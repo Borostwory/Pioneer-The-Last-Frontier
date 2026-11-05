@@ -91,8 +91,28 @@ public:
 	virtual double GetTileCraterTop() const { return 0.0; }
 	// True: all detail is fixed in space, so the shaders leave out what they size by the view
 	virtual bool HasFixedDetail() const { return false; }
+	// Water that the height doesn't show, such as rivers and lakes above sea level, within radiusMetres of p
+	virtual bool HasWaterAround(const vector3d &p, double radiusMetres) const { return false; }
 	// what the Terrain Debug window shows of a body's geology
 	virtual std::vector<std::string> GetGeologyInfo() const { return {}; }
+	// starts the physical generator's timers again, for the debug window
+	static void ResetSpeedCounters();
+	// what they have counted, for the log. One call in 16 is timed, so a call count is of those.
+	struct SpeedTotals {
+		uint64_t pointCalls = 0, pointNanos = 0;
+		uint64_t valleyCalls = 0, valleyNanos = 0;
+		uint64_t paintCalls = 0, paintNanos = 0;
+		uint64_t chunks = 0, chunkMicros = 0;
+	};
+	static SpeedTotals GetSpeedTotals();
+	// For the debug tools: the places of a kind of feature (river, fork, mouth, lake, coast, peak),
+	// with a size in metres, and a description of the ground at a point
+	struct Feature {
+		vector3d position;
+		double size;
+	};
+	virtual std::vector<Feature> FindFeatures(const std::string &kind) const { return {}; }
+	virtual std::string DescribePoint(const vector3d &p) const { return {}; }
 
 	Uint32 GetSurfaceEffects() const { return m_surfaceEffects; }
 
@@ -101,7 +121,7 @@ public:
 	// Signed altitude above sea level in metres for a point p on the unit
 	// sphere with terrain height `height` (from GetHeights): negative under
 	// water, where it is the water depth.
-	double GetSurfaceAltitude(const vector3d &p, const double height) const;
+	virtual double GetSurfaceAltitude(const vector3d &p, const double height) const;
 
 	void DebugDump() const;
 

@@ -50,7 +50,7 @@ private:
 	// a crater with what is worked out once, for one view of it
 	struct Site {
 		vector3d centre, axisA, axisB;
-		double cosReach, angle, reach, fade;
+		double cosReach, sinReach, reachAngle, angle, reach, fade;
 		double diameter, fresh, seed, oblique, ratio;
 		double wear, depth, wornDepth, rim;
 		bool large;
@@ -62,12 +62,18 @@ private:
 		double cell; // km
 		uint32_t seed;
 	};
+	// What one thread gathered for one band limit, and of that the craters that reach within a margin of a point
 	struct Nearby {
 		uint64_t owner = 0;
-		double maxFrequency = -1.0;
+		uint32_t used = 0;
+		double band = -1.0;
 		vector3d centre = vector3d(0.0, 0.0, 0.0);
 		double cosRadius = 2.0;
 		std::vector<Site> sites;
+		vector3d activeCentre = vector3d(0.0, 0.0, 0.0);
+		double cosMargin = 2.0;
+		double margin = 0.0;
+		std::vector<const Site *> active;
 	};
 
 	void AddSite(const Crater &crater, double spacing, std::vector<Site> &out) const;

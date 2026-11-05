@@ -68,6 +68,7 @@
 
 #include "pigui/LuaPiGui.h"
 #include "pigui/PerfInfo.h"
+#include "FrontierLog.h"
 #include "pigui/PiGui.h"
 
 #include "sound/AmbientSounds.h"
@@ -977,8 +978,14 @@ void GameLoop::Update(float deltaTime)
 				break;
 			}
 
-			Pi::game->TimeStep(step);
-			BaseSphere::UpdateAllBaseSphereDerivatives();
+			{
+				FrontierLog::Timed timed(FrontierLog::PART_STEP);
+				Pi::game->TimeStep(step);
+			}
+			{
+				FrontierLog::Timed timed(FrontierLog::PART_SPHERES);
+				BaseSphere::UpdateAllBaseSphereDerivatives();
+			}
 
 			accumulator -= step;
 		}
@@ -995,6 +1002,7 @@ void GameLoop::Update(float deltaTime)
 	} else {
 		// paused
 		PROFILE_SCOPED_RAW("Physics Update [paused]")
+		FrontierLog::Timed timed(FrontierLog::PART_SPHERES);
 		BaseSphere::UpdateAllBaseSphereDerivatives();
 	}
 
@@ -1028,13 +1036,22 @@ void GameLoop::Update(float deltaTime)
 	}
 	Frame::GetFrame(Pi::game->GetSpace()->GetRootFrame())->UpdateInterpTransform(Pi::GetGameTickAlpha());
 
-	Pi::GetView()->Update();
-	Pi::GetView()->Draw3D();
+	{
+		FrontierLog::Timed timed(FrontierLog::PART_VIEW);
+		Pi::GetView()->Update();
+	}
+	{
+		FrontierLog::Timed timed(FrontierLog::PART_DRAW);
+		Pi::GetView()->Draw3D();
+	}
 
 	// Kick rendering in the background to avoid write->delete->read issues with UI command processing
 	// This may cause future issues if graphic resources are deleted while in-flight, but OpenGL is
 	// capable of handling that eventuality and it prevents application-scope crashes
-	Pi::renderer->FlushCommandBuffers();
+	{
+		FrontierLog::Timed timed(FrontierLog::PART_FLUSH);
+		Pi::renderer->FlushCommandBuffers();
+	}
 
 #ifdef REMOTE_LUA_REPL
 	Pi::luaConsole->HandleTCPDebugConnections();
@@ -1090,6 +1107,8 @@ void GameLoop::Update(float deltaTime)
 
 	Pi::GetMusicPlayer().Update();
 	Sound::Update(deltaTime);
+
+	FrontierLog::EndFrame(frame_time_real, phys_time, pigui_time);
 
 	perfInfoDisplay->Update(deltaTime);
 	perfInfoDisplay->UpdateCounter(PiGui::PerfInfo::COUNTER_PHYS, phys_time);

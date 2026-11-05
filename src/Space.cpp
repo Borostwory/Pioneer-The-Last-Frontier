@@ -64,6 +64,7 @@ static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vecto
 	const double delta = 20.0 / radius;							 // in radii
 	const double maxSlope = 0.2;								 // 0.0 to 1.0
 	const double maxHeightVariation = maxSlope * delta * radius; // in m
+	const double cityClearance = 6000.0;						 // m of ground free of water around the starport
 
 	matrix3x3d rot_ = rot;
 	vector3d pos_ = pos;
@@ -102,8 +103,8 @@ static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vecto
 			variationMax = (v[i] > variationMax) ? v[i] : variationMax;
 		}
 
-		// check if underwater
-		const bool starportUnderwater = (height <= 0.0);
+		// check if underwater. Rivers and lakes stand above sea level, so the height alone doesn't show them
+		const bool starportUnderwater = (height <= 0.0) || planet->HasWaterAround(pos_, cityClearance);
 
 		//Output("%s: try no: %i, Match found: %i, best variation in previous results %f, variationMax this try: %f, maxHeightVariation: %f, Starport is underwater: %i\n",
 		//	sbody->name.c_str(), tries, (variationWithinLimits && !starportUnderwater), bestVariation, variationMax, maxHeightVariation, starportUnderwater);

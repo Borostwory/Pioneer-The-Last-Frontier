@@ -15,6 +15,7 @@ class Camera;
 class Frame;
 class Space;
 class SystemBody;
+class Terrain;
 
 namespace Graphics {
 	class Renderer;
@@ -42,6 +43,9 @@ public:
 	// keeps the ground around a surface starport at pos uneroded and levels
 	// the ground under it (Terrain::ProtectSite)
 	void ProtectTerrainSite(const SystemBody *starport, const vector3d &pos);
+	const Terrain *GetTerrain() const;
+	// any sea, lake or river within radiusMetres of pos
+	bool HasWaterAround(const vector3d &pos, double radiusMetres) const;
 	// GetTerrainHeight for many directions at once (unit vectors), leaving
 	// out features narrower than minFeature metres (0: none), m from the centre
 	void GetTerrainHeights(const vector3d *dirs, double *heightsOut, size_t count, double minFeature = 0.0) const;

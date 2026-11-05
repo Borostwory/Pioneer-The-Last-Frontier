@@ -3,6 +3,8 @@
 
 #include "TerrainBody.h"
 
+#include "FrontierLog.h"
+
 #include "Frame.h"
 #include "GameSaveError.h"
 #include "GasGiant.h"
@@ -162,6 +164,7 @@ double TerrainBody::GetDrawnTerrainHeight(const vector3d &pos) const
 
 double TerrainBody::GetTerrainHeight(const vector3d &pos_) const
 {
+	FrontierLog::TerrainQuery timed;
 	double radius = m_sbody->GetRadius();
 	if (m_baseSphere) {
 		return radius * (1.0 + m_baseSphere->GetTerrainHeight(pos_));
@@ -179,6 +182,16 @@ double TerrainBody::GetBaseTerrainHeight(const vector3d &pos_) const
 	double h;
 	m_baseSphere->GetTerrain()->GetBaseHeights(&pos_, &h, 1);
 	return radius * (1.0 + h);
+}
+
+const Terrain *TerrainBody::GetTerrain() const
+{
+	return m_baseSphere ? m_baseSphere->GetTerrain() : nullptr;
+}
+
+bool TerrainBody::HasWaterAround(const vector3d &pos, const double radiusMetres) const
+{
+	return m_baseSphere && m_baseSphere->GetTerrain()->HasWaterAround(pos, radiusMetres);
 }
 
 void TerrainBody::ProtectTerrainSite(const SystemBody *starport, const vector3d &pos)

@@ -29,6 +29,21 @@ namespace SphereCells {
 		return double(h >> 8) / 8388607.5 - 1.0;
 	}
 
+	// A band limit rounded up to a half octave, for what is gathered per band. The band limit of a
+	// patch differs a little in every patch, even between the four that are made together; a little
+	// more detail than the grid can show costs nothing, and they can share what they gather.
+	inline double RoundedBand(const double maxFrequency)
+	{
+		if (maxFrequency <= 0.0)
+			return 0.0;
+		thread_local double lastIn = -1.0, lastOut = 0.0;
+		if (maxFrequency != lastIn) {
+			lastIn = maxFrequency;
+			lastOut = std::pow(2.0, std::ceil(2.0 * std::log2(maxFrequency)) / 2.0);
+		}
+		return lastOut;
+	}
+
 	// value noise, -1 to 1
 	inline double Noise(const vector3d &p, const uint32_t seed)
 	{
@@ -60,6 +75,23 @@ namespace SphereCells {
 			if (maxFrequency <= 0.0 || f <= maxFrequency) {
 				const double shift = 17.3 * o;
 				sum += amplitude * Noise(vector3d(p.x * f + shift, p.y * f + shift, p.z * f + shift), seed + uint32_t(o) * 101u);
+			}
+			amplitude *= gain;
+			f *= 2.0;
+		}
+		return sum / total;
+	}
+
+	// Fractal noise that varies faster north to south, for features drawn out along the wind
+	inline double FbmStretched(const vector3d &p, const double frequency, const int octaves, const uint32_t seed, const double squeeze = 3.0, const double gain = 0.55)
+	{
+		const double maxFrequency = TerrainNoise::s_maxFrequency;
+		double sum = 0.0, amplitude = 1.0, total = 0.0, f = frequency;
+		for (int o = 0; o < octaves; o++) {
+			total += amplitude;
+			if (maxFrequency <= 0.0 || f * squeeze <= maxFrequency) {
+				const double shift = 11.7 * o;
+				sum += amplitude * Noise(vector3d(p.x * f + shift, p.y * f * squeeze + shift, p.z * f + shift), seed + uint32_t(o) * 97u);
 			}
 			amplitude *= gain;
 			f *= 2.0;
