@@ -1619,7 +1619,8 @@ void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::
 	if (life >= 0.02) {
 		// where life reaches: the wetter it must be, the less of it there is
 		const double need = 0.15 / std::pow(std::max(life, 0.03), 0.75);
-		const double green = Soft(m, need - 0.03, 0.10);
+		// (no plants on a volcano, of any age)
+		const double green = Soft(m, need - 0.03, 0.10) * (1.0 - point.volcano.influence);
 		const double warm = Soft(T, 268.0, 2.0);
 		if (life >= 0.3) {
 			// rainforest and temperate forest where wet and warm, boreal forest where cold and wet,
