@@ -289,7 +289,7 @@ FrontierLog::TerrainQuery::~TerrainQuery()
 
 bool FrontierLog::Enabled()
 {
-	return Pi::config->Int("FrontierLog", 1) != 0;
+	return Pi::config->Int("FrontierLog", 0) != 0;
 }
 
 void FrontierLog::SetEnabled(const bool enabled)

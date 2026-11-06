@@ -2207,6 +2207,10 @@
     "description": "",
     "message": "Location"
   },
+  "LOCKED_VIDEO_SETTINGS_NOTE": {
+    "description": "Settings window, video tab: under the locked multisampling and scattering settings",
+    "message": "The Last Frontier にはこの2つの設定が必要なため、ロックされています。他の選択肢はこのMODと互換性がありません。"
+  },
   "LOG_CUSTOM": {
     "description": "Label tab for showing custom logged events",
     "message": "カスタムログ"
@@ -2586,6 +2590,22 @@
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "Periapsis"
+  },
+  "ORBIT_SURFACE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the choice of how planets are drawn from high orbit",
+    "message": "軌道から見た惑星"
+  },
+  "ORBIT_SURFACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Planets from orbit' choice",
+    "message": "高軌道から見た惑星の描画方法です。フル詳細は地形を鮮明に保ち、サーフェスタイルは負荷が軽くなります。"
+  },
+  "ORBIT_SURFACE_FULL": {
+    "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the default",
+    "message": "フル詳細"
+  },
+  "ORBIT_SURFACE_TILES": {
+    "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the cheaper one",
+    "message": "サーフェスタイル"
   },
   "ORBIT_VIEW_FOCUS_BODY": {
     "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",

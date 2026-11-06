@@ -428,13 +428,6 @@ static int l_engine_get_multisampling(lua_State *l)
 	return 1;
 }
 
-static int l_engine_set_multisampling(lua_State *l)
-{
-	const int samples = luaL_checkinteger(l, 1);
-	Pi::config->SetInt("AntiAliasingMode", samples);
-	return 0;
-}
-
 static int l_engine_get_planet_detail_level(lua_State *l)
 {
 	lua_pushstring(l, EnumStrings::GetString("DetailLevel", Pi::detail.planets));
@@ -786,16 +779,6 @@ static int l_engine_get_realistic_scattering(lua_State *l)
 	return 1;
 }
 
-static int l_engine_set_realistic_scattering(lua_State *l)
-{
-	const int scattering = luaL_checkinteger(l, 1);
-	if (scattering != Pi::config->Int("RealisticScattering")) {
-		Pi::config->SetInt("RealisticScattering", scattering);
-		Pi::OnChangeDetailLevel();
-	}
-	return 0;
-}
-
 static int l_engine_is_intro_zooming(lua_State *l)
 {
 	if (Pi::intro) {
@@ -1056,13 +1039,11 @@ void LuaEngine::Register()
 		{ "GetTextureCompressionEnabled", l_engine_get_texture_compression_enabled },
 		{ "SetTextureCompressionEnabled", l_engine_set_texture_compression_enabled },
 		{ "GetMultisampling", l_engine_get_multisampling },
-		{ "SetMultisampling", l_engine_set_multisampling },
 
 		{ "GetGpuJobsEnabled", l_engine_get_gpu_jobs_enabled },
 		{ "SetGpuJobsEnabled", l_engine_set_gpu_jobs_enabled },
 
 		{ "GetRealisticScattering", l_engine_get_realistic_scattering },
-		{ "SetRealisticScattering", l_engine_set_realistic_scattering },
 
 		{ "GetPlanetDetailLevel", l_engine_get_planet_detail_level },
 		{ "SetPlanetDetailLevel", l_engine_set_planet_detail_level },

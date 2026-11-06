@@ -162,9 +162,7 @@ private:
 	std::unique_ptr<TerrainFarTexture> m_farTexture;
 	// seconds the planet has been too small on screen to keep it
 	double m_farTextureIdle = 0.0;
-	// campos: planet radii; pixelAngle: radians per pixel; spacingPerMetre:
-	// the patches' estimated vertex spacing per metre of distance
-	void SetFarTexture(const vector3d &campos, double pixelAngle, double spacingPerMetre);
+	void SetFarTexture();
 	// the patch surface tiles (TerrainSurfaceTiles) of the visible patches
 	void SetSurfaceTiles(double pixelAngle);
 	// the far texture as drawn this frame: texel size on the unit sphere and

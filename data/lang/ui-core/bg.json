@@ -2207,6 +2207,10 @@
     "description": "",
     "message": "Местоположение"
   },
+  "LOCKED_VIDEO_SETTINGS_NOTE": {
+    "description": "Settings window, video tab: under the locked multisampling and scattering settings",
+    "message": "The Last Frontier изисква тези две настройки, затова те са заключени. Другите опции не са съвместими с този мод."
+  },
   "LOG_CUSTOM": {
     "description": "Label tab for showing custom logged events",
     "message": "Личен дневник"
@@ -2586,6 +2590,22 @@
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "Периапсида"
+  },
+  "ORBIT_SURFACE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the choice of how planets are drawn from high orbit",
+    "message": "Планети от орбита"
+  },
+  "ORBIT_SURFACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Planets from orbit' choice",
+    "message": "Как се изобразяват планетите от висока орбита. Пълният детайл запазва терена остър; повърхностните плочки струват по-малко."
+  },
+  "ORBIT_SURFACE_FULL": {
+    "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the default",
+    "message": "Пълен детайл"
+  },
+  "ORBIT_SURFACE_TILES": {
+    "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the cheaper one",
+    "message": "Повърхностни плочки"
   },
   "ORBIT_VIEW_FOCUS_BODY": {
     "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",

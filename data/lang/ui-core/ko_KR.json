@@ -2207,6 +2207,10 @@
     "description": "",
     "message": "Location"
   },
+  "LOCKED_VIDEO_SETTINGS_NOTE": {
+    "description": "Settings window, video tab: under the locked multisampling and scattering settings",
+    "message": "The Last Frontier에는 이 두 설정이 필요하므로 잠겨 있습니다. 다른 옵션은 이 모드와 호환되지 않습니다."
+  },
   "LOG_CUSTOM": {
     "description": "Label tab for showing custom logged events",
     "message": "Custom Log"
@@ -2586,6 +2590,22 @@
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "Periapsis"
+  },
+  "ORBIT_SURFACE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the choice of how planets are drawn from high orbit",
+    "message": "궤도에서 본 행성"
+  },
+  "ORBIT_SURFACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Planets from orbit' choice",
+    "message": "높은 궤도에서 행성을 그리는 방식입니다. 전체 디테일은 지형을 선명하게 유지하고, 표면 타일은 부하가 적습니다."
+  },
+  "ORBIT_SURFACE_FULL": {
+    "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the default",
+    "message": "전체 디테일"
+  },
+  "ORBIT_SURFACE_TILES": {
+    "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the cheaper one",
+    "message": "표면 타일"
   },
   "ORBIT_VIEW_FOCUS_BODY": {
     "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",

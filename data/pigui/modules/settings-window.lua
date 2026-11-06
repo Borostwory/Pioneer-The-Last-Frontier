@@ -123,26 +123,6 @@ local function showVideoOptions()
 		if lbl == currentVideoMode then selectedVideoMode = i-1 end
 	end
 
-	local aaModes = {}
-	local aaLabels = {}
-	local maxAAs = Engine.GetMaximumAASamples()
-
-	local curAA = 0
-
-	-- build aa mode list
-	while curAA < maxAAs do
-		if curAA == 0 then
-			table.insert(aaLabels, lui.OFF)
-			aaModes[lui.OFF] = curAA
-			curAA = 2
-		else
-			table.insert(aaLabels, 'x'..curAA)
-			aaModes['x'..curAA] = curAA
-			curAA = curAA * 2
-		end
-	end
-	local selectedAA = keyOf(aaLabels,keyOf(aaModes,Engine.GetMultisampling())) - 1
-
 	local detailLevels = {[lui.VERY_LOW]='VERY_LOW', [lui.LOW]='LOW', [lui.MEDIUM]='MEDIUM', [lui.HIGH]='HIGH', [lui.VERY_HIGH]='VERY_HIGH' }
 	local detailLabels = { lui.VERY_LOW, lui.LOW, lui.MEDIUM, lui.HIGH, lui.VERY_HIGH }
 	local selectedDetail = keyOf(detailLabels,keyOf(detailLevels, Engine.GetPlanetDetailLevel()))-1
@@ -154,16 +134,6 @@ local function showVideoOptions()
 	local textCompress = Engine.GetTextureCompressionEnabled()
 	local gpuJobs = Engine.GetGpuJobsEnabled()
 	local disableScreenshotInfo = Engine.GetDisableScreenshotInfo()
-
-	-- Scattering is still an experimental feature
-	local experimental = "[" .. lui.EXPERIMENTAL .. "] "
-	local scatteringLabels = {
-		lui.SCATTERING_OLD,
-		experimental .. lui.RAYLEIGH_FAST,
-		experimental .. lui.RAYLEIGH_ACCURATE
-	}
-
-	local realisticScattering = Engine.GetRealisticScattering()
 
 	local cityDetail = keyOf(detailLabels,keyOf(detailLevels, Engine.GetCityDetailLevel()))-1
 	local displayNavTunnels = Engine.GetDisplayNavTunnels()
@@ -180,16 +150,10 @@ local function showVideoOptions()
 		Engine.SetVideoResolution(mode.width,mode.height)
 	end
 
-	c,selectedAA = combo(lui.MULTISAMPLING, selectedAA, aaLabels, lui.MULTISAMPLING_DESC)
-	if c then
-		local aa = aaModes[aaLabels[selectedAA+1]]
-		Engine.SetMultisampling(aa)
-	end
-
-	c,realisticScattering = combo(lui.REALISTIC_SCATTERING, realisticScattering, scatteringLabels, lui.REALISTIC_SCATTERING_DESC)
-	if c then
-		Engine.SetRealisticScattering(realisticScattering)
-	end
+	-- (locked: forced in GameConfig.cpp)
+	ui.text(lui.MULTISAMPLING .. ": " .. lui.OFF)
+	ui.text(lui.REALISTIC_SCATTERING .. ": " .. lui.RAYLEIGH_ACCURATE)
+	ui.textWrapped(lui.LOCKED_VIDEO_SETTINGS_NOTE)
 
 	ui.columns(2,"video_checkboxes",false)
 	c,fullscreen = checkbox(lui.FULL_SCREEN, fullscreen)
@@ -712,6 +676,13 @@ local function showModOptions()
 	end
 	if c then
 		Engine.SettingsSetFloat("PlanetLodDistance", newLodDistance)
+	end
+
+	-- how planets are drawn from high orbit (src/GeoSphere.cpp), 1 or 2 in the config; applied immediately
+	local orbitSurface = Engine.SettingsGetInt("PlanetOrbitSurface") == 1 and 0 or 1
+	c,orbitSurface = combo(lui.ORBIT_SURFACE, orbitSurface, { lui.ORBIT_SURFACE_TILES, lui.ORBIT_SURFACE_FULL }, lui.ORBIT_SURFACE_DESC)
+	if c then
+		Engine.SettingsSetInt("PlanetOrbitSurface", orbitSurface + 1)
 	end
 
 	-- Sun shadows of ships, stations and buildings (src/SceneShadows.cpp); applied immediately

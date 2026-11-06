@@ -2207,6 +2207,10 @@
     "description": "",
     "message": "Localización"
   },
+  "LOCKED_VIDEO_SETTINGS_NOTE": {
+    "description": "Settings window, video tab: under the locked multisampling and scattering settings",
+    "message": "The Last Frontier requiere estos dos ajustes, por lo que están bloqueados. Las demás opciones no son compatibles con este mod."
+  },
   "LOG_CUSTOM": {
     "description": "Label tab for showing custom logged events",
     "message": "Registro Personalizado"
@@ -2586,6 +2590,22 @@
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "Perigeo"
+  },
+  "ORBIT_SURFACE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the choice of how planets are drawn from high orbit",
+    "message": "Planetas desde la órbita"
+  },
+  "ORBIT_SURFACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Planets from orbit' choice",
+    "message": "Cómo se dibujan los planetas desde una órbita alta. El detalle completo mantiene nítido el terreno; las teselas de superficie cuestan menos."
+  },
+  "ORBIT_SURFACE_FULL": {
+    "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the default",
+    "message": "Detalle completo"
+  },
+  "ORBIT_SURFACE_TILES": {
+    "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the cheaper one",
+    "message": "Teselas de superficie"
   },
   "ORBIT_VIEW_FOCUS_BODY": {
     "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",

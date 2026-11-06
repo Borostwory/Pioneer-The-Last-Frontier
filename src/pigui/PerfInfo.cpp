@@ -772,30 +772,12 @@ void PiGui::PerfInfo::DrawFrontierTerrain()
 		Pi::config->Save();
 	}
 
-	// the planets' far textures (TerrainFarTexture); off frees them, for A/B
-	// comparison; a new size bakes them again
-	bool farTexture = Pi::config->Int("PlanetFarTexture", 1) != 0;
-	if (ImGui::Checkbox("Far Terrain Texture", &farTexture)) {
-		Pi::config->SetInt("PlanetFarTexture", farTexture ? 1 : 0);
+	// how a planet is drawn from high orbit (GeoSphere.cpp); changes at once
+	int orbitSurface = Pi::config->Int("PlanetOrbitSurface", 2) == 1 ? 0 : 1;
+	if (ImGui::Combo("Orbit Surface", &orbitSurface, "Tiles\0" "Tiles, full detail\0")) {
+		Pi::config->SetInt("PlanetOrbitSurface", orbitSurface + 1);
 		Pi::config->Save();
-	}
-	const int farSize = Pi::config->Int("PlanetFarTextureSize", 1024);
-	int farSizeIndex = farSize >= 2048 ? 2 : (farSize >= 1024 ? 1 : 0);
-	if (ImGui::Combo("Far Texture Size", &farSizeIndex, "512\0" "1024\0" "2048\0")) {
-		Pi::config->SetInt("PlanetFarTextureSize", 512 << farSizeIndex);
-		Pi::config->Save();
-	}
-	if (!TerrainFarTexture::GetLastBakeInfo().empty())
-		ImGui::Text("Last far texture: %s", TerrainFarTexture::GetLastBakeInfo().c_str());
-
-	// how a planet is drawn from high orbit (GeoSphere.cpp); changes at once, as
-	// the far texture stays baked while it isn't drawn, other than in Automatic.
-	// To time the tiles on their own, switch Far Terrain Texture off too.
-	int orbitSurface = std::max(-1, std::min(2, Pi::config->Int("PlanetOrbitSurface", -1))) + 1;
-	if (ImGui::Combo("Orbit Surface", &orbitSurface, "Automatic\0" "Far texture\0" "Tiles\0" "Tiles, full detail\0")) {
-		Pi::config->SetInt("PlanetOrbitSurface", orbitSurface - 1);
-		Pi::config->Save();
-		static const char *const names[] = { "automatic", "far texture", "tiles", "tiles, full detail" };
+		static const char *const names[] = { "tiles", "tiles, full detail" };
 		FrontierLog::Note(std::string("orbit surface: ") + names[orbitSurface]);
 	}
 

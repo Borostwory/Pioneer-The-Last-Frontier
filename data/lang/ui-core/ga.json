@@ -2207,6 +2207,10 @@
     "description": "",
     "message": "Suíomh"
   },
+  "LOCKED_VIDEO_SETTINGS_NOTE": {
+    "description": "Settings window, video tab: under the locked multisampling and scattering settings",
+    "message": "Tá an dá shocrú seo de dhíth ar The Last Frontier, mar sin tá siad faoi ghlas. Níl roghanna eile comhoiriúnach leis an mod seo."
+  },
   "LOG_CUSTOM": {
     "description": "Label tab for showing custom logged events",
     "message": "Custom Log"
@@ -2586,6 +2590,22 @@
   "ORBIT_PERIAPSIS": {
     "description": "Label for the point of an orbit nearest to the orbited body",
     "message": "Periapsis"
+  },
+  "ORBIT_SURFACE": {
+    "description": "Settings window, The Last Frontier tab, Graphics: label of the choice of how planets are drawn from high orbit",
+    "message": "Pláinéid ó fhithis"
+  },
+  "ORBIT_SURFACE_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Planets from orbit' choice",
+    "message": "Conas a tharraingítear pláinéid ó fhithis ard. Coinníonn mionsonraí iomlána an tír-raon géar; is lú a chosnaíonn taibhléid dromchla."
+  },
+  "ORBIT_SURFACE_FULL": {
+    "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the default",
+    "message": "Mionsonraí iomlána"
+  },
+  "ORBIT_SURFACE_TILES": {
+    "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the cheaper one",
+    "message": "Taibhléid dromchla"
   },
   "ORBIT_VIEW_FOCUS_BODY": {
     "description": "Tooltip of the 3D orbit view focus button while it is centred on the orbited body.",

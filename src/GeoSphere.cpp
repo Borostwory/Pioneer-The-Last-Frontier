@@ -86,7 +86,7 @@ void GeoSphere::InitGeoSphere()
 	s_patchContext.Reset(new GeoPatchContext(detail_edgeLen[Pi::detail.planets > 4 ? 4 : Pi::detail.planets]));
 	s_lodDistanceScale = Clamp(double(Pi::config->Float("PlanetLodDistance", 15.0f)), 1.0, 30.0);
 	s_lodForeshortening = ReadLodForeshortening();
-	Terrain::SetGenerator(Pi::config->Int("TerrainGenerator", 0));
+	Terrain::SetGenerator(Pi::config->Int("TerrainGenerator", 1));
 }
 
 //static
@@ -107,30 +107,17 @@ void GeoSphere::SetLodDistanceScale(const double scale)
 	s_lodDistanceScale = Clamp(scale, 1.0, 30.0);
 }
 
-// How a planet is drawn from high orbit (Terrain Debug, config PlanetOrbitSurface).
-// Automatic: tiles with the detail distance kept up in high orbit, as fine as at
-// mid altitude, where detail is fixed in space, since they only compute what is on
-// screen; elsewhere the far texture. The others are for comparing them: the far
-// texture; the surface tiles alone; or the tiles with the detail kept up. With those
-// the far texture is kept even while it isn't drawn, so switching is instant.
+// How a planet is drawn from high orbit (settings window, config PlanetOrbitSurface): the surface tiles alone, or the
+// tiles with the detail distance kept up in high orbit, as fine as at mid altitude. Anything else in the config counts as
+// the second; the far texture is no longer drawn.
 enum OrbitSurface {
-	ORBIT_AUTOMATIC = -1,
-	ORBIT_FAR_TEXTURE = 0,
 	ORBIT_TILES = 1,
 	ORBIT_TILES_FULL_DETAIL = 2
 };
 
-static int ChosenOrbitSurface()
+static int GetOrbitSurface()
 {
-	return Clamp(Pi::config->Int("PlanetOrbitSurface", ORBIT_AUTOMATIC), int(ORBIT_AUTOMATIC), int(ORBIT_TILES_FULL_DETAIL));
-}
-
-static int GetOrbitSurface(const Terrain *terrain)
-{
-	const int chosen = ChosenOrbitSurface();
-	if (chosen != ORBIT_AUTOMATIC)
-		return chosen;
-	return terrain->HasFixedDetail() ? ORBIT_TILES_FULL_DETAIL : ORBIT_FAR_TEXTURE;
+	return Pi::config->Int("PlanetOrbitSurface", ORBIT_TILES_FULL_DETAIL) == ORBIT_TILES ? ORBIT_TILES : ORBIT_TILES_FULL_DETAIL;
 }
 
 // The detail distance setting applies in full at mid altitude (about 200 to
@@ -557,7 +544,7 @@ void GeoSphere::Update()
 				ProcessSplitResults();
 			}
 			FrontierLog::Timed timed(FrontierLog::PART_LOD);
-			m_lodDistance = LodDistanceAtAltitude(m_tempCampos.Length() - 1.0, GetOrbitSurface(m_terrain.Get()) == ORBIT_TILES_FULL_DETAIL);
+			m_lodDistance = LodDistanceAtAltitude(m_tempCampos.Length() - 1.0, GetOrbitSurface() == ORBIT_TILES_FULL_DETAIL);
 			for (int i = 0; i < NUM_PATCHES; i++) {
 				m_patches[i]->LODUpdate(m_tempCampos, m_tempFrustum);
 			}
@@ -637,57 +624,14 @@ void GeoSphere::SetCityGlowData(const vector3d &campos, Graphics::CityGlowDataBl
 	m_surfaceMaterial->SetBufferDynamic("CityGlowData"_hash, &data);
 }
 
-// The far terrain texture: baked once the planet is large on screen, freed
-// once it has been small for a while; drawn (terrain-far.glsl) where the
-// patches' vertices are further apart than its texels.
-void GeoSphere::SetFarTexture(const vector3d &campos, const double pixelAngle, const double spacingPerMetre)
+// The far terrain texture is no longer drawn (GetOrbitSurface): the shaders are told there is none.
+void GeoSphere::SetFarTexture()
 {
-	const int orbitSurface = GetOrbitSurface(m_terrain.Get());
-	// (no bake that nothing will draw, unless it's there to be compared)
-	const bool unused = ChosenOrbitSurface() == ORBIT_AUTOMATIC && orbitSurface != ORBIT_FAR_TEXTURE;
-	const int size = unused ? 0 : TerrainFarTexture::ConfiguredSize();
-	const bool star = GetSystemBody()->GetSuperType() == SystemBody::SUPERTYPE_STAR;
-	if (size == 0 || star || (m_farTexture && m_farTexture->GetSize() != size))
-		m_farTexture.reset();
-
-	// apparent size in pixels
-	const double camDist = std::max(campos.Length(), 1.0);
-	const double discPixels = 2.0 * std::asin(1.0 / camDist) / pixelAngle;
-	if (size > 0 && !star && discPixels >= TerrainFarTexture::START_PIXELS) {
-		m_farTextureIdle = 0.0;
-		if (!m_farTexture && TerrainFarTexture::CanStart())
-			m_farTexture.reset(new TerrainFarTexture(m_terrain, GetSystemBody()->GetName(), GetSystemBody()->GetRadius(), size));
-	} else if (m_farTexture && discPixels < TerrainFarTexture::RELEASE_PIXELS) {
-		m_farTextureIdle += Pi::GetFrameTime();
-		if (m_farTextureIdle > TerrainFarTexture::RELEASE_SECONDS)
-			m_farTexture.reset();
-	} else {
-		m_farTextureIdle = 0.0;
-	}
-
-	// the distance where the vertex spacing reaches the texel size: the
-	// texture fades in from there to twice it
-	float fade = 0.0f;
-	double handover = 0.0;
-	if (m_farTexture) {
-		m_farTexture->Update(Pi::GetFrameTime());
-		if (m_farTexture->IsReady()) {
-			handover = m_farTexture->GetTexelMetres() / spacingPerMetre;
-			// none of it shows when all the ground in sight (to the horizon,
-			// and mountains beyond it) is nearer, nor in the patch depth view;
-			// patches seen edge-on hand over up to half as far (terrain-far.glsl)
-			const double top = 1.0 + GetMaxFeatureHeight();
-			const double farthest = (std::sqrt(camDist * camDist - 1.0) + std::sqrt(top * top - 1.0)) * GetSystemBody()->GetRadius();
-			if (orbitSurface == ORBIT_FAR_TEXTURE && farthest > handover * (1.0 - 0.5 * GetLodForeshortening()) && !(s_debugFlags & DebugFlags::DEBUG_PATCHDEPTH))
-				fade = m_farTexture->GetFade();
-		}
-	}
-	m_farTexelDrawn = fade > 0.0f ? m_farTexture->GetTexelMetres() / GetSystemBody()->GetRadius() : 0.0;
-	m_farFadeDrawn = fade;
-	// never leave the material with textures that may be freed
-	m_surfaceMaterial->SetTexture("farColour"_hash, fade > 0.0f ? m_farTexture->GetColour() : nullptr);
-	m_surfaceMaterial->SetTexture("farNormal"_hash, fade > 0.0f ? m_farTexture->GetNormal() : nullptr);
-	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(float(handover), fade, float(GetLodForeshortening())),
+	m_farTexelDrawn = 0.0;
+	m_farFadeDrawn = 0.0f;
+	m_surfaceMaterial->SetTexture("farColour"_hash, nullptr);
+	m_surfaceMaterial->SetTexture("farNormal"_hash, nullptr);
+	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(0.0f, 0.0f, float(GetLodForeshortening())),
 		Pi::config->Int("TerrainTileBicubic", 1) != 0 ? 1.0f : 0.0f);
 }
 
@@ -699,9 +643,7 @@ void GeoSphere::SetSurfaceTiles(const double pixelAngle)
 	if (TerrainSurfaceTiles::Enabled() && GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
 		tiles = TerrainSurfaceTiles::Get(2 * (s_patchContext->GetEdgeLen() - 3)); // twice the vertex gaps
 	if (tiles) {
-		// only where finer than the far texture, which is sharper from afar
-		const double farTexel = m_farTexture && GetOrbitSurface(m_terrain.Get()) == ORBIT_FAR_TEXTURE ? m_farTexture->GetTexelMetres() / GetSystemBody()->GetRadius() : 0.0;
-		tiles->Update(this, m_visiblePatches, pixelAngle, farTexel);
+		tiles->Update(this, m_visiblePatches, pixelAngle, 0.0);
 	}
 	m_surfaceMaterial->SetTexture("surfaceTileColour"_hash, tiles ? tiles->GetColour() : nullptr);
 	m_surfaceMaterial->SetTexture("surfaceTileNormal"_hash, tiles ? tiles->GetNormal() : nullptr);
@@ -782,7 +724,7 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		m_surfaceMaterial->SetPushConstant("ReliefScale"_hash,
 			vector3f(float(spacingPerMetre), float(deepestSpacing / double(1 << m_extraDepth)), 0.0f), 0.0f);
 
-		SetFarTexture(campos, pixelAngle, spacingPerMetre);
+		SetFarTexture();
 	}
 
 	// cloud data: shadows in the terrain shader now, the clouds themselves in

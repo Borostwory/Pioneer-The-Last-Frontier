@@ -16,8 +16,9 @@ GameConfig::GameConfig(const map_string &override_)
 	map["ScrWidth"] = "1280";
 	map["ScrHeight"] = "720";
 	map["UIScaleFactor"] = "1";
-	map["DetailCities"] = "1";
-	map["DetailPlanets"] = "1";
+	map["DetailCities"] = "4";
+	map["DetailPlanets"] = "4";
+	map["TerrainGenerator"] = "1"; // 1 the physical generator, 0 the classic fractals (Terrain Debug window)
 	map["SfxVolume"] = "0.8";
 	map["EnableJoystick"] = "1";
 	map["InvertMouseY"] = "0";
@@ -41,14 +42,13 @@ GameConfig::GameConfig(const map_string &override_)
 	map["SectorViewZRotation"] = "0";
 	map["SectorViewZoom"] = "2.0";
 	map["MaxPhysicsCyclesPerRender"] = "4";
-	map["AntiAliasingMode"] = "2";
 	map["JoystickDeadzone"] = "0.2"; // 20% deadzone is common
 	map["PlanetLodDistance"] = "15"; // terrain patches split within this many patch widths of the camera
 	map["PlanetLodForeshortening"] = "100"; // percent: how much later terrain patches seen edge-on split
 	map["TerrainDetailTiles"] = "1"; // bake GPU detail tiles for nearby terrain patches
-	map["PlanetFarTexture"] = "1"; // bake colour and normal textures of planets large on screen, for the view from orbit (TerrainFarTexture.h)
-	map["PlanetFarTextureSize"] = "1024"; // their texels per cube face: 512, 1024 or 2048 (16, 64 or 256 MB of video memory per planet)
-	map["PlanetOrbitSurface"] = "-1"; // how planets are drawn from high orbit: -1 automatic; to compare them, 0 far texture, 1 surface tiles, 2 surface tiles at full detail
+	map["PlanetFarTexture"] = "0"; // bake colour and normal textures of planets large on screen, for the view from orbit (TerrainFarTexture.h)
+	map["PlanetFarTextureSize"] = "2048"; // their texels per cube face: 512, 1024 or 2048 (16, 64 or 256 MB of video memory per planet)
+	map["PlanetOrbitSurface"] = "2"; // how planets are drawn from high orbit: 1 surface tiles, 2 surface tiles at full detail
 	map["TerrainTileBicubic"] = "1"; // read the surface tiles with a sharper filter
 	map["TerrainSurfaceTiles"] = "1"; // bake colour and normal tiles for nearby terrain patches at twice their vertex density (TerrainSurfaceTiles.h, 128 MB of video memory)
 	map["TerrainErosion"] = "1"; // cut river valleys into the mountains of planets with liquid water (TerrainErosion.cpp)
@@ -96,7 +96,8 @@ GameConfig::GameConfig(const map_string &override_)
 	map["EnableServerAgent"] = "0";
 	map["AmountOfBackgroundStars"] = "0.25";
 	map["StarFieldStarSizeFactor"] = "0.7";
-	map["UseAnisotropicFiltering"] = "0";
+	map["UseAnisotropicFiltering"] = "1";
+	map["FrontierLog"] = "0"; // write frontier_log.txt (Debug Tools window)
 	map["RendererName"] = "Opengl 3.x"; // default to our best renderer
 	map["EnableGLDebug"] = "0";
 	map["EnableGPUJobs"] = "1";
@@ -114,4 +115,10 @@ GameConfig::GameConfig(const map_string &override_)
 		const std::string &val = (*i).second;
 		map[key] = val;
 	}
+
+	// The Last Frontier needs these, whatever config.ini or the command line says, and the settings window doesn't offer
+	// others. Multisampling turns the clouds off (PlanetClouds), and with the old scattering a planet is one flat colour of
+	// fog from afar.
+	map["AntiAliasingMode"] = "0";
+	map["RealisticScattering"] = "2";
 }
