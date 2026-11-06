@@ -154,6 +154,11 @@ void TerrainBody::SetFrame(FrameId fId)
 	}
 }
 
+uint32_t TerrainBody::GetMeshVersion() const
+{
+	return m_baseSphere ? m_baseSphere->GetMeshVersion() : 0;
+}
+
 double TerrainBody::GetDrawnTerrainHeight(const vector3d &pos) const
 {
 	double radius;

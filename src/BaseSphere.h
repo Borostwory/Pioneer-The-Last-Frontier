@@ -32,6 +32,8 @@ public:
 	// the surface as drawn along p (unit), in radii from the centre; false
 	// if it isn't drawn as a mesh, or not yet
 	virtual bool GetDrawnRadius(const vector3d &p, double &radius) const { return false; }
+	// changes whenever the mesh drawn does
+	virtual uint32_t GetMeshVersion() const { return 0; }
 
 	// Draws the surface depth-only into the current sun shadow map (see SceneShadows.h).
 	// unitToLight: from planet radii, centred on the body in its frame's orientation,

@@ -653,6 +653,7 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 			for (int i = 0; i < NUM_KIDS; i++) {
 				m_kids[i].reset();
 			}
+			m_geosphere->MarkMeshChanged();
 		}
 	}
 }
@@ -710,6 +711,7 @@ void GeoPatch::ReceiveHeightmaps(SQuadSplitResult *psr)
 			m_kids[i]->ReceiveHeightResult(psr->data(i));
 		}
 		m_hasJobRequest = false;
+		m_geosphere->MarkMeshChanged();
 	}
 }
 
@@ -720,6 +722,7 @@ void GeoPatch::ReceiveHeightmap(const SSingleSplitResult *psr)
 	assert(m_hasJobRequest);
 
 	ReceiveHeightResult(psr->data());
+	m_geosphere->MarkMeshChanged();
 	m_hasJobRequest = false;
 }
 

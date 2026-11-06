@@ -45,6 +45,8 @@ public:
 
 	// the terrain mesh along p (GeoPatch::GetDrawnRadius)
 	bool GetDrawnRadius(const vector3d &p, double &radius) const override;
+	uint32_t GetMeshVersion() const override { return m_meshVersion; }
+	void MarkMeshChanged() { m_meshVersion++; }
 
 	double GetTerrainHeight(const vector3d &p) const final
 	{
@@ -191,6 +193,7 @@ private:
 
 	Sint32 m_maxDepth;
 	Sint32 m_extraDepth = 0;
+	uint32_t m_meshVersion = 0;
 
 	// effective terrain detail distance for this frame, see GetLodDistance()
 	double m_lodDistance = 8.0;

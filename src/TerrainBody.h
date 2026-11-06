@@ -48,6 +48,8 @@ public:
 	// the ground under it (Terrain::ProtectSite)
 	void ProtectTerrainSite(const SystemBody *starport, const vector3d &pos);
 	const Terrain *GetTerrain() const;
+	// changes whenever the surface mesh drawn does
+	uint32_t GetMeshVersion() const;
 	// any sea, lake or river within radiusMetres of pos
 	bool HasWaterAround(const vector3d &pos, double radiusMetres) const;
 	// GetTerrainHeight for many directions at once (unit vectors), leaving

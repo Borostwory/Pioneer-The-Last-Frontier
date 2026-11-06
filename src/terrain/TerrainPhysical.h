@@ -43,8 +43,6 @@ public:
 	bool GetTileStyle(float style[4]) const override;
 	// (what has its own maps for this already keeps to the small sizes)
 	double GetTileLandformTop() const override { return m_lines.IsActiveShell() || m_grooved ? 0.0 : 10000.0; }
-	// (air lights hollows from all round)
-	double GetOcclusionStrength() const override { return 1.0 - 0.6 * std::min(m_state.air, 1.0); }
 	double GetTileCraterTop() const override { return TerrainCraters::SMALLEST_KM * 1000.0; }
 	bool HasFixedDetail() const override { return true; }
 	bool HasWaterAround(const vector3d &p, double radiusMetres) const override;
@@ -99,6 +97,7 @@ private:
 		double crustRubble = 0.0; // 0..1, the rubble of chaos on an active shell
 		double crustCrack = 0.0; // 0..1, a crack of the ground map there
 		double grooveDark = 0.0; // 0..1, how much dark ground shows on a grooved moon
+		double mapRelief = 0.0; // metres above or below the level of the ground's maps here
 		double lavaField = -1e30; // what decides where lava lies
 	};
 	enum class MoonStyle {

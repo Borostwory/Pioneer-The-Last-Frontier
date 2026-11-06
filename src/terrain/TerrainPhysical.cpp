@@ -1775,9 +1775,10 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 	// cliffs and cracks are sharp on bare ground only: weather wears them down, and a volcano buries them
 	double lineHeight = out.lines.height * (1.0 - 0.85 * m_state.wearSmall) * (1.0 - volcano.influence);
 	if (m_lines.IsActiveShell())
-		lineHeight += CrustMaps(p, out);
+		out.mapRelief = CrustMaps(p, out);
 	else if (m_grooved)
-		lineHeight += Grooves(p, out);
+		out.mapRelief = Grooves(p, out);
+	lineHeight += out.mapRelief;
 	if (m_lavaAroundVolcanoes)
 		out.lavaField = volcano.field;
 	else if (!m_lavaField.Empty())
@@ -2495,6 +2496,19 @@ vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, cons
 	if (shares[M::SAND] > 0.0 && !m_sandSea.Empty())
 		c = c * (1.0 - 0.2 * shares[M::SAND] * Soft(m_sandSea.Smooth(point.place), 0.3, 0.4));
 	c = Dirty(p, point, shares, c);
+	// Hollows see less of the sky, at noon too, the less so the more air lights them from all round. From the ground's
+	// own shape at this place, so vertices and tiles agree at any detail, and nothing shows the patches' squares: craters
+	// (large basins only a little, or their whole floors would go dark) and the low ground of the maps. Not lines: drawn
+	// as wide as the samples from afar, they would go dark as thick strokes across the whole body.
+	{
+		const double smallHollow = Keep(g) * Soft(-g.craters.small / std::max(0.008 * m_reliefLimit, 1.0), 0.0, 1.0);
+		const double largeHollow = Soft(-g.craters.large / std::max(0.05 * m_reliefLimit, 1.0), 0.0, 1.0);
+		// (only close up: from afar, the same map's low ground would repeat across the body as a faint grid)
+		const double maxFrequency = TerrainNoise::s_maxFrequency;
+		const double samplesKm = maxFrequency > 0.0 ? 0.5 / maxFrequency * m_core.radius * 6378.135 : 0.0;
+		const double mapHollow = Soft(-point.mapRelief / 120.0, 0.0, 1.0) * (1.0 - Soft(samplesKm, 0.4, 1.1));
+		c = c * (1.0 - 0.45 * (1.0 - 0.6 * std::min(m_state.air, 1.0)) * std::min(smallHollow + 0.4 * largeHollow + mapHollow, 1.0));
+	}
 	if (!m_state.weather)
 		c = c * (1.0 + 0.3 * g.craters.ejecta + 0.55 * g.craters.rays);
 	return vector3d(std::clamp(c.x, 0.0, 1.0), std::clamp(c.y, 0.0, 1.0), std::clamp(c.z, 0.0, 1.0));

@@ -10,6 +10,7 @@
 #include "matrix4x4.h"
 #include "vector3.h"
 
+#include <chrono>
 #include <memory>
 #include <vector>
 
@@ -64,6 +65,8 @@ private:
 		Aabb box;				 // light-space volume covered by the map
 		double radius = 0.0;
 		double drawnTime = 0.0;
+		std::chrono::steady_clock::time_point drawnWhen; // in real time, which goes on while the game is paused
+		uint32_t meshVersion = 0; // of the terrain in it
 		size_t numCasters = 0;
 		bool valid = false;
 	};

@@ -3,6 +3,11 @@
 
 #include "eclipse.glsl"
 
+// (Shader.cpp sets this when there are lights; with none, nothing here is called, but it has to compile)
+#ifndef INV_NUM_LIGHTS
+#define INV_NUM_LIGHTS 1.0
+#endif
+
 layout(std140) uniform BaseSphereData {
 	// To render accurate planets at any distance or scale, almost all
 	// calculations take place in "planet space", with a distance of 1.0

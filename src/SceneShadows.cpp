@@ -44,6 +44,9 @@ namespace {
 	constexpr double CACHE_REDRAW_MOVE = 0.2;
 	// or this much game time has passed (station doors and the like)
 	constexpr double CACHE_REDRAW_SECONDS = 5.0;
+	// or the terrain's mesh has changed, and this much real time has passed: a floor refined below the coarser ground still
+	// in the map would be in its shadow, as black blobs
+	constexpr double CACHE_REDRAW_MESH_SECONDS = 0.5;
 
 	// parked ships and stations stay put long enough for the cached maps
 	bool IsStaticCaster(const Body *b)
@@ -288,6 +291,11 @@ void SceneShadows::Begin(const CameraContext *camera, const Graphics::Light &sun
 	}
 	size_t numCasters = m_terrain.size() + CountCasters(viewToLight(nearMap), nearMap.box, false);
 
+	uint32_t meshVersion = 0;
+	for (const TerrainCaster &terrain : m_terrain)
+		meshVersion += terrain.body->GetMeshVersion();
+	const auto now = std::chrono::steady_clock::now();
+
 	// mid and far maps: reused while they still match
 	bool redraw[NUM_CASCADES] = { true, false, false };
 	for (int i = 1; i < NUM_CASCADES; i++) {
@@ -299,6 +307,7 @@ void SceneShadows::Begin(const CameraContext *camera, const Graphics::Light &sun
 			redraw[i] = sunDir.Dot(c.sunDir) < CACHE_REDRAW_SUN_COS ||
 				moved.Length() > CACHE_REDRAW_MOVE * r ||
 				std::abs(Pi::game->GetTime() - c.drawnTime) > CACHE_REDRAW_SECONDS ||
+				(c.meshVersion != meshVersion && std::chrono::duration<double>(now - c.drawnWhen).count() > CACHE_REDRAW_MESH_SECONDS) ||
 				// a ship landed or took off
 				CountCasters(viewToLight(c), c.box, true) != c.numCasters;
 		}
@@ -314,6 +323,8 @@ void SceneShadows::Begin(const CameraContext *camera, const Graphics::Light &sun
 			c.sunDir = sunDir;
 			c.radius = r;
 			c.drawnTime = Pi::game->GetTime();
+			c.drawnWhen = now;
+			c.meshVersion = meshVersion;
 			const vector3d centre = frameToLight * (cacheFocus - camPos);
 			c.box = Aabb(centre - vector3d(r), centre + vector3d(r, r, r + (i == 2 ? farDepth : DEPTH_TOWARD_SUN[i])), r);
 			c.valid = false;
