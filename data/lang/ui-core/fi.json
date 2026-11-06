@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "Näkymä, kun nouset mönkijään tai ajat sen ulos aluksesta. Näkymänäppäin vaihtaa sitä edelleen ajon aikana"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Käännä mönkijän ulkokamera"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "Mönkijän ulkonäkymässä hiiren liikuttaminen oikealle kääntää kameraa vasemmalle. Pois päältä se kääntää kameraa oikealle"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Ohjaamosta"

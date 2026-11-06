@@ -59,6 +59,10 @@
     "description": "Descriptive name for the DecreaseTimeAcceleration action.",
     "message": "Zwolnienie upływu czasu"
   },
+  "BIND_EVA_ROLL": {
+    "description": "Descriptive name for the Roll axis while floating in EVA",
+    "message": "Obrót (EVA)"
+  },
   "BIND_FIXHEADING_RADIAL": {
     "description": "Descriptive name for the action binding.",
     "message": "Otwórz Menu kołowe utrzymania kierunku"

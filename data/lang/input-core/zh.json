@@ -59,6 +59,10 @@
     "description": "Descriptive name for the DecreaseTimeAcceleration action.",
     "message": "减缓时间流逝"
   },
+  "BIND_EVA_ROLL": {
+    "description": "Descriptive name for the Roll axis while floating in EVA",
+    "message": "滚转 (EVA)"
+  },
   "BIND_FIXHEADING_RADIAL": {
     "description": "Descriptive name for the action binding.",
     "message": "打开姿态保持径向菜单"

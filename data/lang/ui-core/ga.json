@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "An radharc nuair a théann tú isteach sa róbhar nó nuair a thiomáineann tú amach as an long é. Athraíonn eochair an radhairc fós é agus tú ag tiomáint"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Inbhéartaigh ceamara seachtrach an fheithicil"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "In amharc seachtrach na feithicle, casann an ceamara ar chlé nuair a bhogtar an luch ar dheis. Nuair atá sé múchta, casann sé ar dheis"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Ón gcab"

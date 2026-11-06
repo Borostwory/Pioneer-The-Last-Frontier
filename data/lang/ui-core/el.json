@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "Η όψη όταν μπαίνετε στο όχημα ή το βγάζετε από το σκάφος. Το πλήκτρο όψης την αλλάζει ακόμη κατά την οδήγηση"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Αντιστροφή εξωτερικής κάμερας οχήματος"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "Στην εξωτερική προβολή του οχήματος, η κίνηση του ποντικιού δεξιά στρέφει την κάμερα αριστερά. Όταν είναι ανενεργό, τη στρέφει δεξιά"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Από την καμπίνα"

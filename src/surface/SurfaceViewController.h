@@ -24,6 +24,8 @@ class Walker;
 // throttle and steering, jump for the brake). Its input frame replaces the
 // ship's flight and camera controls. Getting into the rover, the view is the
 // RoverDefaultView setting's: 0 the cab, 1 without the rover, 2 from outside.
+// The view from outside has its own left and right, the RoverExternalInvertX
+// setting: 1 the camera swings left as the mouse goes right, 0 it swings right.
 class SurfaceViewController : public ViewController {
 public:
 	SurfaceViewController(WorldView *v);
@@ -45,6 +47,7 @@ public:
 		Axis *moveRight;
 		Axis *lookYaw;
 		Axis *lookPitch;
+		Axis *evaRoll;
 		Axis *jetpackUp;
 		Action *run;
 		Action *jump;
@@ -57,7 +60,9 @@ public:
 
 private:
 	void OnJump() { m_jumpRequested = true; }
-	void OnInteract() { m_interactRequested = true; }
+	// at once, or in EVA, where the key also rolls the view, when released from a tap
+	void OnInteract();
+	void OnInteractReleased();
 	// the rover's views in turn: the cab, without the rover, from outside
 	void OnRoverView();
 	// driving: the rover's lamps off, each level brighter, off again
@@ -105,6 +110,8 @@ private:
 	bool m_skipMouseMotion = false;
 	bool m_jumpRequested = false;
 	bool m_interactRequested = false;
+	bool m_interactTap = false; // pressed in EVA, not yet released
+	Uint32 m_interactPressedAt = 0;
 
 	// where PlaceCamera put the camera, in the walker's frame
 	vector3d m_camPos;
@@ -130,6 +137,7 @@ private:
 
 	ConnectionTicket m_onJumpCon;
 	ConnectionTicket m_onInteractCon;
+	ConnectionTicket m_onInteractReleasedCon;
 	ConnectionTicket m_onRoverViewCon;
 	ConnectionTicket m_onRoverLightsCon;
 	ConnectionTicket m_onMouseWheelCon;

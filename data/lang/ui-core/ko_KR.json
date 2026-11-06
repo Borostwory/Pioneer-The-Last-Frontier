@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "로버에 타거나 함선에서 몰고 나올 때의 시점. 운전 중에도 시점 키로 바꿀 수 있습니다"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "로버 외부 카메라 반전"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "로버 외부 시점에서 마우스를 오른쪽으로 움직이면 카메라가 왼쪽으로 돕니다. 끄면 오른쪽으로 돕니다"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "운전석에서"

@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "Pohled po nastoupení do roveru nebo vyjetí s ním z lodi. Klávesa pohledu jej během jízdy stále mění"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Invertovat vnější kameru vozítka"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "Ve vnějším pohledu na vozítko pohyb myši doprava otáčí kameru doleva. Když je volba vypnutá, otáčí ji doprava"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Z kabiny"

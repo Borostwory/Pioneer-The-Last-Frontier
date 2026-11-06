@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "A nézet, amikor beszállsz a terepjáróba, vagy kihajtasz vele a hajóból. Vezetés közben a nézetváltó gomb továbbra is váltja"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Jármű külső kamerájának megfordítása"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "A jármű külső nézetében az egér jobbra mozgatása balra fordítja a kamerát. Kikapcsolva jobbra fordítja"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "A fülkéből"

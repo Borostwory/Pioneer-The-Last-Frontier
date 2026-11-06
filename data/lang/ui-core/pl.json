@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "Widok po wejściu do łazika lub wyjechaniu nim ze statku. Klawisz zmiany widoku nadal działa podczas jazdy"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Odwróć zewnętrzną kamerę łazika"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "W widoku łazika z zewnątrz ruch myszy w prawo obraca kamerę w lewo. Po wyłączeniu obraca ją w prawo"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Z kabiny"

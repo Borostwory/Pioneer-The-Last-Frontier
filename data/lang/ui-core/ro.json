@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "Vederea când urci în rover sau ieși cu el din navă. Tasta de vedere o schimbă în continuare în timpul condusului"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Inversează camera exterioară a roverului"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "În vederea exterioară a roverului, mișcarea mouse-ului spre dreapta rotește camera spre stânga. Dezactivat, o rotește spre dreapta"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Din cabină"

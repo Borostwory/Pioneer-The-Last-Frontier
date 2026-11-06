@@ -901,6 +901,12 @@ local function showModOptions()
 	if c then
 		Engine.SettingsSetInt("RoverDefaultView", roverView)
 	end
+
+	local roverInvert = Engine.SettingsGetInt("RoverExternalInvertX") ~= 0
+	c,roverInvert = checkbox(lui.ROVER_EXTERNAL_INVERT, roverInvert, lui.ROVER_EXTERNAL_INVERT_DESC)
+	if c then
+		Engine.SettingsSetInt("RoverExternalInvertX", roverInvert and 1 or 0)
+	end
 end
 
 local optionsTabs = {

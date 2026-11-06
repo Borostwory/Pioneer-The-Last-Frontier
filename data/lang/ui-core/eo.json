@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "La vido, kiam vi eniras la veturilon aŭ elveturas per ĝi el la ŝipo. La vidoklavo ankoraŭ ŝanĝas ĝin dum stirado"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Inversigi eksteran kameraon de la veturilo"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "En la ekstera vido de la veturilo, movi la muson dekstren svingas la kameraon maldekstren. Malŝaltite, ĝi svingas ĝin dekstren"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "El la kabino"

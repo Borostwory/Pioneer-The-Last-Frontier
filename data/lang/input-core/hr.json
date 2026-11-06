@@ -59,6 +59,10 @@
     "description": "Descriptive name for the DecreaseTimeAcceleration action.",
     "message": "Smanjite ubrzanje vremena"
   },
+  "BIND_EVA_ROLL": {
+    "description": "Descriptive name for the Roll axis while floating in EVA",
+    "message": "Okretanje (EVA)"
+  },
   "BIND_FIXHEADING_RADIAL": {
     "description": "Descriptive name for the action binding.",
     "message": "Otvori radijalni izbornik za zadržavanje položaja"

@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "An sealladh nuair a thèid thu a-steach dhan charbad no nuair a dhràibheas tu a-mach às an t-soitheach e. Atharraichidh iuchair an t-seallaidh e fhathast fhad ’s a tha thu a’ dràibheadh"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Ais-thionndaidh camara a-muigh a’ charbaid"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "Ann an sealladh a’ charbaid on taobh a-muigh, thèid an camara gu clì nuair a ghluaiseas an luchag gu deas. Nuair a bhios seo dheth, thèid e gu deas"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "On chab"

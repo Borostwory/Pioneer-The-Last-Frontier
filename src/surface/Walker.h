@@ -84,8 +84,9 @@ public:
 	// the ship's model space
 	void StartEva(const Body *ship, const vector3d &relPos, const matrix3x3d &orient, const vector3d &hatch);
 	bool IsEva() const { return m_evaShip != nullptr; }
-	// turns the view about its own axes: yaw to the right, pitch up (radians)
-	void LookEva(double yaw, double pitch);
+	// turns the view about its own axes: yaw to the right, pitch up, roll
+	// clockwise as seen by the walker (radians)
+	void LookEva(double yaw, double pitch, double roll);
 	// the view's orientation in the walker's frame
 	matrix3x3d GetEvaOrient() const;
 	void FollowShip();

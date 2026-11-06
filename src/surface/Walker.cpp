@@ -277,18 +277,20 @@ void Walker::StartEva(const Body *ship, const vector3d &relPos, const matrix3x3d
 	m_interpOrient = GetOrient();
 }
 
-void Walker::LookEva(double yaw, double pitch)
+void Walker::LookEva(double yaw, double pitch, double roll)
 {
 	const vector3d right = m_evaOrient.VectorX();
 	const vector3d up = m_evaOrient.VectorY();
 	const vector3d forward = -m_evaOrient.VectorZ();
 
-	// yaw about its up, then pitch about its new right
+	// yaw about its up, then pitch about its new right, then roll about its new forward
 	const vector3d yawForward = forward * std::cos(yaw) + right * std::sin(yaw);
 	const vector3d yawRight = right * std::cos(yaw) - forward * std::sin(yaw);
 	const vector3d newForward = yawForward * std::cos(pitch) + up * std::sin(pitch);
-	const vector3d newUp = up * std::cos(pitch) - yawForward * std::sin(pitch);
-	m_evaOrient = matrix3x3d::FromVectors(yawRight, newUp, -newForward);
+	const vector3d pitchUp = up * std::cos(pitch) - yawForward * std::sin(pitch);
+	const vector3d newRight = yawRight * std::cos(roll) - pitchUp * std::sin(roll);
+	const vector3d newUp = pitchUp * std::cos(roll) + yawRight * std::sin(roll);
+	m_evaOrient = matrix3x3d::FromVectors(newRight, newUp, -newForward);
 	m_evaOrient.Renormalize();
 }
 

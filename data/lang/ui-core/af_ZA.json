@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "Die aansig wanneer jy in die voertuig klim of dit uit die skip ry. Die aansigsleutel verander dit steeds terwyl jy ry"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Keer rover se buitekamera om"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "In die rover se buite-aansig swaai die kamera links as die muis regs beweeg. Wanneer dit af is, swaai dit regs"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Uit die kajuit"

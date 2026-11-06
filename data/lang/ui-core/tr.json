@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "Arazi aracına binerken ya da onu gemiden çıkarırken kullanılan görünüm. Sürüş sırasında görünüm tuşuyla yine değiştirilebilir"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Araç dış kamerasını ters çevir"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "Aracın dış görünümünde fareyi sağa hareket ettirmek kamerayı sola döndürür. Kapalıyken sağa döndürür"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Kabinden"

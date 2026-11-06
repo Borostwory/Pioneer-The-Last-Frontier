@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "Vaizdas įlipus į visureigį arba išvažiavus juo iš laivo. Vaizdo klavišas vis tiek jį keičia vairuojant"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Apversti išorinę visureigio kamerą"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "Išoriniame visureigio vaizde pelę judinant į dešinę kamera sukasi į kairę. Išjungus ji sukasi į dešinę"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Iš kabinos"

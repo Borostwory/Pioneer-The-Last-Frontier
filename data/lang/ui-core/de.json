@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "Die Ansicht beim Einsteigen in den Rover oder beim Herausfahren aus dem Schiff. Die Ansichtstaste wechselt sie während der Fahrt weiterhin"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Rover-Außenkamera invertieren"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "In der Außenansicht des Rovers schwenkt eine Mausbewegung nach rechts die Kamera nach links. Ist die Option aus, schwenkt sie nach rechts"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Aus der Kabine"

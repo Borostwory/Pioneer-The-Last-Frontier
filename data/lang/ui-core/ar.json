@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "المنظور عند ركوب المركبة أو قيادتها خارج السفينة. يظل مفتاح المنظور يغيّره أثناء القيادة"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "عكس الكاميرا الخارجية للمركبة"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "في منظور المركبة من الخارج، يؤدي تحريك الماوس إلى اليمين إلى تدوير الكاميرا نحو اليسار. عند إيقاف الخيار تدور نحو اليمين"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "من المقصورة"

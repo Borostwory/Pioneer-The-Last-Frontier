@@ -3171,6 +3171,14 @@
     "description": "The tooltip of the Rover View on Getting In option in the settings menu",
     "message": "Tampilan saat masuk ke rover atau mengendarainya keluar dari kapal. Tombol tampilan tetap bisa mengubahnya saat berkendara"
   },
+  "ROVER_EXTERNAL_INVERT": {
+    "description": "Game option: reverses left and right for the camera of the surface rover's view from outside",
+    "message": "Balikkan kamera luar rover"
+  },
+  "ROVER_EXTERNAL_INVERT_DESC": {
+    "description": "The tooltip of the Invert Rover Outside Camera option in the settings menu",
+    "message": "Dalam tampilan luar rover, menggerakkan mouse ke kanan mengayunkan kamera ke kiri. Jika nonaktif, kamera berayun ke kanan"
+  },
   "ROVER_VIEW_CAB": {
     "description": "Rover view option: from the driver's seat, with the cab drawn",
     "message": "Dari kabin"

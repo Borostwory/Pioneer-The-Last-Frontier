@@ -20,12 +20,15 @@
 #include "sound/Sound.h"
 
 #include <SDL_keycode.h>
+#include <SDL_timer.h>
 #include <algorithm>
 #include <cmath>
 
 namespace {
 	constexpr double MOUSE_LOOK_SPEED = 0.0025; // radians per pixel
 	constexpr double STICK_LOOK_SPEED = 2.0;	// radians per second at full deflection
+	constexpr double EVA_ROLL_SPEED = 1.0;		// radians per second at full deflection
+	constexpr Uint32 EVA_INTERACT_TAP = 250;	// ms: held longer, the interact key was rolling
 	constexpr double MAX_PITCH = DEG2RAD(89.0);
 	// looking round from the rover's driving seat
 	constexpr double MAX_ROVER_YAW = DEG2RAD(160.0);
@@ -132,6 +135,9 @@ REGISTER_INPUT_BINDING(SurfaceViewController)
 	input->AddActionBinding("BindWalkJump", movement, Action({ SDLK_SPACE }));
 	input->AddAxisBinding("BindWalkLookYaw", movement, Axis());
 	input->AddAxisBinding("BindWalkLookPitch", movement, Axis());
+	// floating free only; the ship's roll keys, though E is the interact key
+	// too: in EVA that takes a tap (see OnInteract)
+	input->AddAxisBinding("BindEvaRoll", movement, Axis({}, { SDLK_e }, { SDLK_q }));
 	// as the ship's up / down thrust; forward and right steer it in the air
 	input->AddAxisBinding("BindJetpackUp", movement, Axis({}, { SDLK_r }, { SDLK_f }));
 
@@ -149,6 +155,7 @@ void SurfaceViewController::InputBinding::RegisterBindings()
 	moveRight = AddAxis("BindWalkRight");
 	lookYaw = AddAxis("BindWalkLookYaw");
 	lookPitch = AddAxis("BindWalkLookPitch");
+	evaRoll = AddAxis("BindEvaRoll");
 	jetpackUp = AddAxis("BindJetpackUp");
 	run = AddAction("BindWalkRun");
 	jump = AddAction("BindWalkJump");
@@ -171,6 +178,7 @@ SurfaceViewController::SurfaceViewController(WorldView *v) :
 	InputBindings.RegisterBindings();
 	m_onJumpCon = InputBindings.jump->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnJump));
 	m_onInteractCon = InputBindings.interact->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnInteract));
+	m_onInteractReleasedCon = InputBindings.interact->onReleased.connect(sigc::mem_fun(this, &SurfaceViewController::OnInteractReleased));
 	m_onRoverViewCon = InputBindings.roverView->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnRoverView));
 	m_onRoverLightsCon = InputBindings.roverLights->onPressed.connect(sigc::mem_fun(this, &SurfaceViewController::OnRoverLights));
 }
@@ -193,6 +201,7 @@ void SurfaceViewController::Activated()
 	m_parentView->GetCameraContext()->SetFovAng(Pi::config->Float("FOVVertical"));
 	m_jumpRequested = false;
 	m_interactRequested = false;
+	m_interactTap = false;
 	m_onMouseWheelCon = Pi::input->onMouseWheel.connect(sigc::mem_fun(this, &SurfaceViewController::OnMouseWheel));
 }
 
@@ -229,6 +238,24 @@ void SurfaceViewController::ResetLook()
 	case 2: m_roverView = RoverView::EXTERNAL; break;
 	default: m_roverView = RoverView::CAB; break;
 	}
+}
+
+void SurfaceViewController::OnInteract()
+{
+	// in EVA the key rolls the view as well, so it waits to see if this is a tap
+	if (Pi::game->GetExcursion()->GetMode() == Excursion::Mode::EVA) {
+		m_interactTap = true;
+		m_interactPressedAt = SDL_GetTicks();
+	} else {
+		m_interactRequested = true;
+	}
+}
+
+void SurfaceViewController::OnInteractReleased()
+{
+	if (m_interactTap && SDL_GetTicks() - m_interactPressedAt < EVA_INTERACT_TAP)
+		m_interactRequested = true;
+	m_interactTap = false;
 }
 
 void SurfaceViewController::OnRoverView()
@@ -308,7 +335,9 @@ void SurfaceViewController::Update()
 			// looking round in the seat, or circling the rover from outside;
 			// the jump key is the brake
 			if (m_roverView == RoverView::EXTERNAL) {
-				m_extYaw = std::remainder(m_extYaw + yaw, 2.0 * M_PI);
+				// inverted, the camera swings left as the mouse goes right
+				const bool invert = Pi::config->Int("RoverExternalInvertX", 1) != 0;
+				m_extYaw = std::remainder(m_extYaw + (invert ? -yaw : yaw), 2.0 * M_PI);
 				m_extPitch = Clamp(m_extPitch - pitch, EXTERNAL_MIN_PITCH, EXTERNAL_MAX_PITCH);
 			} else {
 				m_roverYaw = Clamp(m_roverYaw + yaw, -MAX_ROVER_YAW, MAX_ROVER_YAW);
@@ -318,8 +347,10 @@ void SurfaceViewController::Update()
 			brake = InputBindings.jump->IsActive();
 			rover->SetDriveInput(throttle, InputBindings.moveRight->GetValue(), brake);
 		} else if (walker->IsEva()) {
-			// floating free: turn about its own axes
-			walker->LookEva(yaw, pitch);
+			// floating free: turn about its own axes; the roll keys, unlike the
+			// mouse, would still turn the view with the game paused
+			const double roll = Pi::game->IsPaused() ? 0.0 : InputBindings.evaRoll->GetValue() * EVA_ROLL_SPEED * frameTime;
+			walker->LookEva(yaw, pitch, roll);
 		} else {
 			walker->Turn(yaw);
 			m_pitch = Clamp(m_pitch + pitch, -MAX_PITCH, MAX_PITCH);
