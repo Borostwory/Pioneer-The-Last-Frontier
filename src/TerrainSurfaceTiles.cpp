@@ -57,6 +57,39 @@ namespace {
 		return (v[0] + x * (1.0 - y) * (v[1] - v[0]) + x * y * (v[2] - v[0]) + (1.0 - x) * y * (v[3] - v[0])).Normalized();
 	}
 
+	// how many texels around itself a texel looks for higher ground, and how dark that makes it
+	constexpr int OCCLUSION_REACH = 8;
+	constexpr double OCCLUSION_DARKENS = 8.0;
+
+	// Hollows see less of the sky, at noon too: each texel darkens by how far higher ground around it rises above it, at a
+	// few distances. Only heights, so it stays put and doesn't depend on the sun. heights: from margin rows around the
+	// texels; rgba: out * out texels. (Not on water: land has a positive altitude in alpha.)
+	void DarkenHollows(const double *heights, const int grid, const int margin, const int out, const double texel, const double strength, uint8_t *rgba)
+	{
+		static const int DX[8] = { 1, 1, 0, -1, -1, -1, 0, 1 }, DY[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+		static const double LENGTH[8] = { 1.0, 1.414, 1.0, 1.414, 1.0, 1.414, 1.0, 1.414 };
+		for (int y = 0; y < out; y++) {
+			for (int x = 0; x < out; x++) {
+				uint8_t *c = rgba + (size_t(y) * out + x) * 4;
+				if (c[3] < 128)
+					continue;
+				const int cx = x + margin, cy = y + margin;
+				const double h = heights[size_t(cy) * grid + cx];
+				double rise = 0.0;
+				for (int r = 2; r <= OCCLUSION_REACH; r *= 2) {
+					for (int d = 0; d < 8; d++) {
+						const double above = heights[size_t(cy + DY[d] * r) * grid + cx + DX[d] * r] - h;
+						if (above > 0.0)
+							rise += std::min(above / (r * LENGTH[d] * texel), 1.5);
+					}
+				}
+				const double shade = 1.0 / (1.0 + OCCLUSION_DARKENS * strength * rise / 24.0);
+				for (int k = 0; k < 3; k++)
+					c[k] = uint8_t(double(c[k]) * shade + 0.5);
+			}
+		}
+	}
+
 	class SurfaceTileJob : public Job {
 	public:
 		explicit SurfaceTileJob(std::shared_ptr<TerrainSurfaceTiles::Bake> bake) :
@@ -68,10 +101,12 @@ namespace {
 			PROFILE_SCOPED()
 			TerrainSurfaceTiles::Bake &b = *m_bake;
 			// the slot's texels (the tile and its border), and one more row of
-			// heights around them for the normals
+			// heights around them for the normals, and more for darkening the hollows
+			const double occlusion = b.terrain->GetOcclusionStrength();
+			const int margin = 1 + (occlusion > 0.0 ? OCCLUSION_REACH : 0);
 			const int out = b.tileSize + 2 * TerrainSurfaceTiles::TILE_BORDER;
-			const int grid = out + 2;
-			const int first = TerrainSurfaceTiles::TILE_BORDER + 1; // grid index of the tile's first texel
+			const int grid = out + 2 * margin;
+			const int first = TerrainSurfaceTiles::TILE_BORDER + margin; // grid index of the tile's first texel
 			std::vector<vector3d> dirs(size_t(grid) * grid);
 			std::vector<double> heights(dirs.size());
 			for (int y = 0; y < grid; y++) {
@@ -89,11 +124,13 @@ namespace {
 			// the slope the colours see (COLOUR_SLOPE_SCALE), where the tile is
 			// finer than that
 			std::vector<vector3d> colourNormals;
-			const bool fixedSlope = ColourSlopeNormals(b.terrain.Get(), dirs.data(), grid, 1, grid - 1, 1, grid - 1, colourNormals);
+			const bool fixedSlope = ColourSlopeNormals(b.terrain.Get(), dirs.data(), grid, margin, grid - margin, margin, grid - margin, colourNormals);
 			b.colour.resize(size_t(out) * out * 4);
 			b.normal.resize(size_t(out) * out);
-			BakeSurfaceTexels(b.terrain.Get(), dirs.data(), heights.data(), grid, 1, grid - 1, 1, grid - 1,
+			BakeSurfaceTexels(b.terrain.Get(), dirs.data(), heights.data(), grid, margin, grid - margin, margin, grid - margin,
 				fixedSlope ? colourNormals.data() : nullptr, out, b.colour.data(), b.normal.data(), size_t(out));
+			if (occlusion > 0.0)
+				DarkenHollows(heights.data(), grid, margin, out, b.texelSpacing, occlusion, b.colour.data());
 			b.done.store(true, std::memory_order_release);
 		}
 

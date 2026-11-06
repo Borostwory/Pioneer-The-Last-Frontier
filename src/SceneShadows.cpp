@@ -15,6 +15,7 @@
 #include "Ship.h"
 #include "Space.h"
 #include "TerrainBody.h"
+#include "terrain/Terrain.h"
 #include "galaxy/SystemBody.h"
 #include "gameconsts.h"
 #include "graphics/Light.h"
@@ -34,6 +35,8 @@ namespace {
 	// how far each map reaches toward the sun past the covered area, so that
 	// tall casters and hills outside it still shadow it (m)
 	const double DEPTH_TOWARD_SUN[] = { 2000.0, 3000.0, 4000.0 };
+	// the most the far map covers around its centre (m)
+	constexpr double FAR_MAP_LARGEST = 320000.0;
 
 	// the cached maps are redrawn once the sun has moved this far across the sky,
 	const double CACHE_REDRAW_SUN_COS = std::cos(DEG2RAD(0.1));
@@ -173,7 +176,6 @@ void SceneShadows::Begin(const CameraContext *camera, const Graphics::Light &sun
 	radii[0] = Clamp(Pi::config->Int("ShadowNearRadius", 120), 20, 1000);
 	radii[1] = std::max(2.0 * radii[0], std::sqrt(radii[0] * Clamp(Pi::config->Int("ShadowDistance", 10000), 200, 20000)));
 	radii[2] = std::max(2.0 * radii[1], double(Clamp(Pi::config->Int("ShadowDistance", 10000), 200, 20000)));
-	const double reach = radii[2] + DEPTH_TOWARD_SUN[2];
 
 	const FrameId frameId = camera->GetCameraFrame();
 	Frame *camFrame = Frame::GetFrame(camera->GetTempFrame());
@@ -185,6 +187,25 @@ void SceneShadows::Begin(const CameraContext *camera, const Graphics::Light &sun
 	const matrix3x3d camOrient = camFrame->GetInterpOrientRelTo(frameId); // view -> frame
 	const vector3d camPos = camFrame->GetInterpPositionRelTo(frameId);
 	const vector3d sunDir = (camOrient * sunView).Normalized();
+
+	// Over the physical generator's ground the far map also shows the shadows of hills and crater walls, reaching out to
+	// several times the camera's height, by doubling, so that it isn't redrawn at every change of height.
+	double farDepth = DEPTH_TOWARD_SUN[2];
+	{
+		const Body *below = Frame::GetFrame(frameId)->GetBody();
+		if (below && below->IsType(ObjectType::TERRAINBODY)) {
+			const TerrainBody *ground = static_cast<const TerrainBody *>(below);
+			const Terrain *terrain = ground->GetTerrain();
+			if (terrain && terrain->HasFixedDetail()) {
+				const double height = std::max(camPos.Length() - ground->GetSystemBody()->GetRadius(), 0.0);
+				radii[2] = std::max(radii[2], 40000.0);
+				while (radii[2] < 2.5 * height && radii[2] < FAR_MAP_LARGEST)
+					radii[2] *= 2.0;
+				farDepth = std::max(farDepth, radii[2]);
+			}
+		}
+	}
+	const double reach = radii[2] + farDepth;
 
 	// light space: +z toward the sun, +y as close to the frame's +y (a planet's axis) as it gets
 	const vector3d up = std::abs(sunDir.y) < 0.99 ? vector3d(0.0, 1.0, 0.0) : vector3d(1.0, 0.0, 0.0);
@@ -294,7 +315,7 @@ void SceneShadows::Begin(const CameraContext *camera, const Graphics::Light &sun
 			c.radius = r;
 			c.drawnTime = Pi::game->GetTime();
 			const vector3d centre = frameToLight * (cacheFocus - camPos);
-			c.box = Aabb(centre - vector3d(r), centre + vector3d(r, r, r + DEPTH_TOWARD_SUN[i]), r);
+			c.box = Aabb(centre - vector3d(r), centre + vector3d(r, r, r + (i == 2 ? farDepth : DEPTH_TOWARD_SUN[i])), r);
 			c.valid = false;
 		}
 		numCasters += c.valid ? c.numCasters : CountCasters(viewToLight(c), c.box, true);

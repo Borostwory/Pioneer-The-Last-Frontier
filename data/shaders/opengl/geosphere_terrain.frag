@@ -192,7 +192,7 @@ void main(void)
 	// Use the detail value to multiply the final colour before lighting
 	vec4 ambient = scene.ambient * albedo;
 	vec4 final = albedo * detailMul * diff;
-	final.rgb *= backscatter * materialShadowTint(lightWeights, diff.rgb);
+	final.rgb *= backscatter * materialShadowTint(lightWeights, diff.rgb) * terrainOcclusion(tnorm, surfaceUp, tile);
 	final.rgb += materialGlint;
 
 #ifdef TERRAIN_WITH_WATER

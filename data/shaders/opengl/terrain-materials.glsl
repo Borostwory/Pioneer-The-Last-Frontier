@@ -168,6 +168,18 @@ vec4 terrainTileSample(vec2 uv)
 	return vec4((t.rgb * 2.0 - 1.0) * TERRAIN_TILE_SLOPE_RANGE, t.a);
 }
 
+// How much of the sky the ground at a pixel sees, 0..1, whatever the sun is doing, so its shape shows at noon too: slopes
+// and hollows are darker. Only where detail is fixed in space, and the less the more air lights them from all round.
+float terrainOcclusion(vec3 normal, vec3 up, vec4 tile)
+{
+	if (MaterialLook.y < 0.5)
+		return 1.0;
+	float level = clamp(dot(normal, up), 0.0, 1.0);
+	float slopes = level * level * level;
+	float hollows = mix(0.74, 1.08, smoothstep(0.25, 0.6, tile.w));
+	return mix(1.0, slopes * hollows, 1.0 - 0.7 * airShare());
+}
+
 // texture layer of a slot (-1: unused)
 int materialSlotLayer(int slot)
 {

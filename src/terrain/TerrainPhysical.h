@@ -13,6 +13,7 @@
 #include "TerrainPhysicalValleys.h"
 #include "TerrainPhysicalVolcanoes.h"
 
+#include <algorithm>
 #include <array>
 #include <vector>
 
@@ -42,6 +43,8 @@ public:
 	bool GetTileStyle(float style[4]) const override;
 	// (what has its own maps for this already keeps to the small sizes)
 	double GetTileLandformTop() const override { return m_lines.IsActiveShell() || m_grooved ? 0.0 : 10000.0; }
+	// (air lights hollows from all round)
+	double GetOcclusionStrength() const override { return 1.0 - 0.6 * std::min(m_state.air, 1.0); }
 	double GetTileCraterTop() const override { return TerrainCraters::SMALLEST_KM * 1000.0; }
 	bool HasFixedDetail() const override { return true; }
 	bool HasWaterAround(const vector3d &p, double radiusMetres) const override;

@@ -171,7 +171,7 @@ void main(void)
 		materialGlint += lightIn * materialGloss(lightWeights, N, viewDir, sunDir, dist);
 		backscatter = max(backscatter, materialBackscatter(lightWeights, viewDir, sunDir));
 	}
-	vec3 land = albedo * detailMul.rgb * light * backscatter * materialShadowTint(lightWeights, light) + materialGlint;
+	vec3 land = albedo * detailMul.rgb * light * backscatter * materialShadowTint(lightWeights, light) * terrainOcclusion(N, surfaceUp, tile) + materialGlint;
 #ifdef TERRAIN_WITH_LAVA
 	land += material.emission.xyz * float(NUM_LIGHTS);
 #endif
