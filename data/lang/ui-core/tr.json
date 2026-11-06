@@ -2551,6 +2551,14 @@
     "description": "",
     "message": "Tamam"
   },
+  "ON_FOOT_FOV": {
+    "description": "Game option: the vertical field of view on foot and in the surface rover",
+    "message": "Görüş alanı"
+  },
+  "ON_FOOT_FOV_DESC": {
+    "description": "The tooltip of the Field of View option in the settings menu",
+    "message": "Yürürken ve araçta derece cinsinden dikey görüş açısı. Geminin görünümleri değişmez"
+  },
   "OPEN_USER_FOLDER": {
     "description": "",
     "message": "Kullanıcı Klasörü"

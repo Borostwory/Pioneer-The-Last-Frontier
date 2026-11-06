@@ -2551,6 +2551,14 @@
     "description": "",
     "message": "Ok"
   },
+  "ON_FOOT_FOV": {
+    "description": "Game option: the vertical field of view on foot and in the surface rover",
+    "message": "Vidno polje"
+  },
+  "ON_FOOT_FOV_DESC": {
+    "description": "The tooltip of the Field of View option in the settings menu",
+    "message": "Okomiti kut gledanja u stupnjevima, pješice i u roveru. Pogledi s broda se ne mijenjaju"
+  },
   "OPEN_USER_FOLDER": {
     "description": "",
     "message": "Korisnička datoteka"

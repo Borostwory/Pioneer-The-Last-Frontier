@@ -2551,6 +2551,14 @@
     "description": "",
     "message": "Ceart ma-thà"
   },
+  "ON_FOOT_FOV": {
+    "description": "Game option: the vertical field of view on foot and in the surface rover",
+    "message": "Raon-seallaidh"
+  },
+  "ON_FOOT_FOV_DESC": {
+    "description": "The tooltip of the Field of View option in the settings menu",
+    "message": "Ceàrn-seallaidh dìreach ann an ceuman, air chois agus sa charbad. Chan atharraich seo seallaidhean an t-soithich"
+  },
   "OPEN_USER_FOLDER": {
     "description": "",
     "message": "Pasgan cleachdaiche"

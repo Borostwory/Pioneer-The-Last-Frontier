@@ -198,7 +198,7 @@ SurfaceViewController::~SurfaceViewController()
 void SurfaceViewController::Activated()
 {
 	Pi::input->AddInputFrame(&InputBindings);
-	m_parentView->GetCameraContext()->SetFovAng(Pi::config->Float("FOVVertical"));
+	m_parentView->GetCameraContext()->SetFovAng(Pi::config->Float("OnFootFOV"));
 	m_jumpRequested = false;
 	m_interactRequested = false;
 	m_interactTap = false;
@@ -209,6 +209,8 @@ void SurfaceViewController::Deactivated()
 {
 	Pi::input->RemoveInputFrame(&InputBindings);
 	m_onMouseWheelCon.disconnect();
+	// the ship's external views don't set their own
+	m_parentView->GetCameraContext()->SetFovAng(Pi::config->Float("FOVVertical"));
 	SetMouseCaptured(false);
 	m_jetSound.Stop();
 	m_footsteps.Stop();
@@ -312,6 +314,11 @@ void SurfaceViewController::Update()
 	Rover *rover = excursion->GetMode() == Excursion::Mode::ROVER ? excursion->GetRover() : nullptr;
 	if (!walker && !rover)
 		return;
+
+	// the option can change at any time, from the menu
+	const float fov = Pi::config->Float("OnFootFOV");
+	if (m_parentView->GetCameraContext()->GetFovAng() != fov)
+		m_parentView->GetCameraContext()->SetFovAng(fov);
 
 	UpdateMouseCapture();
 	double throttle = 0.0;

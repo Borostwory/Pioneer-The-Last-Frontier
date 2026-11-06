@@ -2547,6 +2547,14 @@
     "description": "",
     "message": "Ok"
   },
+  "ON_FOOT_FOV": {
+    "description": "Game option: the vertical field of view on foot and in the surface rover",
+    "message": "Field of View"
+  },
+  "ON_FOOT_FOV_DESC": {
+    "description": "The tooltip of the Field of View option in the settings menu",
+    "message": "Vertical angle of view in degrees, on foot and in the rover. The ship's views are not affected"
+  },
   "OPEN_USER_FOLDER": {
     "description": "",
     "message": "User Folder"

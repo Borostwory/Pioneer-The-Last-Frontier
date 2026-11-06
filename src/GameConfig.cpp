@@ -24,6 +24,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["InvertMouseY"] = "0";
 	map["FOVVertical"] = "65";
 	map["OnFootHeadBob"] = "1";     // the view bobs as the player walks (SurfaceViewController)
+	map["OnFootFOV"] = "75";        // the vertical field of view on foot and in the rover, degrees (SurfaceViewController)
 	map["RoverDefaultView"] = "2";  // getting into the rover: 0 from the cab, 1 without the rover drawn, 2 from outside
 	map["RoverExternalInvertX"] = "1"; // the rover's view from outside: 1 the camera swings left as the mouse goes right, 0 it swings right
 	map["DebugAlwaysAllowRover"] = "0"; // debug: the rover can be deployed without the surface rover equipment

@@ -2551,6 +2551,14 @@
     "description": "",
     "message": "Ok"
   },
+  "ON_FOOT_FOV": {
+    "description": "Game option: the vertical field of view on foot and in the surface rover",
+    "message": "시야각"
+  },
+  "ON_FOOT_FOV_DESC": {
+    "description": "The tooltip of the Field of View option in the settings menu",
+    "message": "도보 및 로버 탑승 시의 수직 시야각(도)입니다. 함선 시점에는 영향을 주지 않습니다"
+  },
   "OPEN_USER_FOLDER": {
     "description": "",
     "message": "User Folder"

@@ -2551,6 +2551,14 @@
     "description": "",
     "message": "OK"
   },
+  "ON_FOOT_FOV": {
+    "description": "Game option: the vertical field of view on foot and in the surface rover",
+    "message": "Synsfelt"
+  },
+  "ON_FOOT_FOV_DESC": {
+    "description": "The tooltip of the Field of View option in the settings menu",
+    "message": "Loddrett synsvinkel i grader, til fots og i roveren. Skipets visninger endres ikke"
+  },
   "OPEN_USER_FOLDER": {
     "description": "",
     "message": "User Folder"

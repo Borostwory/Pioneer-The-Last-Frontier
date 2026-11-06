@@ -2551,6 +2551,14 @@
     "description": "",
     "message": "Εντάξει"
   },
+  "ON_FOOT_FOV": {
+    "description": "Game option: the vertical field of view on foot and in the surface rover",
+    "message": "Οπτικό πεδίο"
+  },
+  "ON_FOOT_FOV_DESC": {
+    "description": "The tooltip of the Field of View option in the settings menu",
+    "message": "Κατακόρυφη γωνία θέασης σε μοίρες, πεζή και στο ρόβερ. Οι όψεις του σκάφους δεν επηρεάζονται"
+  },
   "OPEN_USER_FOLDER": {
     "description": "",
     "message": "ΧρήσηΦακέλου"

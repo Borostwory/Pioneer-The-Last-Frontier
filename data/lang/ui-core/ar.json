@@ -2551,6 +2551,14 @@
     "description": "",
     "message": "حسناً"
   },
+  "ON_FOOT_FOV": {
+    "description": "Game option: the vertical field of view on foot and in the surface rover",
+    "message": "مجال الرؤية"
+  },
+  "ON_FOOT_FOV_DESC": {
+    "description": "The tooltip of the Field of View option in the settings menu",
+    "message": "زاوية الرؤية الرأسية بالدرجات، سيرًا على الأقدام وفي المركبة. لا يؤثر ذلك في مناظر السفينة"
+  },
   "OPEN_USER_FOLDER": {
     "description": "",
     "message": "User Folder"

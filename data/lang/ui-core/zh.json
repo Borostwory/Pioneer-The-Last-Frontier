@@ -2551,6 +2551,14 @@
     "description": "",
     "message": "确认"
   },
+  "ON_FOOT_FOV": {
+    "description": "Game option: the vertical field of view on foot and in the surface rover",
+    "message": "视野"
+  },
+  "ON_FOOT_FOV_DESC": {
+    "description": "The tooltip of the Field of View option in the settings menu",
+    "message": "步行和乘坐月球车时的垂直视角（度）。飞船视角不受影响"
+  },
   "OPEN_USER_FOLDER": {
     "description": "",
     "message": "用户文件夹"

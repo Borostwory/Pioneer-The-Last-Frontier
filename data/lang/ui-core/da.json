@@ -2551,6 +2551,14 @@
     "description": "",
     "message": "OK"
   },
+  "ON_FOOT_FOV": {
+    "description": "Game option: the vertical field of view on foot and in the surface rover",
+    "message": "Synsfelt"
+  },
+  "ON_FOOT_FOV_DESC": {
+    "description": "The tooltip of the Field of View option in the settings menu",
+    "message": "Lodret synsvinkel i grader, til fods og i roveren. Skibets visninger påvirkes ikke"
+  },
   "OPEN_USER_FOLDER": {
     "description": "",
     "message": "Bruger Mappe"

@@ -866,6 +866,12 @@ local function showModOptions()
 		Engine.SettingsSetInt("OnFootHeadBob", headBob and 1 or 0)
 	end
 
+	local onFootFov = Engine.SettingsGetInt("OnFootFOV")
+	c,onFootFov = slider(lui.ON_FOOT_FOV, onFootFov, 30, 100, lui.ON_FOOT_FOV_DESC)
+	if c then
+		Engine.SettingsSetInt("OnFootFOV", onFootFov)
+	end
+
 	local roverViews = { lui.ROVER_VIEW_CAB, lui.ROVER_VIEW_NO_MODEL, lui.ROVER_VIEW_EXTERNAL }
 	local roverView = math.max(0, math.min(#roverViews - 1, Engine.SettingsGetInt("RoverDefaultView")))
 	c,roverView = combo(lui.ROVER_DEFAULT_VIEW, roverView, roverViews, lui.ROVER_DEFAULT_VIEW_DESC)
