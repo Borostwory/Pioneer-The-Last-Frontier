@@ -133,6 +133,8 @@ private:
 	double IceField(const vector3d &p, const Ground &g) const;
 	double CrustIceField(const vector3d &p, const Ground &g) const;
 	double DarkField(const vector3d &p, double warp) const;
+	// 0..1, on which side of a two-toned moon's border; darker: +1 if DarkField is high on the dark side, -1 if on the bright
+	double TwoToneSide(const vector3d &p, const Ground &g, double level, double darker) const;
 	double DuneField(const vector3d &p, const Ground &g) const;
 	double Thinning(const vector3d &p, const Ground &g) const;
 	void Paint(const vector3d &p, const Point &point, Shares &shares) const;

@@ -746,7 +746,8 @@ double TerrainPhysical::CutValleys(const vector3d &p, Point &point, const double
 
 double TerrainPhysical::Keep(const Ground &g) const
 {
-	const double ground = KeepOf(m_state.ground);
+	// (nothing has smoothed an old ice moon, unlike an ice sheet or a frozen sea)
+	const double ground = m_interior.iceCrust && !m_state.weather && !m_lines.IsActiveShell() ? 1.0 : KeepOf(m_state.ground);
 	if (!m_plainsAreBasalt || g.plains <= 0.0)
 		return ground;
 	return ground + (KeepOf(M::BASALT) - ground) * g.plains;
@@ -1291,6 +1292,8 @@ double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 		// the broken crust of an active shell is low but rough
 		if (m_lines.IsActiveShell())
 			out = own(0.7 * cap, fMin * 1.5, 4, 211, false);
+		else if (m_interior.iceCrust && !m_state.weather)
+			out = own(0.35 * cap, fMin * 2.0, 3, 202, false) + own(0.25 * cap, fMin * 9.0, 5, 208, true);
 		break;
 	case M::DIRTY_ICE: out = own(0.35 * cap, fMin * 2.0, 3, 202, false) + own(0.25 * cap, fMin * 9.0, 5, 208, true); break;
 	case M::GRAVEL: out = own(0.2 * cap, fMin * 8.0, 3, 203, false); break;
@@ -1341,6 +1344,29 @@ double TerrainPhysical::DarkField(const vector3d &p, const double warp) const
 	case MoonStyle::STREAKS: return Fbm(p, 3.4, 4, m_noiseSeed + 78, 0.6);
 	default: return Fbm(p, 1.1, 3, m_noiseSeed + 77);
 	}
+}
+
+// The border of a two-toned moon is sharp from afar. Close up it's a wide zone of spots of both, with the dark lag
+// gathered in the hollows and worn off the rims, as on Iapetus.
+double TerrainPhysical::TwoToneSide(const vector3d &p, const Ground &g, const double level, const double darker) const
+{
+	const double field = DarkField(p, g.warp);
+	const double radiusKm = m_core.radius * 6378.135;
+	const double zone = std::min(75.0 / radiusKm, 0.2); // half its width, on the unit sphere
+	const double hollows = 0.8 * zone;
+	const double maxFrequency = TerrainNoise::s_maxFrequency;
+	// (as sharp as the samples can show)
+	const double edge = std::max(0.0006, maxFrequency > 0.0 ? 0.75 / maxFrequency : 0.0);
+	// far from the border, nothing below could change the side
+	const double reach = 1.5 * zone + hollows + edge;
+	if (field > level + reach)
+		return 1.0;
+	if (field < level - reach)
+		return 0.0;
+	const double spots = std::clamp(Fbm(p, radiusKm / 80.0, 10, m_noiseSeed + 85, 0.62) / 0.35, -1.5, 1.5);
+	const double relief = g.craters.large + g.craters.small;
+	const double hollow = std::clamp(-relief / std::max(0.03 * m_reliefLimit, 1.0), -1.0, 1.0);
+	return Soft(field + zone * spots + darker * hollows * hollow, level, edge);
 }
 
 // separate dune seas near the equator in the lows, with highlands between them
@@ -1857,7 +1883,7 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 		paint(M::SNOW, Soft(std::abs(std::asin(std::clamp(p.y, -1.0, 1.0))) + 0.22 * g.warp + 0.05 * thin, frostLine, 0.015));
 		// old ice moons: dark regions; a past active episode leaves bright lanes along their edges
 		if (m_darkLevel < NONE_HIGH) {
-			double dark = Soft(DarkField(p, g.warp) - 0.1 * thin, m_darkLevel, 0.015);
+			double dark = m_hemispheres ? TwoToneSide(p, g, m_darkLevel, 1.0) : Soft(DarkField(p, g.warp) - 0.1 * thin, m_darkLevel, 0.015);
 			if (m_interior.past)
 				dark *= Soft(g.unitEdge, 0.22, 0.2);
 			paint(M::DIRTY_ICE, dark);
@@ -1866,7 +1892,7 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 			paint(M::ICE, 1.0 - Soft(g.unitEdge, 0.22, 0.2));
 		// dark moons: where the lag is thin, ice shows through in patches
 		if (m_brightLevel < NONE_HIGH)
-			paint(M::ICE, Soft(DarkField(p, g.warp) + 0.1 * thin, m_brightLevel, 0.015));
+			paint(M::ICE, m_hemispheres ? TwoToneSide(p, g, m_brightLevel, -1.0) : Soft(DarkField(p, g.warp) + 0.1 * thin, m_brightLevel, 0.015));
 	}
 
 	// ice and snow, coldest first

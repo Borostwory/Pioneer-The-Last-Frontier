@@ -23,6 +23,8 @@ namespace {
 	constexpr double WIDEST_SPACING = FADE_FROM + FADE_WIDTH;
 	constexpr double REACH = 1.8; // in widths
 	constexpr double SCARP_LOBES = 0.006; // on the unit sphere
+	// a fault valley: how much of its half-width a wall takes, how high its rim is for its depth, how far out that goes
+	constexpr double GRABEN_WALL = 0.3, GRABEN_RIM = 0.1, GRABEN_RIM_REACH = 0.7;
 	// the spacing where each tier starts to fade out, and is gone; REACH * 1.6 * that around it is how far it's listed
 	constexpr double TIER_FROM[3] = { FADE_FROM, 0.006, 0.003 };
 	constexpr double TIER_GONE[3] = { WIDEST_SPACING, 0.0104, 0.00625 };
@@ -200,8 +202,10 @@ void TerrainLines::AddLine(const std::vector<vector3d> &points, const Kind kind,
 		m_deepest = std::max(m_deepest, height);
 	else
 		m_tallest = std::max(m_tallest, height);
-	if (kind == SCARP)
-		m_scarps = true;
+	if (kind == GRABEN)
+		m_tallest = std::max(m_tallest, GRABEN_RIM * height);
+	if (kind == SCARP || kind == GRABEN)
+		m_lobed = true;
 }
 
 void TerrainLines::BuildActiveShell(const PlanetPhysics::Core &core, const double strength, const uint32_t seed)
@@ -385,9 +389,13 @@ void TerrainLines::Build(const PlanetPhysics::Core &core, const PlanetPhysics::I
 	}
 
 	if (it.rift) {
+		// Nearly straight, as Ithaca Chasma on Tethys and Valles Marineris on Mars: following the stress would turn a
+		// line this long round into a ring. It's wide for a small moon, and younger than the valleys it cuts.
 		const Stress stress = MakeStress(rng, 1);
-		const std::vector<vector3d> points = Walk(rng, RandomDirection(rng), stress, 40, 0.05, 0.08);
-		AddLine(points, GRABEN, 0, widthOf(std::max(radiusKm * 0.05, 15.0)), std::min(env * 0.5, 6000.0), 1.0, LARGE);
+		const double length = std::clamp(2000.0 / radiusKm, 1.0, 3.6);
+		const std::vector<vector3d> points = Walk(rng, RandomDirection(rng), stress, int(length / 0.05), 0.05, 0.03, 0.0);
+		const double depth = radiusKm < 1000.0 ? Between(rng, 3000.0, 5000.0) : 6000.0;
+		AddLine(points, GRABEN, 3, std::min(radiusKm * 0.095, 120.0) / radiusKm, std::min(env * 0.5, depth), 1.0, LARGE);
 	}
 }
 
@@ -396,7 +404,7 @@ double TerrainLines::CutReach(const Kind kind)
 	switch (kind) {
 	case RIDGE: return 1.4;
 	case BAND: return 1.15;
-	case GRABEN: return 1.2;
+	case GRABEN: return 1.0 + GRABEN_RIM_REACH;
 	default: return 1.8;
 	}
 }
@@ -408,12 +416,19 @@ double TerrainLines::CrackShape(const Nearest &crack, const double spacing)
 	return Soft(1.0 - crack.distance, 0.0, std::min(wall, 1.0));
 }
 
+double TerrainLines::GrabenCut(const Nearest &line, const double spacing)
+{
+	// (walls no finer than the samples can show, or the mesh draws them as stripes)
+	const double wall = std::min(std::max(GRABEN_WALL, 2.0 * spacing / line.width), 1.0);
+	return Soft(1.0 - line.distance, 0.0, wall);
+}
+
 void TerrainLines::Gather(const std::vector<uint32_t> &nearby, const vector3d &p, const vector3d &lobed, const double spacing, const double tierFade, Nearest &top, Nearest &under, Nearest &deepest) const
 {
 	for (const uint32_t id : nearby) {
 		const Piece &piece = m_pieces[id];
 		const Line &line = m_lines[piece.line];
-		const vector3d &q = line.kind == SCARP ? lobed : p;
+		const vector3d &q = line.kind == SCARP || line.kind == GRABEN ? lobed : p;
 		const vector3d ab = piece.b - piece.a;
 		const double t = std::clamp((q - piece.a).Dot(ab) / piece.lengthSqr, 0.0, 1.0);
 		const double along = (double(piece.first) + t) / double(line.pieces);
@@ -437,6 +452,10 @@ void TerrainLines::Gather(const std::vector<uint32_t> &nearby, const vector3d &p
 		here.kind = line.kind;
 		here.generation = line.generation;
 		here.side = (q - piece.a).Dot(piece.a.Cross(ab)) > 0.0 ? 1.0 : -1.0;
+		if (line.kind == GRABEN) {
+			here.carve = here.height * GrabenCut(here, spacing);
+			here.rim = GRABEN_RIM * here.height * (1.0 - Soft(d, 1.0, GRABEN_RIM_REACH));
+		}
 
 		// Cracks cut into all else, and where two meet the deeper wins: its depth, not its nearness, or the ground
 		// would jump from one depth to the other
@@ -452,8 +471,16 @@ void TerrainLines::Gather(const std::vector<uint32_t> &nearby, const vector3d &p
 		if (top.distance >= REACH) {
 			top = here;
 		} else if (here.generation == top.generation) {
-			if (d < top.distance)
+			if (here.kind == GRABEN && top.kind == GRABEN) {
+				// where two valleys meet the deeper wins and the taller rim stays, or the ground would jump
+				const double rim = std::max(here.rim, top.rim), nearest = std::min(here.distance, top.distance);
+				if (here.carve > top.carve)
+					top = here;
+				top.rim = rim;
+				top.distance = nearest;
+			} else if (d < top.distance) {
 				top = here;
+			}
 		} else if (here.generation > top.generation) {
 			if (d < CutReach(here.kind)) {
 				under = top;
@@ -501,8 +528,9 @@ void TerrainLines::Draw(const Nearest &line, const vector3d &p, const double spa
 		break;
 	}
 	case GRABEN: {
-		const double t = std::clamp(1.0 - d / 1.2, 0.0, 1.0);
-		out.height += -scale * h * t * t * (3.0 - 2.0 * t);
+		// a flat floor, steep walls and a low rim
+		const double cut = h > 0.0 ? line.carve / h : 0.0;
+		out.height += scale * (line.rim * (1.0 - cut) - line.carve);
 		break;
 	}
 	case SCARP: {
@@ -575,9 +603,9 @@ TerrainLines::Sample TerrainLines::At(const vector3d &p) const
 	if ((!large || large->empty()) && (!medium || medium->empty()) && (!mesh || mesh->empty()))
 		return out;
 
-	// a scarp's line wanders in close views, where the samples can show it
+	// the line of a scarp or a valley's wall wanders in close views, where the samples can show it
 	vector3d lobed = p;
-	if (m_scarps && spacing < 1.0 / 256.0 && large && !large->empty()) {
+	if (m_lobed && spacing < 1.0 / 256.0 && large && !large->empty()) {
 		const vector3d shift(SphereCells::Fbm(p, 64.0, 8, m_noiseSeed + 51, 0.6), SphereCells::Fbm(p, 64.0, 8, m_noiseSeed + 52, 0.6), SphereCells::Fbm(p, 64.0, 8, m_noiseSeed + 53, 0.6));
 		lobed = (p + shift * SCARP_LOBES).Normalized();
 	}

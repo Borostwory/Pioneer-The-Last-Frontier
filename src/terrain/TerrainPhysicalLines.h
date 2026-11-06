@@ -108,6 +108,7 @@ private:
 		double tone = 1.0;
 		double coverage = 1.0; // how much of the width drawn the real line fills
 		double side = 0.0;
+		double rim = 0.0; // of a fault valley: metres, how high its rim is
 		bool blue = false;
 		int generation = -100;
 		Kind kind = RIDGE;
@@ -121,6 +122,8 @@ private:
 	static double CutReach(Kind kind);
 	// how much of its depth a crack has at a distance, 0..1
 	static double CrackShape(const Nearest &crack, double spacing);
+	// how much of its depth a fault valley has at a distance, 0..1
+	static double GrabenCut(const Nearest &line, double spacing);
 	void Draw(const Nearest &line, const vector3d &p, double spacing, double scale, Sample &out) const;
 
 	std::vector<Line> m_lines;
@@ -132,7 +135,7 @@ private:
 	vector3d m_stainAxis = vector3d(0.0, 1.0, 0.0);
 	double m_tallest = 0.0, m_deepest = 0.0;
 	uint32_t m_noiseSeed = 0;
-	bool m_scarps = false;
+	bool m_lobed = false; // it has lines whose edges wander in close views
 	bool m_activeShell = false;
 };
 
