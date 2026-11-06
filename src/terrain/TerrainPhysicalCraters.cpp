@@ -144,6 +144,8 @@ void TerrainCraters::Build(const PlanetPhysics::Core &core, const PlanetPhysics:
 		c.fresh = 0.3;
 		c.seed = rng.Double();
 		c.oblique = -1.0;
+		// as Herschel on Mimas and Odysseus on Tethys
+		c.giant = core.radius < 0.25;
 		m_listed.push_back(c);
 	}
 }
@@ -172,6 +174,7 @@ void TerrainCraters::AddSite(const Crater &crater, const double spacing, std::ve
 	s.seed = crater.seed;
 	s.oblique = crater.oblique;
 	s.ratio = crater.diameter / m_transition;
+	s.giant = crater.giant && s.ratio < 15.0;
 	s.large = crater.diameter > 0.05 * m_radiusKm;
 	s.reach = crater.fresh > RAYS_FROM ? REACH_RAYS : REACH;
 	s.reachAngle = std::min(s.reach * angle, M_PI);
@@ -185,7 +188,7 @@ void TerrainCraters::AddSite(const Crater &crater, const double spacing, std::ve
 	const double depth = std::min(s.ratio <= 1.0 ? 0.2 * metres : 0.2 * metres * std::pow(s.ratio, -0.65), 0.7 * m_reliefLimit);
 	s.depth = depth;
 	s.wornDepth = depth * (1.0 - 0.72 * s.wear);
-	s.rim = (s.ratio <= 1.0 ? 0.18 : 0.13) * depth * (1.0 - 0.85 * s.wear);
+	s.rim = (s.ratio <= 1.0 ? 0.18 : 0.13) * (s.giant ? 2.5 : 1.0) * depth * (1.0 - 0.85 * s.wear);
 	out.push_back(s);
 }
 
@@ -280,12 +283,12 @@ void TerrainCraters::Accumulate(const Site &s, const vector3d &p, Sample &out) c
 			// a central peak: lumps fixed in space, as anything shaped by the angle meets at the middle as a star
 			if (t < 0.4) {
 				const double lumps = SphereCells::Noise(p * (16.0 / s.angle), uint32_t(s.seed * 1e6));
-				h += std::exp(-(t / 0.13) * (t / 0.13)) * (0.55 + 0.3 * lumps) * std::min(0.6, 0.25 * std::pow(s.ratio, 0.35)) * s.depth * (1.0 - 0.6 * wear);
+				h += std::exp(-(t / 0.13) * (t / 0.13)) * (0.55 + 0.3 * lumps) * std::min(0.6, 0.25 * std::pow(s.ratio, 0.35)) * (s.giant ? 3.0 : 1.0) * s.depth * (1.0 - 0.6 * wear);
 			}
 		} else if (s.ratio < 15.0) {
 			// peak ring
 			const double e = (t - 0.5) / 0.05;
-			h += std::exp(-e * e) * (0.6 + 0.4 * std::sin(7.0 * theta + s.seed * 30.0)) * 0.28 * s.depth * (1.0 - 0.6 * wear);
+			h += std::exp(-e * e) * (0.6 + 0.4 * std::sin(7.0 * theta + s.seed * 30.0)) * 0.28 * (s.giant ? 1.5 : 1.0) * s.depth * (1.0 - 0.6 * wear);
 		}
 	}
 	if (s.ratio >= 15.0) {

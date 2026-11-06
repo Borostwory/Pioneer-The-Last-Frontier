@@ -24,7 +24,7 @@ namespace {
 	constexpr double REACH = 1.8; // in widths
 	constexpr double SCARP_LOBES = 0.006; // on the unit sphere
 	// a fault valley: how much of its half-width a wall takes, how high its rim is for its depth, how far out that goes
-	constexpr double GRABEN_WALL = 0.3, GRABEN_RIM = 0.1, GRABEN_RIM_REACH = 0.7;
+	constexpr double GRABEN_WALL = 0.5, GRABEN_RIM = 0.1, GRABEN_RIM_REACH = 0.7;
 	// the spacing where each tier starts to fade out, and is gone; REACH * 1.6 * that around it is how far it's listed
 	constexpr double TIER_FROM[3] = { FADE_FROM, 0.006, 0.003 };
 	constexpr double TIER_GONE[3] = { WIDEST_SPACING, 0.0104, 0.00625 };
@@ -342,6 +342,113 @@ void TerrainLines::BuildActiveShell(const PlanetPhysics::Core &core, const doubl
 		addSpot(RandomDirection(rng), Between(rng, 4.0, 14.0), Between(rng, 100.0, 320.0), false);
 }
 
+// Around one pole, a few long parallel troughs with a ridge along each side and blue ice in them, forking at their ends,
+// as Enceladus's tiger stripes, 130 km long and 35 km apart there; many ridges between and around them; and a scalloped
+// margin of ridges with sharp cusps. Only a few long cracks cross the old ground elsewhere.
+void TerrainLines::BuildPolarShell(const PlanetPhysics::Core &core, const double strength, const uint32_t seed)
+{
+	const double radiusKm = core.radius * RADIUS_KM;
+	const auto widthOf = [radiusKm](const double km) { return std::min(km / radiusKm, 0.015); };
+	Random rng(seed & 0x7fffffffu);
+	m_index[MEDIUM].Resize(TIER_ROWS[MEDIUM], 2 * TIER_ROWS[MEDIUM]);
+	m_index[MESH].Resize(TIER_ROWS[MESH], 2 * TIER_ROWS[MESH]);
+	m_polar = true;
+	const Stress fields[3] = { MakeStress(rng, 0), MakeStress(rng, 1), MakeStress(rng, 2) };
+	m_pole = vector3d(0.0, rng.Double() < 0.75 ? -1.0 : 1.0, 0.0);
+	const vector3d e1 = RandomDirection(rng).Cross(m_pole).Normalized();
+	const vector3d e2 = m_pole.Cross(e1);
+
+	// no two alike: uneven spacing and lengths, winding, some hooked at an end, each with its own forks
+	const int stripes = rng.Double() < 0.3 ? 5 : 4;
+	const double bow = Between(rng, 0.1, 0.3);
+	double offset = -0.5 * double(stripes - 1) * 0.14;
+	for (int k = 0; k < stripes; k++) {
+		const double middle = Between(rng, -0.07, 0.07);
+		const double reach = Between(rng, 0.36, 0.64);
+		const double wobble = 6.28 * rng.Double(), wobble2 = 6.28 * rng.Double();
+		const double hookAt = rng.Double() < 0.5 ? 1.0 : -1.0, hook = Between(rng, -0.5, 0.5);
+		std::vector<vector3d> points;
+		constexpr int PIECES = 32;
+		for (int i = 0; i <= PIECES; i++) {
+			const double u = double(i) / PIECES - 0.5;
+			const double s = middle + u * reach;
+			const double late = std::max(2.0 * u * hookAt - 0.6, 0.0);
+			const double wind = 0.016 * std::sin(8.0 * s + wobble) + 0.007 * std::sin(23.0 * s + wobble2);
+			points.push_back((m_pole + e1 * s + e2 * (offset + bow * s * s + wind + hook * late * late)).Normalized());
+		}
+		AddLine(points, RIDGE, 1, widthOf(Between(rng, 2.2, 3.4)), Between(rng, 120.0, 220.0), 0.6, LARGE);
+		AddLine(points, FRACTURE, 3, widthOf(Between(rng, 1.1, 1.6)), Between(rng, 700.0, 1000.0), 1.0, LARGE);
+		m_lines.back().blue = true;
+		for (int end = 0; end < 2; end++) {
+			const vector3d &tip = end == 0 ? points.front() : points.back();
+			const vector3d &before = end == 0 ? points[2] : points[PIECES - 2];
+			const vector3d onward = (tip - before).Normalized();
+			const int forks = int(rng.Int32(3));
+			for (int f = 0; f < forks; f++) {
+				const vector3d heading = onward + e2 * Between(rng, -1.0, 1.0);
+				const int pieces = 3 + int(rng.Int32(7));
+				const double bend = Between(rng, -0.0015, 0.0015);
+				std::vector<vector3d> fork;
+				for (int i = 0; i <= pieces; i++)
+					fork.push_back((tip + heading * (0.012 * i) + e2 * (bend * i * i)).Normalized());
+				AddLine(fork, FRACTURE, 3, widthOf(Between(rng, 0.5, 0.9)), Between(rng, 250.0, 500.0), 0.7, LARGE);
+				m_lines.back().blue = true;
+			}
+		}
+		offset += Between(rng, 0.09, 0.19);
+	}
+
+	// ridges over all the terrain around them
+	const int ridges = int((40.0 + 40.0 * strength));
+	for (int i = 0; i < ridges; i++) {
+		const double away = 0.5 * rng.Double(), turn = 6.28 * rng.Double();
+		const vector3d from = (m_pole + (e1 * std::cos(turn) + e2 * std::sin(turn)) * away).Normalized();
+		AddLine(Walk(rng, from, fields[i % 3], int(Between(rng, 0.12, 0.5) / 0.012), 0.012, 0.05, 0.035), RIDGE, i % 3, widthOf(Between(rng, 0.5, 1.2)), Between(rng, 60.0, 160.0), 0.4, MEDIUM);
+	}
+
+	// Its margin: low scallops of uneven width with sharp cusps, at a distance from the pole that wanders, with gaps,
+	// and only here and there a second strand
+	const double wander1 = 6.28 * rng.Double(), wander2 = 6.28 * rng.Double();
+	const auto marginAngle = [&](const double around) { return 0.58 + 0.05 * std::sin(around + wander1) + 0.025 * std::sin(3.0 * around + wander2); };
+	double around = 6.28 * rng.Double();
+	const double last = around + 2.0 * M_PI;
+	while (around < last - 0.2) {
+		const double wide = std::min(Between(rng, 0.45, 1.4), last - around);
+		if (rng.Double() < 0.75) {
+			const double bulge = Between(rng, 0.03, 0.09) * wide;
+			std::vector<vector3d> points;
+			constexpr int PIECES = 20;
+			for (int i = 0; i <= PIECES; i++) {
+				const double t = double(i) / PIECES;
+				const double at = around + t * wide;
+				const double angle = marginAngle(at) + bulge * (1.0 - (2.0 * t - 1.0) * (2.0 * t - 1.0));
+				points.push_back(m_pole * std::cos(angle) + (e1 * std::cos(at) + e2 * std::sin(at)) * std::sin(angle));
+			}
+			const double height = Between(rng, 50.0, 130.0), width = widthOf(Between(rng, 1.0, 2.2));
+			AddLine(points, RIDGE, 2, width, height, 0.35, LARGE);
+			if (rng.Double() < 0.3)
+				AddLine(Beside(points, Between(rng, 0.012, 0.03), rng.Double() * 6.0), RIDGE, 2, 0.8 * width, 0.7 * height, 0.3, LARGE);
+		}
+		around += wide;
+	}
+
+	// a few long cracks elsewhere
+	const double step = 0.03;
+	const int cracks = 12 + int(10.0 * strength);
+	for (int i = 0; i < cracks; i++) {
+		const bool ridge = rng.Double() < 0.5;
+		AddLine(Walk(rng, RandomDirection(rng), fields[i % 3], int(Between(rng, 0.8, 2.6) / step), step, 0.015, 0.035), ridge ? RIDGE : FRACTURE, i % 3, widthOf(Between(rng, 0.5, 1.5)), Between(rng, 80.0, 300.0), 0.45, MEDIUM);
+	}
+	const int deep = 4 + int(4.0 * strength);
+	for (int i = 0; i < deep; i++) {
+		AddLine(Walk(rng, RandomDirection(rng), fields[i % 3], int(Between(rng, 1.0, 2.0) / step), step, 0.02, 0.05), FRACTURE, 3, widthOf(Between(rng, 0.8, 1.5)), Between(rng, 500.0, 900.0), 0.7, LARGE);
+		m_lines.back().blue = true;
+	}
+	const int mesh = 50 + int(50.0 * strength);
+	for (int i = 0; i < mesh; i++)
+		AddLine(Walk(rng, RandomDirection(rng), fields[i % 3], int(Between(rng, 0.3, 1.2) / step), step, 0.02, 0.035), FRACTURE, i % 3 - 3, widthOf(Between(rng, 0.1, 0.4)), Between(rng, 40.0, 150.0), 0.25, MESH);
+}
+
 void TerrainLines::Build(const PlanetPhysics::Core &core, const PlanetPhysics::Interior &it, const uint32_t noiseSeed, const bool grooved)
 {
 	m_noiseSeed = noiseSeed;
@@ -357,7 +464,10 @@ void TerrainLines::Build(const PlanetPhysics::Core &core, const PlanetPhysics::I
 	const bool active = it.iceCrust && it.iceActivity >= 0.05;
 	m_activeShell = active;
 	if (active) {
-		BuildActiveShell(core, it.shellStrength, core.seed ^ 0x51A6u);
+		if (core.radius < 0.1)
+			BuildPolarShell(core, it.shellStrength, core.seed ^ 0x51A6u);
+		else
+			BuildActiveShell(core, it.shellStrength, core.seed ^ 0x51A6u);
 	} else if (it.shellStrength > 0.0 && !grooved) {
 		for (int generation = 0; generation < 3; generation++) {
 			const Stress stress = MakeStress(rng, generation);
@@ -390,12 +500,29 @@ void TerrainLines::Build(const PlanetPhysics::Core &core, const PlanetPhysics::I
 
 	if (it.rift) {
 		// Nearly straight, as Ithaca Chasma on Tethys and Valles Marineris on Mars: following the stress would turn a
-		// line this long round into a ring. It's wide for a small moon, and younger than the valleys it cuts.
+		// line this long round into a ring. It's wide for a small moon, and younger than the valleys it cuts. It isn't
+		// one line: overlapping stretches stepped sideways from each other, of their own widths and depths, with
+		// narrower valleys branching off.
 		const Stress stress = MakeStress(rng, 1);
 		const double length = std::clamp(2000.0 / radiusKm, 1.0, 3.6);
-		const std::vector<vector3d> points = Walk(rng, RandomDirection(rng), stress, int(length / 0.05), 0.05, 0.03, 0.0);
+		const std::vector<vector3d> spine = Walk(rng, RandomDirection(rng), stress, int(length / 0.05), 0.05, 0.05, 0.0);
 		const double depth = radiusKm < 1000.0 ? Between(rng, 3000.0, 5000.0) : 6000.0;
-		AddLine(points, GRABEN, 3, std::min(radiusKm * 0.095, 120.0) / radiusKm, std::min(env * 0.5, depth), 1.0, LARGE);
+		const double wide = std::min(radiusKm * 0.095, 120.0) / radiusKm;
+		const double deepest = std::min(env * 0.5, depth);
+		const int count = int(spine.size());
+		const int stretches = 3 + int(rng.Int32(3));
+		for (int s = 0; s < stretches; s++) {
+			const int from = std::max(int((double(s) - 0.15) / stretches * count), 0);
+			const int to = std::min(int((double(s) + 1.15) / stretches * count), count);
+			const std::vector<vector3d> stretch(spine.begin() + from, spine.begin() + to);
+			AddLine(Beside(stretch, Between(rng, -0.6, 0.6) * wide, rng.Double() * 6.0), GRABEN, 3, wide * Between(rng, 0.7, 1.15), deepest * Between(rng, 0.7, 1.0), 1.0, LARGE);
+		}
+		const int branches = 6 + int(rng.Int32(5));
+		for (int b = 0; b < branches; b++) {
+			const Stress away = MakeStress(rng, 2);
+			const vector3d &start = spine[rng.Int32(count)];
+			AddLine(Walk(rng, start, away, std::max(int(Between(rng, 0.2, 0.7) * length / 0.05 / 3.0), 3), 0.05, 0.08, 0.0), GRABEN, 3, wide * Between(rng, 0.2, 0.4), deepest * Between(rng, 0.25, 0.55), 1.0, LARGE);
+		}
 	}
 }
 
@@ -420,11 +547,19 @@ double TerrainLines::GrabenCut(const Nearest &line, const double spacing)
 {
 	// (walls no finer than the samples can show, or the mesh draws them as stripes)
 	const double wall = std::min(std::max(GRABEN_WALL, 2.0 * spacing / line.width), 1.0);
-	return Soft(1.0 - line.distance, 0.0, wall);
+	const double cut = Soft(1.0 - line.distance, 0.0, wall);
+	// the walls have slumped into a few terraces, once the samples can show them
+	const double show = 1.0 - Soft(spacing / (wall * line.width / 3.0), 0.3, 0.4);
+	if (show <= 0.0)
+		return cut;
+	const double t = 3.0 * cut, step = std::floor(t);
+	return cut + 0.6 * show * ((step + Soft(t - step, 0.25, 0.5)) / 3.0 - cut);
 }
 
 void TerrainLines::Gather(const std::vector<uint32_t> &nearby, const vector3d &p, const vector3d &lobed, const double spacing, const double tierFade, Nearest &top, Nearest &under, Nearest &deepest) const
 {
+	int unevenLine = -1;
+	double uneven = 0.0;
 	for (const uint32_t id : nearby) {
 		const Piece &piece = m_pieces[id];
 		const Line &line = m_lines[piece.line];
@@ -432,7 +567,15 @@ void TerrainLines::Gather(const std::vector<uint32_t> &nearby, const vector3d &p
 		const vector3d ab = piece.b - piece.a;
 		const double t = std::clamp((q - piece.a).Dot(ab) / piece.lengthSqr, 0.0, 1.0);
 		const double along = (double(piece.first) + t) / double(line.pieces);
-		const double lineWidth = double(line.width) * (line.wedge ? 0.15 + 0.85 * along : 1.0);
+		double lineWidth = double(line.width) * (line.wedge ? 0.15 + 0.85 * along : 1.0);
+		// a fault valley narrows and deepens, and widens and shoals, along its length
+		if (line.kind == GRABEN) {
+			if (piece.line != unevenLine) {
+				unevenLine = piece.line;
+				uneven = std::clamp(SphereCells::Fbm(q, 0.25 / double(line.width), 3, m_noiseSeed + 70 + uint32_t(piece.line % 8)) / 0.35, -1.0, 1.0);
+			}
+			lineWidth *= 1.0 + 0.3 * uneven;
+		}
 		const double width = std::max(lineWidth, 1.6 * spacing);
 		const double d = (q - (piece.a + ab * t)).Length() / width;
 		if (d >= REACH)
@@ -444,7 +587,7 @@ void TerrainLines::Gather(const std::vector<uint32_t> &nearby, const vector3d &p
 		Nearest here;
 		here.distance = d;
 		here.width = width;
-		here.height = double(line.height) * fade;
+		here.height = double(line.height) * fade * (line.kind == GRABEN ? 1.0 - 0.2 * uneven : 1.0);
 		here.fade = fade;
 		here.tone = line.tone;
 		here.coverage = std::min(lineWidth / width, 1.0);

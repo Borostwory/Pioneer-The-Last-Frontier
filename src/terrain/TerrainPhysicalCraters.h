@@ -47,6 +47,7 @@ private:
 		double fresh; // 0..1
 		double seed; // 0..1
 		double oblique; // the direction of a low-angle impact, radians, or -1
+		bool giant = false; // huge for the moon it's on: a tall rim and a tall peak
 	};
 	// a crater with what is worked out once, for one view of it
 	struct Site {
@@ -56,6 +57,7 @@ private:
 		double diameter, fresh, seed, oblique, ratio;
 		double wear, depth, wornDepth, rim;
 		bool large;
+		bool giant;
 	};
 	// the craters of one size, on a lattice in space
 	struct Size {

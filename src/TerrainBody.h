@@ -40,7 +40,7 @@ public:
 	// The ground as drawn along pos (unit), metres from the centre: on the
 	// terrain mesh, whose vertices are tens of metres apart, so between them
 	// it can be metres above or below GetTerrainHeight, which stands in where
-	// the mesh isn't drawn yet. What a walker or a rover stands on.
+	// the mesh isn't drawn yet, or is far coarser than it gets close up. What a walker or a rover stands on.
 	double GetDrawnTerrainHeight(const vector3d &pos) const;
 	// the height fractal without erosion (Terrain::GetBaseHeights), metres from the centre
 	double GetBaseTerrainHeight(const vector3d &pos) const;

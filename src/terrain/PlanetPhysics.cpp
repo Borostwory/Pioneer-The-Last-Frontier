@@ -165,8 +165,12 @@ namespace PlanetPhysics {
 				it.hemispheres = true;
 			else if (pick < 2)
 				it.basin = true;
-			else
+			else {
 				it.rift = true;
+				// (a small old ice moon can have both, as Tethys has)
+				if (ice && core.radius < 0.2)
+					it.basin = true;
+			}
 		}
 		// old, small, slow-spinning ice bodies can be two-toned, like Iapetus
 		if (ice && !it.past && it.iceActivity < 0.05 && core.radius > 0.05 && core.radius < 0.2 && core.rotationDays > 20.0 && rng.Double() < 0.5) {
@@ -304,7 +308,7 @@ namespace PlanetPhysics {
 		add();
 		snprintf(line, sizeof(line), "Heat: radiogenic %.4f, tidal %.4f W/m2; activity rock %.2f, ice %.2f, heat pipe %.2f", it.radiogenicHeat, it.tidalHeat, it.siliconActivity, it.iceActivity, it.heatPipe);
 		add();
-		snprintf(line, sizeof(line), "Plates %d, lid %d, past activity %d, dichotomy %d, fossil valleys %d, shell %d", it.plates, it.lid, it.past, it.dichotomy, it.fossil, it.shell);
+		snprintf(line, sizeof(line), "Plates %d, lid %d, past activity %d, dichotomy %d, fossil valleys %d, shell %d, basin %d, rift %d, two-toned %d", it.plates, it.lid, it.past, it.dichotomy, it.fossil, it.shell, it.basin, it.rift, it.hemispheres);
 		add();
 		snprintf(line, sizeof(line), "Relief limit %.0f m, crater transition %.1f km, cratering %.2f, plains %.2f", it.reliefLimit, it.transitionDiameter, it.cratering, it.plains);
 		add();

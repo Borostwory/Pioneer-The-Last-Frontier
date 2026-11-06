@@ -43,6 +43,9 @@ public:
 
 	// an active shell, with its salts and deep fractures
 	bool IsActiveShell() const { return m_activeShell; }
+	// a small active shell, like Enceladus: its activity is all around one pole, with the stripes at the middle
+	bool IsPolar() const { return m_polar; }
+	const vector3d &Pole() const { return m_pole; }
 	double Tallest() const { return m_tallest; }
 	double Deepest() const { return m_deepest; }
 	size_t LineCount() const { return m_middles.size(); }
@@ -117,6 +120,7 @@ private:
 
 	void AddLine(const std::vector<vector3d> &points, Kind kind, int generation, double width, double height, double tone, Tier tier);
 	void BuildActiveShell(const PlanetPhysics::Core &core, double strength, uint32_t seed);
+	void BuildPolarShell(const PlanetPhysics::Core &core, double strength, uint32_t seed);
 	// top: what is drawn here; under: an older line it cuts through, which shows beyond its edge; deepest: the crack cut deepest here
 	void Gather(const std::vector<uint32_t> &nearby, const vector3d &p, const vector3d &lobed, double spacing, double tierFade, Nearest &top, Nearest &under, Nearest &deepest) const;
 	// how far from its middle, in widths, a line covers what is under it
@@ -138,6 +142,8 @@ private:
 	uint32_t m_noiseSeed = 0;
 	bool m_lobed = false; // it has lines whose edges wander in close views
 	bool m_activeShell = false;
+	bool m_polar = false;
+	vector3d m_pole = vector3d(0.0, -1.0, 0.0);
 };
 
 #endif // _TERRAINPHYSICALLINES_H

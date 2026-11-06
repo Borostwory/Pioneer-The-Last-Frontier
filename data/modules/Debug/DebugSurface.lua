@@ -38,6 +38,7 @@ local featureKinds = {
 	{ id = "patera", label = "Patera", size = "across" },
 	{ id = "block", label = "Mountain block", size = "across" },
 	{ id = "line", label = "Crack or scarp", size = "long" },
+	{ id = "stripe", label = "Tiger stripes" },
 	{ id = "chaos", label = "Chaos" },
 	{ id = "lane", label = "Grooved lane" },
 }

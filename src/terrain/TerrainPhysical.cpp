@@ -688,6 +688,20 @@ TerrainPhysical::Ground TerrainPhysical::GroundAt(const vector3d &p) const
 	}
 
 	g.craters = m_craters.At(p);
+	// the active pole of a small shell is too young for any
+	if (m_lines.IsPolar()) {
+		{
+			TerrainNoise::ScopedBandLimit fullDetail(0.0);
+			const double angle = std::acos(std::clamp(p.Dot(m_lines.Pole()), -1.0, 1.0)) + 0.06 * Fbm(p, 5.0, 3, m_noiseSeed + 351);
+			g.polarCap = 1.0 - Soft(angle, 0.54, 0.12);
+		}
+		const double kept = 1.0 - g.polarCap;
+		g.craters.large *= kept;
+		g.craters.small *= kept;
+		g.craters.floor *= kept;
+		g.craters.ejecta *= kept;
+		g.craters.rays *= kept;
+	}
 
 	// old plains flood the lows, with the large craters' rims standing out of them
 	if (m_floodLevel > NONE_LOW) {
@@ -706,6 +720,9 @@ TerrainPhysical::Ground TerrainPhysical::GroundAt(const vector3d &p) const
 	g.large = h;
 	g.base = h + g.craters.large;
 	g.small = 0.08 * env * Fbm(p, 18.0, 5, m_noiseSeed + 41, 0.55);
+	// (a small active shell is smooth with fresh snow, though its old craters still show)
+	if (m_lines.IsPolar())
+		g.small *= 0.3;
 	return g;
 }
 
@@ -788,7 +805,7 @@ double TerrainPhysical::CutValleys(const vector3d &p, Point &point, const double
 double TerrainPhysical::Keep(const Ground &g) const
 {
 	// (nothing has smoothed an old ice moon, unlike an ice sheet or a frozen sea)
-	const double ground = m_interior.iceCrust && !m_state.weather && !m_lines.IsActiveShell() ? 1.0 : KeepOf(m_state.ground);
+	const double ground = m_interior.iceCrust && !m_state.weather && (!m_lines.IsActiveShell() || m_lines.IsPolar()) ? 1.0 : KeepOf(m_state.ground);
 	if (!m_plainsAreBasalt || g.plains <= 0.0)
 		return ground;
 	return ground + (KeepOf(M::BASALT) - ground) * g.plains;
@@ -1354,7 +1371,9 @@ double TerrainPhysical::CrustMaps(const vector3d &p, Point &point) const
 
 	// Bent, so that the tile's repeats don't line up, and turned differently region by region. At full detail, or
 	// all this would move from one patch to the next.
-	const double chaos = CrustChaos(p);
+	// (on a small shell, the rough ground is around its active pole, and chaos only there)
+	const double polar = point.g.polarCap;
+	const double chaos = CrustChaos(p) * (m_lines.IsPolar() ? polar : 1.0);
 	vector3d shift(0.0, 0.0, 0.0);
 	double second;
 	{
@@ -1410,7 +1429,7 @@ double TerrainPhysical::CrustMaps(const vector3d &p, Point &point) const
 		point.crustRubble = chaos * (close * rubble + (1.0 - close) * std::min(1.3 * typical * (0.45 + 0.55 * broad), 1.0));
 	}
 	// a small moon has less relief
-	return metres * std::min(0.4 * m_reliefLimit / CRUST_ROOM, 1.0);
+	return metres * std::min(0.4 * m_reliefLimit / CRUST_ROOM, 1.0) * (m_lines.IsPolar() ? 0.15 + 0.45 * polar : 1.0);
 }
 
 void TerrainPhysical::BuildGrooves()
@@ -1578,7 +1597,7 @@ double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 	case M::ICE:
 		// the broken crust of an active shell is low but rough
 		if (m_lines.IsActiveShell())
-			out = own(0.7 * cap, fMin * 1.5, 4, 211, false);
+			out = own((m_lines.IsPolar() ? 0.2 : 0.7) * cap, fMin * 1.5, 4, 211, false);
 		else if (m_interior.iceCrust && !m_state.weather)
 			out = own(0.35 * cap, fMin * 2.0, 3, 202, false) + own(0.25 * cap, fMin * 9.0, 5, 208, true);
 		break;
@@ -2122,10 +2141,13 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 	// a soft low stain over one side, fading into the clean ice
 	if (m_lines.IsActiveShell()) {
 		paint(M::ICE, point.lines.pale);
-		const double uneven = std::clamp(Fbm(p, 1.6, 4, m_noiseSeed + 301, 0.55) / 0.35, -1.0, 1.0);
-		const double stain = 0.42 * Soft(p.Dot(m_lines.StainAxis()) + 0.3 * uneven, 0.1, 0.8);
-		// (the rubble of chaos is brown, the plates in it are not)
-		paint(M::SALT, std::max({ 0.9 * point.lines.band, stain, 0.75 * point.crustRubble }));
+		// (a small shell's plumes keep it clean)
+		if (!m_lines.IsPolar()) {
+			const double uneven = std::clamp(Fbm(p, 1.6, 4, m_noiseSeed + 301, 0.55) / 0.35, -1.0, 1.0);
+			const double stain = 0.42 * Soft(p.Dot(m_lines.StainAxis()) + 0.3 * uneven, 0.1, 0.8);
+			// (the rubble of chaos is brown, the plates in it are not)
+			paint(M::SALT, std::max({ 0.9 * point.lines.band, stain, 0.75 * point.crustRubble }));
+		}
 	}
 
 	// a frozen sea
@@ -2367,6 +2389,9 @@ vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, cons
 			c = c * (1.0 - share) + Times(vector3d(0.27, 0.235, 0.20), m_tint) * m_bright * share;
 		}
 		c = c * (1.0 - 0.6 * std::max(point.lines.crack, point.crustCrack)) * (1.0 - 0.35 * point.lines.dark);
+		// coarse fresh ice around an active pole looks bluer
+		if (m_lines.IsPolar())
+			c = c * (1.0 - 0.22 * g.polarCap) + Times(vector3d(0.70, 0.86, 0.96), m_tint) * m_bright * (0.22 * g.polarCap);
 		const double slot = point.lines.slot;
 		const vector3d floorTone = point.lines.slotBlue ? vector3d(0.30, 0.55, 0.66) : vector3d(0.28, 0.13, 0.06);
 		c = c * (1.0 - slot) + Times(floorTone, m_tint) * m_bright * slot;
@@ -2537,6 +2562,11 @@ std::vector<Terrain::Feature> TerrainPhysical::FindFeatures(const std::string &k
 			if (CrustChaos(place) > 0.95)
 				out.push_back({ place, 2.0 * std::sqrt(4.0 * M_PI / 3000.0) * m_planetRadius });
 		}
+		return out;
+	}
+	if (kind == "stripe") {
+		if (m_lines.IsPolar())
+			out.push_back({ m_lines.Pole(), 0.3 * m_planetRadius });
 		return out;
 	}
 	if (kind == "line") {

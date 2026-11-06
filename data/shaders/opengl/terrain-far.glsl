@@ -54,6 +54,9 @@ float terrainFarTexelRatio(float distMetres, float facing)
 #define FAR_RELIEF_SLOPES 4.0
 #define FAR_RELIEF_NEAR 2.0e4
 #define FAR_RELIEF_FAR 3.0e5
+// slopes light as steep as this at most (a tangent), or a cliff or a rift's wall would go black; gentle ones aren't touched
+#define FAR_RELIEF_KNEE 0.5
+#define FAR_RELIEF_MOST 0.85
 
 vec3 terrainFarRelief(vec3 normal, vec3 up, float distMetres)
 {
@@ -61,7 +64,13 @@ vec3 terrainFarRelief(vec3 normal, vec3 up, float distMetres)
 		return normal;
 	float along = dot(normal, up);
 	float slopes = mix(1.0, FAR_RELIEF_SLOPES, smoothstep(FAR_RELIEF_NEAR, FAR_RELIEF_FAR, distMetres));
-	return normalize(up * along + (normal - up * along) * slopes);
+	vec3 side = normal - up * along;
+	float tangent = length(side) / max(along, 1.0e-3);
+	float steep = tangent * slopes;
+	if (steep > FAR_RELIEF_KNEE)
+		steep = FAR_RELIEF_KNEE + (FAR_RELIEF_MOST - FAR_RELIEF_KNEE) * (1.0 - exp(-(steep - FAR_RELIEF_KNEE) / (FAR_RELIEF_MOST - FAR_RELIEF_KNEE)));
+	steep = max(steep, tangent);
+	return normalize(up * along + side * (steep / max(tangent, 1.0e-4)));
 }
 
 // rgb: colour, a: altitude above sea level as in the vertex alpha

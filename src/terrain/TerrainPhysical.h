@@ -60,6 +60,7 @@ private:
 		double plains = 0.0;
 		double unitClass = 0.0;
 		double unitEdge = 1.0;
+		double polarCap = 0.0; // 0..1, the young terrain around the active pole of a small shell
 		double tessera = 0.0;
 		double block = 0.0; // 0..1, on one of Io's mountain blocks
 		double patera = 0.0; // 0..1, on a patera's floor

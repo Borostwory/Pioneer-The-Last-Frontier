@@ -498,6 +498,10 @@ bool GeoPatch::GetDrawnRadius(const vector3d &dir, double &radius) const
 	}
 	if (!HasHeightData())
 		return false;
+	// Too coarse to stand on: the camera is far off, and where a ship rests mustn't depend on where it's seen from. The
+	// exact height stands in.
+	if (GetVertexSpacing() * m_geosphere->GetSystemBody()->GetRadius() > 2.0 * m_geosphere->GetDeepestVertexSpacing())
+		return false;
 
 	// the mesh as UpdateVBOs builds it: the inner vertices at frac steps of
 	// the surface coords, raised by their heights
