@@ -30,6 +30,8 @@ uniform vec4 TileStyle;
 // the largest wavelength the tile may hold, in metres; 0: no limit. The mesh draws everything larger,
 // and the band follows the distance, so without this the ground's texture keeps its size on screen
 uniform float TileCraterTop;
+// metres: landforms of every size up to this, fixed in space, instead of the band's (0)
+uniform float TileLandformTop;
 
 // as TerrainTiles::MAX_OCTAVES
 #define TILE_MAX_OCTAVES 16
@@ -86,7 +88,7 @@ void main(void)
 		// the shortest octave is close to the texel size: weaker
 		float w = (i == 0) ? 0.6 : 1.0;
 		vec4 o = vec4(0.0);
-		if (i < band && (TileCraterTop <= 0.0 || lambda <= TileCraterTop * 1.01)) {
+		if (TileLandformTop > 0.0 ? lambda <= TileLandformTop * 1.01 : (i < band && (TileCraterTop <= 0.0 || lambda <= TileCraterTop * 1.01))) {
 			if (TileStyle.x > 0.0)
 				o += TileStyle.x * tileRolling(q, salt, accumulated);
 			if (TileStyle.y > 0.0)

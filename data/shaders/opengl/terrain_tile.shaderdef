@@ -18,6 +18,7 @@ PushConstant vec4 TileOrigin1 binding=9
 PushConstant vec4 TileOrigin2 binding=10
 PushConstant vec4 TileOrigin3 binding=11
 PushConstant float TileCraterTop binding=12
+PushConstant float TileLandformTop binding=13
 
 Vertex "cloud_fullscreen.vert"
 Fragment "terrain_tile.frag"

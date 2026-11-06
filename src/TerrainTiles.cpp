@@ -142,7 +142,7 @@ void TerrainTiles::Update(Graphics::Renderer *r, GeoSphere *sphere, const std::v
 
 	const double radius = sphere->GetSystemBody()->GetRadius();
 	// the craters' finest octave follows the distance: bake again as it changes
-	const bool rebake = sphere->GetTileStyle()[3] > 0.0f;
+	const bool rebake = sphere->GetTileStyle()[3] > 0.0f || sphere->GetTerrain()->GetTileLandformTop() > 0.0;
 
 	// patches large enough on screen to show the landforms, and those whose
 	// band no longer fits their distance: (squared distance, patch, band)
@@ -233,9 +233,10 @@ void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patc
 	const double finestWave = ladderBase * std::pow(2.0, double(finest));
 	const float *style = sphere->GetTileStyle();
 	int count = BAND_OCTAVES;
-	if (style[3] > 0.0f) {
+	const double landformTop = sphere->GetTerrain()->GetTileLandformTop();
+	if (style[3] > 0.0f || landformTop > 0.0) {
 		const double craterTop = sphere->GetTerrain()->GetTileCraterTop();
-		const double largest = craterTop > 0.0 ? craterTop : radius * CRATER_TOP_PER_RADIUS;
+		const double largest = std::max(style[3] > 0.0f ? (craterTop > 0.0 ? craterTop : radius * CRATER_TOP_PER_RADIUS) : 0.0, landformTop);
 		const int top = int(std::floor(std::log2(std::max(largest / ladderBase, 1.0))));
 		count = std::min(std::max(top - finest + 1, BAND_OCTAVES), MAX_OCTAVES);
 	}
@@ -261,5 +262,6 @@ void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patc
 	}
 	m->SetPushConstant("TileStyle"_hash, vector3f(style[0], style[1], style[2]), style[3]);
 	m->SetPushConstant("TileCraterTop"_hash, float(sphere->GetTerrain()->GetTileCraterTop()));
+	m->SetPushConstant("TileLandformTop"_hash, float(landformTop));
 	r->DrawBuffer(m_triangle.get(), m);
 }

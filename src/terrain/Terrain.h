@@ -89,6 +89,9 @@ public:
 	virtual bool GetTileStyle(float[4]) const { return false; }
 	// The largest craters the tiles may draw, in metres; 0: by the planet's size.
 	virtual double GetTileCraterTop() const { return 0.0; }
+	// metres: the tile's landforms, of every size up to this and fixed in space, instead of only those near the patch's
+	// own scale (0)
+	virtual double GetTileLandformTop() const { return 0.0; }
 	// True: all detail is fixed in space, so the shaders leave out what they size by the view
 	virtual bool HasFixedDetail() const { return false; }
 	// Water that the height doesn't show, such as rivers and lakes above sea level, within radiusMetres of p

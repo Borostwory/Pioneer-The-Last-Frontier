@@ -2894,10 +2894,33 @@ void TerrainPhysical::BuildShares()
 
 bool TerrainPhysical::GetTileStyle(float style[4]) const
 {
-	// gentle ground below the mesh, and craters too small for the mesh, at the body's density
-	style[0] = m_state.ground == M::ROCK ? 0.3f : 0.15f;
+	// ground below what the mesh and the craters show, as rough as what it's made of, and craters too small for the
+	// mesh, at the body's density
+	style[0] = 0.3f;
 	style[1] = 0.0f;
 	style[2] = 0.0f;
+	switch (m_state.ground) {
+	case M::ROCK:
+	case M::REGOLITH:
+		style[0] = 0.4f;
+		style[1] = 0.15f;
+		break;
+	case M::BASALT:
+		style[1] = 0.25f;
+		break;
+	case M::ICE:
+		style[0] = 0.2f;
+		break;
+	case M::SAND:
+		style[0] = 0.15f;
+		break;
+	default: break;
+	}
+	// (what has its own maps keeps to the gentle small sizes it was judged with)
+	if (m_lines.IsActiveShell() || m_grooved) {
+		style[0] = 0.15f;
+		style[1] = 0.0f;
+	}
 	const double craters = std::clamp(m_interior.cratering * (1.0 - 0.97 * m_state.wearSmall) * (1.0 - m_state.lavaPlanet), 0.0, 1.0);
 	// (a young surface such as Europa's has next to none, and the tiles can't place so few)
 	style[3] = craters < 0.05 ? 0.0f : float(craters);
