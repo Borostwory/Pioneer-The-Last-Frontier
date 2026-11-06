@@ -326,19 +326,24 @@ float materialRegionNoise(vec2 p, float salt)
 // so turning doesn't show where the origin wraps.
 const vec2 MATERIAL_TURNS[8] = vec2[8](vec2(1.0, 0.0), vec2(0.6, 0.8), vec2(0.0, 1.0), vec2(-0.8, 0.6), vec2(-1.0, 0.0), vec2(-0.6, -0.8), vec2(0.0, -1.0), vec2(0.8, -0.6));
 
+// each texture's turns, patch size and blend
+#include "terrain-material-rotation.glsl"
+
 // Reads the tile turned and shifted one way or the next, by a field fixed in space, blended along their bumps: no two
-// places alike, and no grid. uvFar: this place in tiles 32 times the size, for the field's long repeats.
-vec3 materialVariedRead(int layer, vec2 uv, vec2 dx, vec2 dy, vec2 uvFar)
+// places alike, and no grid. uvPatch, uvFar: this place in cells of a patch, and 32 times that, for the field's long
+// repeats. turnStep: 1 for all eight turns, 2 for right angles only. blend: how far they blend into each other.
+vec3 materialVariedRead(int layer, vec2 uv, vec2 dx, vec2 dy, vec2 uvPatch, vec2 uvFar, int turnStep, float blend)
 {
-	float field = 8.0 * fract(materialRegionNoise(uv, 0.0) + 3.0 * materialRegionNoise(uvFar, 5.7));
+	float count = float(8 / turnStep);
+	float field = count * fract(materialRegionNoise(uvPatch, 0.0) + 3.0 * materialRegionNoise(uvFar, 5.7));
 	float index = floor(field);
-	vec2 a = MATERIAL_TURNS[int(index)], b = MATERIAL_TURNS[int(mod(index + 1.0, 8.0))];
+	vec2 a = MATERIAL_TURNS[int(index) * turnStep], b = MATERIAL_TURNS[int(mod(index + 1.0, count)) * turnStep];
 	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * (index + 1.0));
 	vec3 ra = textureGrad(terrainMaterials, vec3(vec2(a.x * uv.x - a.y * uv.y, a.y * uv.x + a.x * uv.y) + offsetA, float(layer)),
 		vec2(a.x * dx.x - a.y * dx.y, a.y * dx.x + a.x * dx.y), vec2(a.x * dy.x - a.y * dy.y, a.y * dy.x + a.x * dy.y)).rga;
 	vec3 rb = textureGrad(terrainMaterials, vec3(vec2(b.x * uv.x - b.y * uv.y, b.y * uv.x + b.x * uv.y) + offsetB, float(layer)),
 		vec2(b.x * dx.x - b.y * dx.y, b.y * dx.x + b.x * dx.y), vec2(b.x * dy.x - b.y * dy.y, b.y * dy.x + b.x * dy.y)).rga;
-	return mix(ra, rb, smoothstep(0.25, 0.75, field - index + 0.8 * (rb.z - ra.z)));
+	return mix(ra, rb, smoothstep(0.5 - blend, 0.5 + blend, field - index + 0.8 * (rb.z - ra.z)));
 }
 
 // one tile size of 2^level metres. Emission (x), detail (y), height (z).
@@ -347,12 +352,17 @@ vec3 materialTileSample(int layer, MaterialMapping m, float level)
 	float tile = exp2(level);
 	vec3 q = materialTileCoord(m, level);
 	vec3 qx = m.relDx / tile, qy = m.relDy / tile;
-	// (detail fixed in space: varied, everywhere else as it was)
-	if (MaterialLook.y > 0.5) {
-		vec3 qFar = materialTileCoord(m, min(level + 5.0, MATERIAL_MAX_LEVEL));
-		vec3 varied = m.plane.x * materialVariedRead(layer, materialPlaneUV(q, m.axes.x), materialPlaneUV(qx, m.axes.x), materialPlaneUV(qy, m.axes.x), materialPlaneUV(qFar, m.axes.x));
+	// (detail fixed in space: as set for this texture; everywhere else straight)
+	vec3 rotation = materialRotation(layer);
+	if (MaterialLook.y > 0.5 && rotation.x > 0.5) {
+		// a patch of 2^y tiles, in the coordinates of that size, so it goes on across their wrap; half a tile is twice
+		// these, which still does
+		vec3 qPatch = rotation.y < -0.5 ? q * 2.0 : (rotation.y < 0.5 ? q : materialTileCoord(m, min(level + rotation.y, MATERIAL_MAX_LEVEL)));
+		vec3 qFar = materialTileCoord(m, min(level + max(rotation.y, 0.0) + 5.0, MATERIAL_MAX_LEVEL));
+		int turnStep = rotation.x < 1.5 ? 2 : 1;
+		vec3 varied = m.plane.x * materialVariedRead(layer, materialPlaneUV(q, m.axes.x), materialPlaneUV(qx, m.axes.x), materialPlaneUV(qy, m.axes.x), materialPlaneUV(qPatch, m.axes.x), materialPlaneUV(qFar, m.axes.x), turnStep, rotation.z);
 		if (m.plane.y > 0.0)
-			varied += m.plane.y * materialVariedRead(layer, materialPlaneUV(q, m.axes.y), materialPlaneUV(qx, m.axes.y), materialPlaneUV(qy, m.axes.y), materialPlaneUV(qFar, m.axes.y));
+			varied += m.plane.y * materialVariedRead(layer, materialPlaneUV(q, m.axes.y), materialPlaneUV(qx, m.axes.y), materialPlaneUV(qy, m.axes.y), materialPlaneUV(qPatch, m.axes.y), materialPlaneUV(qFar, m.axes.y), turnStep, rotation.z);
 		return varied;
 	}
 	vec3 r = m.plane.x * textureGrad(terrainMaterials, vec3(materialPlaneUV(q, m.axes.x), float(layer)),
