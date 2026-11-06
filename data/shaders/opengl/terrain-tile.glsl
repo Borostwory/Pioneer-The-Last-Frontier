@@ -106,8 +106,26 @@ vec4 tileDunes(vec3 q, float salt)
 	return vec4(g * 0.075, h * 2.0 - 1.0);
 }
 
+// where small craters lie thick or thin, 0..1: smooth, from the place on the body alone, so tiles agree
+float tileCraterRegion(vec3 up)
+{
+	float sum = 0.0, amplitude = 0.65, frequency = 9.0, salt = 311.0;
+	for (int octave = 0; octave < 2; ++octave) {
+		vec3 q = up * frequency, cell = floor(q), t = q - cell;
+		t = t * t * (3.0 - 2.0 * t);
+		float low = mix(mix(tileHash33(cell, salt).x, tileHash33(cell + vec3(1, 0, 0), salt).x, t.x), mix(tileHash33(cell + vec3(0, 1, 0), salt).x, tileHash33(cell + vec3(1, 1, 0), salt).x, t.x), t.y);
+		float high = mix(mix(tileHash33(cell + vec3(0, 0, 1), salt).x, tileHash33(cell + vec3(1, 0, 1), salt).x, t.x), mix(tileHash33(cell + vec3(0, 1, 1), salt).x, tileHash33(cell + vec3(1, 1, 1), salt).x, t.x), t.y);
+		sum += amplitude * mix(low, high, t.z);
+		amplitude = 0.35;
+		frequency = 37.0;
+		salt = 317.0;
+	}
+	return smoothstep(0.3, 0.7, sum);
+}
+
 // inside: 1 in a crater's bowl, fading to 0 at its rim
-vec4 tileCraters(vec3 q, float salt, float density, out float inside)
+// varied: of all ages and many sizes, from fresh and sharp to almost worn away; else all alike
+vec4 tileCraters(vec3 q, float salt, float density, bool varied, out float inside)
 {
 	vec3 cell = floor(q);
 	vec3 grad = vec3(0.0);
@@ -121,7 +139,8 @@ vec4 tileCraters(vec3 q, float salt, float density, out float inside)
 				if (h.x > density)
 					continue;
 				vec3 centre = c + 0.25 + 0.5 * tileHash33(c, salt + 131.0);
-				float radius = 0.18 + 0.3 * h.y;
+				float radius = varied ? 0.1 + 0.4 * h.y * h.y : 0.18 + 0.3 * h.y;
+				float fresh = varied ? h.z * h.z : 1.0;
 				vec3 d = q - centre;
 				float dist = length(d);
 				float x01 = dist / radius;
@@ -129,12 +148,13 @@ vec4 tileCraters(vec3 q, float salt, float density, out float inside)
 				if (x01 > 1.6 || dist < 1e-5)
 					continue;
 				// bowl inside, raised rim around the edge, fading outside
-				float depth = 0.22 * radius, rim = 0.08 * radius;
+				float depth = 0.22 * radius * mix(0.12, 1.0, fresh), rim = 0.08 * radius * mix(0.02, 1.0, fresh);
+				float rimWidth = mix(0.4, 0.25, fresh);
 				float bowl = x01 < 1.0 ? depth * (x01 * x01 - 1.0) : 0.0;
 				float dbowl = x01 < 1.0 ? depth * 2.0 * x01 : 0.0;
-				float e = (x01 - 1.0) / 0.25;
+				float e = (x01 - 1.0) / rimWidth;
 				float rimH = rim * exp(-e * e);
-				float drim = rimH * (-2.0 * e / 0.25);
+				float drim = rimH * (-2.0 * e / rimWidth);
 				// height in cells, its derivative along the radius per cell
 				float dh = (dbowl + drim) / radius;
 				grad += dh * d / dist;

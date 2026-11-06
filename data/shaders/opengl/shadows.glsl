@@ -26,7 +26,8 @@ uniform sampler2DShadow shadowMapFar;
 // grow where the light grazes the surface.
 vec3 shadowCoord(int cascade, vec3 pos, vec3 normal, float cosLight)
 {
-	float texel = shadowCascade[cascade].x;
+	// (the far map's texels are metres wide, and steep crater rims under a high camera shadowed themselves in black specks)
+	float texel = shadowCascade[cascade].x * (cascade == 2 ? 2.5 : 1.0);
 	float sinLight = sqrt(1.0 - cosLight * cosLight);
 	vec3 c = (shadowMatrix[cascade] * vec4(pos + normal * (texel * (0.5 + sinLight)), 1.0)).xyz;
 	c.z += texel * (0.2 + 0.5 * min(sinLight / cosLight, 10.0)) * shadowCascade[cascade].y;

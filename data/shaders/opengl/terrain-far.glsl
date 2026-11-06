@@ -50,9 +50,9 @@ float terrainFarTexelRatio(float distMetres, float facing)
 
 // Seen from afar, the slopes of a whole planet are too gentle to catch the light, and the land reads as flat
 // paint. Where detail is fixed in space, the lighting takes them this many times as steep from afar. It changes
-// only the light, not the ground, and it's gone by the time the ground is near.
+// only the light, not the ground, and it fades evenly with each factor of distance, gone by the time the ground is near.
 #define FAR_RELIEF_SLOPES 4.0
-#define FAR_RELIEF_NEAR 2.0e4
+#define FAR_RELIEF_NEAR 3.0e3
 #define FAR_RELIEF_FAR 3.0e5
 // slopes light as steep as this at most (a tangent), or a cliff or a rift's wall would go black; gentle ones aren't touched
 #define FAR_RELIEF_KNEE 0.5
@@ -63,7 +63,7 @@ vec3 terrainFarRelief(vec3 normal, vec3 up, float distMetres)
 	if (MaterialLook.y < 0.5)
 		return normal;
 	float along = dot(normal, up);
-	float slopes = mix(1.0, FAR_RELIEF_SLOPES, smoothstep(FAR_RELIEF_NEAR, FAR_RELIEF_FAR, distMetres));
+	float slopes = mix(1.0, FAR_RELIEF_SLOPES, smoothstep(0.0, 1.0, log(max(distMetres, 1.0) / FAR_RELIEF_NEAR) / log(FAR_RELIEF_FAR / FAR_RELIEF_NEAR)));
 	vec3 side = normal - up * along;
 	float tangent = length(side) / max(along, 1.0e-3);
 	float steep = tangent * slopes;

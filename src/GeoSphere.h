@@ -102,6 +102,8 @@ public:
 	void Reset() override;
 
 	inline Sint32 GetMaxDepth() const { return m_maxDepth; }
+	// how many levels deeper patches go near the player, now: on foot or in the rover, on physical terrain
+	inline Sint32 GetExtraDepth() const { return m_extraDepth; }
 	// vertex spacing of the deepest patches, in metres
 	double GetDeepestVertexSpacing() const;
 	// weights of the detail tile styles: rolling, ridged, dunes, craters (TerrainTiles)
@@ -188,6 +190,7 @@ private:
 	EGSInitialisationStage m_initStage;
 
 	Sint32 m_maxDepth;
+	Sint32 m_extraDepth = 0;
 
 	// effective terrain detail distance for this frame, see GetLodDistance()
 	double m_lodDistance = 8.0;

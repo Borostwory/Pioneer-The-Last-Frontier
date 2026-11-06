@@ -86,6 +86,8 @@ static constexpr double DRAWN_COORDS_MARGIN = 1e-6;
 
 // tri edge lengths
 static constexpr double GEOPATCH_SUBDIVIDE_AT_CAMDIST = 5.0;
+// how many of its own widths from the camera a patch below the usual deepest level splits
+static constexpr double NEAR_SPLIT_WIDTHS = 1.5;
 // children are merged back only beyond this multiple of the split distance
 static constexpr double LOD_MERGE_HYSTERESIS = 1.25;
 // until a patch's detail tile is baked, it is drawn with an ancestor's up to
@@ -609,8 +611,11 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 			const double shrink = std::sqrt(Clamp(facing, 0.25, 1.0));
 			splitLength *= 1.0 + (shrink - 1.0) * foreshortening;
 		}
+		// the extra levels near the player on foot or in the rover: a small radius, whatever the terrain detail distance
+		if (m_depth >= m_geosphere->GetMaxDepth())
+			splitLength = NEAR_SPLIT_WIDTHS * m_edgeLength;
 		const bool tooFar = (centroidDist >= splitLength);	// check if the distance is greater than the rough length, which is how far it should be before it can split
-		const bool atMaxDepth = m_depth >= std::min(GEOPATCH_MAX_DEPTH, m_geosphere->GetMaxDepth());
+		const bool atMaxDepth = m_depth >= std::min(GEOPATCH_MAX_DEPTH, m_geosphere->GetMaxDepth() + m_geosphere->GetExtraDepth());
 		if (atMaxDepth || tooFar) {
 			canSplit = false; // we're too deep in the quadtree or too far away so cannot split
 		}

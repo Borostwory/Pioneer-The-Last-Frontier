@@ -72,6 +72,11 @@ void main(void)
 	float nest = 0.0;
 	int band = int(TileOctaves.z);
 	int count = int(TileOctaves.w);
+	// (the physical generator's are varied, thick in some regions and thin in others; others' as they were)
+	bool variedCraters = TileCraterTop > 0.0;
+	float craterDensity = 0.35 * min(TileStyle.w, 1.0);
+	if (variedCraters)
+		craterDensity *= mix(0.05, 0.95, tileCraterRegion(up));
 	for (int i = TILE_MAX_OCTAVES - 1; i >= 0; --i) {
 		if (i >= count)
 			continue;
@@ -94,7 +99,7 @@ void main(void)
 			float allowed = 1.0 - smoothstep(CRATER_MAX_NEST - 0.75, CRATER_MAX_NEST, nest);
 			if (allowed > 0.0) {
 				float inside;
-				o += allowed * tileCraters(q, salt, 0.35 * min(TileStyle.w, 1.0), inside);
+				o += allowed * tileCraters(q, salt, craterDensity, variedCraters, inside);
 				nest += allowed * inside;
 			}
 		}

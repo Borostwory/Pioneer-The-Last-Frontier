@@ -23,6 +23,7 @@
 #include "TerrainSurfaceTiles.h"
 #include "TerrainTiles.h"
 #include "RefCounted.h"
+#include "surface/Excursion.h"
 #include "galaxy/AtmosphereParameters.h"
 #include "galaxy/StarSystem.h"
 #include "graphics/Drawables.h"
@@ -515,6 +516,14 @@ void GeoSphere::CalculateMaxPatchDepth()
 
 void GeoSphere::Update()
 {
+	// On foot or in the rover the ground near the player gets finer, down to about 25 m between vertices at most, in a
+	// small radius (GeoPatch::LODUpdate). Heights are at full detail on these levels already.
+	m_extraDepth = 0;
+	if (m_terrain->HasFixedDetail() && Pi::game && Pi::game->GetExcursion() && Pi::game->GetExcursion()->IsOffShip()) {
+		for (double spacing = GetDeepestVertexSpacing(); spacing > 25.0 && m_extraDepth < 3; spacing *= 0.5)
+			m_extraDepth++;
+	}
+
 	// keeps a bake going while the planet is out of view (it fades in as drawn)
 	if (m_farTexture) {
 		FrontierLog::Timed timed(FrontierLog::PART_FAR);
@@ -771,7 +780,7 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		const double deepestSpacing = 2.0 * M_PI * GetSystemBody()->GetRadius() / double(s_patchContext->GetEdgeLen() * 8) / std::pow(2.0, double(m_maxDepth));
 		const double spacingPerMetre = 1.0 / (1.41 * GetLodDistance() * vertexGaps);
 		m_surfaceMaterial->SetPushConstant("ReliefScale"_hash,
-			vector3f(float(spacingPerMetre), float(deepestSpacing), 0.0f), 0.0f);
+			vector3f(float(spacingPerMetre), float(deepestSpacing / double(1 << m_extraDepth)), 0.0f), 0.0f);
 
 		SetFarTexture(campos, pixelAngle, spacingPerMetre);
 	}

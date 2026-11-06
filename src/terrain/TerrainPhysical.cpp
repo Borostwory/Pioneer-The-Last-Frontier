@@ -571,7 +571,7 @@ void TerrainPhysical::BuildTones()
 			m_dirtHues[i] = vector3d((*hues)[i].x * (0.9 + 0.2 * dirt.Double()), (*hues)[i].y * (0.9 + 0.2 * dirt.Double()), (*hues)[i].z * (0.9 + 0.2 * dirt.Double()));
 			m_dirtLight[i] = LIGHT[i];
 		}
-		m_dirtStrength = 0.5 + 0.2 * dirt.Double();
+		m_dirtStrength = 0.6 + 0.2 * dirt.Double();
 		// (what's already been judged on its own, or is mostly plants and sea, needs less)
 		if (m_lines.IsActiveShell())
 			m_dirtStrength *= m_iceDirt > 0.0 ? 0.45 : 0.2;
@@ -2344,7 +2344,7 @@ vector3d TerrainPhysical::Dirty(const vector3d &p, const Point &point, const Sha
 		return colour;
 	const Ground &g = point.g;
 	const double large = Fbm(p, 1.6, 3, m_noiseSeed + 341, 0.55) / 0.35, other = Fbm(p, 2.3, 3, m_noiseSeed + 344, 0.55) / 0.35;
-	const double middle = Fbm(p, 7.0, 3, m_noiseSeed + 342, 0.55) / 0.35, small = Fbm(p, 40.0, 4, m_noiseSeed + 343, 0.6) / 0.35;
+	const double middle = Fbm(p, 7.0, 3, m_noiseSeed + 342, 0.55) / 0.35, small = Fbm(p, 40.0, 9, m_noiseSeed + 343, 0.6) / 0.35;
 	// it gathers in low ground and in hollows; rims stand clear
 	const double low = std::clamp(-g.large / std::max(0.2 * m_reliefLimit, 1.0), -1.0, 1.0);
 	const double hollow = std::clamp(-(g.craters.large + g.craters.small) / std::max(0.03 * m_reliefLimit, 1.0), -1.0, 1.0);
@@ -2364,7 +2364,7 @@ vector3d TerrainPhysical::Dirty(const vector3d &p, const Point &point, const Sha
 		c = c * (1.0 - shares3[i]) + m_dirtHues[i] * (brightness * m_dirtLight[i] * shares3[i]);
 	}
 	// and it's never quite even, at any size
-	return c * (1.0 + 0.22 * kept * std::clamp(0.6 * middle + 0.6 * small, -1.0, 1.0));
+	return c * (1.0 + 0.3 * kept * std::clamp(0.6 * middle + 0.6 * small, -1.0, 1.0));
 }
 
 vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, const Shares &shares, const double altitude) const
