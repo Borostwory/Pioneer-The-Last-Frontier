@@ -483,18 +483,21 @@ void TerrainPhysical::BuildTones()
 	const double iron = metal * Soft(std::min(m_inputs.oxidizing, 1.0), 0.2, 0.5);
 	const vector3d rock = vector3d(0.42, 0.39, 0.35) * (1.25 - 0.55 * metal) + vector3d(0.16, 0.05, -0.04) * iron;
 
-	// vegetation by the star's colour
-	const double starT = m_core.starTemperature;
-	if (starT < 3750.0)
-		m_vegetation = vector3d(0.32, 0.26, 0.08);
-	else if (starT < 5100.0)
-		m_vegetation = vector3d(0.26, 0.32, 0.07);
-	else if (starT < 6350.0)
-		m_vegetation = vector3d(0.12, 0.32, 0.08);
-	else if (starT < 9500.0)
-		m_vegetation = vector3d(0.05, 0.28, 0.15);
-	else
-		m_vegetation = vector3d(0.04, 0.22, 0.24);
+	// Vegetation by the star's colour, going smoothly from one to the next: it takes the light it gets the most of. And
+	// each living world has its own shade of that, drawn apart so the seed's other draws stay as they were.
+	{
+		static const double STAR_T[5] = { 3300.0, 4400.0, 5700.0, 7000.0, 10000.0 };
+		// (under red and orange stars they take in all the light they can, so they're dark, and don't vanish into the desert)
+		static const vector3d STAR_PLANTS[5] = { vector3d(0.16, 0.09, 0.12), vector3d(0.22, 0.20, 0.06), vector3d(0.12, 0.32, 0.08), vector3d(0.05, 0.28, 0.15), vector3d(0.04, 0.22, 0.24) };
+		const double starT = m_core.starTemperature;
+		int k = 0;
+		while (k < 3 && starT > STAR_T[k + 1])
+			k++;
+		const double t = std::clamp((starT - STAR_T[k]) / (STAR_T[k + 1] - STAR_T[k]), 0.0, 1.0);
+		const vector3d plants = STAR_PLANTS[k] * (1.0 - t) + STAR_PLANTS[k + 1] * t;
+		Random shade((m_core.seed ^ 0xA1F5u) & 0x7fffffffu);
+		m_vegetation = vector3d(plants.x * (0.85 + 0.3 * shade.Double()), plants.y * (0.85 + 0.3 * shade.Double()), plants.z * (0.85 + 0.3 * shade.Double()));
+	}
 	const vector3d veg = m_vegetation;
 
 	auto set = [&](const M::Layer layer, const vector3d &c) { m_tones[layer] = c; };
@@ -799,7 +802,9 @@ double TerrainPhysical::CutValleys(const vector3d &p, Point &point, const double
 	const double shift = 8.0 / radiusKm;
 	const vector3d bent = (p + vector3d(Fbm(p, radiusKm / 40.0, 3, m_noiseSeed + 141, 0.5), Fbm(p, radiusKm / 40.0, 3, m_noiseSeed + 142, 0.5), Fbm(p, radiusKm / 40.0, 3, m_noiseSeed + 143, 0.5)) * shift).Normalized();
 	const double ridged = 1.0 - std::abs(Fbm(bent, radiusKm / 10.0, 7, m_noiseSeed + 131, 0.5)) / 0.22;
-	return 0.1 * H * (std::clamp(ridged, -1.0, 1.0) - 0.15) * std::pow(1.0 - point.valley, 1.5) * high * calm * cut.quiet;
+	// (where life has weathered it, hills are rounder)
+	const double weathered = 1.0 - 0.35 * std::min(m_inputs.life, 1.0) * std::min(m_state.rain, 1.0);
+	return weathered * 0.1 * H * (std::clamp(ridged, -1.0, 1.0) - 0.15) * std::pow(1.0 - point.valley, 1.5) * high * calm * cut.quiet;
 }
 
 double TerrainPhysical::Keep(const Ground &g) const
@@ -2069,8 +2074,10 @@ void TerrainPhysical::Climate(const vector3d &p, const Point &point, const std::
 		// crests of high ground are bare, rock above scree
 		const double alpine = (h0 - sea) / std::min(m_reliefLimit, 7000.0) + 0.07 * Fbm(p, 40.0, 6, m_noiseSeed + 72, 0.6) / 0.35;
 		const double crest = 1.0 - Soft(point.valley, 0.35, 0.3);
-		paint(M::ROCK, Soft(alpine, 0.3, 0.06) * crest);
-		paint(M::GRAVEL, Soft(alpine, 0.24, 0.06) * crest);
+		// (soils are thicker where life has weathered the rock, with less of it bare)
+		const double soilDepth = 0.08 * std::min(m_inputs.life, 1.0);
+		paint(M::ROCK, Soft(alpine, 0.3 + soilDepth, 0.06) * crest);
+		paint(M::GRAVEL, Soft(alpine, 0.24 + soilDepth, 0.06) * crest);
 	}
 	const double T = point.temperature - m_state.lapse * 0.6 * std::max(h0 - sea, 0.0);
 	const double desert = 1.0 - Soft(m, 0.10, 0.10);
@@ -2370,6 +2377,13 @@ vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, cons
 			const double d = std::clamp((m_seaLevel - point.shore) / std::max(m_reliefLimit * 0.2, 1.0), 0.0, 1.0);
 			const double e = std::pow(1.0 - d, 2.2);
 			c = (m_shallowTone * e + m_seaTone * (1.0 - e)) * (1.0 - 0.35 * d);
+			// reefs: bright rims in the shallows of warm seas, broken into patches
+			if (m_inputs.life >= 0.3 && d < 0.05 && point.temperature > 289.0) {
+				const double rim = Soft(d, 0.001, 0.005) * (1.0 - Soft(d, 0.02, 0.03)) * Soft(point.temperature, 289.0, 5.0);
+				const double patches = Soft(Fbm(p, 45.0, 5, m_noiseSeed + 363, 0.6), -0.06, 0.16);
+				const double reef = 0.7 * rim * patches * std::min(m_inputs.life / 0.6, 1.0);
+				c = c * (1.0 - reef) + vector3d(0.05, 0.62, 0.60) * reef;
+			}
 		} else {
 			c = point.lakeField > 0.5 || point.smallLakeEdge < 0.0 ? m_lakeTone : m_riverTone;
 		}
@@ -2410,14 +2424,29 @@ vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, cons
 		const double wet = std::clamp((point.rain - 0.25) / 0.6, 0.0, 1.0);
 		const double thin = std::min(std::sqrt(std::max(m_inputs.life, 0.05)), 1.0);
 		const vector3d straw(0.62, 0.5, 0.24), soil = m_tones[M::SOIL];
+		// no two regions quite alike: yellower or bluer, paler or deeper
+		const double region = std::clamp(Fbm(p, 3.0, 4, m_noiseSeed + 361, 0.55) / 0.35, -1.0, 1.0);
+		const double local = std::clamp(Fbm(p, 18.0, 4, m_noiseSeed + 362, 0.55) / 0.35, -1.0, 1.0);
+		const vector3d regional(1.0 + 0.22 * region, 1.0 - 0.04 * region, 1.0 - 0.25 * region);
+		// wetlands: dark and rich in deltas and along rivers on low ground
+		double wetland = 0.0;
+		if (!m_hydro.mouth.Empty())
+			wetland = 1.2 * m_hydro.mouth.Smooth(point.place);
+		if (!m_hydro.corridor.Empty() && m_seaLevel > NONE_LOW)
+			wetland += 0.5 * m_hydro.corridor.Smooth(point.place) * (1.0 - Soft((point.shore - m_seaLevel) / std::max(m_reliefLimit, 1.0), 0.0, 0.03));
+		wetland = 0.6 * std::clamp(wetland, 0.0, 1.0);
 		auto plant = [&](const M::Layer layer, const double dryness) {
 			if (shares[layer] <= 0.0)
 				return;
 			vector3d col = m_vegetation * (1.0 + 0.5 * (1.0 - wet));
 			const double d = dryness * (1.0 - wet);
 			col = col * (1.0 - d) + straw * d;
+			col = Times(col, regional) * (1.0 + 0.15 * local);
+			if (layer != M::TUNDRA)
+				col = col * (1.0 - wetland) + Times(m_vegetation, vector3d(0.6, 0.55, 0.9)) * wetland;
 			if (layer == M::FOREST) {
-				col = col * 0.62;
+				// (rainforest is deep, temperate forest paler)
+				col = col * (0.72 - 0.14 * Soft(point.temperature, 285.0, 12.0));
 				const double cold = 0.4 * (1.0 - Soft(point.temperature, 280.0, 8.0));
 				col = col * (1.0 - cold) + vector3d(0.04, 0.10, 0.10) * cold;
 			} else if (layer == M::TUNDRA) {
