@@ -1003,8 +1003,10 @@ void GeoSphere::SetUpMaterials()
 		m_surfaceMaterial->SetPushConstant("MaterialSlots1"_hash, vector3f(layer(4), layer(5), layer(6)), layer(7));
 		m_surfaceMaterial->SetPushConstant("MaterialSlots2"_hash, vector3f(layer(8), layer(9), layer(10)), layer(11));
 		m_surfaceMaterial->SetPushConstant("MaterialSlots3"_hash, vector3f(layer(12), layer(13), layer(14)), layer(15));
-		// x: strength of the ice's cracks; y: detail fixed in space; w: how many slots this body uses
-		m_surfaceMaterial->SetPushConstant("MaterialLook"_hash, vector3f(m_terrain->GetIceCrackStrength(), m_terrain->HasFixedDetail() ? 1.0f : 0.0f, 0.0f), float(table.SlotCount()));
+		// x: strength of the ice's cracks; y: detail fixed in space; z: slopes and hollows darker, in the light alone;
+		// w: how many slots this body uses
+		const bool occlusion = m_terrain->HasFixedDetail() || !GetSystemBody()->GetHeightMapFilename().empty();
+		m_surfaceMaterial->SetPushConstant("MaterialLook"_hash, vector3f(m_terrain->GetIceCrackStrength(), m_terrain->HasFixedDetail() ? 1.0f : 0.0f, occlusion ? 1.0f : 0.0f), float(table.SlotCount()));
 		m_surfaceMaterial->SetPushConstant("MaterialSpecial"_hash,
 			vector3f(float(table.RockSlot()), float(table.BeachSlot()), float(table.SlotOf(TerrainMaterialTable::SNOW))), float(table.LavaSlot()));
 
