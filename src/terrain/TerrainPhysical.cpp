@@ -2773,6 +2773,21 @@ std::vector<Terrain::Feature> TerrainPhysical::FindFeatures(const std::string &k
 	return out;
 }
 
+bool TerrainPhysical::GetHeightLayers(const vector3d &p, HeightLayers &out) const
+{
+	Point point;
+	Evaluate(p.Normalized(), point);
+	out.total = point.height;
+	out.shape = point.g.large;
+	out.largeCraters = point.g.craters.large;
+	out.smallCraters = point.g.craters.small;
+	out.smallRelief = point.g.small;
+	out.lines = point.lines.height;
+	out.maps = point.mapRelief;
+	out.volcano = point.volcano.height;
+	return true;
+}
+
 std::string TerrainPhysical::DescribePoint(const vector3d &p0) const
 {
 	const vector3d p = p0.Normalized();

@@ -6,11 +6,15 @@
 #include "Shader.h"
 #include "StringF.h"
 #include "StringRange.h"
+#include "core/FNV1a.h"
 #include "graphics/Graphics.h"
 #include "graphics/Renderer.h"
 #include "graphics/Types.h"
 #include "utils.h"
 
+#include <chrono>
+#include <cstdio>
+#include <cstring>
 #include <set>
 #include <sstream>
 
@@ -85,14 +89,19 @@ namespace Graphics {
 		//       ShaderProgram (vertex)
 		//       ShaderProgram (fragment)
 		struct ShaderProgram {
-			ShaderProgram(GLenum type, const std::string &filename, const std::string &defines)
+			// reads the source; Compile() makes the shader, which a program from the binary cache doesn't need
+			ShaderProgram(GLenum type, const std::string &filename, const std::string &defines) :
+				m_type(type),
+				m_filename(filename),
+				m_defines(defines)
 			{
 				RefCountedPtr<FileSystem::FileData> filecode = FileSystem::gameDataFiles.ReadFile(filename);
 
 				if (!filecode.Valid())
 					Error("Could not load %s", filename.c_str());
 
-				std::string strCode(filecode->AsStringRange().ToString());
+				std::string &strCode = m_code;
+				strCode = filecode->AsStringRange().ToString();
 				size_t found = strCode.find("#include");
 				while (found != std::string::npos) {
 					// find the name of the file to include
@@ -124,12 +133,22 @@ namespace Graphics {
 						Error("Could not load shader #include %s for shader %s\n", incPathBuffer.c_str(), filename.c_str());
 					}
 				}
+			}
+
+			// the source with the included files in it
+			const std::string &GetCode() const { return m_code; }
+
+			void Compile()
+			{
+				const GLenum type = m_type;
+				const std::string &filename = m_filename;
+
 				// Store the modified text with the included files (if any)
-				const StringRange code(strCode.c_str(), strCode.size());
+				const StringRange code(m_code.c_str(), m_code.size());
 
 				// Build the final shader text to be compiled
 				AppendSource(s_glslVersion);
-				AppendSource(defines.c_str());
+				AppendSource(m_defines.c_str());
 				if (type == GL_VERTEX_SHADER) {
 					AppendSource("#define VERTEX_SHADER\n");
 				} else {
@@ -170,7 +189,7 @@ namespace Graphics {
 					glDeleteShader(shader);
 					shader = 0;
 				}
-			};
+			}
 
 			~ShaderProgram()
 			{
@@ -200,10 +219,132 @@ namespace Graphics {
 				glCompileShader(shader_id);
 			}
 
+			GLenum m_type;
+			std::string m_filename;
+			std::string m_defines;
+			std::string m_code;
 			std::vector<const char *> blocks;
 			std::vector<GLint> block_sizes;
 			std::set<std::string> previousIncludes;
 		};
+
+		// ====================================================================
+		// Binary Cache
+		//
+		// A program can take seconds to compile, and the driver's own cache can't be relied on to keep it (it has a size
+		// limit, and may be full). So each one's compiled form is kept in the user folder, a file for each shader and
+		// defines. The file says which source and driver it's from: from any other, it's compiled again and replaced.
+		//
+
+		static const char s_binaryCacheDir[] = "shadercache";
+		static const char s_binaryMagic[8] = { 'T', 'L', 'F', 'P', 'R', 'O', 'G', '1' };
+
+		struct BinaryHeader {
+			char magic[8];
+			uint64_t sourceHash; // of the source, the driver and what LoadShaders sets before linking
+			uint64_t dataHash;
+			uint32_t format;
+			uint32_t size;
+		};
+		static_assert(sizeof(BinaryHeader) == 32, "BinaryHeader is written to files");
+
+		static uint64_t HashString(const std::string &text)
+		{
+			return hash_64_fnv1a(text.data(), text.size());
+		}
+
+		static bool BinaryCacheSupported()
+		{
+			static const bool supported = []() {
+				if (!glewIsSupported("GL_ARB_get_program_binary"))
+					return false;
+				GLint formats = 0;
+				glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formats);
+				return formats > 0;
+			}();
+			return supported;
+		}
+
+		static std::string BinaryCachePath(const ProgramDef &def)
+		{
+			char hash[17];
+			std::snprintf(hash, sizeof(hash), "%016llx", static_cast<unsigned long long>(HashString(def.defines)));
+			return std::string(s_binaryCacheDir) + "/" + def.name + "-" + hash + ".bin";
+		}
+
+		static uint64_t BinarySourceHash(const ProgramDef &def, const ShaderProgram &vs, const ShaderProgram &fs)
+		{
+			std::string text = "1\n"; // (raise this if LoadShaders changes what it sets before linking)
+			for (const GLenum name : { GL_VENDOR, GL_RENDERER, GL_VERSION }) {
+				text += glstr_to_str(glGetString(name));
+				text += "\n";
+			}
+			text += s_glslVersion;
+			text += def.defines;
+			text += vs.GetCode();
+			text += fs.GetCode();
+			return HashString(text);
+		}
+
+		// returns the linked program, or 0 if there's no good one to be had
+		static GLuint LoadBinary(const std::string &path, const uint64_t sourceHash)
+		{
+			RefCountedPtr<FileSystem::FileData> file = FileSystem::userFiles.ReadFile(path);
+			if (!file.Valid() || file->GetSize() < sizeof(BinaryHeader))
+				return 0;
+
+			BinaryHeader header;
+			std::memcpy(&header, file->GetData(), sizeof(header));
+			const char *data = file->GetData() + sizeof(header);
+			if (std::memcmp(header.magic, s_binaryMagic, sizeof(s_binaryMagic)) != 0 || header.sourceHash != sourceHash)
+				return 0;
+			// (a partly written or damaged file must not reach the driver)
+			if (header.size != file->GetSize() - sizeof(header) || header.dataHash != hash_64_fnv1a(data, header.size))
+				return 0;
+
+			GLuint program = glCreateProgram();
+			glProgramBinary(program, header.format, data, header.size);
+			GLint status = GL_FALSE;
+			glGetProgramiv(program, GL_LINK_STATUS, &status);
+			if (status == GL_FALSE) {
+				// a driver may refuse a binary at any time: not an error, it's compiled instead
+				glDeleteProgram(program);
+				glGetError();
+				return 0;
+			}
+			return program;
+		}
+
+		static void SaveBinary(const std::string &path, const uint64_t sourceHash, const GLuint program)
+		{
+			GLint length = 0;
+			glGetProgramiv(program, GL_PROGRAM_BINARY_LENGTH, &length);
+			if (length <= 0)
+				return;
+
+			std::vector<char> data(length);
+			GLsizei written = 0;
+			GLenum format = 0;
+			glGetProgramBinary(program, length, &written, &format, data.data());
+			if (written <= 0)
+				return;
+
+			BinaryHeader header;
+			std::memcpy(header.magic, s_binaryMagic, sizeof(s_binaryMagic));
+			header.sourceHash = sourceHash;
+			header.dataHash = hash_64_fnv1a(data.data(), size_t(written));
+			header.format = format;
+			header.size = uint32_t(written);
+
+			FileSystem::userFiles.MakeDirectory(s_binaryCacheDir);
+			FILE *file = FileSystem::userFiles.OpenWriteStream(path);
+			if (!file)
+				return;
+			const bool ok = std::fwrite(&header, sizeof(header), 1, file) == 1 && std::fwrite(data.data(), 1, size_t(written), file) == size_t(written);
+			std::fclose(file);
+			if (!ok)
+				FileSystem::userFiles.RemoveFile(path);
+		}
 
 		// ====================================================================
 		// Program Setup and Creation
@@ -240,9 +381,33 @@ namespace Graphics {
 		{
 			PROFILE_SCOPED()
 
-			//load, create and compile shaders
+			const auto startTime = std::chrono::steady_clock::now();
+			const auto millisecondsSoFar = [&startTime]() {
+				return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime).count();
+			};
+
+			//load the shaders' source
 			ShaderProgram vs(GL_VERTEX_SHADER, def.vertexShader, def.defines);
 			ShaderProgram fs(GL_FRAGMENT_SHADER, def.fragmentShader, def.defines);
+
+			// the compiled program from an earlier run, if the source and the driver are the same
+			const bool useBinaryCache = BinaryCacheSupported();
+			std::string binaryPath;
+			uint64_t binarySourceHash = 0;
+			if (useBinaryCache) {
+				binaryPath = BinaryCachePath(def);
+				binarySourceHash = BinarySourceHash(def, vs, fs);
+				const GLuint cached = LoadBinary(binaryPath, binarySourceHash);
+				if (cached) {
+					Log::Info("Program {} loaded from the binary cache in {:.1f} ms", def.name, millisecondsSoFar());
+					success = true;
+					return cached;
+				}
+			}
+
+			//create and compile shaders
+			vs.Compile();
+			fs.Compile();
 
 			if (!vs.shader || !fs.shader) {
 				Log::Warning("Error loading GLSL shaders for program {}\n", def.name);
@@ -272,6 +437,9 @@ namespace Graphics {
 			// TODO: setup fragment output locations from shaderdef attributes
 			glBindFragDataLocation(program, 0, "frag_color");
 
+			if (useBinaryCache)
+				glProgramParameteri(program, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+
 			glLinkProgram(program);
 			success = check_glsl_errors(def.name.c_str(), program);
 
@@ -279,6 +447,11 @@ namespace Graphics {
 				glDeleteProgram(program);
 				return 0;
 			}
+
+			Log::Info("Program {} compiled in {:.1f} ms", def.name, millisecondsSoFar());
+
+			if (useBinaryCache)
+				SaveBinary(binaryPath, binarySourceHash, program);
 
 			//shaders may now be deleted by Shader destructor
 			return program;

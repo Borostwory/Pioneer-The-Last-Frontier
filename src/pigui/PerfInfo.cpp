@@ -817,6 +817,18 @@ void PiGui::PerfInfo::DrawFrontierTerrain()
 	if (const TerrainSurfaceTiles *tiles = TerrainSurfaceTiles::Instance())
 		ImGui::Text("Surface tiles: %d in use, %d baking, %d waiting", tiles->GetTileCount(), tiles->GetBakingCount(), tiles->GetWaitingCount());
 
+	// the order the patches are drawn in (GeoSphere::Render), for A/B comparison; changes at once
+	bool nearestFirst = Pi::config->Int("TerrainNearestFirst", 1) != 0;
+	if (ImGui::Checkbox("Draw Nearest Patches First", &nearestFirst)) {
+		Pi::config->SetInt("TerrainNearestFirst", nearestFirst ? 1 : 0);
+		Pi::config->Save();
+		FrontierLog::Note(std::string("nearest patches first: ") + (nearestFirst ? "on" : "off"));
+	}
+
+	// the sharpest steps in the ground around the ship, in the log; takes a moment
+	if (ImGui::Button("Height Profile Around the Ship (to the log)"))
+		FrontierLog::HeightProfile();
+
 	const GeoPatchGenStats stats = GetGeoPatchGenStats();
 	const double totalMs = double(stats.microseconds) / 1000.0;
 	const double perPatchUs = stats.patches ? double(stats.microseconds) / double(stats.patches) : 0.0;

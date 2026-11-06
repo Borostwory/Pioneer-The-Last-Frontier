@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <ctime>
 #include <iterator>
+#include <vector>
 
 namespace {
 	constexpr int SPIKES_PER_SECOND = 30;
@@ -44,6 +45,13 @@ namespace {
 	long long s_lastFrameEnd = 0; // when the last frame's update was over, for how long this frame took
 	long long s_jobsStart = 0, s_swapStart = 0;
 
+	// a GPU timer's times this second
+	struct GpuScope {
+		std::string name;
+		double sum = 0.0, longest = 0.0;
+		int count = 0;
+	};
+
 	struct State {
 		FILE *file = nullptr;
 		bool triedOpening = false;
@@ -60,6 +68,7 @@ namespace {
 		vector3d lastUp = vector3d(0.0, 0.0, 0.0);
 		std::string underShip;
 		std::string farBake;
+		std::vector<GpuScope> gpuScopes;
 	};
 	State s_state;
 
@@ -212,9 +221,14 @@ namespace {
 		}
 		s.speed = speed;
 
-		for (const Graphics::Renderer::GpuTiming &t : Pi::renderer->GetGpuTimings()) {
-			if (t.name == "terrain")
-				std::fprintf(s.file, " | gpu terrain %.2f ms", t.milliseconds);
+		for (const GpuScope &g : s.gpuScopes) {
+			if (g.name == "terrain")
+				std::fprintf(s.file, " | gpu terrain %.2f ms", g.sum / g.count);
+		}
+		if (!s.gpuScopes.empty()) {
+			std::fputs(" | gpu ms, mean/longest:", s.file);
+			for (const GpuScope &g : s.gpuScopes)
+				std::fprintf(s.file, " %s %.2f/%.2f,", g.name.c_str(), g.sum / g.count, g.longest);
 		}
 		if (!s.underShip.empty())
 			std::fprintf(s.file, " | under: %s", s.underShip.c_str());
@@ -233,7 +247,23 @@ namespace {
 		s.spikesWritten = 0;
 		s.frameSum = s.frameMax = s.physicsSum = s.guiSum = s.querySum = 0.0;
 		s.queryCallsSum = 0;
+		s.gpuScopes.clear();
 		std::fill(std::begin(s_secondParts), std::end(s_secondParts), 0.0);
+	}
+
+	void AddGpuTimes()
+	{
+		for (const Graphics::Renderer::GpuTiming &t : Pi::renderer->GetGpuTimings()) {
+			auto it = std::find_if(s_state.gpuScopes.begin(), s_state.gpuScopes.end(), [&t](const GpuScope &g) { return g.name == t.name; });
+			if (it == s_state.gpuScopes.end()) {
+				s_state.gpuScopes.emplace_back();
+				it = s_state.gpuScopes.end() - 1;
+				it->name = t.name;
+			}
+			it->sum += t.milliseconds;
+			it->longest = std::max(it->longest, t.milliseconds);
+			it->count++;
+		}
 	}
 } // namespace
 
@@ -318,6 +348,7 @@ void FrontierLog::EndFrame(const double physicsMs, const double guiMs)
 		s.queryCallsSum += queryCalls;
 		for (int i = 0; i < PART_COUNT; i++)
 			s_secondParts[i] += s_parts[i];
+		AddGpuTimes();
 		const long long now = NowNanos();
 		if (now - s.secondStart >= 1000000000LL) {
 			s.secondStart = now;
@@ -351,5 +382,112 @@ void FrontierLog::Mark(const std::string &comment)
 			std::fprintf(s_state.file, "    under: %s\n", OneLine(terrain->DescribePoint(place.up)).c_str());
 		WriteGeology(place.planet);
 	}
+	std::fflush(s_state.file);
+}
+
+void FrontierLog::HeightProfile()
+{
+	if (!Ready())
+		return;
+	const Place place = WhereIsTheShip();
+	const Terrain *terrain = place.planet ? place.planet->GetTerrain() : nullptr;
+	Terrain::HeightLayers layers;
+	if (!terrain || !terrain->GetHeightLayers(place.up, layers)) {
+		Note("height profile: this ground doesn't say what its height is made of");
+		return;
+	}
+	const long long start = NowNanos();
+	const double radius = place.planet->GetSystemBody()->GetRadius();
+
+	// (bearings from north, as the HUD has them)
+	vector3d north = vector3d(0.0, 1.0, 0.0) - place.up * place.up.y;
+	if (north.LengthSqr() < 1e-12)
+		north = vector3d(0.0, 0.0, 1.0) - place.up * place.up.z;
+	north = north.Normalized();
+	const vector3d east = north.Cross(place.up);
+
+	WriteTime();
+	std::fprintf(s_state.file, "HEIGHT PROFILE %s: the sharpest step along each bearing, in metres, the steps either side of it, and each layer's share\n", place.text.c_str());
+
+	struct Walk {
+		double step; // metres
+		int count;
+		double spacing; // metres: the detail of a mesh of this spacing; 0: all of it
+	};
+	static const Walk WALKS[] = { { 1.0, 2000, 0.0 }, { 10.0, 5000, 0.0 }, { 16.0, 2000, 16.0 } };
+	constexpr int BEARINGS = 16;
+	std::vector<Terrain::HeightLayers> samples;
+	std::vector<double> meshHeights; // metres: what the patches get, with what is added after the layers
+	for (const Walk &walk : WALKS) {
+		TerrainNoise::ScopedBandLimit bandLimit(walk.spacing > 0.0 ? 0.5 * radius / walk.spacing : 0.0);
+		samples.resize(walk.count + 1);
+		meshHeights.resize(walk.count + 1);
+		for (int b = 0; b < BEARINGS; b++) {
+			const double bearing = 2.0 * M_PI * b / BEARINGS;
+			const vector3d direction = north * std::cos(bearing) + east * std::sin(bearing);
+			const auto placeAt = [&](const int i) {
+				const double angle = i * walk.step / radius;
+				return place.up * std::cos(angle) + direction * std::sin(angle);
+			};
+			for (int i = 0; i <= walk.count; i++) {
+				const vector3d p = placeAt(i);
+				terrain->GetHeightLayers(p, samples[i]);
+				double height = 0.0;
+				terrain->GetHeights(&p, &height, 1);
+				meshHeights[i] = height * radius;
+			}
+
+			int sharpest = 1;
+			for (int i = 1; i <= walk.count; i++) {
+				if (std::abs(meshHeights[i] - meshHeights[i - 1]) > std::abs(meshHeights[sharpest] - meshHeights[sharpest - 1]))
+					sharpest = i;
+			}
+			const Terrain::HeightLayers &a = samples[sharpest - 1], &c = samples[sharpest];
+			const double before = sharpest >= 2 ? meshHeights[sharpest - 1] - meshHeights[sharpest - 2] : 0.0;
+			const double after = sharpest < walk.count ? meshHeights[sharpest + 1] - meshHeights[sharpest] : 0.0;
+			const vector3d at = placeAt(sharpest);
+			const double shape = c.shape - a.shape, largeCraters = c.largeCraters - a.largeCraters, smallCraters = c.smallCraters - a.smallCraters;
+			const double relief = c.smallRelief - a.smallRelief, lines = c.lines - a.lines, maps = c.maps - a.maps, volcano = c.volcano - a.volcano;
+			std::fprintf(s_state.file, "    bearing %5.1f, %g m steps, %s: %.0f m out, lat %.5f lon %.5f: %+.3f (%+.3f, %+.3f); before erosion and sites %+.3f; shape %+.3f, large craters %+.3f, small craters %+.3f, small relief %+.3f, lines %+.3f, maps %+.3f, volcano %+.3f\n",
+				bearing * 180.0 / M_PI, walk.step, walk.spacing > 0.0 ? "mesh detail" : "all detail", sharpest * walk.step,
+				std::asin(std::clamp(at.y, -1.0, 1.0)) * 180.0 / M_PI, std::atan2(at.x, at.z) * 180.0 / M_PI,
+				meshHeights[sharpest] - meshHeights[sharpest - 1], before, after, c.total - a.total, shape, largeCraters, smallCraters, relief, lines, maps, volcano);
+			// a real step, far sharper than the ground either side, in the craters: which ones
+			const double stepHeight = meshHeights[sharpest] - meshHeights[sharpest - 1];
+			const auto describe = [&](const int i) {
+				const vector3d p0 = placeAt(i - 1).Normalized(), p1 = placeAt(i).Normalized();
+				for (const std::string &line : terrain->DescribeCraterStep(p0, p1))
+					std::fprintf(s_state.file, "        %s\n", line.c_str());
+				for (const std::string &line : terrain->DescribeLineStep(p0, p1))
+					std::fprintf(s_state.file, "        %s\n", line.c_str());
+			};
+			if (std::abs(stepHeight) >= 1.0 && std::abs(stepHeight) > 3.0 * std::max(std::abs(before), std::abs(after)))
+				describe(sharpest);
+
+			// The step that stands out most from the ground either side, however small: a thin line on the ground
+			// can be a few centimetres, far less than the slope of a crater's wall
+			if (walk.step == 1.0) {
+				int isolated = 0;
+				double best = 0.005;
+				for (int i = 2; i < walk.count; i++) {
+					const double around = std::max(std::abs(meshHeights[i - 1] - meshHeights[i - 2]), std::abs(meshHeights[i + 1] - meshHeights[i]));
+					const double score = std::abs(meshHeights[i] - meshHeights[i - 1]) - 3.0 * around;
+					if (score > best) {
+						best = score;
+						isolated = i;
+					}
+				}
+				if (isolated > 0 && isolated != sharpest) {
+					const vector3d there = placeAt(isolated);
+					std::fprintf(s_state.file, "    bearing %5.1f, isolated step: %d m out, lat %.5f lon %.5f: %+.3f (%+.3f, %+.3f)\n",
+						bearing * 180.0 / M_PI, isolated, std::asin(std::clamp(there.y, -1.0, 1.0)) * 180.0 / M_PI, std::atan2(there.x, there.z) * 180.0 / M_PI,
+						meshHeights[isolated] - meshHeights[isolated - 1], meshHeights[isolated - 1] - meshHeights[isolated - 2], meshHeights[isolated + 1] - meshHeights[isolated]);
+					describe(isolated);
+				}
+			}
+		}
+	}
+	WriteTime();
+	std::fprintf(s_state.file, "HEIGHT PROFILE done in %.0f ms\n", double(NowNanos() - start) / 1e6);
 	std::fflush(s_state.file);
 }

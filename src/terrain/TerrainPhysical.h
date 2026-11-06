@@ -49,6 +49,9 @@ public:
 	std::vector<std::string> GetGeologyInfo() const override;
 	std::vector<Feature> FindFeatures(const std::string &kind, const vector3d &around) const override;
 	std::string DescribePoint(const vector3d &p) const override;
+	bool GetHeightLayers(const vector3d &p, HeightLayers &out) const override;
+	std::vector<std::string> DescribeCraterStep(const vector3d &a, const vector3d &b) const override { return m_craters.DescribeStep(a, b); }
+	std::vector<std::string> DescribeLineStep(const vector3d &a, const vector3d &b) const override { return m_lines.DescribeStep(a, b); }
 
 private:
 	using Shares = std::array<double, TerrainMaterialTable::LAYER_COUNT>;

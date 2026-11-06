@@ -66,6 +66,9 @@ public:
 		RefCountedPtr<Galaxy> m_galaxy;
 		CacheMap m_cache;
 		JobSet m_jobs;
+		// how many objects one job makes before it queues the next: for a cache that fills on the main thread
+		// (0: a job makes everything it was given)
+		size_t m_batchSize = 0;
 
 		Slave(GalaxyObjectCache *master, RefCountedPtr<Galaxy> galaxy, JobQueue *jobQueue);
 		void MasterDeleted();
@@ -86,7 +89,7 @@ private:
 	// ********************************************************************************
 	class CacheJob : public Job {
 	public:
-		CacheJob(std::unique_ptr<std::vector<SystemPath>> path, Slave *slaveCache, RefCountedPtr<Galaxy> galaxy, CacheFilledCallback callback = CacheFilledCallback());
+		CacheJob(std::unique_ptr<std::vector<SystemPath>> path, Slave *slaveCache, RefCountedPtr<Galaxy> galaxy, CacheFilledCallback callback = CacheFilledCallback(), size_t first = 0);
 
 		virtual void OnRun(); // RUNS IN ANOTHER THREAD!! MUST BE THREAD SAFE!
 		virtual void OnFinish(); // runs in primary thread of the context
@@ -99,6 +102,8 @@ private:
 		RefCountedPtr<Galaxy> m_galaxy;
 		RefCountedPtr<GalaxyGenerator> m_galaxyGenerator;
 		CacheFilledCallback m_callback;
+		size_t m_first; // this job makes m_paths[m_first] up to, not including, m_paths[m_end]
+		size_t m_end;
 	};
 
 	Galaxy *m_galaxy;

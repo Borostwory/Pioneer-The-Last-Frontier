@@ -283,7 +283,7 @@ float cityGardenDetail(vec4 garden, MaterialMapping mapping, float distMetres, o
 	float contrast = 1.0 - smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, distMetres);
 	if (garden.w <= 0.0 || contrast <= 0.0)
 		return 1.0;
-	float coarse = mapping.level + log2(MATERIAL_COARSE_SCALE);
+	float coarse = mapping.level + MATERIAL_COARSE_LEVELS;
 	float detail = 0.0, height = 0.0, total = 0.0;
 	for (int k = 0; k < 3; k++) {
 		float w = garden[k];

@@ -11,6 +11,7 @@
 #include "galaxy/StarSystem.h"
 #include "core/Log.h"
 #include "profiler/Profiler.h"
+#include <algorithm>
 #include <utility>
 
 //#define DEBUG_CACHE
@@ -188,15 +189,18 @@ void GalaxyObjectCache<T, CompareT>::Slave::FillCache(const PathVector &paths, C
 	vec_paths.reserve(paths.size() / CACHE_JOB_SIZE + 1);
 	vec_paths.emplace_back(new PathVector());
 
+	// (filled in batches, it's one list, so that only one job is waiting at a time: see CacheJob::OnFinish)
+	const size_t jobSize = m_batchSize > 0 ? paths.size() + 1 : CACHE_JOB_SIZE;
+
 	PathVector *current_paths = vec_paths.back().get();
-	current_paths->reserve(CACHE_JOB_SIZE);
+	current_paths->reserve(std::min<size_t>(jobSize, paths.size()));
 #ifdef DEBUG_CACHE
 	size_t alreadyCached = m_cache.size();
 	unsigned masterCached = 0;
 	unsigned toBeCreated = 0;
 #endif
 
-	// chop the paths into groups of CACHE_JOB_SIZE
+	// chop the paths into groups of jobSize
 	for (const SystemPath &path : paths) {
 		RefCountedPtr<T> s = m_master->GetIfCached(path);
 		if (s) {
@@ -207,9 +211,9 @@ void GalaxyObjectCache<T, CompareT>::Slave::FillCache(const PathVector &paths, C
 		} else {
 			current_paths->push_back(path);
 
-			if (current_paths->size() >= CACHE_JOB_SIZE) {
+			if (current_paths->size() >= jobSize) {
 				current_paths = vec_paths.emplace_back(new PathVector()).get();
-				current_paths->reserve(CACHE_JOB_SIZE);
+				current_paths->reserve(jobSize);
 			}
 #ifdef DEBUG_CACHE
 			++toBeCreated;
@@ -235,15 +239,19 @@ void GalaxyObjectCache<T, CompareT>::Slave::FillCache(const PathVector &paths, C
 
 template <typename T, typename CompareT>
 GalaxyObjectCache<T, CompareT>::CacheJob::CacheJob(std::unique_ptr<std::vector<SystemPath>> path,
-	Slave *slaveCache, RefCountedPtr<Galaxy> galaxy, CacheFilledCallback callback) :
+	Slave *slaveCache, RefCountedPtr<Galaxy> galaxy, CacheFilledCallback callback, size_t first) :
 	Job(),
 	m_paths(std::move(path)),
 	m_slaveCache(slaveCache),
 	m_galaxy(galaxy),
 	m_galaxyGenerator(galaxy->GetGenerator()),
-	m_callback(callback)
+	m_callback(callback),
+	m_first(first),
+	m_end(m_paths->size())
 {
-	m_objects.reserve(m_paths->size());
+	if (slaveCache->m_batchSize > 0)
+		m_end = std::min(m_end, m_first + slaveCache->m_batchSize);
+	m_objects.reserve(m_end - m_first);
 }
 
 //virtual
@@ -251,8 +259,8 @@ template <typename T, typename CompareT>
 void GalaxyObjectCache<T, CompareT>::CacheJob::OnRun() // RUNS IN ANOTHER THREAD!! MUST BE THREAD SAFE!
 {
 	PROFILE_SCOPED()
-	for (auto it = m_paths->begin(), itEnd = m_paths->end(); it != itEnd; ++it)
-		m_objects.push_back(m_galaxyGenerator->Generate<T, Self>(m_galaxy, *it, nullptr));
+	for (size_t i = m_first; i < m_end; ++i)
+		m_objects.push_back(m_galaxyGenerator->Generate<T, Self>(m_galaxy, (*m_paths)[i], nullptr));
 }
 
 //virtual
@@ -261,7 +269,10 @@ void GalaxyObjectCache<T, CompareT>::CacheJob::OnFinish() // runs in primary thr
 {
 	PROFILE_SCOPED()
 	m_slaveCache->AddToCache(m_objects);
-	if (m_slaveCache->m_jobs.IsEmpty() && m_callback)
+	// The rest goes to the back of the queue, so other jobs on it don't wait for the whole list.
+	if (m_end < m_paths->size())
+		m_slaveCache->m_jobs.Order(new CacheJob(std::move(m_paths), m_slaveCache, m_galaxy, m_callback, m_end));
+	else if (m_slaveCache->m_jobs.IsEmpty() && m_callback)
 		m_callback();
 }
 
@@ -275,11 +286,16 @@ template class GalaxyObjectCache<Sector, SystemPath::LessSectorOnly>;
 
 /****** StarSystemCache ******/
 
+// Star systems are made on the main thread, as making one calls Lua, one job a frame and about 0.3 ms each: a few at a time,
+// or arriving somewhere is slow for a while. It's only a prefetch: a system that's asked for before its turn is made then.
+static constexpr size_t STAR_SYSTEMS_PER_JOB = 4;
+
 template <>
 StarSystemCache::Slave::Slave(Self *master, RefCountedPtr<Galaxy> galaxy, JobQueue *jobQueue) :
 	m_master(master),
 	m_galaxy(galaxy),
-	m_jobs(Pi::GetSyncJobQueue())
+	m_jobs(Pi::GetSyncJobQueue()),
+	m_batchSize(STAR_SYSTEMS_PER_JOB)
 {
 	m_master->m_slaves.insert(this);
 }

@@ -61,6 +61,9 @@ namespace FrontierLog {
 	void Note(const std::string &text);
 	// a line with everything about here, and a comment
 	void Mark(const std::string &comment);
+	// walks out from the ship in all directions, and writes the sharpest step in the ground along each, and which
+	// layer of the height it's in (Terrain::GetHeightLayers)
+	void HeightProfile();
 
 	bool Enabled();
 	void SetEnabled(bool enabled);

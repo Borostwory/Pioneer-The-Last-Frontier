@@ -9,6 +9,7 @@
 #include "../vector3.h"
 
 #include <cstdint>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -40,6 +41,8 @@ public:
 
 	// p on the unit sphere. Follows the band limit of the calling thread.
 	Sample At(const vector3d &p) const;
+	// For the debug tools: at two nearby points, the height from the lines and each line in reach, one line each
+	std::vector<std::string> DescribeStep(const vector3d &a, const vector3d &b) const;
 
 	// an active shell, with its salts and deep fractures
 	bool IsActiveShell() const { return m_activeShell; }

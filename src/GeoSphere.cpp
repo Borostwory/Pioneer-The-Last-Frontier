@@ -883,6 +883,13 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 			m_surfaceMaterial->SetTexture("terrainTiles"_hash, tiles->GetAtlas());
 		}
 		SetSurfaceTiles(pixelAngle);
+		// nearest first, so that the ground's costly shader isn't run for what nearer ground then covers
+		// (config TerrainNearestFirst, Terrain Debug window, for A/B comparison)
+		if (Pi::config->Int("TerrainNearestFirst", 1) != 0) {
+			std::sort(m_visiblePatches.begin(), m_visiblePatches.end(), [](const std::pair<double, GeoPatch *> &a, const std::pair<double, GeoPatch *> &b) {
+				return a.first < b.first;
+			});
+		}
 		for (std::pair<double, GeoPatch *> &pPatch : m_visiblePatches) {
 			pPatch.second->RenderImmediate(renderer, campos, modelView);
 		}

@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <functional>
 #include <string>
 
@@ -577,7 +578,9 @@ void TerrainLines::Gather(const std::vector<uint32_t> &nearby, const vector3d &p
 			lineWidth *= 1.0 + 0.3 * uneven;
 		}
 		const double width = std::max(lineWidth, 1.6 * spacing);
-		const double d = (q - (piece.a + ab * t)).Length() / width;
+		// (a piece is a chord, under the surface. A scarp changes side on its line, so there it's measured along the
+		// surface, which reaches 0: from the chord, the two sides don't meet, and the ground steps from one to the other)
+		const double d = (line.kind == SCARP && t > 0.0 && t < 1.0 ? std::abs(q.Dot(piece.a.Cross(ab).Normalized())) : (q - (piece.a + ab * t)).Length()) / width;
 		if (d >= REACH)
 			continue;
 		// strength tapers to both ends of the line, continuously
@@ -773,5 +776,61 @@ TerrainLines::Sample TerrainLines::At(const vector3d &p) const
 	}
 	if (deepest.carve > 0.0)
 		Draw(deepest, p, spacing, 1.0, out);
+	return out;
+}
+
+std::vector<std::string> TerrainLines::DescribeStep(const vector3d &a, const vector3d &b) const
+{
+	static const char *const KINDS[] = { "ridge", "fault valley", "scarp", "band", "fracture" };
+	std::vector<std::string> out;
+	const double band = SphereCells::RoundedBand(TerrainNoise::s_maxFrequency);
+	const double spacing = band > 0.0 ? 0.5 / band : 0.0;
+	char text[240];
+	for (int pass = 0; pass < 2; pass++) {
+		const vector3d &p = pass == 0 ? a : b;
+		std::snprintf(text, sizeof(text), "%s: the lines' height %.3f m", pass == 0 ? "before" : "after", At(p).height);
+		out.emplace_back(text);
+		// as At and Gather have them: the nearest piece of each line in reach
+		struct Reached {
+			int line;
+			double distance, side, fade;
+		};
+		std::vector<Reached> reached;
+		for (int tier = 0; tier < TIER_COUNT; tier++) {
+			const std::vector<uint32_t> *nearby = spacing < TIER_GONE[tier] ? m_index[tier].At(p) : nullptr;
+			if (!nearby)
+				continue;
+			vector3d lobed = p;
+			if (m_lobed && spacing < 1.0 / 256.0 && tier == LARGE && !nearby->empty()) {
+				const vector3d shift(SphereCells::Fbm(p, 64.0, 8, m_noiseSeed + 51, 0.6), SphereCells::Fbm(p, 64.0, 8, m_noiseSeed + 52, 0.6), SphereCells::Fbm(p, 64.0, 8, m_noiseSeed + 53, 0.6));
+				lobed = (p + shift * SCARP_LOBES).Normalized();
+			}
+			for (const uint32_t id : *nearby) {
+				const Piece &piece = m_pieces[id];
+				const Line &line = m_lines[piece.line];
+				const vector3d &q = line.kind == SCARP || line.kind == GRABEN ? lobed : p;
+				const vector3d ab = piece.b - piece.a;
+				const double t = std::clamp((q - piece.a).Dot(ab) / piece.lengthSqr, 0.0, 1.0);
+				const double along = (double(piece.first) + t) / double(line.pieces);
+				const double lineWidth = double(line.width) * (line.wedge ? 0.15 + 0.85 * along : 1.0);
+				const double d = (line.kind == SCARP && t > 0.0 && t < 1.0 ? std::abs(q.Dot(piece.a.Cross(ab).Normalized())) : (q - (piece.a + ab * t)).Length()) / std::max(lineWidth, 1.6 * spacing);
+				if (d >= REACH)
+					continue;
+				const double fade = std::min(1.0, std::min(along, 1.0 - along) * 6.0 + 0.05);
+				const double side = (q - piece.a).Dot(piece.a.Cross(ab)) > 0.0 ? 1.0 : -1.0;
+				auto it = std::find_if(reached.begin(), reached.end(), [&piece](const Reached &r) { return r.line == piece.line; });
+				if (it == reached.end())
+					reached.push_back({ piece.line, d, side, fade });
+				else if (d < it->distance)
+					*it = { piece.line, d, side, fade };
+			}
+		}
+		for (const Reached &r : reached) {
+			const Line &line = m_lines[r.line];
+			std::snprintf(text, sizeof(text), "  line %d, %s, generation %d, %.0f m high, %.5f wide: %.4f widths away on side %+.0f, faded to %.3f",
+				r.line, KINDS[line.kind], int(line.generation), double(line.height), double(line.width), r.distance, r.side, r.fade);
+			out.emplace_back(text);
+		}
+	}
 	return out;
 }

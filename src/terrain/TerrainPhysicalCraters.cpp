@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstdio>
 
 namespace {
 	// lattices take over from the list below this share of the radius
@@ -297,7 +298,9 @@ void TerrainCraters::Accumulate(const Site &s, const vector3d &p, Sample &out) c
 		const double e1 = (t - 1.4) / 0.09, e2 = (t - 1.95) / 0.12;
 		const double ring = 0.1 * std::exp(-e1 * e1) + 0.07 * std::exp(-e2 * e2);
 		const double gaps = Clamp01(0.5 + std::sin(2.0 * theta + s.seed * 50.0) + 0.6 * std::sin(5.0 * theta + s.seed * 77.0));
-		h += ring * gaps * s.depth * (1.0 - 0.6 * wear);
+		// (gone by the end of the crater's reach, where a long outline can bring them, or they end in a cliff)
+		const double ringEnd = SmoothEdge(Clamp01((s.reach - t0) / (0.1 * s.reach)));
+		h += ring * gaps * ringEnd * s.depth * (1.0 - 0.6 * wear);
 	}
 	if (m_gullies > 0.0 && std::abs(t - 0.85) < 0.25) {
 		// wear cuts radial gullies into the walls, unevenly, in groups with gaps, so they don't read as a comb
@@ -335,6 +338,39 @@ void TerrainCraters::Accumulate(const Site &s, const vector3d &p, Sample &out) c
 			}
 		}
 	}
+}
+
+std::vector<std::string> TerrainCraters::DescribeStep(const vector3d &a, const vector3d &b) const
+{
+	const double band = SphereCells::RoundedBand(TerrainNoise::s_maxFrequency);
+	const double spacing = band > 0.0 ? 0.5 / band : 0.0;
+	std::vector<Site> sites;
+	Gather(a, (b - a).Length(), spacing, sites);
+
+	std::vector<std::string> out;
+	char line[320];
+	Sample allA, allB;
+	for (const Site &site : sites) {
+		Accumulate(site, a, allA);
+		Accumulate(site, b, allB);
+		Sample oneA, oneB;
+		Accumulate(site, a, oneA);
+		Accumulate(site, b, oneB);
+		const double heightA = oneA.large + oneA.small, heightB = oneB.large + oneB.small;
+		if (std::abs(heightB - heightA) < 0.1)
+			continue;
+		const auto radii = [&site](const vector3d &p) { return std::acos(std::min(p.Dot(site.centre), 1.0)) / site.angle; };
+		const auto around = [&site](const vector3d &p) { return std::atan2(p.Dot(site.axisB), p.Dot(site.axisA)) * 180.0 / M_PI; };
+		std::snprintf(line, sizeof(line), "crater %.1f km across at lat %.4f lon %.4f, fresh %.3f, %.1f transitions, reaches %.2f radii: %.4f to %.4f radii out, at %.3f to %.3f degrees, height %.3f to %.3f m",
+			site.diameter, std::asin(std::clamp(site.centre.y, -1.0, 1.0)) * 180.0 / M_PI, std::atan2(site.centre.x, site.centre.z) * 180.0 / M_PI,
+			site.fresh, site.ratio, site.reach, radii(a), radii(b), around(a), around(b), heightA, heightB);
+		out.emplace_back(line);
+	}
+	const Sample atA = At(a), atB = At(b);
+	std::snprintf(line, sizeof(line), "%d craters around; as the terrain has them, large %.3f to %.3f m, small %.3f to %.3f m; gathered anew, large %.3f to %.3f m, small %.3f to %.3f m",
+		int(sites.size()), atA.large, atB.large, atA.small, atB.small, allA.large, allB.large, allA.small, allB.small);
+	out.emplace_back(line);
+	return out;
 }
 
 TerrainCraters::Sample TerrainCraters::At(const vector3d &p) const

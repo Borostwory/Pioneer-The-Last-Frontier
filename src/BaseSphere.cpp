@@ -117,38 +117,40 @@ void BaseSphere::SetMaterialParameters(const matrix4x4d &trans, const float radi
 		++j;
 	}
 
-	std::unique_ptr<vector2f, FreeDeleter> densityBuffer(static_cast<vector2f *>(malloc((DENSITY_STEPS + 1) * sizeof(vector2f))));
-	std::unique_ptr<vector2f, FreeDeleter> scatterBuffer(static_cast<vector2f *>(malloc((DENSITY_STEPS + 1) * (DENSITY_STEPS + 1) * sizeof(vector2f))));
+	// The density tables come from the body alone, so they're uploaded once, on the first draw. A body without air has
+	// none, and nothing reads them: only its sky and the ATMOSPHERE variants of its ground do.
+	if (ap.atmosDensity > 0.0 && !m_densityTexture.Valid()) {
+		std::unique_ptr<vector2f, FreeDeleter> densityBuffer(static_cast<vector2f *>(malloc((DENSITY_STEPS + 1) * sizeof(vector2f))));
+		std::unique_ptr<vector2f, FreeDeleter> scatterBuffer(static_cast<vector2f *>(malloc((DENSITY_STEPS + 1) * (DENSITY_STEPS + 1) * sizeof(vector2f))));
 
-	for (int i = 0; i <= DENSITY_STEPS; ++i) {
-		vector2f *row = densityBuffer.get() + i;
+		for (int i = 0; i <= DENSITY_STEPS; ++i) {
+			vector2f *row = densityBuffer.get() + i;
 
-		row->x = ap.logDensityMap[i].x;
-		row->y = ap.logDensityMap[i].y;
-	}
-
-	for (int i = 0; i <= DENSITY_STEPS; ++i) {
-		for (int j = 0; j <= DENSITY_STEPS; ++j) {
-			int index = i * (DENSITY_STEPS + 1) + j;
-
-			scatterBuffer.get()[index].x = ap.logDensityMapR[index];
-			scatterBuffer.get()[index].y = ap.logDensityMapM[index];
+			row->x = ap.logDensityMap[i].x;
+			row->y = ap.logDensityMap[i].y;
 		}
+
+		for (int i = 0; i <= DENSITY_STEPS; ++i) {
+			for (int j = 0; j <= DENSITY_STEPS; ++j) {
+				int index = i * (DENSITY_STEPS + 1) + j;
+
+				scatterBuffer.get()[index].x = ap.logDensityMapR[index];
+				scatterBuffer.get()[index].y = ap.logDensityMapM[index];
+			}
+		}
+
+		const vector3f texSize(1, DENSITY_STEPS + 1, 0.f);
+		const vector3f texSizeR(DENSITY_STEPS + 1, DENSITY_STEPS + 1, 0.f);
+
+		const Graphics::TextureDescriptor texDesc(Graphics::TEXTURE_RG32F, texSize, Graphics::LINEAR_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
+		const Graphics::TextureDescriptor texDescR(Graphics::TEXTURE_RG32F, texSizeR, Graphics::LINEAR_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
+
+		m_densityTexture.Reset(Pi::renderer->CreateTexture(texDesc));
+		m_scatterTexture.Reset(Pi::renderer->CreateTexture(texDescR));
+
+		m_densityTexture->Update(static_cast<void *>(densityBuffer.get()), texSize, Graphics::TEXTURE_RG32F);
+		m_scatterTexture->Update(static_cast<void *>(scatterBuffer.get()), texSizeR, Graphics::TEXTURE_RG32F);
 	}
-
-	const vector3f texSize(1, DENSITY_STEPS + 1, 0.f);
-	const vector3f texSizeR(DENSITY_STEPS + 1, DENSITY_STEPS + 1, 0.f);
-	const vector3f texSizeM(DENSITY_STEPS + 1, DENSITY_STEPS + 1, 0.f);
-
-	const Graphics::TextureDescriptor texDesc(Graphics::TEXTURE_RG32F, texSize, Graphics::LINEAR_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
-	const Graphics::TextureDescriptor texDescR(Graphics::TEXTURE_RG32F, texSizeR, Graphics::LINEAR_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
-	const Graphics::TextureDescriptor texDescM(Graphics::TEXTURE_RG32F, texSizeM, Graphics::LINEAR_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
-
-	m_densityTexture.Reset(Pi::renderer->CreateTexture(texDesc));
-	m_scatterTexture.Reset(Pi::renderer->CreateTexture(texDescR));
-
-	m_densityTexture->Update(static_cast<void *>(densityBuffer.get()), texSize, Graphics::TEXTURE_RG32F);
-	m_scatterTexture->Update(static_cast<void *>(scatterBuffer.get()), texSizeR, Graphics::TEXTURE_RG32F);
 
 	// FIXME: these two should share the same buffer data instead of making two separate allocs
 	m_surfaceMaterial->SetBufferDynamic(s_baseSphereData, &matData);

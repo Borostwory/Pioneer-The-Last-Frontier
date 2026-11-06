@@ -118,6 +118,23 @@ public:
 	// (small lakes are looked for only around a place on the unit sphere: kind smalllake)
 	virtual std::vector<Feature> FindFeatures(const std::string &kind, const vector3d &around) const { return {}; }
 	virtual std::string DescribePoint(const vector3d &p) const { return {}; }
+	// For the debug tools: what the height at a point on the unit sphere is made of, in metres. False if this
+	// terrain doesn't say. They don't add up to the total: some are scaled on the way, and more goes in.
+	struct HeightLayers {
+		double total = 0.0;
+		double shape = 0.0; // plates, plains and the like, before craters
+		double largeCraters = 0.0;
+		double smallCraters = 0.0;
+		double smallRelief = 0.0;
+		double lines = 0.0; // scarps, cracks, valleys and bands
+		double maps = 0.0; // the ground maps of icy shells and grooves
+		double volcano = 0.0;
+	};
+	virtual bool GetHeightLayers(const vector3d &p, HeightLayers &out) const { return false; }
+	// the craters behind a step in the height between two nearby points, as lines for the log
+	virtual std::vector<std::string> DescribeCraterStep(const vector3d &a, const vector3d &b) const { return {}; }
+	// and the tectonic lines around them
+	virtual std::vector<std::string> DescribeLineStep(const vector3d &a, const vector3d &b) const { return {}; }
 
 	Uint32 GetSurfaceEffects() const { return m_surfaceEffects; }
 

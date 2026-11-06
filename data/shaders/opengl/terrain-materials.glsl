@@ -81,7 +81,7 @@ uniform vec4 PatchTile;
 // on-screen size of a texel in pixels: grain, and mottling from the same
 // texture 8x larger
 #define MATERIAL_FINE_PIXELS_PER_TEXEL 2.5
-#define MATERIAL_COARSE_SCALE 8.0
+#define MATERIAL_COARSE_LEVELS 3.0
 // tile sizes are 2^level metres: 1 m to 128 km; MaterialOrigin covers levels
 // up to MATERIAL_FINE_ORIGIN_LEVEL, MaterialOriginCoarse the rest
 #define MATERIAL_MAX_LEVEL 17.0
@@ -390,7 +390,11 @@ vec3 materialSample(int layer, MaterialMapping m, float level)
 {
 	level = clamp(level, 0.0, MATERIAL_MAX_LEVEL - 1.0);
 	float k = floor(level);
-	vec3 r = mix(materialTileSample(layer, m, k), materialTileSample(layer, m, k + 1.0), level - k);
+	vec3 r = materialTileSample(layer, m, k);
+	// (level is often a whole number, as MATERIAL_FIXED_MAX_LEVEL holds it at one over most of the screen: then the next
+	// size would count for nothing, so it isn't read)
+	if (level > k)
+		r = mix(r, materialTileSample(layer, m, k + 1.0), level - k);
 	// forest: its floor on foot, its canopy from the air
 	if (layer == MATERIAL_FOREST) {
 		float canopy = smoothstep(MATERIAL_FOREST_NEAR_LEVEL, MATERIAL_FOREST_FAR_LEVEL, m.level);
@@ -478,7 +482,7 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 	int l1 = materialSlotLayer(m1), l2 = materialSlotLayer(m2);
 	float w1 = w[m1], w2 = l2 >= 0 ? w[m2] : 0.0;
 	vec3 d1 = vec3(0.0, 1.0, 0.5), d2 = vec3(0.0, 1.0, 0.5);
-	float coarse = mapping.level + log2(MATERIAL_COARSE_SCALE);
+	float coarse = mapping.level + MATERIAL_COARSE_LEVELS;
 	if (l1 >= 0) {
 		vec3 f1 = materialSample(l1, mapping, mapping.level);
 		vec3 c1 = materialSample(l1, mapping, coarse);

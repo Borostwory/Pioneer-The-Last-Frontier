@@ -9,6 +9,7 @@
 #include "../vector3.h"
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 // The craters of the physical surface generator (planet lab: fields.py,
@@ -36,6 +37,9 @@ public:
 
 	// p on the unit sphere. Follows the band limit of the calling thread.
 	Sample At(const vector3d &p) const;
+	// For the debug tools: the craters whose height differs between two nearby points, one line each, and At()'s
+	// answer beside the sum of all those around, gathered anew
+	std::vector<std::string> DescribeStep(const vector3d &a, const vector3d &b) const;
 
 	size_t ListedCount() const { return m_listed.size(); }
 	size_t SizeCount() const { return m_sizes.size(); }

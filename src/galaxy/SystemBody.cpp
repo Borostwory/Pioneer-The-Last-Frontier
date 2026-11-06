@@ -572,6 +572,10 @@ void SystemBody::CalcAtmosphereParams(AtmosphereParameters &params) const
 	const float radiusPlanet_in_km = radiusPlanet_in_m / 1000;
 	const float atmosHeight_in_km = radiusPlanet_in_km * (params.atmosRadius - 1);
 
+	// no air: nothing reads the density tables (BaseSphere::SetMaterialParameters), and they take 0.2 s on the main thread
+	if (params.atmosDensity <= 0.0f)
+		return;
+
 	float atmosHeight = radiusPlanet_in_m * (params.atmosRadius - 1);;
 	for (int i = 0; i <= DENSITY_STEPS; i++) {
 		float height = i * atmosHeight / DENSITY_STEPS;
