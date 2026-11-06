@@ -312,6 +312,12 @@ NewGameWindow = ModalWindow.New("New Game", function()
 		else
 			ui.text(lui.SELECT_START_PROFILE)
 			ui.sameLine()
+			-- the default combo width ignores the font, so fit it to the longest profile name
+			local textWidth = 0
+			for _, item in ipairs(profileCombo.items) do
+				textWidth = math.max(textWidth, ui.calcTextSize(item).x)
+			end
+			ui.nextItemWidth(textWidth + ui.getFrameHeight() + ui.theme.styles.FramePadding.x * 2)
 			local changed, ret = ui.combo("##starttype", profileCombo.selected, profileCombo.items)
 			if changed then
 				profileCombo.selected = ret
