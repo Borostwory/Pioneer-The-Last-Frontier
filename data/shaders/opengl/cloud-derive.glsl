@@ -329,7 +329,7 @@ CloudPlanet cloudDerive()
 		cMid = 0.8 * v;
 		cHigh = 0.6 * v;
 		for (int i = 0; i < 3; i++)
-			cloudSetOptics(cp.L[i], vec3(1.0, 0.95, 0.78), 0.998, 0.7, -0.2, 0.9);
+			cloudSetOptics(cp.L[i], vec3(1.0, 0.76, 0.73), 0.998, 0.7, -0.2, 0.9);
 	} else if (s == CLOUD_SPECIES_CH4) {
 		cLow = clamp(cp.P0 / 3.0, 0.3, 1.0);
 		cMid = 0.10;
