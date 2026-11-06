@@ -30,6 +30,9 @@
 
 #include "profiler/Profiler.h"
 
+#include <algorithm>
+#include <cmath>
+
 using namespace Graphics;
 
 // if a body would render smaller than this many pixels, just ignore it
@@ -192,6 +195,22 @@ Camera::~Camera()
 {
 }
 
+// The colour of a star's light. A star's colour is in linear light, while the shaders take a light's colour as a screen
+// colour and convert it with toLinear, which would strengthen its tint. And as eyes adapt to sunlight, it's measured
+// against the Sun's, which is white, and other stars keep their real difference from that. (A star's own look doesn't
+// go through here.)
+static Color star_light_colour(const Color &star)
+{
+	// what SystemBodyData::GenerateStarColor makes of the Sun, at 5772 K
+	static const float SUN_G = 0.871f, SUN_B = 0.811f;
+	const float r = star.r / 255.0f, g = star.g / 255.0f / SUN_G, b = star.b / 255.0f / SUN_B;
+	const float top = std::max(std::max(r, g), b);
+	if (top <= 0.0f)
+		return Color(0, 0, 0, 0);
+	const auto toScreen = [top](const float v) { return Uint8(std::pow(v / top, 1.0f / 2.2f) * 255.0f + 0.5f); };
+	return Color(toScreen(r), toScreen(g), toScreen(b), 0);
+}
+
 static void position_system_lights(Frame *camFrame, Frame *frame, std::vector<Camera::LightSource> &lights)
 {
 	PROFILE_SCOPED()
@@ -202,9 +221,7 @@ static void position_system_lights(Frame *camFrame, Frame *frame, std::vector<Ca
 	if (body && !frame->IsRotFrame() && (body->GetSuperType() == SystemBody::SUPERTYPE_STAR)) {
 		vector3d lpos = frame->GetPositionRelTo(camFrame->GetId());
 
-		const Color &col = body->GetStarColor();
-
-		const Color lightCol(col[0], col[1], col[2], 0);
+		const Color lightCol = star_light_colour(body->GetStarColor());
 		vector3f lightpos(lpos.x, lpos.y, lpos.z);
 		Graphics::Light light(Graphics::Light::LIGHT_DIRECTIONAL, lightpos, lightCol, lightCol);
 		lights.push_back(Camera::LightSource(frame->GetBody(), light));
