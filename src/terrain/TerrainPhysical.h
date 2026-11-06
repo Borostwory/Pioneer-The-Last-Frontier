@@ -92,6 +92,7 @@ private:
 		TerrainLines::Sample lines;
 		double crustRubble = 0.0; // 0..1, the rubble of chaos on an active shell
 		double crustCrack = 0.0; // 0..1, a crack of the ground map there
+		double grooveDark = 0.0; // 0..1, how much dark ground shows on a grooved moon
 		double lavaField = -1e30; // what decides where lava lies
 	};
 	enum class MoonStyle {
@@ -124,6 +125,12 @@ private:
 	double CrustChaos(const vector3d &p) const;
 	// metres above the ground, from the maps of an active shell's rough ground (tools/europa-tiles); they average out to nothing
 	double CrustMaps(const vector3d &p, Point &point) const;
+	// metres above the ground of a large moon whose shell once stretched, like Ganymede: bright grooved ground and
+	// irregular dark regions, split by long bands (maps from tools/europa-tiles)
+	double Grooves(const vector3d &p, Point &point) const;
+	// where the dark regions of a grooved moon lie: dark above m_grooveDarkLevel
+	double GrooveDarkBase(const vector3d &p) const;
+	void BuildGrooves();
 	// metres above the ground, on the sand of a sand sea; calm: 0..1, 0 at a river
 	double Dunes(const vector3d &p, const Point &point, double calm) const;
 	double Keep(const Ground &g) const;
@@ -142,6 +149,8 @@ private:
 	void Steep(const vector3d &p, const vector3d &normal, Shares &shares) const;
 	double AltitudeOf(const Point &point, const Shares &shares) const;
 	vector3d ColourFrom(const vector3d &p, const Point &point, const Shares &shares, double altitude) const;
+	// stains and mottling at several sizes, in this body's own colours
+	vector3d Dirty(const vector3d &p, const Point &point, const Shares &shares, const vector3d &colour) const;
 	void BuildLevels();
 	void BuildTones();
 	void BuildMaterials();
@@ -182,6 +191,7 @@ private:
 	double m_floodLevel = -1e30; // metres; -1e30: no plains
 	double m_iceLevel = 1e30, m_iceCoreLevel = 1e30;
 	double m_darkLevel = 1e30, m_brightLevel = 1e30;
+	double m_grooveDarkLevel = 1e30;
 	double m_northFrost = 2.0, m_southFrost = 2.0;
 	double m_sandLevel = 1e30, m_mudLevel = 1e30, m_saltLevel = 1e30, m_beltLevel = 1e30;
 	double m_steepSlope = 1.0; // what counts as steep at the colours' scale, as a tangent
@@ -189,6 +199,20 @@ private:
 
 	MoonStyle m_moonStyle = MoonStyle::MOTTLED;
 	bool m_hemispheres = false;
+	bool m_grooved = false;
+	// a long lane of grooves, along a circle on the body, oldest first
+	struct GrooveBand {
+		vector3d normal, middle;
+		double offset; // the circle is where p . normal is this
+		double reach; // from its middle to each end, on the unit sphere
+		double half; // km
+		double drop; // metres, how far it lies below what it cuts
+		double toneLeast, toneMore;
+		uint32_t id;
+	};
+	std::vector<GrooveBand> m_grooveBands;
+	vector3d m_grooveAxes[2]; // the dark regions are drawn out towards these
+	vector3d m_furrowCentre;
 	vector3d m_hemisphereAxis;
 
 	static constexpr int UNIT_COUNT = 26;
@@ -201,6 +225,10 @@ private:
 	vector3d m_vegetation, m_tint;
 	double m_bright = 1.0;
 	double m_iceDirt = 0.0; // 0..1, the dirt on the ice of an active shell, in patches
+	double m_dirtStrength = 0.0; // 0..1
+	// hues of what stains the ground, about 1 in brightness, and how they change its brightness
+	vector3d m_dirtHues[3];
+	double m_dirtLight[3] = { 1.0, 1.0, 1.0 };
 };
 
 #endif // _TERRAINPHYSICAL_H

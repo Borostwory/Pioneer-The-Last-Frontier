@@ -39,6 +39,7 @@ local featureKinds = {
 	{ id = "block", label = "Mountain block", size = "across" },
 	{ id = "line", label = "Crack or scarp", size = "long" },
 	{ id = "chaos", label = "Chaos" },
+	{ id = "lane", label = "Grooved lane" },
 }
 
 local state = {

@@ -157,12 +157,16 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 		m_hemisphereAxis = vector3d(r * std::cos(angle), y, r * std::sin(angle));
 	}
 
-	m_craters.Build(m_core, m_interior, m_state, m_noiseSeed);
+	m_grooved = m_interior.iceCrust && m_interior.past && m_core.radius > 0.2 && !m_state.weather;
+	if (m_grooved)
+		BuildGrooves();
+
+	m_craters.Build(m_core, m_interior, m_state, m_noiseSeed, m_grooved);
 	if (m_interior.plates)
 		m_plates.Build(m_core.seed);
 	m_plainsAreBasalt = m_interior.plains > 0.02 && !m_state.sulphur && m_state.wear < 0.2;
 	m_volcanoes.BuildConstructs(m_core, m_interior, m_noiseSeed, m_reliefLimit);
-	m_lines.Build(m_core, m_interior, m_noiseSeed);
+	m_lines.Build(m_core, m_interior, m_noiseSeed, m_grooved);
 	BuildLevels();
 	BuildTones();
 	BuildMaterials();
@@ -188,6 +192,10 @@ void TerrainPhysical::BuildMaterials()
 		m_materials.Add(M::ICE);
 	if (m_iceLevel < NONE_HIGH || (cryo && airless))
 		m_materials.Add(M::SNOW);
+	if (m_grooved) {
+		m_materials.Add(M::ICE);
+		m_materials.Add(M::DIRTY_ICE);
+	}
 	if (cryo) {
 		if (m_darkLevel < NONE_HIGH)
 			m_materials.Add(M::DIRTY_ICE);
@@ -355,7 +363,7 @@ void TerrainPhysical::BuildLevels()
 	}
 
 	// land is above 0; the sea floor lies at 0 on water worlds
-	m_datum = m_state.sea > 0.0 ? m_seaLevel : double(ground.low) - 0.15 * m_reliefLimit - m_lines.Deepest() - (m_lines.IsActiveShell() ? CRUST_ROOM : 0.0);
+	m_datum = m_state.sea > 0.0 ? m_seaLevel : double(ground.low) - 0.15 * m_reliefLimit - m_lines.Deepest() - (m_lines.IsActiveShell() || m_grooved ? CRUST_ROOM : 0.0);
 
 	if (wet) {
 		const double sea = m_seaLevel;
@@ -449,14 +457,19 @@ void TerrainPhysical::BuildLevels()
 		m_southFrost = 1.3 + 0.3 * rng.Double();
 		for (int i = 0; i < LEVEL_SAMPLES; i++)
 			darkField[i] = DarkField(EvenPoint(i, LEVEL_SAMPLES), grounds[i].warp);
-		if (m_state.ground == M::ICE && m_interior.iceActivity < 0.05 && m_inputs.ice < 0.95)
+		if (m_grooved) {
+			std::vector<double> darkBase(LEVEL_SAMPLES);
+			for (int i = 0; i < LEVEL_SAMPLES; i++)
+				darkBase[i] = GrooveDarkBase(EvenPoint(i, LEVEL_SAMPLES));
+			m_grooveDarkLevel = LevelAbove(darkBase, 0.36);
+		} else if (m_state.ground == M::ICE && m_interior.iceActivity < 0.05 && m_inputs.ice < 0.95)
 			m_darkLevel = LevelAbove(darkField, std::min(darkShare, std::max(0.0, 1.0 - std::min(m_inputs.ice, 1.0))));
-		if (m_state.ground == M::DIRTY_ICE && m_inputs.ice <= 0.0)
+		if (!m_grooved && m_state.ground == M::DIRTY_ICE && m_inputs.ice <= 0.0)
 			m_brightLevel = LevelAbove(darkField, brightShare);
 	}
 
 	// room for what the coarse grid can't see
-	m_maxHeightInMeters = std::min(std::max(100.0, double(ground.high) - m_datum + 0.25 * m_reliefLimit + m_volcanoes.Tallest() + m_lines.Tallest() + (m_lines.IsActiveShell() ? CRUST_ROOM : 0.0)), m_planetRadius);
+	m_maxHeightInMeters = std::min(std::max(100.0, double(ground.high) - m_datum + 0.25 * m_reliefLimit + m_volcanoes.Tallest() + m_lines.Tallest() + (m_lines.IsActiveShell() || m_grooved ? CRUST_ROOM : 0.0)), m_planetRadius);
 	m_maxHeight = m_maxHeightInMeters / m_planetRadius;
 	m_invMaxHeight = 1.0 / m_maxHeight;
 }
@@ -533,6 +546,34 @@ void TerrainPhysical::BuildTones()
 			set(M::SNOW, vector3d(0.55, 0.46, 0.32));
 		}
 		set(M::SALT, vector3d(0.42, 0.22, 0.13));
+		if (m_grooved) {
+			// warm pale ground, and grey-purple old ground
+			set(M::ICE, vector3d(0.70, 0.66, 0.55));
+			set(M::DIRTY_ICE, vector3d(0.34, 0.30, 0.31));
+			set(M::SNOW, vector3d(0.95, 0.94, 0.91));
+		}
+	}
+	// What stains this body's ground comes from what it's made of: a usual stain, a darker one and a paler one. Drawn
+	// apart from all else here, so the seed's other draws stay as they were.
+	{
+		Random dirt((m_core.seed ^ 0xD17Au) & 0x7fffffffu);
+		const vector3d(*hues)[3] = nullptr;
+		static const vector3d ICE_HUES[3] = { vector3d(1.22, 0.98, 0.72), vector3d(1.15, 0.95, 0.82), vector3d(0.92, 1.0, 1.12) };
+		static const vector3d SULPHUR_HUES[3] = { vector3d(1.35, 1.0, 0.35), vector3d(1.5, 0.8, 0.45), vector3d(1.1, 1.02, 0.8) };
+		static const vector3d IRON_HUES[3] = { vector3d(1.5, 0.82, 0.5), vector3d(1.2, 0.92, 0.8), vector3d(1.15, 1.0, 0.8) };
+		static const vector3d ROCK_HUES[3] = { vector3d(1.2, 0.98, 0.78), vector3d(0.95, 1.0, 1.1), vector3d(1.08, 1.0, 0.9) };
+		hues = m_interior.iceCrust ? &ICE_HUES : (m_state.sulphur ? &SULPHUR_HUES : (iron > 0.25 ? &IRON_HUES : &ROCK_HUES));
+		static const double LIGHT[3] = { 1.0, 0.62, 1.25 };
+		for (int i = 0; i < 3; i++) {
+			m_dirtHues[i] = vector3d((*hues)[i].x * (0.9 + 0.2 * dirt.Double()), (*hues)[i].y * (0.9 + 0.2 * dirt.Double()), (*hues)[i].z * (0.9 + 0.2 * dirt.Double()));
+			m_dirtLight[i] = LIGHT[i];
+		}
+		m_dirtStrength = 0.5 + 0.2 * dirt.Double();
+		// (what's already been judged on its own, or is mostly plants and sea, needs less)
+		if (m_lines.IsActiveShell())
+			m_dirtStrength *= m_iceDirt > 0.0 ? 0.45 : 0.2;
+		else if (m_interior.plates)
+			m_dirtStrength *= 0.7;
 	}
 	if (!m_state.weather && !m_interior.iceCrust) {
 		// bare rock with no air is dark (the plan's highland albedo, 0.2 to 0.3)
@@ -913,6 +954,101 @@ namespace {
 		}
 		return tiles.data();
 	}
+
+	// Ganymede's grooves, from tools/europa-tiles: the maps' grooves run along y, and each is 61.44 km across
+	enum GrooveMap {
+		GROOVE_TILT, // young, sharp and triangular
+		GROOVE_HORST, // older and subdued, with flat tops and floors
+		GROOVE_SMOOTH,
+		GROOVE_MAP_COUNT
+	};
+	constexpr double GROOVE_TOPS[GROOVE_MAP_COUNT] = { 500.6, 517.6, 327.9 }; // metres, as the tool printed
+
+	const DuneTile *GrooveTiles()
+	{
+		static const std::array<DuneTile, GROOVE_MAP_COUNT> tiles = [] {
+			std::array<DuneTile, GROOVE_MAP_COUNT> loaded;
+			loaded[GROOVE_TILT].Load("terrain/ganymede_tilt.bin");
+			loaded[GROOVE_HORST].Load("terrain/ganymede_horst.bin");
+			loaded[GROOVE_SMOOTH].Load("terrain/ganymede_smooth.bin");
+			return loaded;
+		}();
+		for (const DuneTile &tile : tiles) {
+			if (tile.size == 0)
+				return nullptr;
+		}
+		return tiles.data();
+	}
+
+	inline uint32_t GrooveMix(const uint32_t a, const uint32_t b)
+	{
+		uint32_t h = a * 0x9E3779B1u ^ b * 0x85EBCA77u;
+		h ^= h >> 15;
+		h *= 0x2C1B3C6Du;
+		h ^= h >> 13;
+		h *= 0x297A2D39u;
+		return h ^ (h >> 16);
+	}
+	inline double GrooveUnit(const uint32_t id, const uint32_t salt)
+	{
+		return double(GrooveMix(id, salt) & 0xFFFFFFu) / 16777215.0;
+	}
+
+	// The seeds around a place, of cells in space. They only decide which way the grooves run, so they are bent and of
+	// uneven weight, and their edges are neither straight nor evenly spaced.
+	struct GrooveSite {
+		vector3d at;
+		uint32_t id;
+		double distance;
+	};
+	constexpr int GROOVE_SITES = 27;
+
+	void FindGrooveSites(const vector3d &p, const double frequency, const uint32_t seed, GrooveSite sites[GROOVE_SITES])
+	{
+		const int64_t ix = int64_t(std::floor(p.x * frequency)), iy = int64_t(std::floor(p.y * frequency)), iz = int64_t(std::floor(p.z * frequency));
+		int count = 0, nearest = 0;
+		for (int dz = -1; dz <= 1; dz++) {
+			for (int dy = -1; dy <= 1; dy++) {
+				for (int dx = -1; dx <= 1; dx++) {
+					const int64_t x = ix + dx, y = iy + dy, z = iz + dz;
+					const uint32_t id = GrooveMix(GrooveMix(GrooveMix(seed, uint32_t(x)), uint32_t(y)), uint32_t(z));
+					GrooveSite &site = sites[count];
+					site.id = id;
+					site.at = vector3d(double(x) + 0.05 + 0.9 * GrooveUnit(id, 1), double(y) + 0.05 + 0.9 * GrooveUnit(id, 2), double(z) + 0.05 + 0.9 * GrooveUnit(id, 3)) * (1.0 / frequency);
+					site.distance = (p - site.at).Length() * (0.7 + 0.6 * GrooveUnit(id, 20));
+					if (site.distance < sites[nearest].distance)
+						nearest = count;
+					count++;
+				}
+			}
+		}
+		std::swap(sites[0], sites[nearest]);
+	}
+
+	// a stretch of grooves: its directions on the body, and how it reads a map
+	struct GrooveSwath {
+		vector3d across, along;
+		double u, v, scale, tone;
+		int map;
+	};
+
+	GrooveSwath MakeGrooveSwath(const uint32_t id, const vector3d &middle, const vector3d &direction, const double toneLeast, const double toneMore)
+	{
+		GrooveSwath s;
+		const vector3d up = middle.Normalized();
+		s.across = (direction - up * direction.Dot(up)).Normalized();
+		// (tilted the one way or the other)
+		if (GrooveUnit(id, 7) < 0.5)
+			s.across = -s.across;
+		s.along = up.Cross(s.across);
+		s.u = 2048.0 * GrooveUnit(id, 8);
+		s.v = 2048.0 * GrooveUnit(id, 9);
+		s.scale = 0.75 + 0.65 * GrooveUnit(id, 10);
+		const double t = GrooveUnit(id, 11);
+		s.tone = toneLeast + toneMore * GrooveUnit(id, 12);
+		s.map = t < 0.45 ? GROOVE_TILT : (t < 0.85 ? GROOVE_HORST : GROOVE_SMOOTH);
+		return s;
+	}
 } // namespace
 
 // Soft materials spread downwind over what is next to them, up to hundreds of km, in streaks along
@@ -1277,6 +1413,157 @@ double TerrainPhysical::CrustMaps(const vector3d &p, Point &point) const
 	return metres * std::min(0.4 * m_reliefLimit / CRUST_ROOM, 1.0);
 }
 
+void TerrainPhysical::BuildGrooves()
+{
+	Random rng((m_core.seed ^ 0x6A0Fu) & 0x7fffffffu);
+	const auto direction = [&rng]() {
+		const double y = 2.0 * rng.Double() - 1.0;
+		const double angle = 2.0 * M_PI * rng.Double();
+		const double r = std::sqrt(std::max(0.0, 1.0 - y * y));
+		return vector3d(r * std::cos(angle), y, r * std::sin(angle));
+	};
+	m_grooveAxes[0] = direction();
+	m_grooveAxes[1] = direction();
+	m_furrowCentre = direction();
+	const double radiusKm = m_core.radius * 6378.135;
+	const double share = (radiusKm / 2631.0) * (radiusKm / 2631.0);
+	const auto add = [&](const int count, const double lengthLeast, const double lengthMore, const double halfLeast, const double halfMore, const double dropLeast, const double dropMore, const double toneLeast, const double toneMore) {
+		for (int i = 0; i < count; i++) {
+			GrooveBand band;
+			band.middle = direction();
+			// most run the way the dark regions are drawn out, so they split them lengthways
+			const double pick = rng.Double();
+			const vector3d axis = pick < 0.45 ? m_grooveAxes[0] : (pick < 0.8 ? m_grooveAxes[1] : direction());
+			band.normal = (band.middle.Cross(axis) + direction() * 0.2).Normalized();
+			band.offset = band.middle.Dot(band.normal);
+			band.reach = std::min(0.5 * (lengthLeast + lengthMore * rng.Double()) / radiusKm, 2.0);
+			const double wide = rng.Double();
+			band.half = halfLeast + halfMore * wide * wide;
+			band.drop = dropLeast + (dropMore - dropLeast) * rng.Double();
+			band.toneLeast = toneLeast;
+			band.toneMore = toneMore;
+			band.id = rng.Int32();
+			m_grooveBands.push_back(band);
+		}
+	};
+	add(int(34.0 * share) + 3, 700.0, 3300.0, 14.0, 36.0, 60.0, 180.0, -0.06, 0.16);
+	add(int(130.0 * share) + 6, 150.0, 750.0, 2.5, 5.5, 20.0, 70.0, -0.08, 0.2);
+}
+
+double TerrainPhysical::GrooveDarkBase(const vector3d &p) const
+{
+	// (at full detail, or its edge would move from one patch to the next)
+	TerrainNoise::ScopedBandLimit fullDetail(0.0);
+	// shapes of all sizes, drawn out two ways, each over a part of the moon
+	const auto stretched = [&](const vector3d &axis, const uint32_t seed) {
+		return Fbm(p - axis * (0.7 * p.Dot(axis)), 1.7, 5, m_noiseSeed + seed, 0.55);
+	};
+	const double which = Soft(Fbm(p, 0.9, 2, m_noiseSeed + 333), -0.12, 0.24);
+	return stretched(m_grooveAxes[0], 331) * (1.0 - which) + stretched(m_grooveAxes[1], 332) * which;
+}
+
+// Bright grooved ground, whose grooves run a different way from place to place, which only shows close up. Old dark
+// regions of every size have jagged edges, and long lanes of grooves split them, and the bright ground too.
+double TerrainPhysical::Grooves(const vector3d &p, Point &point) const
+{
+	const DuneTile *tiles = GrooveTiles();
+	if (!tiles)
+		return 0.0;
+	const double radiusKm = m_core.radius * 6378.135;
+	const double maxFrequency = TerrainNoise::s_maxFrequency;
+	const double samples = maxFrequency > 0.0 ? 0.5 / maxFrequency * radiusKm : 0.0;
+	const double edgeKm = std::max(1.0, 2.5 * samples);
+
+	// lines bend, and the bright ground's tone changes softly, at full detail or they would move between patches
+	vector3d bent;
+	double area;
+	{
+		TerrainNoise::ScopedBandLimit fullDetail(0.0);
+		const double bend = radiusKm / 500.0;
+		bent = p + vector3d(Fbm(p, bend, 3, m_noiseSeed + 321), Fbm(p, bend, 3, m_noiseSeed + 322), Fbm(p, bend, 3, m_noiseSeed + 323)) * 0.07;
+		area = Soft(Fbm(p, 2.2, 4, m_noiseSeed + 324, 0.55), -0.2, 0.4);
+	}
+	const vector3d bentUnit = bent.Normalized();
+
+	// metres, and how much dark shows: dark lag in the troughs, once they can be seen, and faint long streaks
+	const double troughs = 1.1 * (1.0 - Soft(samples, 0.5, 1.5));
+	const double streaks = 0.03 * (1.0 - Soft(samples, 6.0, 10.0));
+	const double brightTone = 0.03 + 0.2 * area;
+	const auto readSwath = [&](const GrooveSwath &s, double &dark) {
+		const DuneTile &tile = tiles[s.map];
+		const double cell = CRUST_CELL_KM * s.scale;
+		const double acrossKm = bent.Dot(s.across) * radiusKm, alongKm = bent.Dot(s.along) * radiusKm;
+		const double relative = (tile.At(acrossKm / cell + s.u, alongKm / cell + s.v, tile.LevelFor(samples, cell)) - tile.mean) / CRUST_FULL;
+		const double streak = streaks > 0.0 ? streaks * SphereCells::Noise(vector3d(acrossKm / 22.0, alongKm / 500.0, s.u), uint32_t(s.v)) : 0.0;
+		dark = std::clamp(brightTone + s.tone - troughs * relative + streak, 0.0, 1.0);
+		return relative * GROOVE_TOPS[s.map] * std::sqrt(s.scale);
+	};
+
+	// the dark regions, with jagged edges at every size
+	const double base = GrooveDarkBase(p);
+	const double darkEdge = std::max(0.004, 1.5 * samples / radiusKm);
+	double darkShare = base > m_grooveDarkLevel ? 1.0 : 0.0;
+	if (std::abs(base - m_grooveDarkLevel) < 0.04 + darkEdge)
+		darkShare = Soft(base + 0.05 * Fbm(p, radiusKm / 90.0, 9, m_noiseSeed + 325, 0.58), m_grooveDarkLevel, darkEdge);
+
+	// the bright ground, a little lower
+	double metres = 0.0, dark = 0.0;
+	if (darkShare < 1.0) {
+		GrooveSite sites[GROOVE_SITES];
+		FindGrooveSites(bent, std::max(radiusKm / 700.0, 2.0), m_noiseSeed + 327, sites);
+		double total = 0.0;
+		for (int i = 0; i < GROOVE_SITES; i++) {
+			const double fromEdgeKm = 0.5 * (sites[i].distance - sites[0].distance) * radiusKm;
+			if (fromEdgeKm >= edgeKm)
+				continue;
+			const double weight = 1.0 - Soft(fromEdgeKm, 0.0, edgeKm);
+			const GrooveSite &site = sites[i];
+			double darkHere;
+			metres += weight * (readSwath(MakeGrooveSwath(site.id, site.at, vector3d(GrooveUnit(site.id, 4) - 0.5, GrooveUnit(site.id, 5) - 0.5, GrooveUnit(site.id, 6) - 0.5), -0.03, 0.06), darkHere) - 80.0);
+			dark += weight * darkHere;
+			total += weight;
+		}
+		metres /= total;
+		dark /= total;
+	}
+	// the dark ground, with faint arcs of furrows around one point of the moon, from a map of grooves laid large
+	if (darkShare > 0.0) {
+		const double angle = std::acos(std::clamp(bentUnit.Dot(m_furrowCentre), -1.0, 1.0));
+		double furrows = 0.0;
+		if (angle < 1.9) {
+			const DuneTile &tile = tiles[GROOVE_HORST];
+			const double cell = CRUST_CELL_KM * 9.0;
+			const double alongKm = bent.Dot(m_furrowCentre.Cross(vector3d(0.31, 0.87, 0.38)).Normalized()) * radiusKm;
+			furrows = 0.25 * (1.0 - Soft(angle, 1.3, 0.6)) * (tile.At(angle * radiusKm / cell, alongKm / cell, tile.LevelFor(samples, cell)) - tile.mean) / CRUST_FULL * GROOVE_TOPS[GROOVE_HORST];
+		}
+		metres += darkShare * (furrows - metres);
+		dark += darkShare * (1.0 - dark);
+	}
+
+	// the long lanes across it all, the younger cutting the older; each narrows to nothing at its ends
+	double rough = 2.0;
+	for (const GrooveBand &band : m_grooveBands) {
+		const double fromMiddleKm = std::abs(bent.Dot(band.normal) - band.offset) * radiusKm;
+		if (fromMiddleKm >= 1.3 * band.half + edgeKm)
+			continue;
+		const double along = std::acos(std::clamp(bentUnit.Dot(band.middle), -1.0, 1.0)) / band.reach;
+		if (along >= 1.0)
+			continue;
+		if (rough > 1.5)
+			rough = std::clamp(Fbm(p, radiusKm / 25.0, 6, m_noiseSeed + 326, 0.55) / 0.35, -1.0, 1.0);
+		const double width = band.half * Soft(1.0 - along, 0.0, 0.35) * (1.0 + 0.25 * rough);
+		const double mask = Soft(width - fromMiddleKm, 0.0, edgeKm);
+		if (mask <= 0.0)
+			continue;
+		double darkHere;
+		const double height = readSwath(MakeGrooveSwath(band.id, band.middle, band.normal, band.toneLeast, band.toneMore), darkHere) - band.drop;
+		metres += mask * (height - metres);
+		dark += mask * (darkHere - dark);
+	}
+	point.grooveDark = dark;
+	return metres * std::min(0.4 * m_reliefLimit / CRUST_ROOM, 1.0);
+}
+
 double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 {
 	const double cap = 0.05 * m_reliefLimit;
@@ -1465,6 +1752,8 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 	double lineHeight = out.lines.height * (1.0 - 0.85 * m_state.wearSmall) * (1.0 - volcano.influence);
 	if (m_lines.IsActiveShell())
 		lineHeight += CrustMaps(p, out);
+	else if (m_grooved)
+		lineHeight += Grooves(p, out);
 	if (m_lavaAroundVolcanoes)
 		out.lavaField = volcano.field;
 	else if (!m_lavaField.Empty())
@@ -1484,7 +1773,8 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 		out.smallLakeRatio = 1e30;
 	}
 	// a volcano keeps its own shape
-	const double relief = ((g.craters.small + g.small) * Keep(g) + OwnRelief(p, g)) * out.quiet * (1.0 - volcano.smooth);
+	// (the grooved ground is younger than the dark, with less on it)
+	const double relief = ((g.craters.small + g.small) * Keep(g) + OwnRelief(p, g)) * out.quiet * (1.0 - volcano.smooth) * (m_grooved ? 0.4 + 0.6 * out.grooveDark : 1.0);
 
 	if (m_state.sea <= 0.0) {
 		// the surface of a frozen sea is level; relief fades in on land
@@ -1881,6 +2171,14 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 		// frost at the poles
 		const double frostLine = p.y > 0.0 ? m_northFrost : m_southFrost;
 		paint(M::SNOW, Soft(std::abs(std::asin(std::clamp(p.y, -1.0, 1.0))) + 0.22 * g.warp + 0.05 * thin, frostLine, 0.015));
+		if (m_grooved) {
+			// young craters throw clean white ice
+			paint(M::SNOW, std::min(std::max(0.85 * Soft(ejecta, 0.05, 0.4), 1.4 * g.craters.rays), 1.0));
+			if (ground == M::DIRTY_ICE)
+				paint(M::ICE, 1.0 - point.grooveDark);
+			else
+				paint(M::DIRTY_ICE, point.grooveDark);
+		}
 		// old ice moons: dark regions; a past active episode leaves bright lanes along their edges
 		if (m_darkLevel < NONE_HIGH) {
 			double dark = m_hemispheres ? TwoToneSide(p, g, m_darkLevel, 1.0) : Soft(DarkField(p, g.warp) - 0.1 * thin, m_darkLevel, 0.015);
@@ -1888,7 +2186,7 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 				dark *= Soft(g.unitEdge, 0.22, 0.2);
 			paint(M::DIRTY_ICE, dark);
 		}
-		if (ground == M::DIRTY_ICE && m_interior.past)
+		if (ground == M::DIRTY_ICE && m_interior.past && !m_grooved)
 			paint(M::ICE, 1.0 - Soft(g.unitEdge, 0.22, 0.2));
 		// dark moons: where the lag is thin, ice shows through in patches
 		if (m_brightLevel < NONE_HIGH)
@@ -2009,6 +2307,37 @@ double TerrainPhysical::AltitudeOf(const Point &point, const Shares &shares) con
 	return altitude;
 }
 
+vector3d TerrainPhysical::Dirty(const vector3d &p, const Point &point, const Shares &shares, const vector3d &colour) const
+{
+	// how much it shows: all on bare ground, less on what's clean or growing, none on what has just melted
+	const double weight = std::clamp(shares[M::ROCK] + shares[M::REGOLITH] + shares[M::DUST] + shares[M::GRAVEL] + shares[M::BASALT] + shares[M::DIRTY_ICE] + shares[M::METAL] + shares[M::SAND] + shares[M::SOIL] + shares[M::CRACKED_MUD] + shares[M::ASH] + 0.5 * (shares[M::ICE] + shares[M::SNOW] + shares[M::SALT]) + 0.25 * (shares[M::GRASS] + shares[M::FOREST] + shares[M::FOREST_FAR] + shares[M::TUNDRA]), 0.0, 1.0) * m_dirtStrength;
+	if (weight <= 0.0)
+		return colour;
+	const Ground &g = point.g;
+	const double large = Fbm(p, 1.6, 3, m_noiseSeed + 341, 0.55) / 0.35, other = Fbm(p, 2.3, 3, m_noiseSeed + 344, 0.55) / 0.35;
+	const double middle = Fbm(p, 7.0, 3, m_noiseSeed + 342, 0.55) / 0.35, small = Fbm(p, 40.0, 4, m_noiseSeed + 343, 0.6) / 0.35;
+	// it gathers in low ground and in hollows; rims stand clear
+	const double low = std::clamp(-g.large / std::max(0.2 * m_reliefLimit, 1.0), -1.0, 1.0);
+	const double hollow = std::clamp(-(g.craters.large + g.craters.small) / std::max(0.03 * m_reliefLimit, 1.0), -1.0, 1.0);
+	const double cause = 0.25 * low + 0.3 * hollow;
+	// and what a young crater has thrown out is clean
+	const double kept = weight * (1.0 - 0.85 * std::min(g.craters.ejecta + g.craters.rays, 1.0));
+	const double shares3[3] = {
+		0.7 * kept * Soft(large + 0.5 * middle + 0.25 * small + cause, -0.1, 0.7),
+		0.6 * kept * Soft(other + 0.6 * middle - 0.4 * small + cause, 0.2, 0.7),
+		0.45 * kept * Soft(-large - 0.4 * middle + 0.5 * small - cause, 0.35, 0.6),
+	};
+	vector3d c = colour;
+	for (int i = 0; i < 3; i++) {
+		if (shares3[i] <= 0.0)
+			continue;
+		const double brightness = 0.3 * c.x + 0.6 * c.y + 0.1 * c.z;
+		c = c * (1.0 - shares3[i]) + m_dirtHues[i] * (brightness * m_dirtLight[i] * shares3[i]);
+	}
+	// and it's never quite even, at any size
+	return c * (1.0 + 0.22 * kept * std::clamp(0.6 * middle + 0.6 * small, -1.0, 1.0));
+}
+
 vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, const Shares &shares, const double altitude) const
 {
 	const Ground &g = point.g;
@@ -2078,7 +2407,9 @@ vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, cons
 	}
 	// shades with a cause: the crustal units on hard ground, fresh ejecta and rays with no air to dull them
 	const double hard = shares[M::REGOLITH] + shares[M::ROCK] + shares[M::BASALT] + shares[M::DIRTY_ICE] + shares[M::ICE];
-	c = c * (1.0 + 0.13 * (g.unitClass - 0.5) * hard);
+	// (not on a grooved moon, where it would draw the units' outlines over what has its own)
+	if (!m_grooved)
+		c = c * (1.0 + 0.13 * (g.unitClass - 0.5) * hard);
 	// Soft ground shows what lies under it: older units are darker and redder. They fade out towards a unit's
 	// edge, as loose ground has no sharp edges of its own. Wet soil is darker.
 	const double soft = shares[M::SOIL] + shares[M::SAND] + shares[M::DUST] + shares[M::GRAVEL] + shares[M::GRASS] + shares[M::FOREST] + shares[M::TUNDRA] + shares[M::CRACKED_MUD] + shares[M::SALT];
@@ -2109,6 +2440,7 @@ vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, cons
 	// dark sand seas, as on Mars and Titan
 	if (shares[M::SAND] > 0.0 && !m_sandSea.Empty())
 		c = c * (1.0 - 0.2 * shares[M::SAND] * Soft(m_sandSea.Smooth(point.place), 0.3, 0.4));
+	c = Dirty(p, point, shares, c);
 	if (!m_state.weather)
 		c = c * (1.0 + 0.3 * g.craters.ejecta + 0.55 * g.craters.rays);
 	return vector3d(std::clamp(c.x, 0.0, 1.0), std::clamp(c.y, 0.0, 1.0), std::clamp(c.z, 0.0, 1.0));
@@ -2182,6 +2514,18 @@ std::vector<Terrain::Feature> TerrainPhysical::FindFeatures(const std::string &k
 				if (vent.erupting == erupting)
 					out.push_back({ vent.centre, 2000.0 * vent.km });
 			}
+		}
+		return out;
+	}
+	if (kind == "lane") {
+		if (!m_grooved)
+			return out;
+		for (int i = 0; i < 3000 && out.size() < 300; i++) {
+			const vector3d place = EvenPoint(i, 3000);
+			Point point;
+			Grooves(place, point);
+			if (point.grooveDark < 0.3)
+				out.push_back({ place, 2.0 * std::sqrt(4.0 * M_PI / 3000.0) * m_planetRadius });
 		}
 		return out;
 	}
@@ -2521,6 +2865,9 @@ std::vector<std::string> TerrainPhysical::GetGeologyInfo() const
 	out.emplace_back(line);
 	if (m_lines.IsActiveShell())
 		out.emplace_back(CrustTiles() ? "Ground maps: loaded" : "Ground maps: MISSING");
+	if (m_grooved)
+		out.emplace_back(GrooveTiles() ? "Groove maps: loaded" : "Groove maps: MISSING");
+	out.emplace_back("Dirt: " + std::to_string(int(100.0 * m_dirtStrength)) + " %");
 	snprintf(line, sizeof(line), "Lines: %d large, %d fine, %d domes; tallest %.0f m, deepest %.0f m", int(m_lines.LineCount()), int(m_lines.FineCount()), int(m_lines.DomeCount()), m_lines.Tallest(), m_lines.Deepest());
 	out.emplace_back(line);
 	snprintf(line, sizeof(line), "Plates: %s; river pieces %d; rain %s; valleys %.1f; built in %.0f ms", m_plates.Active() ? "yes" : "no", int(m_hydro.RiverPieces()), m_hydro.HasMoisture() ? "yes" : "no", m_valleyAmount, m_buildMilliseconds);

@@ -31,7 +31,8 @@ public:
 		double rays = 0.0; // 0..1, long rays of the youngest
 	};
 
-	void Build(const PlanetPhysics::Core &core, const PlanetPhysics::Interior &interior, const PlanetPhysics::Surface &surface, uint32_t noiseSeed);
+	// brightRays: it has some large young craters, whose bright rays stand out from afar
+	void Build(const PlanetPhysics::Core &core, const PlanetPhysics::Interior &interior, const PlanetPhysics::Surface &surface, uint32_t noiseSeed, bool brightRays = false);
 
 	// p on the unit sphere. Follows the band limit of the calling thread.
 	Sample At(const vector3d &p) const;
@@ -51,6 +52,7 @@ private:
 	struct Site {
 		vector3d centre, axisA, axisB;
 		double cosReach, sinReach, reachAngle, angle, reach, fade;
+		double colourFade; // of its debris and rays, which show from further than its shape
 		double diameter, fresh, seed, oblique, ratio;
 		double wear, depth, wornDepth, rim;
 		bool large;

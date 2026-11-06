@@ -35,7 +35,8 @@ public:
 		bool slotBlue = false; // that colour is blue ice, not rust
 	};
 
-	void Build(const PlanetPhysics::Core &core, const PlanetPhysics::Interior &interior, uint32_t noiseSeed);
+	// grooved: its past stretching is in lanes of grooves, not in fault valleys
+	void Build(const PlanetPhysics::Core &core, const PlanetPhysics::Interior &interior, uint32_t noiseSeed, bool grooved = false);
 
 	// p on the unit sphere. Follows the band limit of the calling thread.
 	Sample At(const vector3d &p) const;

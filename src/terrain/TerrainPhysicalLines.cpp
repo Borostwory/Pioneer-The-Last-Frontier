@@ -342,7 +342,7 @@ void TerrainLines::BuildActiveShell(const PlanetPhysics::Core &core, const doubl
 		addSpot(RandomDirection(rng), Between(rng, 4.0, 14.0), Between(rng, 100.0, 320.0), false);
 }
 
-void TerrainLines::Build(const PlanetPhysics::Core &core, const PlanetPhysics::Interior &it, const uint32_t noiseSeed)
+void TerrainLines::Build(const PlanetPhysics::Core &core, const PlanetPhysics::Interior &it, const uint32_t noiseSeed, const bool grooved)
 {
 	m_noiseSeed = noiseSeed;
 	if (core.asteroid)
@@ -358,7 +358,7 @@ void TerrainLines::Build(const PlanetPhysics::Core &core, const PlanetPhysics::I
 	m_activeShell = active;
 	if (active) {
 		BuildActiveShell(core, it.shellStrength, core.seed ^ 0x51A6u);
-	} else if (it.shellStrength > 0.0) {
+	} else if (it.shellStrength > 0.0 && !grooved) {
 		for (int generation = 0; generation < 3; generation++) {
 			const Stress stress = MakeStress(rng, generation);
 			for (int i = 0; i < 4; i++) {

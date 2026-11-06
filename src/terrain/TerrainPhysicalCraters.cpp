@@ -71,7 +71,7 @@ namespace {
 	}
 } // namespace
 
-void TerrainCraters::Build(const PlanetPhysics::Core &core, const PlanetPhysics::Interior &it, const PlanetPhysics::Surface &st, const uint32_t noiseSeed)
+void TerrainCraters::Build(const PlanetPhysics::Core &core, const PlanetPhysics::Interior &it, const PlanetPhysics::Surface &st, const uint32_t noiseSeed, const bool brightRays)
 {
 	m_id = s_nextId++;
 	m_seed = noiseSeed;
@@ -128,6 +128,14 @@ void TerrainCraters::Build(const PlanetPhysics::Core &core, const PlanetPhysics:
 			diameter /= 2.0;
 		}
 	}
+	if (brightRays) {
+		const int count = 11 + int(rng.Int32(6));
+		for (int i = 0; i < count; i++) {
+			Crater c = randomCrater(m_radiusKm * (0.018 + 0.03 * rng.Double()));
+			c.fresh = 0.985 + 0.015 * rng.Double();
+			m_listed.push_back(c);
+		}
+	}
 	// one great basin, on bodies whose old crust has one
 	if (it.basin) {
 		Crater c;
@@ -143,10 +151,11 @@ void TerrainCraters::Build(const PlanetPhysics::Core &core, const PlanetPhysics:
 void TerrainCraters::AddSite(const Crater &crater, const double spacing, std::vector<Site> &out) const
 {
 	const double angle = crater.diameter / 2.0 / m_radiusKm;
-	double fade = 1.0;
+	double fade = 1.0, colourFade = 1.0;
 	if (spacing > 0.0) {
 		fade = Clamp01((crater.diameter / m_radiusKm / spacing - 4.0) / 4.0);
-		if (fade <= 0.0)
+		colourFade = crater.fresh > RAYS_FROM ? Clamp01((3.0 * crater.diameter / m_radiusKm / spacing - 4.0) / 4.0) : fade;
+		if (colourFade <= 0.0)
 			return;
 	}
 
@@ -157,6 +166,7 @@ void TerrainCraters::AddSite(const Crater &crater, const double spacing, std::ve
 	s.axisB = crater.centre.Cross(s.axisA);
 	s.angle = angle;
 	s.fade = fade;
+	s.colourFade = colourFade;
 	s.diameter = crater.diameter;
 	s.fresh = crater.fresh;
 	s.seed = crater.seed;
@@ -312,13 +322,13 @@ void TerrainCraters::Accumulate(const Site &s, const vector3d &p, Sample &out) c
 		double debris = Clamp01((edge - t0) / std::max(edge - 1.0, 0.05)) * Clamp01((t0 - 0.8) / 0.3) * std::min(1.0, (s.fresh - 0.7) * 3.3);
 		if (debris > 0.0)
 			debris *= Clamp01(0.7 + 0.5 * SphereCells::Noise(p * (5.0 / s.angle), uint32_t(s.seed * 1e6) + 1u));
-		out.ejecta = std::max(out.ejecta, debris * s.fade);
+		out.ejecta = std::max(out.ejecta, debris * s.colourFade);
 		if (s.fresh > RAYS_FROM) {
 			const double ray = std::pow(Spokes(theta, s.seed * 0.7 + 0.1, 7 + int(s.seed * 8.0)), 5.0);
 			const double tail = SmoothEdge(Clamp01((s.reach - t0) / (0.35 * s.reach)));
 			if (ray > 0.01) {
 				const double broken = Clamp01(0.5 + 0.7 * SphereCells::Noise(p * (3.0 / s.angle), uint32_t(s.seed * 1e6) + 2u));
-				out.rays = std::max(out.rays, ray * broken * std::exp(-(t0 - 1.0) / 2.0) * Clamp01((t0 - 0.9) / 0.3) * (s.fresh - RAYS_FROM) * 14.0 * tail * s.fade);
+				out.rays = std::max(out.rays, ray * broken * std::exp(-(t0 - 1.0) / 2.0) * Clamp01((t0 - 0.9) / 0.3) * (s.fresh - RAYS_FROM) * 14.0 * tail * s.colourFade);
 			}
 		}
 	}
