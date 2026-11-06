@@ -155,6 +155,12 @@ Terrain *Terrain::InstanceTerrain(const SystemBody *body)
 	}
 
 	case SystemBody::TYPE_PLANET_ASTEROID: {
+		if (s_generator == 1) {
+			Terrain *terrain = new TerrainPhysical(body);
+			terrain->AddStarportSites(body);
+			return terrain;
+		}
+
 		const GeneratorInstancer choices[] = {
 			InstanceGenerator<TerrainHeightAsteroid, TerrainColorAsteroid>,
 			InstanceGenerator<TerrainHeightAsteroid2, TerrainColorAsteroid>,

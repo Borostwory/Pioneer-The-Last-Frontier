@@ -83,6 +83,7 @@ void TerrainCraters::Build(const PlanetPhysics::Core &core, const PlanetPhysics:
 	m_wearSmall = st.wearSmall;
 	m_gullies = st.wear;
 	m_flatten = it.plates ? 0.15 : 1.0;
+	m_sponge = it.porous;
 	if (it.cratering <= 0.0 && !it.basin)
 		return;
 
@@ -99,7 +100,8 @@ void TerrainCraters::Build(const PlanetPhysics::Core &core, const PlanetPhysics:
 		c.centre = RandomDirection(rng);
 		c.diameter = diameter / 2.0 * (1.0 + rng.Double());
 		const double u = rng.Double();
-		c.fresh = u * u * u;
+		// (a body full of holes throws nothing out: all of them sharp, none with debris)
+		c.fresh = m_sponge ? 0.45 + 0.24 * u : u * u * u;
 		c.seed = rng.Double();
 		const double angle = rng.Double() * 2.0 * M_PI;
 		c.oblique = rng.Double() < 0.1 ? angle : -1.0;
@@ -186,7 +188,7 @@ void TerrainCraters::AddSite(const Crater &crater, const double spacing, std::ve
 	const double age = std::pow(1.0 - crater.fresh, 2.0) * std::min(1.0, 0.35 + 8.0 / std::max(crater.diameter, 1.0)) * 0.75;
 	s.wear = 1.0 - (1.0 - age) * (1.0 - (s.large ? m_wearLarge : m_wearSmall));
 	const double metres = crater.diameter * 1000.0;
-	const double depth = std::min(s.ratio <= 1.0 ? 0.2 * metres : 0.2 * metres * std::pow(s.ratio, -0.65), 0.7 * m_reliefLimit);
+	const double depth = std::min((m_sponge ? 1.5 : 1.0) * (s.ratio <= 1.0 ? 0.2 * metres : 0.2 * metres * std::pow(s.ratio, -0.65)), 0.7 * m_reliefLimit);
 	s.depth = depth;
 	s.wornDepth = depth * (1.0 - 0.72 * s.wear);
 	s.rim = (s.ratio <= 1.0 ? 0.18 : 0.13) * (s.giant ? 2.5 : 1.0) * depth * (1.0 - 0.85 * s.wear);
@@ -228,7 +230,7 @@ void TerrainCraters::Gather(const vector3d &centre, const double radius, const d
 					c.centre = (middle + jitter * (0.45 * cell)).Normalized();
 					c.diameter = size.diameter / 2.0 * (1.0 + draw(1));
 					const double u = draw(2);
-					c.fresh = u * u * u;
+					c.fresh = m_sponge ? 0.45 + 0.24 * u : u * u * u;
 					c.seed = draw(3);
 					// wet worlds lose most of their small craters
 					if (std::fmod(c.seed * 9973.0, 1.0) >= 1.0 - 0.97 * m_wearSmall * (1.0 - Soft(c.diameter, 30.0, 40.0)))
@@ -315,7 +317,7 @@ void TerrainCraters::Accumulate(const Site &s, const vector3d &p, Sample &out) c
 		out.small += h;
 
 	// old floors gather dust
-	if (s.fresh < 0.1 && s.diameter < 0.15 * m_radiusKm)
+	if (m_sponge || (s.fresh < 0.1 && s.diameter < 0.15 * m_radiusKm))
 		out.floor = std::max(out.floor, Soft((s.ratio > 1.0 ? 0.62 : 0.4) - t, 0.0, 0.18) * s.fade);
 	// star-shaped debris near the crater; fresh ones throw long rays
 	if (s.fresh > 0.7) {

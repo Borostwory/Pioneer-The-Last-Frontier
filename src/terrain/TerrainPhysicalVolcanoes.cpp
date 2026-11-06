@@ -277,7 +277,7 @@ void TerrainVolcanoes::BuildVents(const PlanetPhysics::Core &core, const PlanetP
 	m_glowing = st.glow > 0.3;
 	m_weather = st.weather;
 
-	const double volcanicity = core.asteroid ? 0.0 : (st.forcedLava ? 0.18 : std::clamp(inputs.volcanicity, 0.0, 1.0));
+	const double volcanicity = core.asteroid ? 0.0 : (st.forcedLava ? 0.18 : std::max(std::clamp(inputs.volcanicity, 0.0, 1.0), st.melted));
 	// (fewer on a lava planet, where each would be a dot on a smooth sea)
 	const int count = volcanicity > 0.005 ? int((4.0 + 56.0 * volcanicity) * (st.lavaPlanet > 0.5 ? 0.25 : 1.0)) : 0;
 	if (count == 0)

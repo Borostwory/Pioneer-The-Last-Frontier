@@ -106,7 +106,8 @@ namespace PlanetPhysics {
 		it.gravity = 9.81 * mass / (radius * radius);
 		const double luminosity = core.starRadius * core.starRadius * std::pow(core.starTemperature / 5778.0, 4.0);
 		it.formationTemperature = 278.0 * std::pow(luminosity, 0.25) / std::sqrt(std::max(core.orbitAroundStar, 1e-3));
-		const Tides tides = TidalHeat(core, core.eccentricity);
+		// (a small body's rubble can't hold a tide's heat)
+		const Tides tides = core.asteroid ? Tides{} : TidalHeat(core, core.eccentricity);
 		it.iceCrust = !core.asteroid && it.formationTemperature < 170.0 + 30.0 * rng.Double() && tides.solid < 0.3;
 		const bool ice = it.iceCrust;
 		const double crustShare = ice ? 0.5 : 1.0;
@@ -143,7 +144,8 @@ namespace PlanetPhysics {
 		const double fossilDraw = rng.Double();
 		it.fossil = !ice && it.formationTemperature > 180.0 && it.formationTemperature < 400.0 && core.mass > 0.02 && core.mass < 3.0 && fossilDraw < 0.6;
 		const double relax = ice ? 1.0 / (1.0 + q / 0.01) : 1.0;
-		it.reliefLimit = std::min(9000.0 * (9.81 / std::max(it.gravity, 0.01)) * (ice ? 0.5 : 1.0) * relax, 0.06 * core.radius * EARTH_RADIUS_M);
+		// (a small body's craters are deep for its size)
+		it.reliefLimit = std::min(9000.0 * (9.81 / std::max(it.gravity, 0.01)) * (ice ? 0.5 : 1.0) * relax, (core.asteroid ? 0.15 : 0.06) * core.radius * EARTH_RADIUS_M);
 		it.transitionDiameter = 18.8 * (1.62 / std::max(it.gravity, 0.01)) * (ice ? 0.2 : 1.0);
 		const double cratersDraw = rng.Double();
 		if (it.heatPipe > 0.5)
@@ -178,20 +180,48 @@ namespace PlanetPhysics {
 			it.basin = false;
 			it.rift = false;
 		}
+		const double melted = Smooth(1100.0, 1500.0, core.temperature);
+		if (core.asteroid) {
+			// nothing has ever happened on a small body but impacts
+			it.plains = 0.0;
+			it.contraction = 0.0;
+			it.dichotomy = false;
+			it.fossil = false;
+			if (it.rift) {
+				it.rift = false;
+				it.basin = true;
+			}
+			// Formed cold, and so light it must be mostly empty, like Hyperion. The generator gives all its bodies one
+			// density, so among those it's a matter of chance.
+			Random holes((core.seed ^ 0x90F0u) & 0x7fffffffu);
+			const double holesDraw = holes.Double();
+			it.porous = it.formationTemperature < 170.0 && ((densityReal > 0.0 && densityReal < 1000.0) || (!core.authored && holesDraw < 0.25));
+			if (it.porous)
+				it.cratering = 2.0;
+		} else if (!ice) {
+			// a crust that has melted keeps no old craters
+			it.cratering *= 1.0 - melted;
+			if (melted > 0.5) {
+				it.basin = false;
+				it.rift = false;
+			}
+		}
 		if (ice)
 			it.analogue = it.iceActivity >= 0.3 ? "Europa" : (it.iceActivity >= 0.05 && core.radius < 0.1) ? "Enceladus" :
 				(it.past && core.radius > 0.2)                                                             ? "Ganymede" :
 				it.past                                                                                    ? "Tethys" :
 				core.radius > 0.2                                                                          ? "Callisto" :
 																											 "Mimas";
+		else if (core.asteroid)
+			it.analogue = it.porous ? "Hyperion" : "Asteroid";
+		else if (melted > 0.5)
+			it.analogue = "Lava world";
 		else if (it.plates)
 			it.analogue = "Earth";
 		else if (it.heatPipe > 0.5)
 			it.analogue = "Io";
 		else if (it.lid)
 			it.analogue = core.temperature > 500.0 ? "Venus" : "Mars";
-		else if (core.asteroid)
-			it.analogue = "Asteroid";
 		else
 			it.analogue = it.contraction > 0.2 ? "Mercury" : "Moon";
 		return it;
@@ -205,7 +235,8 @@ namespace PlanetPhysics {
 		const double low = T >= 200.0 ? 0.01 : 0.2;
 		st.air = Smooth(low, low * 5.0, s.airDensity);
 		st.weather = st.air > 0.0;
-		const double ocean = std::clamp(s.ocean, 0.0, 1.0);
+		// (a small body has no sea, and its ice is its ground)
+		const double ocean = core.asteroid ? 0.0 : std::clamp(s.ocean, 0.0, 1.0);
 		if (ocean > 0.0) {
 			if (T >= 273.0 && T <= 373.0) {
 				st.seaState = "liquid water";
@@ -226,7 +257,7 @@ namespace PlanetPhysics {
 		const double spread = 80.0 * (1.0 - 0.5 * heatTransport) * (1.0 - 0.4 * std::sin(std::abs(core.tilt)));
 		st.equatorTemperature = T + 0.35 * spread;
 		st.poleTemperature = T - 0.65 * spread;
-		const double iceValue = std::clamp(s.ice, 0.0, 1.0);
+		const double iceValue = core.asteroid ? 0.0 : std::clamp(s.ice, 0.0, 1.0);
 		const double limit = 263.0 + 15.0 * iceValue;
 		const double te = st.equatorTemperature, tp = st.poleTemperature;
 		const double cap = 90.0 * std::clamp((te - limit) / std::max(1.0, te - tp), 0.0, 1.0);
@@ -236,16 +267,20 @@ namespace PlanetPhysics {
 		const double volc = core.asteroid ? 0.0 : std::clamp(s.volcanicity, 0.0, 1.0);
 		const double land = 1.0 - st.sea;
 		const bool cryo = it.iceCrust;
-		st.lava = volc * volc * land;
-		st.glow = cryo ? 0.0 : Smooth(0.5, 0.7, volc);
-		st.lavaPlanet = cryo ? 0.0 : Smooth(0.85, 1.0, volc);
-		st.active = !cryo && (volc >= 0.6 || (it.siliconActivity > 0.1 && volc >= 0.05));
+		// Hot enough, the crust melts whatever else goes on: magma lies in the lows, and hotter still it's a sea with
+		// rafts of crust on it
+		st.melted = cryo || core.asteroid ? 0.0 : Smooth(1100.0, 1500.0, T);
+		st.lava = std::max(volc * volc, st.melted) * land;
+		st.glow = cryo ? 0.0 : std::max(Smooth(0.5, 0.7, volc), st.melted);
+		const double volcanicPlanet = cryo ? 0.0 : Smooth(0.85, 1.0, volc);
+		st.lavaPlanet = std::max(volcanicPlanet, st.melted);
+		st.active = !cryo && (volc >= 0.6 || (it.siliconActivity > 0.1 && volc >= 0.05) || st.melted > 0.05);
 		if (st.active)
-			st.molten = std::max(st.lava * st.glow * (0.008 + 0.7 * st.lavaPlanet), std::min(0.002, st.lava));
+			st.molten = std::max({ st.lava * st.glow * (0.008 + 0.7 * volcanicPlanet), std::min(0.002, st.lava), st.melted * (0.3 + 0.6 * Smooth(1500.0, 2500.0, T)) });
 		st.sulphur = !cryo && core.parentKind == ParentKind::GAS && volc > 0.5 && s.ice < 0.2;
 		// Random moons with Io's tides get a little fresh lava, though the generator
 		// gives them almost no volcanicity: pits and vents only
-		st.forcedLava = !core.authored && it.heatPipe > 0.5 && !cryo && volc < 0.5;
+		st.forcedLava = !core.authored && it.heatPipe > 0.5 && !cryo && volc < 0.5 && st.melted < 0.5;
 		if (st.forcedLava) {
 			Random rng(core.seed ^ 0x1Au);
 			st.lava = 0.01 + 0.02 * rng.Double();
@@ -256,7 +291,7 @@ namespace PlanetPhysics {
 		}
 
 		if (core.asteroid)
-			st.ground = M::REGOLITH;
+			st.ground = it.porous ? M::DIRTY_ICE : M::REGOLITH;
 		else if (st.lavaPlanet > 0.5 && !cryo)
 			st.ground = M::LAVA;
 		else if (st.sulphur)
@@ -314,7 +349,7 @@ namespace PlanetPhysics {
 		add();
 		snprintf(line, sizeof(line), "Surface data: metal %.2f, volcanic %.2f, air %.3f kg/m3, ocean %.2f, ice %.2f, life %.2f", in.metallicity, in.volcanicity, in.airDensity, in.ocean, in.ice, in.life);
 		add();
-		snprintf(line, sizeof(line), "Became: ground %s, sea %.2f (%s), ice %.2f, lava %.3f, molten %.3f, glow %.2f, rain %.2f", LayerName(st.ground), st.sea, st.seaState, st.ice, st.lava, st.molten, st.glow, st.rain);
+		snprintf(line, sizeof(line), "Became: ground %s, sea %.2f (%s), ice %.2f, lava %.3f, molten %.3f, melted %.2f, glow %.2f, rain %.2f", LayerName(st.ground), st.sea, st.seaState, st.ice, st.lava, st.molten, st.melted, st.glow, st.rain);
 		add();
 		return out;
 	}

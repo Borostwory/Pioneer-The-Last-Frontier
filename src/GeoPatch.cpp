@@ -88,6 +88,8 @@ static constexpr double DRAWN_COORDS_MARGIN = 1e-6;
 static constexpr double GEOPATCH_SUBDIVIDE_AT_CAMDIST = 5.0;
 // how many of its own widths from the camera a patch below the usual deepest level splits
 static constexpr double NEAR_SPLIT_WIDTHS = 1.5;
+// how deep a patch's skirt is at least on the physical generator's ground, in gaps between its vertices
+static constexpr double SKIRT_VERTEX_GAPS = 2.0;
 // children are merged back only beyond this multiple of the split distance
 static constexpr double LOD_MERGE_HYSTERESIS = 1.25;
 // until a patch's detail tile is baked, it is drawn with an ancestor's up to
@@ -226,7 +228,11 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			}
 		}
 		m_deepUnderSea = deepUnderSea;
-		const double minhScale = (minh + 1.0) * 0.999995;
+		double minhScale = (minh + 1.0) * 0.999995;
+		// (A share of the radius is next to nothing on a small moon, whose steep ground opens wide gaps beside a coarser
+		// patch, with black space showing through. So on the physical generator's ground, also as deep as those gaps get.)
+		if (m_geosphere->GetTerrain()->HasFixedDetail())
+			minhScale = std::min(minhScale, minh + 1.0 - SKIRT_VERTEX_GAPS * GetVertexSpacing());
 		// ----------------------------------------------------
 		const Sint32 innerLeft = 1;
 		const Sint32 innerRight = edgeLen - 2;

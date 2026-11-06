@@ -78,6 +78,7 @@ namespace PlanetPhysics {
 		bool basin = false; // one great basin on the old crust
 		bool hemispheres = false; // two-toned, like Iapetus
 		bool rift = false; // one great rift
+		bool porous = false; // a small body of ice, more holes than ground, like Hyperion
 		const char *analogue = "";
 	};
 
@@ -98,6 +99,7 @@ namespace PlanetPhysics {
 		double lavaPlanet = 0.0;
 		bool active = false;
 		double molten = 0.0;
+		double melted = 0.0; // 0..1, how far heat alone has melted the crust
 		bool sulphur = false;
 		TerrainMaterialTable::Layer ground = TerrainMaterialTable::REGOLITH;
 		double lapse = 0.0;

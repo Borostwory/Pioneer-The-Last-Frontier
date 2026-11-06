@@ -97,6 +97,7 @@ private:
 	double m_reliefLimit = 1.0; // metres
 	double m_wearLarge = 0.0, m_wearSmall = 0.0, m_gullies = 0.0;
 	double m_flatten = 1.0;
+	bool m_sponge = false; // holes crowded together, deep and sharp, as on Hyperion
 };
 
 #endif // _TERRAINPHYSICALCRATERS_H

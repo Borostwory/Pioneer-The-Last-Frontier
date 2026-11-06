@@ -188,7 +188,89 @@ local frozen = CustomSystemBody:new('Test Frozen', 'PLANET_TERRESTRIAL')
 	:ice_cover(f(1,1))
 	:life(f(0,1))
 
+-- hot enough to melt with no volcanoes to speak of: magma in the lows, among the crust
+local magma = CustomSystemBody:new('Test Magma', 'PLANET_TERRESTRIAL')
+	:seed(271828)
+	:radius(f(1,1))
+	:mass(f(1,1))
+	:temp(1400)
+	:semi_major_axis(f(3,10))
+	:eccentricity(f(1,100))
+	:orbital_phase_at_start(fixed.deg2rad(f(30,1)))
+	:rotation_period(f(5,1))
+	:axial_tilt(fixed.deg2rad(f(3,1)))
+	:metallicity(f(5,10))
+	:volcanicity(f(2,10))
+	:atmos_density(f(1,100))
+	:atmos_oxidizing(f(1,10))
+	:ocean_cover(f(0,1))
+	:ice_cover(f(0,1))
+	:life(f(0,1))
+
+-- hotter still, close to its star: a sea of magma with rafts of crust. No tides, so the heat is the star's
+local molten = CustomSystemBody:new('Test Molten', 'PLANET_TERRESTRIAL')
+	:seed(314159)
+	:radius(f(13,10))
+	:mass(f(25,10))
+	:temp(2600)
+	:semi_major_axis(f(6,100))
+	:eccentricity(f(0,1))
+	:orbital_phase_at_start(fixed.deg2rad(f(160,1)))
+	:rotation_period(f(5,1))
+	:axial_tilt(fixed.deg2rad(f(1,1)))
+	:metallicity(f(5,10))
+	:volcanicity(f(2,10))
+	:atmos_density(f(1,100))
+	:atmos_oxidizing(f(1,10))
+	:ocean_cover(f(0,1))
+	:ice_cover(f(0,1))
+	:life(f(0,1))
+
+-- a small rocky body, about as big as Phobos
+local asteroid = CustomSystemBody:new('Test Asteroid', 'PLANET_ASTEROID')
+	:seed(161803)
+	:radius(f(2,1000))
+	:mass(f(2,1000000000))
+	:temp(170)
+	:semi_major_axis(f(24,10))
+	:eccentricity(f(1,100))
+	:orbital_phase_at_start(fixed.deg2rad(f(210,1)))
+	:rotation_period(f(1,2))
+	:axial_tilt(fixed.deg2rad(f(30,1)))
+	:metallicity(f(3,10))
+
+-- rich in metal, which shows in patches and young craters
+local metalAsteroid = CustomSystemBody:new('Test Metal Asteroid', 'PLANET_ASTEROID')
+	:seed(141421)
+	:radius(f(8,1000))
+	:mass(f(3,10000000))
+	:temp(165)
+	:semi_major_axis(f(27,10))
+	:eccentricity(f(1,100))
+	:orbital_phase_at_start(fixed.deg2rad(f(270,1)))
+	:rotation_period(f(1,3))
+	:axial_tilt(fixed.deg2rad(f(40,1)))
+	:metallicity(f(95,100))
+
+-- formed cold and so light it's mostly empty: a sponge of holes. Size and mass of Hyperion
+local hyperion = CustomSystemBody:new('Test Hyperion', 'PLANET_ASTEROID')
+	:seed(173205)
+	:radius(f(212,10000))
+	:mass(f(94,100000000))
+	:temp(93)
+	:semi_major_axis(f(96,10))
+	:eccentricity(f(1,100))
+	:orbital_phase_at_start(fixed.deg2rad(f(330,1)))
+	:rotation_period(f(13,1))
+	:axial_tilt(fixed.deg2rad(f(50,1)))
+	:metallicity(f(2,10))
+
 s:bodies(star, {
+	magma,
+	molten,
+	asteroid,
+	metalAsteroid,
+	hyperion,
 	earth,
 		earth_ports,
 	ocean,

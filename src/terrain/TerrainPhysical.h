@@ -42,7 +42,8 @@ public:
 	float GetIceCrackStrength() const override { return float(m_interior.shellStrength); }
 	bool GetTileStyle(float style[4]) const override;
 	// (what has its own maps for this already keeps to the small sizes)
-	double GetTileLandformTop() const override { return m_lines.IsActiveShell() || m_grooved ? 0.0 : 10000.0; }
+	// (nor landforms larger than a small body could hold)
+	double GetTileLandformTop() const override { return m_lines.IsActiveShell() || m_grooved ? 0.0 : (m_core.asteroid ? std::min(10000.0, 0.25 * m_planetRadius) : 10000.0); }
 	double GetTileCraterTop() const override { return TerrainCraters::SMALLEST_KM * 1000.0; }
 	bool HasFixedDetail() const override { return true; }
 	bool HasWaterAround(const vector3d &p, double radiusMetres) const override;
@@ -202,6 +203,8 @@ private:
 	double m_grooveDarkLevel = 1e30;
 	double m_northFrost = 2.0, m_southFrost = 2.0;
 	double m_sandLevel = 1e30, m_mudLevel = 1e30, m_saltLevel = 1e30, m_beltLevel = 1e30;
+	double m_asteroidRelief = 0.0; // metres, of a small body's shape (TerrainAsteroid.h); 0: not one
+	double m_gravelLevel = 1e30; // of the lows on a small body, where rubble gathers
 	double m_steepSlope = 1.0; // what counts as steep at the colours' scale, as a tangent
 	double m_buildMilliseconds = 0.0;
 

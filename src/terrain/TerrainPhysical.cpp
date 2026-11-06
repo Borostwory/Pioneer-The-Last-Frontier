@@ -5,6 +5,7 @@
 
 #include "MathUtil.h"
 #include "SphereCells.h"
+#include "TerrainAsteroid.h"
 #include "TerrainErosion.h"
 
 #include "../FileSystem.h"
@@ -141,6 +142,16 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 	// this generator carves its own valleys
 	m_erosion.reset();
 
+	if (m_core.asteroid) {
+		// the potato shapes of the classic asteroids; all that's on them comes from here
+		m_asteroidRelief = m_maxHeightInMeters;
+		Random shape((m_core.seed ^ 0x90F7u) & 0x7fffffffu);
+		const double lobeWidth = shape.Double(1.2, 2.5) * m_planetRadius;
+		SetFracDef(0, m_asteroidRelief, lobeWidth, lobeWidth / 8.0);
+		SetFracDef(1, shape.Double(0.0, TerrainAsteroid::MAX_STRETCH) * m_asteroidRelief, m_planetRadius);
+		m_quatDefs[1].SetAxisAngle(shape.Double(0.0, 2.0 * M_PI), TerrainNoise::GetVector3Random(shape));
+	}
+
 	Random rng(m_core.seed ^ 0x75u);
 	for (int i = 0; i < UNIT_COUNT; i++) {
 		const double y = 2.0 * rng.Double() - 1.0;
@@ -255,8 +266,18 @@ void TerrainPhysical::BuildMaterials()
 		m_materials.Add(M::ROCK);
 	if (m_lines.IsActiveShell())
 		m_materials.Add(M::SALT);
+	if (m_core.asteroid) {
+		m_materials.Add(M::GRAVEL);
+		m_materials.Add(M::DUST);
+		if (m_interior.porous)
+			m_materials.Add(M::ICE);
+		else
+			m_materials.Add(M::ROCK);
+		if (m_inputs.metallicity > 0.7 && !m_interior.porous)
+			m_materials.Add(M::METAL);
+	}
 	// bare steep ground is the crust's material; a sea has beaches
-	m_materials.SetSteep(cryo ? M::ICE : M::ROCK);
+	m_materials.SetSteep(cryo || m_interior.porous ? M::ICE : M::ROCK);
 	if (m_state.sea > 0.0)
 		m_materials.Add(M::SAND);
 	for (int i = 0; i < M::LAYER_COUNT; i++)
@@ -416,6 +437,14 @@ void TerrainPhysical::BuildLevels()
 		m_sandLevel = WeightedLevelAbove(lowness, areas, 0.14 * land);
 		m_mudLevel = WeightedLevelAbove(lowness, areas, 0.035 * land);
 		m_saltLevel = WeightedLevelAbove(lowness, areas, 0.006 * land);
+	}
+
+	// rubble gathers in a small body's lows
+	if (m_core.asteroid) {
+		std::vector<float> lowness(ground.values.size());
+		for (size_t i = 0; i < lowness.size(); i++)
+			lowness[i] = -ground.values[i];
+		m_gravelLevel = WeightedLevelAbove(lowness, areas, 0.2);
 	}
 
 	TerrainNoise::ScopedBandLimit bandLimit(LEVEL_MAX_FREQUENCY);
@@ -587,6 +616,13 @@ void TerrainPhysical::BuildTones()
 		set(M::DUST, m_tones[M::REGOLITH] * 0.9);
 		set(M::BASALT, m_tones[M::BASALT] * 0.9 + m_tones[M::REGOLITH] * 0.1);
 	}
+	if (m_interior.porous) {
+		// pale walls and rims, and dark reddish dust on the floors of the holes, as on Hyperion
+		set(M::ICE, vector3d(0.60, 0.56, 0.50));
+		set(M::DIRTY_ICE, vector3d(0.36, 0.32, 0.27));
+		set(M::GRAVEL, vector3d(0.30, 0.27, 0.23));
+		set(M::DUST, vector3d(0.10, 0.075, 0.055));
+	}
 	if (m_state.sulphur)
 		set(M::SALT, vector3d(0.90, 0.78, 0.18));
 	if (m_state.seaState == std::string("liquid hydrocarbon")) {
@@ -631,6 +667,8 @@ TerrainPhysical::Ground TerrainPhysical::GroundAt(const vector3d &p) const
 	g.warp = Warp(p);
 	const double env = m_reliefLimit;
 	double h = 0.28 * env * Fbm(p, 1.3, 4, m_noiseSeed + 1);
+	if (m_core.asteroid)
+		h += m_asteroidRelief * TerrainAsteroid::shape(m_fracdef[0], m_fracdef[1], m_quatDefs[1], p);
 
 	if (m_plates.Active()) {
 		const TerrainPlates::Bands bands = m_plates.At(p, g.warp);
@@ -810,7 +848,7 @@ double TerrainPhysical::CutValleys(const vector3d &p, Point &point, const double
 double TerrainPhysical::Keep(const Ground &g) const
 {
 	// (nothing has smoothed an old ice moon, unlike an ice sheet or a frozen sea)
-	const double ground = m_interior.iceCrust && !m_state.weather && (!m_lines.IsActiveShell() || m_lines.IsPolar()) ? 1.0 : KeepOf(m_state.ground);
+	const double ground = m_core.asteroid || (m_interior.iceCrust && !m_state.weather && (!m_lines.IsActiveShell() || m_lines.IsPolar())) ? 1.0 : KeepOf(m_state.ground);
 	if (!m_plainsAreBasalt || g.plains <= 0.0)
 		return ground;
 	return ground + (KeepOf(M::BASALT) - ground) * g.plains;
@@ -1590,6 +1628,9 @@ double TerrainPhysical::Grooves(const vector3d &p, Point &point) const
 
 double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 {
+	// (a small body's relief is its shape and its craters)
+	if (m_core.asteroid)
+		return 0.0;
 	const double cap = 0.05 * m_reliefLimit;
 	const double fMin = std::max(m_core.radius * 6378.135 / 100.0, 3.0);
 	auto own = [&](const double amplitude, const double frequency, const int octaves, const uint32_t seed, const bool ridged) {
@@ -1963,7 +2004,7 @@ void TerrainPhysical::BuildLavaFields(const TerrainHydro::Field &ground, const s
 		return double(values[order[i]]);
 	};
 
-	const double volcanicity = std::clamp(m_inputs.volcanicity, 0.0, 1.0);
+	const double volcanicity = std::max(std::clamp(m_inputs.volcanicity, 0.0, 1.0), m_state.melted);
 	const double molten = m_state.molten;
 	// (on a world like Io, sulphur settles over all but the youngest lava, which stays yellow)
 	const double sulphurCover = m_state.sulphur ? 0.25 : 1.0;
@@ -2271,8 +2312,19 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 		if (m_interior.lid)
 			paint(M::ROCK, g.tessera);
 		if (airless) {
+			// the metal of a metal-rich small body shows in patches, and where a young crater has dug it up
+			if (m_core.asteroid && m_inputs.metallicity > 0.7 && !m_interior.porous) {
+				const double patches = Soft(Fbm(p, 5.0, 5, m_noiseSeed + 401, 0.55) / 0.35, 0.35, 0.25);
+				paint(M::METAL, Soft(m_inputs.metallicity, 0.7, 0.15) * std::max(patches, Soft(ejecta, 0.25, 0.4)));
+			}
 			paint(M::GRAVEL, Soft(ejecta, 0.3, 0.4));
 			paint(M::DUST, g.craters.floor * 0.9);
+			if (m_core.asteroid && !m_interior.porous) {
+				const double edge = std::max(0.05 * m_reliefLimit, 10.0);
+				// (on a surface that wanders, or its edges are simple rings of equal height)
+				const double lowness = -g.base + 2.0 * edge * std::clamp(Fbm(p, 12.0, 6, m_noiseSeed + 402, 0.6) / 0.35, -1.0, 1.0);
+				paint(M::GRAVEL, Soft(lowness, m_gravelLevel, edge));
+			}
 		} else if (m_state.wetness > 0.0) {
 			Climate(p, point, paint);
 		} else {
@@ -2298,8 +2350,10 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 // the colour doesn't change with the size of a patch
 void TerrainPhysical::Steep(const vector3d &p, const vector3d &normal, Shares &shares) const
 {
-	if (!m_state.weather || m_interior.iceCrust)
+	// (a small body's walls are bare too, with nothing to wear them)
+	if ((!m_state.weather && !m_core.asteroid) || m_interior.iceCrust)
 		return;
+	const M::Layer bare = m_interior.porous ? M::ICE : M::ROCK;
 	const double c = std::clamp(p.Dot(normal), 0.05, 1.0);
 	const double tangent = std::sqrt(std::max(1.0 - c * c, 0.0)) / c;
 	const double steep = Soft(tangent, m_steepSlope, 0.6 * m_steepSlope);
@@ -2308,13 +2362,13 @@ void TerrainPhysical::Steep(const vector3d &p, const vector3d &normal, Shares &s
 	double moved = 0.0;
 	for (int i = 0; i < M::LAYER_COUNT; i++) {
 		// (lava runs down steep ground, and stays there)
-		if (i == M::ROCK || i == M::LAVA || i == M::LAVA_FLOW || shares[i] <= 0.0)
+		if (i == bare || i == M::LAVA || i == M::LAVA_FLOW || shares[i] <= 0.0)
 			continue;
 		const double k = (i == M::SNOW ? 0.7 : 1.0) * steep * shares[i];
 		shares[i] -= k;
 		moved += k;
 	}
-	shares[M::ROCK] += moved;
+	shares[bare] += moved;
 }
 
 // metres above the water, below 0 in it: the sea's real depth, and an edge for lakes and rivers
