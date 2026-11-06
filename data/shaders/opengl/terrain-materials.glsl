@@ -301,16 +301,60 @@ vec2 materialPlaneUV(vec3 q, int axis)
 	return axis == 0 ? q.yz : (axis == 1 ? q.zx : q.xy);
 }
 
-// one tile size of 2^level metres; the origin wraps at 5 tiles, a whole
-// number of texture repeats. Emission (x), detail (y), height (z).
-vec3 materialTileSample(int layer, MaterialMapping m, float level)
+// where a pixel is in tiles of 2^level metres; the origin wraps at 5 tiles, a whole number of texture repeats
+vec3 materialTileCoord(MaterialMapping m, float level)
 {
-	float tile = exp2(level);
 	vec3 origin = level <= MATERIAL_FINE_ORIGIN_LEVEL ?
 		fract(MaterialOrigin.xyz * exp2(MATERIAL_FINE_ORIGIN_LEVEL - level)) :
 		fract(MaterialOriginCoarse.xyz * exp2(MATERIAL_MAX_LEVEL - level));
-	vec3 q = m.rel / tile + origin * 5.0;
+	return m.rel / exp2(level) + origin * 5.0;
+}
+
+// smooth noise 0..1 repeating every 5 cells, so it goes on across the origin's wrap
+float materialRegionNoise(vec2 p, float salt)
+{
+	vec2 c = floor(p), t = p - c;
+	t = t * t * (3.0 - 2.0 * t);
+	vec2 next = mod(c + 1.0, 5.0);
+	c = mod(c, 5.0);
+	vec4 h = fract(sin(vec4(dot(c, vec2(12.9898, 78.233)), dot(vec2(next.x, c.y), vec2(12.9898, 78.233)),
+		dot(vec2(c.x, next.y), vec2(12.9898, 78.233)), dot(next, vec2(12.9898, 78.233))) + salt) * 43758.5453);
+	return mix(mix(h.x, h.y, t.x), mix(h.z, h.w, t.x), t.y);
+}
+
+// The turns of the tile. These are the ones that take a step of 5 tiles to a whole number of them (the 3, 4, 5 triangle),
+// so turning doesn't show where the origin wraps.
+const vec2 MATERIAL_TURNS[8] = vec2[8](vec2(1.0, 0.0), vec2(0.6, 0.8), vec2(0.0, 1.0), vec2(-0.8, 0.6), vec2(-1.0, 0.0), vec2(-0.6, -0.8), vec2(0.0, -1.0), vec2(0.8, -0.6));
+
+// Reads the tile turned and shifted one way or the next, by a field fixed in space, blended along their bumps: no two
+// places alike, and no grid. uvFar: this place in tiles 32 times the size, for the field's long repeats.
+vec3 materialVariedRead(int layer, vec2 uv, vec2 dx, vec2 dy, vec2 uvFar)
+{
+	float field = 8.0 * fract(materialRegionNoise(uv, 0.0) + 3.0 * materialRegionNoise(uvFar, 5.7));
+	float index = floor(field);
+	vec2 a = MATERIAL_TURNS[int(index)], b = MATERIAL_TURNS[int(mod(index + 1.0, 8.0))];
+	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * (index + 1.0));
+	vec3 ra = textureGrad(terrainMaterials, vec3(vec2(a.x * uv.x - a.y * uv.y, a.y * uv.x + a.x * uv.y) + offsetA, float(layer)),
+		vec2(a.x * dx.x - a.y * dx.y, a.y * dx.x + a.x * dx.y), vec2(a.x * dy.x - a.y * dy.y, a.y * dy.x + a.x * dy.y)).rga;
+	vec3 rb = textureGrad(terrainMaterials, vec3(vec2(b.x * uv.x - b.y * uv.y, b.y * uv.x + b.x * uv.y) + offsetB, float(layer)),
+		vec2(b.x * dx.x - b.y * dx.y, b.y * dx.x + b.x * dx.y), vec2(b.x * dy.x - b.y * dy.y, b.y * dy.x + b.x * dy.y)).rga;
+	return mix(ra, rb, smoothstep(0.25, 0.75, field - index + 0.8 * (rb.z - ra.z)));
+}
+
+// one tile size of 2^level metres. Emission (x), detail (y), height (z).
+vec3 materialTileSample(int layer, MaterialMapping m, float level)
+{
+	float tile = exp2(level);
+	vec3 q = materialTileCoord(m, level);
 	vec3 qx = m.relDx / tile, qy = m.relDy / tile;
+	// (detail fixed in space: varied, everywhere else as it was)
+	if (MaterialLook.y > 0.5) {
+		vec3 qFar = materialTileCoord(m, min(level + 5.0, MATERIAL_MAX_LEVEL));
+		vec3 varied = m.plane.x * materialVariedRead(layer, materialPlaneUV(q, m.axes.x), materialPlaneUV(qx, m.axes.x), materialPlaneUV(qy, m.axes.x), materialPlaneUV(qFar, m.axes.x));
+		if (m.plane.y > 0.0)
+			varied += m.plane.y * materialVariedRead(layer, materialPlaneUV(q, m.axes.y), materialPlaneUV(qx, m.axes.y), materialPlaneUV(qy, m.axes.y), materialPlaneUV(qFar, m.axes.y));
+		return varied;
+	}
 	vec3 r = m.plane.x * textureGrad(terrainMaterials, vec3(materialPlaneUV(q, m.axes.x), float(layer)),
 		materialPlaneUV(qx, m.axes.x), materialPlaneUV(qy, m.axes.x)).rga;
 	if (m.plane.y > 0.0)
