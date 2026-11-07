@@ -13,9 +13,59 @@
 #include "Quaternion.h"
 #include "Ship.h"
 #include "Space.h"
+#include "TerrainBody.h"
 #include "collider/CollisionContact.h"
 #include "collider/CollisionSpace.h"
 #include "scenegraph/Tag.h"
+
+namespace {
+	// metres the outside cameras keep above the ground as drawn
+	constexpr double CAMERA_GROUND_CLEARANCE = 2.0;
+
+	// Lifts a camera out of the terrain, which isn't in the collision space,
+	// so the external camera's de-penetration ray never meets it. framePos is
+	// in the ship's frame; true if it was under the ground and has been lifted.
+	bool LiftAboveTerrain(const Ship *ship, vector3d &framePos)
+	{
+		const Frame *frame = Frame::GetFrame(ship->GetFrame());
+		if (!frame || !frame->IsRotFrame() || !frame->GetBody() || !frame->GetBody()->IsType(ObjectType::TERRAINBODY))
+			return false;
+		const TerrainBody *terrain = static_cast<const TerrainBody *>(frame->GetBody());
+
+		const double r = framePos.Length();
+		// well above the highest ground there is
+		if (r > terrain->GetMaxFeatureRadius() + 1000.0)
+			return false;
+
+		const vector3d up = framePos.Normalized();
+		const double ground = terrain->GetDrawnTerrainHeight(up) + CAMERA_GROUND_CLEARANCE;
+		if (r >= ground)
+			return false;
+		framePos = up * ground;
+		return true;
+	}
+
+	// For the cameras that circle the ship: pos and orient in ship space, as
+	// CameraController::Update places them; a lifted camera is turned to look
+	// at the ship again, as upright as before.
+	void KeepAboveTerrain(const Ship *ship, vector3d &pos, matrix3x3d &orient)
+	{
+		const matrix3x3d &shipOrient = ship->GetInterpOrient();
+		const vector3d shipPos = ship->GetInterpPosition();
+		vector3d framePos = shipOrient * pos + shipPos;
+		if (!LiftAboveTerrain(ship, framePos))
+			return;
+
+		pos = shipOrient.Transpose() * (framePos - shipPos);
+		// the camera looks along -z: back points from the ship to it
+		const vector3d back = pos.NormalizedSafe();
+		vector3d right = orient.VectorY().Cross(back);
+		if (right.LengthSqr() < 1e-12)
+			right = orient.VectorX();
+		right = right.Normalized();
+		orient = matrix3x3d::FromVectors(right, back.Cross(right), back);
+	}
+} // namespace
 
 CameraController::CameraController(RefCountedPtr<CameraContext> camera, const Ship *ship) :
 	m_camera(camera),
@@ -280,8 +330,11 @@ void ExternalCameraController::Update()
 	AnimationCurves::Approach(m_dist, std::min(m_distTo, max_dist), Pi::GetFrameTime());
 	m_dist = std::max(GetShip()->GetClipRadius(), m_dist);
 
-	SetPosition(smoothed_m * (dir * m_dist));
-	SetOrient(smoothed_m * rotMatrix);
+	vector3d pos = smoothed_m * (dir * m_dist);
+	matrix3x3d orient = smoothed_m * rotMatrix;
+	KeepAboveTerrain(ship, pos, orient);
+	SetPosition(pos);
+	SetOrient(orient);
 
 	CameraController::Update();
 }
@@ -345,8 +398,11 @@ void SiderealCameraController::Update()
 	m_sidOrient.Renormalize(); // lots of small rotations
 	matrix3x3d shipOrient = ship->GetInterpOrientRelTo(Pi::game->GetSpace()->GetRootFrame());
 
-	SetPosition(shipOrient.Transpose() * m_sidOrient.VectorZ() * m_dist);
-	SetOrient(shipOrient.Transpose() * m_sidOrient);
+	vector3d pos = shipOrient.Transpose() * m_sidOrient.VectorZ() * m_dist;
+	matrix3x3d orient = shipOrient.Transpose() * m_sidOrient;
+	KeepAboveTerrain(ship, pos, orient);
+	SetPosition(pos);
+	SetOrient(orient);
 
 	CameraController::Update();
 }
@@ -419,6 +475,8 @@ void FlyByCameraController::Update()
 
 	m_flybyOrient.Renormalize();
 	camerap = m_old_pos + m_flybyOrient.VectorZ() * m_dist;
+	// in the ship's frame already, and turned to the ship below
+	LiftAboveTerrain(ship, camerap);
 	SetPosition(camerap);
 	camerao = MathUtil::LookAt(camerap, ship_pos, vector3d(0, 1, 0));
 	const vector3d rotAxis = camerao.VectorZ();

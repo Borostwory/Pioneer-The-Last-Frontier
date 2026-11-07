@@ -6,10 +6,12 @@
 
 #include "RefCounted.h"
 #include "View.h"
+#include "vector3.h"
 
 class Camera;
 class CameraContext;
 class Game;
+class TerrainBody;
 
 class DeathView : public View {
 public:
@@ -25,9 +27,16 @@ protected:
 	virtual void OnSwitchTo();
 
 private:
+	void PlaceCamera();
+
 	RefCountedPtr<CameraContext> m_cameraContext;
 	std::unique_ptr<Camera> m_camera;
 	float m_cameraDist;
+	// the way the camera backs off from the body, in its frame
+	vector3d m_cameraDir;
+	// the planet it died on, if in its rotating frame: the camera keeps
+	// above its ground and upright with it
+	const TerrainBody *m_terrain = nullptr;
 	Game *m_game;
 };
 
