@@ -36,8 +36,9 @@ namespace {
 	// texels per terrain call, each band limited to its own texel size
 	static const int SEGMENT = 64;
 	static const float FADE_SECONDS = 1.5f;
-	// largest normal offset stored, must match FAR_NORMAL_RANGE in terrain-far.glsl
-	static const double NORMAL_RANGE = 0.5;
+	// largest normal offset stored, must match FAR_NORMAL_RANGE in terrain-far.glsl: 1 holds slopes up to vertical (at
+	// 0.5, slopes past about 30 degrees were flattened, and steep crater walls lost their shading on the surface tiles)
+	static const double NORMAL_RANGE = 1.0;
 
 	// textures being baked (main thread only)
 	static int s_baking = 0;

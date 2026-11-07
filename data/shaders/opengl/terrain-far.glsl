@@ -19,7 +19,7 @@
 uniform vec4 FarTexture;
 
 // largest normal offset stored (NORMAL_RANGE in TerrainFarTexture.cpp)
-#define FAR_NORMAL_RANGE 0.5
+#define FAR_NORMAL_RANGE 1.0
 
 // facing: cosine of the angle between the view and the ground's vertical.
 // Patches seen edge-on split later, so their vertices are further apart (as

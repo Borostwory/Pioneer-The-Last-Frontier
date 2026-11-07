@@ -31,7 +31,7 @@ namespace Graphics {
 //   (ColourSlopeNormals, colourPitch per row, from the entry of (x0, y0)),
 //   or the grid's own if that is nullptr;
 // - normal (RGB10_A2): the surface normal minus the direction, each as
-//   0.5 + 0.5 * sign(v) * sqrt(|v| / 0.5) (FAR_NORMAL_RANGE in terrain-far.glsl).
+//   0.5 + 0.5 * sign(v) * sqrt(|v| / 1.0) (FAR_NORMAL_RANGE in terrain-far.glsl).
 // rowPitch texels per output row, from the texel of (x0, y0). Uses the band
 // limit set by the caller (TerrainNoise::ScopedBandLimit).
 void BakeSurfaceTexels(const Terrain *terrain, const vector3d *dirs, const double *heights, int gridWidth,
