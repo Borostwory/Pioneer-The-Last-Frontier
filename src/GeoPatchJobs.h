@@ -27,7 +27,7 @@ class GeoSphere;
 // (terrainAltitude() in terrain-water.glsl): 0.5 +- 0.5 * sqrt(|h| / 8000 m),
 // so the steps are about 0.5 m near sea level and 120 m at 8 km. Land rounds
 // to 128 and up, water to 127 and down, so the coastline lies between them.
-// The far terrain texture stores it the same way (TerrainFarTexture).
+// The patch surface tiles store it the same way (TerrainSurfaceTiles).
 inline unsigned char EncodeAltitude(const double metres)
 {
 	const double s = std::sqrt(std::min(std::abs(metres) / 8000.0, 1.0));
@@ -40,8 +40,8 @@ inline unsigned char EncodeAltitude(const double metres)
 // normal, as flatness = (p . n)^8 and the like), and finer sampling finds
 // steeper ground: less snow, more rock. So colours changed with the patch,
 // tile or texel size, and with the terrain detail setting. They get the
-// slope at this fixed scale instead (unit-sphere units: 1/512 of the radius,
-// the far texture's texel at 1024 per face). Near the ground the materials
+// slope at this fixed scale instead (unit-sphere units: 1/512 of the radius).
+// Near the ground the materials
 // put rock on steep slopes per pixel (terrain-materials.glsl).
 static constexpr double COLOUR_SLOPE_SCALE = 2.0 / 1024.0;
 

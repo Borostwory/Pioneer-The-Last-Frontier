@@ -17,7 +17,6 @@ namespace FrontierLog {
 		PART_SPHERES, // updating the terrain, of which:
 		PART_RESULTS, // taking finished patches
 		PART_LOD, // choosing which patches to split or merge
-		PART_FAR, // the far texture
 		PART_VIEW, // View::Update
 		PART_DRAW, // View::Draw3D
 		PART_FLUSH, // sending the frame to the renderer

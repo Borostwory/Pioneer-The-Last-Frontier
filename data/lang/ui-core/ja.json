@@ -821,7 +821,7 @@
   },
   "CLOUD_VOLUMETRIC_DESC": {
     "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
-    "message": "大気のある惑星の雲層。マルチサンプリング（アンチエイリアス）有効時は描画されません。"
+    "message": "大気のある惑星の雲層。"
   },
   "CLOUD_WEATHER_MAPS": {
     "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",

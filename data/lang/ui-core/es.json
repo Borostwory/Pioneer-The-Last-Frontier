@@ -821,7 +821,7 @@
   },
   "CLOUD_VOLUMETRIC_DESC": {
     "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
-    "message": "Capas de nubes en planetas con atmósfera. No se dibujan mientras el multimuestreo (antialiasing) está activado."
+    "message": "Capas de nubes en planetas con atmósfera."
   },
   "CLOUD_WEATHER_MAPS": {
     "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",

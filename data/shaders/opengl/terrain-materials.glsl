@@ -652,8 +652,8 @@ vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots[MAT
 	if (PatchTile.w > 0.0) {
 		// the detail tile: the planet's own landforms, as strong as the
 		// materials are rough (and visible on smooth ones). Kept whatever the
-		// surface below: fading them where it is the far texture left patches
-		// without a surface tile smooth next to those with one
+		// surface below, so patches without a surface tile aren't smooth next
+		// to those with one
 		slope = tile.xyz * clamp(roughness / 0.1, 0.5, 1.6) / roughness;
 	} else if (MaterialLook.y > 0.5) {
 		slope = vec3(0.0);

@@ -19,7 +19,6 @@
 #include "Space.h"
 #include "SpaceStation.h"
 #include "Star.h"
-#include "TerrainFarTexture.h"
 #include "TerrainSurfaceTiles.h"
 #include "TerrainTiles.h"
 #include "RefCounted.h"
@@ -109,7 +108,7 @@ void GeoSphere::SetLodDistanceScale(const double scale)
 
 // How a planet is drawn from high orbit (settings window, config PlanetOrbitSurface): the surface tiles alone, or the
 // tiles with the detail distance kept up in high orbit, as fine as at mid altitude. Anything else in the config counts as
-// the second; the far texture is no longer drawn.
+// the second.
 enum OrbitSurface {
 	ORBIT_TILES = 1,
 	ORBIT_TILES_FULL_DETAIL = 2
@@ -123,8 +122,8 @@ static int GetOrbitSurface()
 // The detail distance setting applies in full at mid altitude (about 200 to
 // 2,000 km on Earth), where it shows most. Near the ground the terrain close
 // by is already at full detail and the extra patches cost the most; in high
-// orbit the far texture (TerrainFarTexture) draws the detail instead of the
-// mesh, if it is the one in use (keepHighOrbit false). Both get a reduced value.
+// orbit the surface tiles alone draw the detail (keepHighOrbit false, Planets
+// from orbit: Surface tiles). Both get a reduced value.
 // Altitude is in planet radii, so this scales with body size.
 static double LodDistanceAtAltitude(const double altitude, const bool keepHighOrbit)
 {
@@ -289,10 +288,6 @@ void GeoSphere::Reset()
 			m_patches[p].reset();
 		}
 	}
-
-	// baked from the terrain the patches had
-	m_farTexture.reset();
-	m_farTextureIdle = 0.0;
 
 	CalculateMaxPatchDepth();
 
@@ -511,12 +506,6 @@ void GeoSphere::Update()
 			m_extraDepth++;
 	}
 
-	// keeps a bake going while the planet is out of view (it fades in as drawn)
-	if (m_farTexture) {
-		FrontierLog::Timed timed(FrontierLog::PART_FAR);
-		m_farTexture->Update(0.0f);
-	}
-
 	switch (m_initStage) {
 	case eBuildFirstPatches:
 		BuildFirstPatches();
@@ -624,14 +613,10 @@ void GeoSphere::SetCityGlowData(const vector3d &campos, Graphics::CityGlowDataBl
 	m_surfaceMaterial->SetBufferDynamic("CityGlowData"_hash, &data);
 }
 
-// The far terrain texture is no longer drawn (GetOrbitSurface): the shaders are told there is none.
-void GeoSphere::SetFarTexture()
+// the light on slopes from afar and the surface tiles' filter (FarTexture in terrain-far.glsl)
+void GeoSphere::SetFarLook()
 {
-	m_farTexelDrawn = 0.0;
-	m_farFadeDrawn = 0.0f;
-	m_surfaceMaterial->SetTexture("farColour"_hash, nullptr);
-	m_surfaceMaterial->SetTexture("farNormal"_hash, nullptr);
-	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(float(m_terrain->GetFarReliefSlopes()), 0.0f, float(GetLodForeshortening())),
+	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(float(m_terrain->GetFarReliefSlopes()), 0.0f, 0.0f),
 		Pi::config->Int("TerrainTileBicubic", 1) != 0 ? 1.0f : 0.0f);
 }
 
@@ -643,7 +628,7 @@ void GeoSphere::SetSurfaceTiles(const double pixelAngle)
 	if (TerrainSurfaceTiles::Enabled() && GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
 		tiles = TerrainSurfaceTiles::Get(2 * (s_patchContext->GetEdgeLen() - 3)); // twice the vertex gaps
 	if (tiles) {
-		tiles->Update(this, m_visiblePatches, pixelAngle, 0.0);
+		tiles->Update(this, m_visiblePatches, pixelAngle);
 	}
 	m_surfaceMaterial->SetTexture("surfaceTileColour"_hash, tiles ? tiles->GetColour() : nullptr);
 	m_surfaceMaterial->SetTexture("surfaceTileNormal"_hash, tiles ? tiles->GetNormal() : nullptr);
@@ -724,7 +709,7 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		m_surfaceMaterial->SetPushConstant("ReliefScale"_hash,
 			vector3f(float(spacingPerMetre), float(deepestSpacing / double(1 << m_extraDepth)), 0.0f), 0.0f);
 
-		SetFarTexture();
+		SetFarLook();
 	}
 
 	// cloud data: shadows in the terrain shader now, the clouds themselves in

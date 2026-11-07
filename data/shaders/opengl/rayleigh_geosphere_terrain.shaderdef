@@ -13,8 +13,6 @@ Texture sampler2D waterWaves
 Texture sampler2DArray terrainMaterials
 Texture sampler2D terrainRelief
 Texture sampler2D terrainTiles
-Texture samplerCube farColour
-Texture samplerCube farNormal
 Texture sampler2D surfaceTileColour
 Texture sampler2D surfaceTileNormal
 

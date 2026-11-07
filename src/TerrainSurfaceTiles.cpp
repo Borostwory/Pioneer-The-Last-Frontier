@@ -9,7 +9,6 @@
 #include "GeoSphere.h"
 #include "MathUtil.h"
 #include "Pi.h"
-#include "TerrainFarTexture.h"
 #include "graphics/Renderer.h"
 #include "graphics/Texture.h"
 #include "profiler/Profiler.h"
@@ -20,6 +19,51 @@
 #include <atomic>
 #include <cmath>
 #include <thread>
+
+namespace {
+	// largest normal offset stored, must match FAR_NORMAL_RANGE in terrain-far.glsl: 1 holds slopes up to vertical (at
+	// 0.5, slopes past about 30 degrees were flattened, and steep crater walls lost their shading on the surface tiles)
+	constexpr double NORMAL_RANGE = 1.0;
+
+	// 0.5 + 0.5 * sign(v) * sqrt(|v| / NORMAL_RANGE) in 10 bits: fine steps for
+	// the gentle slopes that most of a planet has (8 bits showed as contour
+	// lines in the shading when magnified)
+	inline uint32_t EncodeNormal(const double v)
+	{
+		const double s = std::sqrt(std::min(std::abs(v) / NORMAL_RANGE, 1.0));
+		return static_cast<uint32_t>(Clamp(std::round(511.5 + (v < 0.0 ? -511.5 : 511.5) * s), 0.0, 1023.0));
+	}
+} // namespace
+
+void BakeSurfaceTexels(const Terrain *terrain, const vector3d *dirs, const double *heights, const int gridWidth,
+	const int x0, const int x1, const int y0, const int y1, const vector3d *colourNormals, const int colourPitch,
+	uint8_t *colour, uint32_t *normal, const size_t rowPitch)
+{
+	auto position = [&](const size_t i) { return dirs[i] * (1.0 + heights[i]); };
+	for (int y = y0; y < y1; y++) {
+		uint8_t *col = colour + size_t(y - y0) * rowPitch * 4;
+		uint32_t *nrm = normal + size_t(y - y0) * rowPitch;
+		for (int x = x0; x < x1; x++) {
+			const size_t i = size_t(y) * gridWidth + x;
+			const vector3d &p = dirs[i];
+			const double height = heights[i];
+			vector3d n = (position(i + 1) - position(i - 1)).Cross(position(i + gridWidth) - position(i - gridWidth)).Normalized();
+			if (n.Dot(p) < 0.0)
+				n = -n;
+
+			const vector3d &slope = colourNormals ? colourNormals[size_t(y - y0) * colourPitch + (x - x0)] : n;
+			const vector3d c = terrain->GetColor(p, height, slope);
+			col[0] = static_cast<uint8_t>(Clamp(c.x * 255.0, 0.0, 255.0));
+			col[1] = static_cast<uint8_t>(Clamp(c.y * 255.0, 0.0, 255.0));
+			col[2] = static_cast<uint8_t>(Clamp(c.z * 255.0, 0.0, 255.0));
+			col[3] = EncodeAltitude(SurfaceAltitude(terrain, p, height, c));
+			col += 4;
+
+			const vector3d offset = n - p;
+			*(nrm++) = EncodeNormal(offset.x) | (EncodeNormal(offset.y) << 10) | (EncodeNormal(offset.z) << 20) | (3u << 30);
+		}
+	}
+}
 
 struct TerrainSurfaceTiles::Bake {
 	RefCountedPtr<Terrain> terrain;
@@ -250,15 +294,14 @@ void TerrainSurfaceTiles::UploadFinished()
 	}
 }
 
-void TerrainSurfaceTiles::Update(GeoSphere *sphere, const std::vector<std::pair<double, GeoPatch *>> &visible, const double pixelAngle, const double farTexel)
+void TerrainSurfaceTiles::Update(GeoSphere *sphere, const std::vector<std::pair<double, GeoPatch *>> &visible, const double pixelAngle)
 {
 	PROFILE_SCOPED()
 	UploadFinished();
 	const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 
 	// patches whose vertices are far enough apart on screen for the tile to
-	// show more, where the tile (half the vertex spacing) is finer than the
-	// far texture
+	// show more
 	std::vector<std::pair<double, GeoPatch *>> wanted;
 	for (const auto &v : visible) {
 		GeoPatch *patch = v.second;
@@ -268,7 +311,7 @@ void TerrainSurfaceTiles::Update(GeoSphere *sphere, const std::vector<std::pair<
 		}
 		const double spacing = patch->GetVertexSpacing();
 		const double dist = std::max(std::sqrt(v.first), 1e-9);
-		if (spacing / (dist * pixelAngle) >= MIN_VERTEX_PIXELS && (farTexel <= 0.0 || 0.5 * spacing < farTexel) && !patch->IsDeepUnderSea())
+		if (spacing / (dist * pixelAngle) >= MIN_VERTEX_PIXELS && !patch->IsDeepUnderSea())
 			wanted.push_back(v);
 	}
 	if (!wanted.empty()) {

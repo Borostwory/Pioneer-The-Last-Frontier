@@ -821,7 +821,7 @@
   },
   "CLOUD_VOLUMETRIC_DESC": {
     "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
-    "message": "Skylag på planeter med atmosfære. Tegnes ikke mens multisampling (kantutjevning) er slått på."
+    "message": "Skylag på planeter med atmosfære."
   },
   "CLOUD_WEATHER_MAPS": {
     "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",

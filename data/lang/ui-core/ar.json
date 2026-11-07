@@ -821,7 +821,7 @@
   },
   "CLOUD_VOLUMETRIC_DESC": {
     "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
-    "message": "طبقات الغيوم على الكواكب ذات الغلاف الجوي. لا تُرسم أثناء تفعيل تعدد العينات (مانع التعرج)."
+    "message": "طبقات الغيوم على الكواكب ذات الغلاف الجوي."
   },
   "CLOUD_WEATHER_MAPS": {
     "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",

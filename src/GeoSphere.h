@@ -26,7 +26,6 @@ class GeoPatchContext;
 class SQuadSplitRequest;
 class SQuadSplitResult;
 class SSingleSplitResult;
-class TerrainFarTexture;
 
 namespace PlanetClouds {
 	class CloudHeightMap;
@@ -110,12 +109,6 @@ public:
 	double GetDeepestVertexSpacing() const;
 	// weights of the detail tile styles: rolling, ridged, dunes, craters (TerrainTiles)
 	const float *GetTileStyle() const { return m_tileStyle; }
-	// the far texture as drawn this frame (TerrainFarTexture): texel size on
-	// the unit sphere and fade-in, both 0 if it is not drawn; surface tiles
-	// not much finer blend into it (GeoPatch::RenderImmediate)
-	double GetFarTexelDrawn() const { return m_farTexelDrawn; }
-	float GetFarFadeDrawn() const { return m_farFadeDrawn; }
-
 	// a patch that wants to split; the nearest ones are submitted at the end of the update
 	void AddQuadSplitCandidate(double distance, GeoPatch *patch);
 
@@ -157,18 +150,9 @@ private:
 	// terrain heights for the cloud shaders, baked on first close approach
 	std::unique_ptr<PlanetClouds::CloudHeightMap> m_cloudHeightMap;
 
-	// colour, altitude and normals for the far view (TerrainFarTexture.h),
-	// baked once the planet is large on screen
-	std::unique_ptr<TerrainFarTexture> m_farTexture;
-	// seconds the planet has been too small on screen to keep it
-	double m_farTextureIdle = 0.0;
-	void SetFarTexture();
+	void SetFarLook();
 	// the patch surface tiles (TerrainSurfaceTiles) of the visible patches
 	void SetSurfaceTiles(double pixelAngle);
-	// the far texture as drawn this frame: texel size on the unit sphere and
-	// fade-in, 0 if it is not drawn
-	double m_farTexelDrawn = 0.0;
-	float m_farFadeDrawn = 0.0f;
 
 	// the starport cities, for the night lights seen from afar (city-glow.glsl);
 	// found on the first draw in a game

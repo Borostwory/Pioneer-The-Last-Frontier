@@ -821,7 +821,7 @@
   },
   "CLOUD_VOLUMETRIC_DESC": {
     "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
-    "message": "Camadas de nuvens em planetas com atmosfera. Não são desenhadas enquanto as amostras múltiplas (anti-aliasing) estiverem ativadas."
+    "message": "Camadas de nuvens em planetas com atmosfera."
   },
   "CLOUD_WEATHER_MAPS": {
     "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",

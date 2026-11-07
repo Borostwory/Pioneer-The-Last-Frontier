@@ -9,6 +9,7 @@
 #include "vector3.h"
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -16,24 +17,38 @@
 
 class GeoPatch;
 class GeoSphere;
+class Terrain;
 
 namespace Graphics {
 	class Texture;
 }
 
+// The surface texels of the patch surface tiles, as the patches make their
+// vertices (setSurface in GeoPatchJobs.cpp): for the grid points (x, y),
+// x0 <= x < x1, y0 <= y < y1, of a grid of unit-sphere directions with their
+// heights (gridWidth points per row, with the neighbours of those points in it):
+// - colour (RGBA8): the colour and the altitude above sea level
+//   (EncodeAltitude). The colours see the slope of colourNormals
+//   (ColourSlopeNormals, colourPitch per row, from the entry of (x0, y0)),
+//   or the grid's own if that is nullptr;
+// - normal (RGB10_A2): the surface normal minus the direction, each as
+//   0.5 + 0.5 * sign(v) * sqrt(|v| / 1.0) (FAR_NORMAL_RANGE in terrain-far.glsl).
+// rowPitch texels per output row, from the texel of (x0, y0). Uses the band
+// limit set by the caller (TerrainNoise::ScopedBandLimit).
+void BakeSurfaceTexels(const Terrain *terrain, const vector3d *dirs, const double *heights, int gridWidth,
+	int x0, int x1, int y0, int y1, const vector3d *colourNormals, int colourPitch,
+	uint8_t *colour, uint32_t *normal, size_t rowPitch);
+
 // Patch surface tiles: the colour, altitude above sea level and surface
 // normals of a patch at twice its vertex density, baked on the CPU from the
-// terrain functions (BakeSurfaceTexels, as the far texture) into a slot of a
-// shared atlas, for the terrain shaders to use per pixel instead of the
-// vertex colours and normals (terrain-far.glsl). The tiles follow the patch
-// quadtree, so they get finer as the camera comes closer, on every body, as
-// the mesh does: the far texture's look carries on down to the ground.
+// terrain functions (BakeSurfaceTexels) into a slot of a shared atlas, for
+// the terrain shaders to use per pixel instead of the vertex colours and
+// normals (terrain-far.glsl). The tiles follow the patch quadtree, so they
+// get finer as the camera comes closer, on every body, as the mesh does.
 //
 // Only patches whose vertices are a few pixels apart on screen get one, and
-// only where the tile is finer than the planet's far texture (from afar that
-// is sharper), and not those deep under the sea; nearest first, on the
-// threads the patch jobs leave free. Tiles fade in once uploaded. Mesh and
-// collision are unchanged.
+// not those deep under the sea; nearest first, on the threads the patch jobs
+// leave free. Tiles fade in once uploaded. Mesh and collision are unchanged.
 class TerrainSurfaceTiles {
 public:
 	static constexpr int ATLAS_SIZE = 4096;
@@ -58,9 +73,8 @@ public:
 
 	// Gives tiles to the visible patches of a planet that need one and
 	// uploads finished ones. visible: (squared distance in planet radii,
-	// patch). pixelAngle: radians per pixel. farTexel: texel size of the
-	// planet's far texture on the unit sphere, 0 if it has none.
-	void Update(GeoSphere *sphere, const std::vector<std::pair<double, GeoPatch *>> &visible, double pixelAngle, double farTexel);
+	// patch). pixelAngle: radians per pixel.
+	void Update(GeoSphere *sphere, const std::vector<std::pair<double, GeoPatch *>> &visible, double pixelAngle);
 
 	Graphics::Texture *GetColour() const { return m_colour.Get(); }
 	Graphics::Texture *GetNormal() const { return m_normal.Get(); }

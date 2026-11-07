@@ -2,48 +2,19 @@
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
 // The terrain surface baked from the terrain functions, used per pixel
-// instead of the vertex colours and normals:
-// - the far texture (TerrainFarTexture in the C++): the whole planet's
-//   colour, altitude above sea level and normals in two cube maps, where the
-//   patches' vertices are further apart than its texels (from orbit);
-// - the patch surface tiles (TerrainSurfaceTiles): the same for each patch
-//   at twice its vertex density, in an atlas, where they are finer than the
-//   far texture. They follow the patches, so they get finer up close.
+// instead of the vertex colours and normals: the patch surface tiles
+// (TerrainSurfaceTiles in the C++), each patch's colour, altitude above sea
+// level and normals at twice its vertex density, in an atlas. They follow the
+// patches, so they get finer up close. And the light on slopes seen from afar.
 //
 // Fragment shaders need cloud-uniforms.glsl (planet axes) first.
 
 // x: how many times as steep the light takes slopes from afar (terrainFarRelief);
-// y: the far texture's fade-in, 0 to 1 (0: none, as it is no longer drawn); z: how much later patches seen
-// edge-on split (GeoSphere::GetLodForeshortening); w: 1 to read the surface
-// tiles with the bicubic filter
+// y, z: unused; w: 1 to read the surface tiles with the bicubic filter (GeoSphere::SetFarLook)
 uniform vec4 FarTexture;
 
-// largest normal offset stored (NORMAL_RANGE in TerrainFarTexture.cpp)
+// largest normal offset stored (NORMAL_RANGE in TerrainSurfaceTiles.cpp)
 #define FAR_NORMAL_RANGE 1.0
-
-// facing: cosine of the angle between the view and the ground's vertical.
-// Patches seen edge-on split later, so their vertices are further apart (as
-// GeoPatch::LODUpdate): the distance of a patch seen face-on with the same
-// vertex spacing is this much shorter.
-float terrainEdgeOnShrink(float facing)
-{
-	return 1.0 + (sqrt(clamp(facing, 0.25, 1.0)) - 1.0) * FarTexture.z;
-}
-
-// weight of the far texture at this distance from the camera (metres)
-float terrainFarWeight(float distMetres, float facing)
-{
-	if (FarTexture.y <= 0.0)
-		return 0.0;
-	return FarTexture.y * smoothstep(FarTexture.x, 2.0 * FarTexture.x, distMetres / terrainEdgeOnShrink(facing));
-}
-
-// the far texture's texel size as a fraction of the patches' estimated
-// vertex spacing at this distance (at most 1)
-float terrainFarTexelRatio(float distMetres, float facing)
-{
-	return min(1.0, FarTexture.x * terrainEdgeOnShrink(facing) / max(distMetres, 1.0));
-}
 
 #ifdef FRAGMENT_SHADER
 
@@ -71,12 +42,8 @@ vec3 terrainFarRelief(vec3 normal, vec3 up, float distMetres)
 	return normalize(up * along + side * (steep / max(tangent, 1.0e-4)));
 }
 
-// rgb: colour, a: altitude above sea level as in the vertex alpha
-uniform samplerCube farColour;
-// rgb: the normal minus the radial direction, planet-fixed, signed sqrt
-uniform samplerCube farNormal;
-
-// the patch surface tiles, laid out as farColour and farNormal
+// the patch surface tiles: rgb colour, a altitude above sea level as in the vertex alpha; rgb the normal minus the
+// radial direction, planet-fixed, signed sqrt
 uniform sampler2D surfaceTileColour;
 uniform sampler2D surfaceTileNormal;
 // xy: atlas texture coordinates of this patch's tile, z: its size; w: its
@@ -100,15 +67,6 @@ FarSurface terrainDecodeSurface(vec4 colour, vec3 normal, vec3 dir, mat3 toView)
 	s.height = colour.a * 2.0 - 1.0;
 	s.normal = normalize(toView * (dir + offset));
 	return s;
-}
-
-// up: view-space direction from the planet centre to the pixel. Call it
-// only where FarTexture.y > 0 (a uniform branch: it takes derivatives).
-FarSurface terrainFarSample(vec3 up)
-{
-	mat3 toView = mat3(cloudAxisX.xyz, cloudAxisY.xyz, cloudAxisZ.xyz);
-	vec3 dir = normalize(transpose(toView) * up);
-	return terrainDecodeSurface(texture(farColour, dir), texture(farNormal, dir).xyz, dir, toView);
 }
 
 // A Catmull-Rom curve through the texels, in five reads of the linear filter: sharper than
@@ -149,7 +107,7 @@ float terrainTileWeight()
 	return PatchSurface.w;
 }
 
-// uv: the patch coordinates (texCoord0); up as for terrainFarSample. Call it
+// uv: the patch coordinates (texCoord0); up: view-space direction from the planet centre to the pixel. Call it
 // only where PatchSurface.w > 0.
 FarSurface terrainTileSurface(vec2 uv, vec3 up)
 {

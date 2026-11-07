@@ -422,19 +422,12 @@ void GeoPatch::RenderImmediate(Graphics::Renderer *renderer, const vector3d &cam
 
 		// this patch's surface tile: atlas texture coordinates (origin, size)
 		// and its weight, 0 without one (or in the patch depth view): how far
-		// it has faded in, and less where its texels are less than twice as
-		// fine as the far texture's, so the two blend over a band of patches
+		// it has faded in
 		const TerrainSurfaceTiles *surface = m_surfaceSlot >= 0 ? TerrainSurfaceTiles::Instance() : nullptr;
 		const bool depthView = GeoSphere::GetDebugFlags() & GeoSphere::DebugFlags::DEBUG_PATCHDEPTH;
 		float surfaceWeight = 0.0f;
-		if (surface && !depthView) {
+		if (surface && !depthView)
 			surfaceWeight = surface->SlotFade(m_surfaceSlot);
-			const double farTexel = m_geosphere->GetFarTexelDrawn();
-			if (farTexel > 0.0) {
-				const double t = Clamp(farTexel / (0.5 * GetVertexSpacing()) - 1.0, 0.0, 1.0);
-				surfaceWeight *= float(1.0 + (t * t * (3.0 - 2.0 * t) - 1.0) * m_geosphere->GetFarFadeDrawn());
-			}
-		}
 		m_geosphere->GetSurfaceMaterial()->SetPushConstant("PatchSurface"_hash,
 			surface ? surface->SlotUV(m_surfaceSlot) : vector3f(0.0f), surfaceWeight);
 		renderer->DrawMesh(m_patchVBOData->m_patchMesh.get(), m_geosphere->GetSurfaceMaterial().Get());

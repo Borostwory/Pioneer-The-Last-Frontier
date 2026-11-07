@@ -12,7 +12,6 @@
 #include "Pi.h"
 #include "Planet.h"
 #include "Player.h"
-#include "TerrainFarTexture.h"
 #include "TerrainSurfaceTiles.h"
 #include "graphics/Renderer.h"
 #include "galaxy/SystemBody.h"
@@ -67,7 +66,6 @@ namespace {
 		const Body *body = nullptr;
 		vector3d lastUp = vector3d(0.0, 0.0, 0.0);
 		std::string underShip;
-		std::string farBake;
 		std::vector<GpuScope> gpuScopes;
 	};
 	State s_state;
@@ -186,10 +184,10 @@ namespace {
 
 		const int frames = std::max(s.frames, 1);
 		WriteTime();
-		std::fprintf(s.file, "%s | accel %.0fx | fps %d, frame %.1f ms, longest %.1f, %d spikes | physics %.2f, terrain update %.2f (patches in %.2f, choosing %.2f, far %.2f), view %.2f, draw %.2f, flush %.2f, gui %.2f, jobs %.2f, swap %.2f, log %.2f, height queries %.2f ms (%lld a frame)",
+		std::fprintf(s.file, "%s | accel %.0fx | fps %d, frame %.1f ms, longest %.1f, %d spikes | physics %.2f, terrain update %.2f (patches in %.2f, choosing %.2f), view %.2f, draw %.2f, flush %.2f, gui %.2f, jobs %.2f, swap %.2f, log %.2f, height queries %.2f ms (%lld a frame)",
 			place.text.c_str(), Pi::game ? double(Pi::game->GetTimeAccelRate()) : 1.0, s.frames, s.frameSum / frames, s.frameMax, s.spikes,
 			s_secondParts[FrontierLog::PART_STEP] / frames, s_secondParts[FrontierLog::PART_SPHERES] / frames,
-			s_secondParts[FrontierLog::PART_RESULTS] / frames, s_secondParts[FrontierLog::PART_LOD] / frames, s_secondParts[FrontierLog::PART_FAR] / frames,
+			s_secondParts[FrontierLog::PART_RESULTS] / frames, s_secondParts[FrontierLog::PART_LOD] / frames,
 			s_secondParts[FrontierLog::PART_VIEW] / frames, s_secondParts[FrontierLog::PART_DRAW] / frames, s_secondParts[FrontierLog::PART_FLUSH] / frames,
 			s.guiSum / frames, s_secondParts[FrontierLog::PART_JOBS] / frames, s_secondParts[FrontierLog::PART_SWAP] / frames, s_secondParts[FrontierLog::PART_LOG] / frames,
 			s.querySum / frames, s.queryCallsSum / frames);
@@ -233,13 +231,6 @@ namespace {
 		if (!s.underShip.empty())
 			std::fprintf(s.file, " | under: %s", s.underShip.c_str());
 		std::fputc('\n', s.file);
-
-		const std::string &bake = TerrainFarTexture::GetLastBakeInfo();
-		if (bake != s.farBake) {
-			s.farBake = bake;
-			WriteTime();
-			std::fprintf(s.file, "FAR TEXTURE %s\n", bake.c_str());
-		}
 		std::fflush(s.file);
 
 		s.frames = 0;
@@ -332,8 +323,8 @@ void FrontierLog::EndFrame(const double physicsMs, const double guiMs)
 				s.spikesWritten++;
 				const double known = physicsMs + guiMs + s_parts[PART_VIEW] + s_parts[PART_DRAW] + s_parts[PART_FLUSH] + s_parts[PART_JOBS] + s_parts[PART_SWAP] + s_parts[PART_LOG];
 				WriteTime();
-				std::fprintf(s.file, "SPIKE %.1f ms (usual %.1f): physics %.1f (step %.1f, terrain update %.1f: patches in %.1f, choosing %.1f, far %.1f), view %.1f, draw %.1f, flush %.1f, gui %.1f, jobs %.1f, swap %.1f, log %.1f, height queries %.1f (%d), left over %.1f\n",
-					frameMs, s.usual, physicsMs, s_parts[PART_STEP], s_parts[PART_SPHERES], s_parts[PART_RESULTS], s_parts[PART_LOD], s_parts[PART_FAR],
+				std::fprintf(s.file, "SPIKE %.1f ms (usual %.1f): physics %.1f (step %.1f, terrain update %.1f: patches in %.1f, choosing %.1f), view %.1f, draw %.1f, flush %.1f, gui %.1f, jobs %.1f, swap %.1f, log %.1f, height queries %.1f (%d), left over %.1f\n",
+					frameMs, s.usual, physicsMs, s_parts[PART_STEP], s_parts[PART_SPHERES], s_parts[PART_RESULTS], s_parts[PART_LOD],
 					s_parts[PART_VIEW], s_parts[PART_DRAW], s_parts[PART_FLUSH], guiMs, s_parts[PART_JOBS], s_parts[PART_SWAP], s_parts[PART_LOG], queryMs, queryCalls, std::max(frameMs - known, 0.0));
 			}
 		} else {

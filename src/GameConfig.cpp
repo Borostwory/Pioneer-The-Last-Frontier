@@ -47,8 +47,6 @@ GameConfig::GameConfig(const map_string &override_)
 	map["PlanetLodDistance"] = "15"; // terrain patches split within this many patch widths of the camera
 	map["PlanetLodForeshortening"] = "100"; // percent: how much later terrain patches seen edge-on split
 	map["TerrainDetailTiles"] = "1"; // bake GPU detail tiles for nearby terrain patches
-	map["PlanetFarTexture"] = "0"; // bake colour and normal textures of planets large on screen, for the view from orbit (TerrainFarTexture.h)
-	map["PlanetFarTextureSize"] = "2048"; // their texels per cube face: 512, 1024 or 2048 (16, 64 or 256 MB of video memory per planet)
 	map["PlanetOrbitSurface"] = "2"; // how planets are drawn from high orbit: 1 surface tiles, 2 surface tiles at full detail
 	map["TerrainTileBicubic"] = "1"; // read the surface tiles with a sharper filter
 	map["TerrainSurfaceTiles"] = "1"; // bake colour and normal tiles for nearby terrain patches at twice their vertex density (TerrainSurfaceTiles.h, 128 MB of video memory)

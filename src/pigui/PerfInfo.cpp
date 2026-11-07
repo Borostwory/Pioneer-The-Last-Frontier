@@ -14,7 +14,6 @@
 #include "Player.h"
 #include "SectorView.h"
 #include "Space.h"
-#include "TerrainFarTexture.h"
 #include "TerrainSurfaceTiles.h"
 #include "Random.h"
 #include "galaxy/Galaxy.h"

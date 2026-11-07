@@ -821,7 +821,7 @@
   },
   "CLOUD_VOLUMETRIC_DESC": {
     "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
-    "message": "Breathan neòil air planaidean le àile. Cha tèid an tarraing fhad ’s a tha ioma-shampladh (anti-aliasing) an comas."
+    "message": "Breathan neòil air planaidean le àile."
   },
   "CLOUD_WEATHER_MAPS": {
     "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",

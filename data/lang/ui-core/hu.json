@@ -821,7 +821,7 @@
   },
   "CLOUD_VOLUMETRIC_DESC": {
     "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
-    "message": "Felhőrétegek a légkörrel rendelkező bolygókon. Nem jelennek meg, amíg az élsimítás (multisampling) be van kapcsolva."
+    "message": "Felhőrétegek a légkörrel rendelkező bolygókon."
   },
   "CLOUD_WEATHER_MAPS": {
     "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",

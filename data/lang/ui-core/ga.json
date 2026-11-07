@@ -821,7 +821,7 @@
   },
   "CLOUD_VOLUMETRIC_DESC": {
     "description": "Settings window, The Last Frontier tab: tooltip of the 'Volumetric clouds' checkbox",
-    "message": "Sraitheanna scamall ar phláinéid a bhfuil atmaisféar acu. Ní tharraingítear iad fad is atá ilsampláil (frithailiasú) cumasaithe."
+    "message": "Sraitheanna scamall ar phláinéid a bhfuil atmaisféar acu."
   },
   "CLOUD_WEATHER_MAPS": {
     "description": "Settings window, The Last Frontier tab: checkbox caching the large-scale cloud weather pattern in a texture",

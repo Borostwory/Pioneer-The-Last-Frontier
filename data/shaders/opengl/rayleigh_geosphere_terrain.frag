@@ -73,28 +73,16 @@ void main(void)
 	vec3 surfaceUp = normalize(varyingEyepos * geosphereInvRadius - geosphereCenter);
 
 	// colour, altitude and normal baked from the terrain (terrain-far.glsl):
-	// the patch's surface tile where it has one, else the far texture where
-	// the mesh is coarser than it. They are the surface the relief and the
-	// bumps are added to below; baseScale: its detail as a fraction of the
-	// vertex spacing, where the relief starts
-	float facing = dot(surfaceUp, -normalize(varyingEyepos));
+	// the patch's surface tile where it has one. They are the surface the
+	// relief and the bumps are added to below; baseScale: its detail as a
+	// fraction of the vertex spacing, where the relief starts
 	float surfaceWeight = terrainTileWeight();
-	float farWeight = terrainFarWeight(dist, facing) * (1.0 - surfaceWeight);
 	vec3 albedo = albedoColor.rgb;
 	vec3 baseNormal = normalize(varyingNormal);
 	float baseScale = 1.0;
 #if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
 	float seaHeight = surfaceHeight;
 #endif
-	if (FarTexture.y > 0.0) {
-		FarSurface farSurface = terrainFarSample(surfaceUp);
-		albedo = mix(albedo, farSurface.albedo, farWeight);
-		baseNormal = normalize(mix(baseNormal, farSurface.normal, farWeight));
-		baseScale = mix(baseScale, terrainFarTexelRatio(dist, facing), farWeight);
-#if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
-		seaHeight = mix(seaHeight, farSurface.height, farWeight);
-#endif
-	}
 	if (surfaceWeight > 0.0) {
 		FarSurface surfaceTile = terrainTileSurface(texCoord0, surfaceUp);
 		albedo = mix(albedo, surfaceTile.albedo, surfaceWeight);
@@ -119,7 +107,7 @@ void main(void)
 		dist, baseNormal, surfaceUp, altitude, hasWater, tile.w, bump);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	// (the patterns stand in for detail the baked surface has)
-	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - max(farWeight, surfaceWeight)) * (1.0 - MaterialLook.y);
+	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - surfaceWeight) * (1.0 - MaterialLook.y);
 	if (patternWeight > 0.0) {
 		float rock, ice, lava;
 		vec4 pw = terrainPatternWeights(materialSlots, rock, ice, lava);
