@@ -26,6 +26,16 @@ namespace {
 	constexpr double NONE_HIGH = 1e30;
 	// the share of active shells with ice in parts only whose ice is cracked as Europa's
 	constexpr double ICE_CAP_CRACKS_SHARE = 0.35;
+	// lava plains up close (LavaPlainsRelief): flows about this many km across, their fronts this high (m) and as wide as this
+	// share of a flow's step, shown fully where the samples are this close (km) and gone by twice it; their tops rough by this
+	// much (m), in hummocks from this size (km) down
+	constexpr double FLOW_SIZE_KM = 5.0;
+	constexpr double FLOW_LEVELS = 3.0;
+	constexpr double FLOW_FRONT_M = 5.0;
+	constexpr double FLOW_FRONT_EDGE = 0.05;
+	constexpr double FLOW_FRONT_SHOW_KM = 0.06;
+	constexpr double FLOW_ROUGH_M = 20.0;
+	constexpr double FLOW_ROUGH_KM = 2.0;
 	constexpr double CRUST_ROOM = 1000.0; // metres the maps of an active shell's ground may reach from its level
 	// points the levels are set from, spread evenly over the sphere
 	constexpr int LEVEL_SAMPLES = 4096;
@@ -1637,6 +1647,35 @@ double TerrainPhysical::Grooves(const vector3d &p, Point &point) const
 	return metres * std::min(0.4 * m_reliefLimit / CRUST_ROOM, 1.0);
 }
 
+// Lava plains are flows laid one over another: a lobed front a few metres high where each stopped, and a rough, hummocky
+// top. Without them a flood plain is flat to the horizon up close. Fixed in space. The fronts are steps, too sharp for
+// samples far apart, where they would draw thin wandering lines: they fade out as the samples grow past FLOW_FRONT_SHOW_KM.
+double TerrainPhysical::LavaPlainsRelief(const vector3d &p, const Ground &g) const
+{
+	const bool lavaGround = m_state.ground == M::BASALT || m_state.ground == M::LAVA_FLOW;
+	const double weight = lavaGround ? 1.0 : g.plains;
+	if (weight <= 0.0)
+		return 0.0;
+	const double radiusKm = m_core.radius * 6378.135;
+	// (weather wears them down)
+	const double kept = 1.0 - 0.7 * std::min(m_state.wear, 1.0);
+
+	// steps at the contours of a smooth field, which wander and lobe as flow fronts do; from afar the field itself, which
+	// the steps follow on average, so the ground doesn't rise or sink as they come in
+	const double u = FLOW_LEVELS * Fbm(p, radiusKm / FLOW_SIZE_KM, 5, m_noiseSeed + 451, 0.55) / 0.35;
+	const double maxFrequency = TerrainNoise::s_maxFrequency;
+	const double samplesKm = maxFrequency > 0.0 ? 0.5 / maxFrequency * radiusKm : 0.0;
+	const double show = 1.0 - Soft(samplesKm, FLOW_FRONT_SHOW_KM, FLOW_FRONT_SHOW_KM);
+	double steps = u - 0.5;
+	if (show > 0.0) {
+		const double level = std::floor(u);
+		steps += show * (level + Soft(u - level, 1.0 - FLOW_FRONT_EDGE, FLOW_FRONT_EDGE) - u);
+	}
+	const double fronts = FLOW_FRONT_M * steps;
+	const double rough = FLOW_ROUGH_M * Fbm(p, radiusKm / FLOW_ROUGH_KM, 5, m_noiseSeed + 452, 0.65) / 0.35;
+	return weight * kept * (fronts + rough);
+}
+
 double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 {
 	// (a small body's relief is its shape and its craters)
@@ -1873,7 +1912,7 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 	}
 	// a volcano keeps its own shape
 	// (the grooved ground is younger than the dark, with less on it)
-	const double relief = ((g.craters.small + g.small) * Keep(g) + OwnRelief(p, g)) * out.quiet * (1.0 - volcano.smooth) * (m_grooved ? 0.4 + 0.6 * out.grooveDark : 1.0);
+	const double relief = ((g.craters.small + g.small) * Keep(g) + OwnRelief(p, g) + LavaPlainsRelief(p, g)) * out.quiet * (1.0 - volcano.smooth) * (m_grooved ? 0.4 + 0.6 * out.grooveDark : 1.0);
 
 	if (m_state.sea <= 0.0) {
 		// the surface of a frozen sea is level; relief fades in on land

@@ -135,6 +135,8 @@ private:
 	// soft materials carried over what lies beside them, by the wind, as worked out on the map
 	void WindBorders(const vector3d &p, const Point &point, Shares &shares) const;
 	double OwnRelief(const vector3d &p, const Ground &g) const;
+	// metres: lava plains up close, the lobed fronts of flows laid over one another and their rough tops
+	double LavaPlainsRelief(const vector3d &p, const Ground &g) const;
 	// where chaos lies on an active shell, 0..1
 	double CrustChaos(const vector3d &p) const;
 	// metres above the ground, from the maps of an active shell's rough ground (tools/europa-tiles); they average out to nothing
