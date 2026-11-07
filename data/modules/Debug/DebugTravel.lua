@@ -7,6 +7,7 @@
 local Game  = require 'Game'
 local Event = require 'Event'
 local Dev   = require 'Dev'
+local Engine = require 'Engine'
 local SystemPath = require 'SystemPath'
 
 local ui = require 'pigui'
@@ -73,6 +74,9 @@ local state = {
 	bodyIdx = nil,
 
 	radii = 4.0,
+
+	-- a random world: the systems this far away (ly) it's picked from
+	randomRange = 30.0,
 
 	-- teleport to do once the hyperjump arrives: { path = SystemPath, radii = number }
 	pending = nil,
@@ -141,6 +145,36 @@ local function go()
 		state.pending = nil
 		Notification.add(Notification.Type.Error, "Debug travel: can't jump", status)
 	end
+end
+
+-- A planet or moon with a surface (not a gas giant, star or starport) in a random system within randomRange of here,
+-- and off there, as Go does
+local function goRandomWorld()
+	if not Game.system then return end
+	local systems = Game.system:GetNearbySystems(state.randomRange)
+	for _ = 1, 20 do
+		if #systems == 0 then break end
+		local system = systems[Engine.rand:Integer(1, #systems)]
+		local worlds = {}
+		for _, bodyPath in ipairs(system:GetBodyPaths()) do
+			local sbody = bodyPath:GetSystemBody()
+			if sbody.superType == "ROCKY_PLANET" then
+				table.insert(worlds, sbody)
+			end
+		end
+		if #worlds > 0 then
+			local world = worlds[Engine.rand:Integer(1, #worlds)]
+			selectSystem(system.path)
+			for i, entry in ipairs(state.bodies) do
+				if entry.sbody.index == world.index then
+					state.bodyIdx = i
+				end
+			end
+			go()
+			return
+		end
+	end
+	Notification.add(Notification.Type.Error, "Debug travel: no world found within {} ly" % { state.randomRange })
 end
 
 local function findByType()
@@ -310,6 +344,17 @@ debugView.registerTab("DebugTravel", {
 
 		if ui.collapsingHeader("Find system by star type", { "DefaultOpen" }) then
 			drawTypeFinder()
+		end
+
+		if ui.collapsingHeader("Random world", { "DefaultOpen" }) then
+			ui.nextItemWidth(ui.getContentRegion().x * 0.5)
+			state.randomRange = ui.sliderFloat("Within (ly)", state.randomRange, 5.0, 200.0, "%.0f")
+			if Game.player:GetFlightState() == "FLYING" and not state.pending then
+				ui.sameLine()
+				if ui.button("Go to a random world") then
+					goRandomWorld()
+				end
+			end
 		end
 
 		ui.separator()
