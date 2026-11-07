@@ -1945,7 +1945,9 @@ void CityOnPlanet::UpdateForcefield(float timeStep, SpaceStation *station)
 				it->nearby = true;
 			} else if (field.openings.size() < FORCEFIELD_MAX_OPENINGS) {
 				field.openings.push_back({ body, point, float(radius), 0.0f, true });
-				Sound::BodyMakeNoise(ship, "MembranePass", 1.0f);
+				// (traffic only in real time: under time acceleration ships come and go every few frames)
+				if (ship->IsType(ObjectType::PLAYER) || Pi::game->GetTimeAccelRate() <= 1.0)
+					Sound::BodyMakeNoise(ship, "MembranePass", 1.0f);
 			}
 		}
 	}

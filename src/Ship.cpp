@@ -677,13 +677,6 @@ bool Ship::OnCollision(Body *b, Uint32 flags, double relVel)
 	// need to return a "true" value in order to trigger
 	// a bounce in Space::OnCollision
 	if (b->IsType(ObjectType::SPACESTATION) && (flags & (SceneGraph::CollisionGeometry::DOCKING | SceneGraph::CollisionGeometry::ENTRANCE))) {
-		// a surface starport's pad: nothing stops a ship without clearance
-		// touching down there, and it lands as on the ground; with clearance
-		// the starport docks it (or bounces it off to try again)
-		const SpaceStation *station = static_cast<SpaceStation *>(b);
-		if ((flags & SceneGraph::CollisionGeometry::DOCKING) && station->IsGroundStation() && station->GetMyDockingPort(this) < 0 &&
-			m_flightState == FLYING && GetVelocity().Length() < MAX_LANDING_SPEED)
-			m_testLanded = true;
 		return true;
 	}
 
