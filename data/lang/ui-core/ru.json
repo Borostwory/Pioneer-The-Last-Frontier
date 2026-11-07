@@ -2552,12 +2552,12 @@
     "message": "Хорошо"
   },
   "ON_FOOT_FOV": {
-    "description": "Game option: the vertical field of view on foot and in the surface rover",
-    "message": "Поле зрения"
+    "description": "Game option: the vertical field of view on foot and in EVA",
+    "message": "Поле зрения пешком и в космосе"
   },
   "ON_FOOT_FOV_DESC": {
-    "description": "The tooltip of the Field of View option in the settings menu",
-    "message": "Вертикальный угол обзора в градусах, пешком и в ровере. Виды с корабля не меняются"
+    "description": "The tooltip of the Field of View on Foot and in EVA option in the settings menu",
+    "message": "Вертикальный угол обзора в градусах пешком и при выходе в открытый космос. Виды с корабля и ровера не меняются"
   },
   "OPEN_USER_FOLDER": {
     "description": "",

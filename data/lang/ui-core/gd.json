@@ -2552,12 +2552,12 @@
     "message": "Ceart ma-thà"
   },
   "ON_FOOT_FOV": {
-    "description": "Game option: the vertical field of view on foot and in the surface rover",
-    "message": "Raon-seallaidh"
+    "description": "Game option: the vertical field of view on foot and in EVA",
+    "message": "Raon-seallaidh air chois is air cuairt-fhànais"
   },
   "ON_FOOT_FOV_DESC": {
-    "description": "The tooltip of the Field of View option in the settings menu",
-    "message": "Ceàrn-seallaidh dìreach ann an ceuman, air chois agus sa charbad. Chan atharraich seo seallaidhean an t-soithich"
+    "description": "The tooltip of the Field of View on Foot and in EVA option in the settings menu",
+    "message": "Ceàrn-seallaidh dìreach ann an ceuman air chois is air cuairt-fhànais. Chan atharraich seo seallaidhean an t-soithich no a' charbaid"
   },
   "OPEN_USER_FOLDER": {
     "description": "",

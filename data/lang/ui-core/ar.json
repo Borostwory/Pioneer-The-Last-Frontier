@@ -2552,12 +2552,12 @@
     "message": "حسناً"
   },
   "ON_FOOT_FOV": {
-    "description": "Game option: the vertical field of view on foot and in the surface rover",
-    "message": "مجال الرؤية"
+    "description": "Game option: the vertical field of view on foot and in EVA",
+    "message": "مجال الرؤية سيرًا على الأقدام وخارج المركبة"
   },
   "ON_FOOT_FOV_DESC": {
-    "description": "The tooltip of the Field of View option in the settings menu",
-    "message": "زاوية الرؤية الرأسية بالدرجات، سيرًا على الأقدام وفي المركبة. لا يؤثر ذلك في مناظر السفينة"
+    "description": "The tooltip of the Field of View on Foot and in EVA option in the settings menu",
+    "message": "زاوية الرؤية الرأسية بالدرجات أثناء السير على الأقدام والنشاط خارج المركبة. لا يؤثر ذلك في مناظر السفينة والمركبة"
   },
   "OPEN_USER_FOLDER": {
     "description": "",

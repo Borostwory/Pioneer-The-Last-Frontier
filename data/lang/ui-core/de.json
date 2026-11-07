@@ -2552,12 +2552,12 @@
     "message": "OK"
   },
   "ON_FOOT_FOV": {
-    "description": "Game option: the vertical field of view on foot and in the surface rover",
-    "message": "Sichtfeld"
+    "description": "Game option: the vertical field of view on foot and in EVA",
+    "message": "Sichtfeld zu Fuß und beim Außenbordeinsatz"
   },
   "ON_FOOT_FOV_DESC": {
-    "description": "The tooltip of the Field of View option in the settings menu",
-    "message": "Vertikaler Blickwinkel in Grad, zu Fuß und im Rover. Die Schiffsansichten bleiben unverändert"
+    "description": "The tooltip of the Field of View on Foot and in EVA option in the settings menu",
+    "message": "Vertikaler Blickwinkel in Grad zu Fuß und beim Außenbordeinsatz. Die Ansichten von Schiff und Rover bleiben unverändert"
   },
   "OPEN_USER_FOLDER": {
     "description": "",

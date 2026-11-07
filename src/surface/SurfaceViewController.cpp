@@ -198,7 +198,7 @@ SurfaceViewController::~SurfaceViewController()
 void SurfaceViewController::Activated()
 {
 	Pi::input->AddInputFrame(&InputBindings);
-	m_parentView->GetCameraContext()->SetFovAng(Pi::config->Float("OnFootFOV"));
+	m_parentView->GetCameraContext()->SetFovAng(Pi::config->Float("FOVVertical"));
 	m_jumpRequested = false;
 	m_interactRequested = false;
 	m_interactTap = false;
@@ -315,11 +315,6 @@ void SurfaceViewController::Update()
 	if (!walker && !rover)
 		return;
 
-	// the option can change at any time, from the menu
-	const float fov = Pi::config->Float("OnFootFOV");
-	if (m_parentView->GetCameraContext()->GetFovAng() != fov)
-		m_parentView->GetCameraContext()->SetFovAng(fov);
-
 	UpdateMouseCapture();
 	double throttle = 0.0;
 	bool brake = true;
@@ -388,6 +383,12 @@ void SurfaceViewController::Update()
 			rover = excursion->GetMode() == Excursion::Mode::ROVER ? excursion->GetRover() : nullptr;
 		}
 	}
+
+	// the walker has its own field of view, which can change at any time from
+	// the menu; the rover keeps the ship's
+	const float fov = Pi::config->Float(rover ? "FOVVertical" : "OnFootFOV");
+	if (m_parentView->GetCameraContext()->GetFovAng() != fov)
+		m_parentView->GetCameraContext()->SetFovAng(fov);
 
 	// hidden only from its driver's seat
 	ShowRoverModel(!rover || m_roverView != RoverView::NO_MODEL);

@@ -2552,12 +2552,12 @@
     "message": "Ok"
   },
   "ON_FOOT_FOV": {
-    "description": "Game option: the vertical field of view on foot and in the surface rover",
-    "message": "Gesigsveld"
+    "description": "Game option: the vertical field of view on foot and in EVA",
+    "message": "Gesigsveld te voet en tydens ruimtewandeling"
   },
   "ON_FOOT_FOV_DESC": {
-    "description": "The tooltip of the Field of View option in the settings menu",
-    "message": "Vertikale kykhoek in grade, te voet en in die voertuig. Die skip se aansigte word nie geraak nie"
+    "description": "The tooltip of the Field of View on Foot and in EVA option in the settings menu",
+    "message": "Vertikale kykhoek in grade te voet en tydens 'n ruimtewandeling. Die aansigte van die skip en die voertuig word nie geraak nie"
   },
   "OPEN_USER_FOLDER": {
     "description": "",

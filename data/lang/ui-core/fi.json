@@ -2552,12 +2552,12 @@
     "message": "Selvä"
   },
   "ON_FOOT_FOV": {
-    "description": "Game option: the vertical field of view on foot and in the surface rover",
-    "message": "Näkökenttä"
+    "description": "Game option: the vertical field of view on foot and in EVA",
+    "message": "Näkökenttä jalan ja avaruuskävelyllä"
   },
   "ON_FOOT_FOV_DESC": {
-    "description": "The tooltip of the Field of View option in the settings menu",
-    "message": "Pystysuora näkökulma asteina, jalan ja mönkijässä. Aluksen näkymät eivät muutu"
+    "description": "The tooltip of the Field of View on Foot and in EVA option in the settings menu",
+    "message": "Pystysuora näkökulma asteina jalan ja avaruuskävelyllä. Aluksen ja mönkijän näkymät eivät muutu"
   },
   "OPEN_USER_FOLDER": {
     "description": "",

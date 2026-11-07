@@ -26,8 +26,8 @@ class Walker;
 // RoverDefaultView setting's: 0 the cab, 1 without the rover, 2 from outside.
 // The view from outside has its own left and right, the RoverExternalInvertX
 // setting: 1 the camera swings left as the mouse goes right, 0 it swings right.
-// The OnFootFOV setting is its field of view in all of these; the ship's views
-// keep FOVVertical.
+// The OnFootFOV setting is the walker's field of view, on foot and in EVA; the
+// rover's views, like the ship's, keep FOVVertical.
 class SurfaceViewController : public ViewController {
 public:
 	SurfaceViewController(WorldView *v);

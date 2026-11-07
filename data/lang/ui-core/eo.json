@@ -2552,12 +2552,12 @@
     "message": "Ok"
   },
   "ON_FOOT_FOV": {
-    "description": "Game option: the vertical field of view on foot and in the surface rover",
-    "message": "Vidkampo"
+    "description": "Game option: the vertical field of view on foot and in EVA",
+    "message": "Vidkampo piede kaj dum EVA"
   },
   "ON_FOOT_FOV_DESC": {
-    "description": "The tooltip of the Field of View option in the settings menu",
-    "message": "Vertikala vidangulo en gradoj, piede kaj en la veturilo. La vidoj de la ŝipo ne ŝanĝiĝas"
+    "description": "The tooltip of the Field of View on Foot and in EVA option in the settings menu",
+    "message": "Vertikala vidangulo en gradoj piede kaj dum EVA. La vidoj de la ŝipo kaj de la veturilo ne ŝanĝiĝas"
   },
   "OPEN_USER_FOLDER": {
     "description": "",
