@@ -35,11 +35,14 @@
 #include <fmt/core.h>
 #include <imgui/imgui.h>
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <fstream>
 #include <functional>
 #include <sstream>
+#include <thread>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -1016,6 +1019,363 @@ namespace {
 		Log::Info("FLATNESS CHECK done: {} bodies, {} flat (median under {} deg at 30 m and 300 m)", bodies, flat, FLAT_DEGREES);
 		FrontierLog::Note(fmt::format("flatness check: {} bodies, {} flat (output.txt)", bodies, flat));
 	}
+
+	// The highest and lowest points of Sol's rocky bodies and of up to 200 random ones within 20 sectors, and how their
+	// heights spread, in output.txt, to judge whether the relief is realistic: Sol's bodies against their real values, the
+	// others against what rock and ice can hold up. Heights are of the solid ground (the floor under seas), in km from sea
+	// level, or from the mean height where there is no sea. It only measures; nothing in the terrain changes.
+	void CheckRelief()
+	{
+		static constexpr int BODIES = 200;
+		static constexpr int SECTORS = 20;
+		static constexpr int SAMPLES = 16000; // evenly spread, then a climb from the highest and lowest of them
+		static constexpr double TAIL = 0.1; // the lowest and highest share of the samples, for what makes them
+		static constexpr int HIGH_CANDIDATES = 16, LOW_CANDIDATES = 16, PEAK_CANDIDATES = 30, VOLCANO_CANDIDATES = 30;
+		static constexpr double CANDIDATE_APART = 3.0; // sample spacings between the climbs' starts
+		static constexpr double CLIMB_LEAST_M = 5.0; // the climb stops when its step is this small
+		static constexpr int CLIMB_STEPS = 400;
+		static constexpr double PI = 3.14159265358979323846;
+		static constexpr double GOLDEN_ANGLE = 2.39996322972865332;
+		static constexpr double G = 6.674e-11;
+		// about the tallest rock holds up above its surroundings at Earth's gravity; ice holds about half
+		static constexpr double ROCK_LIMIT_M = 9000.0, EARTH_G = 9.81, ICE_LIMIT = 0.5;
+		static constexpr double LIMIT_SLACK = 1.5; // Earth's highest is about 1.25 times the limit above its mean
+		// total relief over the strength limit, on round bodies: rock between about 0.2 (Moon 0.37, Mercury 0.42) and 3.5
+		// (Earth 2.2, Mars 1.2); ice up to about 0.5 (Ganymede 0.08, Titan 0.07)
+		static constexpr double ROCK_LEAST = 0.2, ROCK_MOST = 3.5, ICE_MOST = 0.5;
+		// total relief over the radius on bodies too small to be round: Amalthea about 50 %, Hyperion 30 %, Proteus 10 %
+		static constexpr double LUMPY_KM = 100.0, LUMPY_MOST = 0.5, ROUNDING_KM = 300.0, ROUNDING_MOST = 0.25;
+		static constexpr int BINS = 48;
+		// the height layers: shape, large craters, small craters, small relief, lines, maps, volcano
+		static constexpr int LAYER_COUNT = 7;
+		using LayerValues = std::array<double, LAYER_COUNT>;
+		static constexpr double LEVEL_LEAST = 0.2; // a level holds at least this share of the fullest bin
+		static constexpr double LEVEL_GAP = 0.6; // and the dip between two levels is under this share of the lower
+
+		// real values in km, from sea level (Earth) or the mean radius; NaN where nobody knows
+		struct Real {
+			const char *name;
+			double highest, lowest, total;
+			const char *note;
+		};
+		const double NONE = std::nan("");
+		const Real REAL[] = {
+			{ "Mercury", 4.48, -5.38, 9.9, "MESSENGER global model" },
+			{ "Venus", 10.7, NONE, 13.0, "Maxwell Montes; total from Pioneer Venus, 93 % mapped" },
+			{ "Earth", 8.85, -10.94, 19.8, "Everest, Challenger Deep" },
+			{ "Moon", 10.79, -9.13, 19.9, "LRO laser altimeter" },
+			{ "Mars", 21.2, -8.2, 29.4, "Olympus Mons, Hellas" },
+			{ "Io", NONE, NONE, NONE, "tallest mountain about 17.5 km above the plains" },
+			{ "Europa", NONE, NONE, 1.0, "relief under about 1 km" },
+			{ "Ganymede", NONE, NONE, 2.5, "largest known relief about 2.5 km" },
+			{ "Callisto", NONE, NONE, NONE, "no global data; worn down" },
+			{ "Titan", 0.52, -1.7, 2.2, "sparse radar data, 9 % covered" },
+			{ "Pluto", NONE, NONE, NONE, "mountains up to 6 km above their base, Sputnik Planitia about 2 km below the mean" },
+			{ "Vesta", 19.0, -22.0, 41.0, "Dawn, from an ellipsoid; Rheasilvia" },
+			{ "Ceres", 7.5, -7.5, 15.0, "Dawn, from an ellipsoid" },
+			{ "Tethys", NONE, NONE, 10.0, "Odysseus about 8 km deep; maps span about 10 km" },
+			{ "Dione", NONE, NONE, 10.0, "maps span about 10 km" },
+			{ "Rhea", NONE, NONE, 10.0, "maps span about 10 km" },
+			{ "Iapetus", 15.0, -9.0, 24.0, "leading side; equatorial ridge up to about 20 km" },
+			{ "Triton", NONE, NONE, 2.0, "features under about 1 km, no deep basins" },
+		};
+		auto km = [](double value) { return std::isnan(value) ? std::string("?") : fmt::format("{:+.1f}", value); };
+
+		// runs fn(0..count-1) on all cores, each thread at the given band limit
+		auto parallelFor = [](int count, double band, const std::function<void(int)> &fn) {
+			const int threads = int(std::max(1u, std::thread::hardware_concurrency()));
+			std::atomic<int> next(0);
+			std::vector<std::thread> pool;
+			for (int t = 0; t < threads; t++)
+				pool.emplace_back([&]() {
+					TerrainNoise::ScopedBandLimit limit(band);
+					for (int i = next++; i < count; i = next++)
+						fn(i);
+				});
+			for (std::thread &thread : pool)
+				thread.join();
+		};
+
+		int bodies = 0;
+		int flagged[6] = {};
+		static const char *FLAG_NAMES[6] = { "TOO TALL", "TOO DEEP", "TOO MUCH RELIEF", "TOO LITTLE RELIEF", "ONE LEVEL", "" };
+
+		auto check = [&](const SystemBody *body, const SystemPath &path) {
+			RefCountedPtr<Terrain> terrain(Terrain::InstanceTerrain(body));
+			const double radius = body->GetRadius();
+			const double gravity = G * body->GetMass() / (radius * radius);
+			std::string geology, fullGeology;
+			bool hasSea = false, plates = false, ice = false;
+			for (const std::string &line : terrain->GetGeologyInfo()) {
+				const size_t start = line.find_first_not_of(' ');
+				if (start == std::string::npos)
+					continue;
+				if (line.compare(start, 6, "Speed:") != 0)
+					fullGeology += (fullGeology.empty() ? "" : " | ") + line.substr(start);
+				hasSea = hasSea || line.compare(start, 11, "Levels: sea") == 0;
+				plates = plates || line.compare(start, 9, "Plates 1,") == 0;
+				ice = ice || (line.compare(start, 9, "Interior:") == 0 && line.find("ice crust") != std::string::npos);
+				if (line.compare(start, 9, "Interior:") == 0 || line.compare(start, 7, "Became:") == 0)
+					geology += (geology.empty() ? "" : " | ") + line.substr(start);
+			}
+
+			// metres of the solid ground: the sea's floor where the height stops at sea level
+			auto solid = [&](const vector3d &p) {
+				double h = 0.0;
+				terrain->GetHeights(&p, &h, 1);
+				const double metres = h * radius;
+				if (metres < 1.0) {
+					const double altitude = terrain->GetSurfaceAltitude(p, h);
+					if (altitude < 0.0)
+						return altitude;
+				}
+				return metres;
+			};
+
+			std::vector<vector3d> points(SAMPLES);
+			for (int i = 0; i < SAMPLES; i++) {
+				const double y = 1.0 - 2.0 * (i + 0.5) / SAMPLES;
+				const double r = std::sqrt(std::max(0.0, 1.0 - y * y));
+				points[i] = vector3d(r * std::cos(i * GOLDEN_ANGLE), y, r * std::sin(i * GOLDEN_ANGLE));
+			}
+			const double spacing = std::sqrt(4.0 * PI / SAMPLES); // radians
+			std::vector<double> heights(SAMPLES);
+			std::vector<Terrain::HeightLayers> layers(SAMPLES);
+			std::atomic<bool> hasLayers(true);
+			// a few times the finest the samples can tell apart; the climbs below go to full detail
+			parallelFor(SAMPLES, 2.0 / spacing, [&](int i) {
+				heights[i] = solid(points[i]);
+				if (!terrain->GetHeightLayers(points[i], layers[i]))
+					hasLayers = false;
+			});
+
+			double mean = 0.0;
+			for (const double h : heights)
+				mean += h / SAMPLES;
+			const double reference = hasSea ? 0.0 : mean;
+
+			// where the climbs start: the highest and lowest samples, apart from each other, and the map's peaks and volcanoes
+			std::vector<int> order(SAMPLES);
+			for (int i = 0; i < SAMPLES; i++)
+				order[i] = i;
+			std::sort(order.begin(), order.end(), [&](int a, int b) { return heights[a] > heights[b]; });
+			const double apart = std::cos(CANDIDATE_APART * spacing);
+			auto pick = [&](auto begin, auto end, int most, std::vector<vector3d> &out) {
+				std::vector<vector3d> picked;
+				for (auto it = begin; it != end && int(picked.size()) < most; ++it) {
+					const vector3d &p = points[*it];
+					if (std::none_of(picked.begin(), picked.end(), [&](const vector3d &q) { return p.Dot(q) > apart; }))
+						picked.push_back(p);
+				}
+				out.insert(out.end(), picked.begin(), picked.end());
+			};
+			std::vector<vector3d> highStarts, lowStarts;
+			pick(order.begin(), order.end(), HIGH_CANDIDATES, highStarts);
+			pick(order.rbegin(), order.rend(), LOW_CANDIDATES, lowStarts);
+			const std::pair<const char *, int> kinds[2] = { { "peak", PEAK_CANDIDATES }, { "volcano", VOLCANO_CANDIDATES } };
+			for (const auto &[kind, most] : kinds) {
+				std::vector<Terrain::Feature> features = terrain->FindFeatures(kind, vector3d(0.0));
+				std::sort(features.begin(), features.end(), [](const Terrain::Feature &a, const Terrain::Feature &b) { return a.size > b.size; });
+				for (int i = 0; i < int(features.size()) && i < most; i++)
+					highStarts.push_back(features[i].position.Normalized());
+			}
+
+			// up (sign 1) or down (-1) in eight directions, halving the step when none is better
+			auto climb = [&](vector3d p, double sign, vector3d &at, double &height) {
+				double best = sign * solid(p);
+				double step = 0.5 * spacing;
+				for (int i = 0; i < CLIMB_STEPS && step * radius > CLIMB_LEAST_M; i++) {
+					const vector3d e1 = (std::abs(p.y) < 0.9 ? p.Cross(vector3d(0.0, 1.0, 0.0)) : p.Cross(vector3d(1.0, 0.0, 0.0))).Normalized();
+					const vector3d e2 = p.Cross(e1);
+					vector3d next = p;
+					for (int k = 0; k < 8; k++) {
+						const double angle = k * PI / 4.0;
+						const vector3d q = (p + (e1 * std::cos(angle) + e2 * std::sin(angle)) * step).Normalized();
+						const double h = sign * solid(q);
+						if (h > best) {
+							best = h;
+							next = q;
+						}
+					}
+					if (next == p)
+						step *= 0.5;
+					p = next;
+				}
+				at = p;
+				height = sign * best;
+			};
+			std::vector<vector3d> highAt(highStarts.size()), lowAt(lowStarts.size());
+			std::vector<double> highHeight(highStarts.size()), lowHeight(lowStarts.size());
+			const int highs = int(highStarts.size());
+			parallelFor(highs + int(lowStarts.size()), 0.0, [&](int i) {
+				if (i < highs)
+					climb(highStarts[i], 1.0, highAt[i], highHeight[i]);
+				else
+					climb(lowStarts[i - highs], -1.0, lowAt[i - highs], lowHeight[i - highs]);
+			});
+			vector3d highest = points[order.front()], lowest = points[order.back()];
+			double top = heights[order.front()], bottom = heights[order.back()];
+			for (size_t i = 0; i < highAt.size(); i++)
+				if (highHeight[i] > top) {
+					top = highHeight[i];
+					highest = highAt[i];
+				}
+			for (size_t i = 0; i < lowAt.size(); i++)
+				if (lowHeight[i] < bottom) {
+					bottom = lowHeight[i];
+					lowest = lowAt[i];
+				}
+
+			// how the heights spread: the share at 1, 10, 50, 90 and 99 %, and the levels most ground sits at
+			std::vector<double> sorted = heights;
+			std::sort(sorted.begin(), sorted.end());
+			auto at = [&](double share) { return sorted[std::clamp(int(share * (SAMPLES - 1)), 0, SAMPLES - 1)]; };
+			const double low = at(0.01), high = at(0.99);
+			std::vector<int> levels;
+			if (high - low > 1.0) {
+				double bins[BINS] = {}, smooth[BINS] = {};
+				for (const double h : heights)
+					bins[std::clamp(int((h - low) / (high - low) * BINS), 0, BINS - 1)] += 1.0;
+				for (int i = 0; i < BINS; i++)
+					smooth[i] = 0.25 * bins[std::max(i - 1, 0)] + 0.5 * bins[i] + 0.25 * bins[std::min(i + 1, BINS - 1)];
+				const double fullest = *std::max_element(smooth, smooth + BINS);
+				std::vector<int> tops;
+				for (int i = 0; i < BINS; i++)
+					if ((i == 0 || smooth[i] >= smooth[i - 1]) && (i == BINS - 1 || smooth[i] > smooth[i + 1]) && smooth[i] >= LEVEL_LEAST * fullest)
+						tops.push_back(i);
+				std::sort(tops.begin(), tops.end(), [&](int a, int b) { return smooth[a] > smooth[b]; });
+				for (const int t : tops) {
+					const bool apartFromAll = std::all_of(levels.begin(), levels.end(), [&](int l) {
+						const double dip = *std::min_element(smooth + std::min(t, l), smooth + std::max(t, l) + 1);
+						return dip < LEVEL_GAP * std::min(smooth[t], smooth[l]);
+					});
+					if (apartFromAll)
+						levels.push_back(t);
+				}
+				std::sort(levels.begin(), levels.end());
+			}
+			std::string spread;
+			for (const int l : levels)
+				spread += fmt::format("{}{:+.1f}", spread.empty() ? "" : " and ", (low + (l + 0.5) * (high - low) / BINS - reference) / 1000.0);
+
+			const double limit = ROCK_LIMIT_M * EARTH_G / std::max(gravity, 0.01) * (ice ? ICE_LIMIT : 1.0);
+			const double total = top - bottom;
+			const double share = total / radius;
+			const double radiusKm = radius / 1000.0;
+			const bool round = radiusKm >= ROUNDING_KM;
+			const bool flags[5] = {
+				top - mean > LIMIT_SLACK * limit,
+				mean - bottom > LIMIT_SLACK * limit,
+				round ? total > (ice ? ICE_MOST : ROCK_MOST) * limit : share > (radiusKm < LUMPY_KM ? LUMPY_MOST : ROUNDING_MOST),
+				round && !ice && total < ROCK_LEAST * limit,
+				plates && hasSea && levels.size() < 2,
+			};
+
+			// what makes the low and high ground: each layer's mean over the lowest and highest tenth of the samples, less
+			// its mean over all, and its value at the lowest and highest point, all in km. Layers are raw, so they needn't
+			// add up to the height.
+			auto layerValues = [](const Terrain::HeightLayers &l) {
+				return LayerValues{ l.shape, l.largeCraters, l.smallCraters, l.smallRelief, l.lines, l.maps, l.volcano };
+			};
+			std::string layerText;
+			if (hasLayers) {
+				LayerValues all = {}, lowTail = {}, highTail = {};
+				const int tail = std::max(1, int(TAIL * SAMPLES));
+				for (int i = 0; i < SAMPLES; i++) {
+					const LayerValues v = layerValues(layers[i]);
+					for (int k = 0; k < LAYER_COUNT; k++)
+						all[k] += v[k] / SAMPLES;
+				}
+				for (int i = 0; i < tail; i++) {
+					const LayerValues low = layerValues(layers[order[SAMPLES - 1 - i]]), high = layerValues(layers[order[i]]);
+					for (int k = 0; k < LAYER_COUNT; k++) {
+						lowTail[k] += low[k] / tail;
+						highTail[k] += high[k] / tail;
+					}
+				}
+				Terrain::HeightLayers atLowest, atHighest;
+				terrain->GetHeightLayers(lowest, atLowest);
+				terrain->GetHeightLayers(highest, atHighest);
+				const LayerValues lowestV = layerValues(atLowest), highestV = layerValues(atHighest);
+				// km from the mean over all samples
+				auto fromMean = [](const LayerValues &v, const LayerValues &base) {
+					std::string out;
+					for (int k = 0; k < LAYER_COUNT; k++)
+						out += fmt::format("{}{:+.2f}", k ? "," : "", (v[k] - base[k]) / 1000.0);
+					return out;
+				};
+				layerText = fmt::format("lowTail={};highTail={};atLowest={};atHighest={}", fromMean(lowTail, all), fromMean(highTail, all), fromMean(lowestV, all), fromMean(highestV, all));
+			}
+			std::string flagText;
+			for (int f = 0; f < 5; f++)
+				if (flags[f]) {
+					flagText += std::string(FLAG_NAMES[f]) + " ";
+					flagged[f]++;
+				}
+			if (!flagText.empty())
+				flagged[5]++;
+
+			std::string real;
+			for (const Real &r : REAL)
+				if (path.IsSameSystem(SystemPath(0, 0, 0, 0)) && body->GetName() == r.name) {
+					real = fmt::format(" | real: highest {} km, lowest {} km, total {} km", km(r.highest), km(r.lowest), std::isnan(r.total) ? std::string("?") : fmt::format("{:.1f}", r.total));
+					if (!std::isnan(r.total))
+						real += fmt::format(" (ours {:.2f} times)", total / 1000.0 / r.total);
+					real += fmt::format(", {}", r.note);
+				}
+			auto place = [](const vector3d &p) {
+				return fmt::format("{:.1f}, {:.1f}", std::asin(std::clamp(p.y, -1.0, 1.0)) * 180.0 / PI, std::atan2(p.x, p.z) * 180.0 / PI);
+			};
+			bodies++;
+			Log::Info("RELIEF CHECK {}body {} ({}, {}, {} #{}, {} terrain): radius {:.0f} km, g {:.2f}; from {}: highest {:+.2f} km at {}, lowest {:+.2f} km at {}; "
+					  "total {:.1f} km = {:.2f} % of the radius; above the mean {:.2f} and below it {:.2f} times the strength limit ({:.1f} km); "
+					  "heights at 1/10/50/90/99 %: {:+.1f} / {:+.1f} / {:+.1f} / {:+.1f} / {:+.1f} km; {} {} km{} | {}",
+				flagText, body->GetName(), path.sectorX, path.sectorY, path.sectorZ, path.systemIndex, terrain->GetHeightFractalName(), radius / 1000.0, gravity,
+				hasSea ? "sea level" : "the mean", (top - reference) / 1000.0, place(highest), (bottom - reference) / 1000.0, place(lowest),
+				total / 1000.0, 100.0 * share, (top - mean) / limit, (mean - bottom) / limit, limit / 1000.0,
+				(at(0.01) - reference) / 1000.0, (at(0.1) - reference) / 1000.0, (at(0.5) - reference) / 1000.0, (at(0.9) - reference) / 1000.0, (at(0.99) - reference) / 1000.0,
+				levels.size() >= 2 ? "levels at" : "one level at", spread.empty() ? "?" : spread, real, geology);
+			// the same for the report, one field per value; layers in the order shape, large craters, small craters,
+			// small relief, lines, maps, volcano
+			Log::Info("RELIEF ROW;sol={};name={};path={},{},{},{};terrain={};radiusKm={:.1f};g={:.3f};ice={};sea={};plates={};reference={};"
+					  "highestKm={:.3f};lowestKm={:.3f};meanKm={:.3f};limitKm={:.3f};p1={:.3f};p10={:.3f};p50={:.3f};p90={:.3f};p99={:.3f};levels={};flags={};{};geology={}",
+				path.IsSameSystem(SystemPath(0, 0, 0, 0)) ? 1 : 0, body->GetName(), path.sectorX, path.sectorY, path.sectorZ, path.systemIndex, terrain->GetHeightFractalName(),
+				radiusKm, gravity, ice ? 1 : 0, hasSea ? 1 : 0, plates ? 1 : 0, hasSea ? "sea" : "mean",
+				(top - reference) / 1000.0, (bottom - reference) / 1000.0, (mean - reference) / 1000.0, limit / 1000.0,
+				(at(0.01) - reference) / 1000.0, (at(0.1) - reference) / 1000.0, (at(0.5) - reference) / 1000.0, (at(0.9) - reference) / 1000.0, (at(0.99) - reference) / 1000.0,
+				int(levels.size()), flagText, layerText, fullGeology);
+		};
+
+		RefCountedPtr<Galaxy> galaxy = Pi::game->GetGalaxy();
+		Log::Info("RELIEF CHECK: highest and lowest points and height spread of Sol's rocky bodies and up to {} random ones within {} sectors", BODIES, SECTORS);
+		const SystemPath sol(0, 0, 0, 0);
+		if (RefCountedPtr<StarSystem> system = galaxy->GetStarSystem(sol))
+			for (const RefCountedPtr<SystemBody> &body : system->GetBodies())
+				if (body->GetSuperType() == SystemBody::SUPERTYPE_ROCKY_PLANET)
+					check(body.Get(), sol);
+		const int solBodies = bodies;
+		Random rng(20261109u);
+		std::vector<SystemPath> seen = { sol };
+		for (int attempt = 0; attempt < 5000 && bodies - solBodies < BODIES; attempt++) {
+			const SystemPath sectorPath(int(rng.Int32(2 * SECTORS + 1)) - SECTORS, int(rng.Int32(2 * SECTORS + 1)) - SECTORS, int(rng.Int32(2 * SECTORS + 1)) - SECTORS);
+			RefCountedPtr<const Sector> sector = galaxy->GetSector(sectorPath);
+			if (!sector || sector->m_systems.empty())
+				continue;
+			const SystemPath path = sector->m_systems[rng.Int32(int(sector->m_systems.size()))].GetPath();
+			if (std::find(seen.begin(), seen.end(), path) != seen.end())
+				continue;
+			seen.push_back(path);
+			RefCountedPtr<StarSystem> system = galaxy->GetStarSystem(path);
+			if (!system)
+				continue;
+			for (const RefCountedPtr<SystemBody> &body : system->GetBodies())
+				if (bodies - solBodies < BODIES && body->GetSuperType() == SystemBody::SUPERTYPE_ROCKY_PLANET)
+					check(body.Get(), path);
+		}
+		Log::Info("RELIEF CHECK done: {} bodies ({} of Sol), {} flagged: {} too tall, {} too deep, {} too much relief, {} too little relief, {} plate worlds with one level",
+			bodies, solBodies, flagged[5], flagged[0], flagged[1], flagged[2], flagged[3], flagged[4]);
+		FrontierLog::Note(fmt::format("relief check: {} bodies, {} flagged (output.txt)", bodies, flagged[5]));
+	}
 } // namespace
 
 void PiGui::PerfInfo::DrawGeology()
@@ -1036,6 +1396,9 @@ void PiGui::PerfInfo::DrawGeology()
 	// how rough the solid ground of 100 random bodies is up close; builds their terrains, so the game stops for a while
 	if (Pi::game && ImGui::Button("Check Flatness on 100 Random Bodies (to output.txt)"))
 		CheckFlatness();
+	// highest and lowest points and height spread of Sol's rocky bodies and 200 random ones; the game stops for a while
+	if (Pi::game && ImGui::Button("Check Relief of Sol and 200 Random Bodies (to output.txt)"))
+		CheckRelief();
 
 	if (!Pi::player || !Pi::game || Pi::player->GetFlightState() == Ship::HYPERSPACE)
 		return;
