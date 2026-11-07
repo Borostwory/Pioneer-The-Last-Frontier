@@ -118,16 +118,25 @@ private:
 		double rim = 0.0; // of a fault valley: metres, how high its rim is
 		bool blue = false;
 		int generation = -100;
+		int line = -1;
 		Kind kind = RIDGE;
+	};
+	// the lines in reach of a point, one each (the valleys of one age as one)
+	struct Reached {
+		static constexpr int MOST = 32;
+		Nearest items[MOST];
+		int count = 0;
 	};
 
 	void AddLine(const std::vector<vector3d> &points, Kind kind, int generation, double width, double height, double tone, Tier tier);
 	void BuildActiveShell(const PlanetPhysics::Core &core, double strength, uint32_t seed);
 	void BuildPolarShell(const PlanetPhysics::Core &core, double strength, uint32_t seed);
-	// top: what is drawn here; under: an older line it cuts through, which shows beyond its edge; deepest: the crack cut deepest here
-	void Gather(const std::vector<uint32_t> &nearby, const vector3d &p, const vector3d &lobed, double spacing, double tierFade, Nearest &top, Nearest &under, Nearest &deepest) const;
+	// reached: each line in reach but the cracks; deepest: the crack cut deepest here
+	void Gather(const std::vector<uint32_t> &nearby, const vector3d &p, const vector3d &lobed, double spacing, double tierFade, Reached &reached, Nearest &deepest) const;
 	// how far from its middle, in widths, a line covers what is under it
 	static double CutReach(Kind kind);
+	// how much of an older line a younger one takes away here, 0..1
+	static double Cover(const Nearest &line);
 	// how much of its depth a crack has at a distance, 0..1
 	static double CrackShape(const Nearest &crack, double spacing);
 	// how much of its depth a fault valley has at a distance, 0..1

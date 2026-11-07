@@ -557,7 +557,7 @@ double TerrainLines::GrabenCut(const Nearest &line, const double spacing)
 	return cut + 0.6 * show * ((step + Soft(t - step, 0.25, 0.5)) / 3.0 - cut);
 }
 
-void TerrainLines::Gather(const std::vector<uint32_t> &nearby, const vector3d &p, const vector3d &lobed, const double spacing, const double tierFade, Nearest &top, Nearest &under, Nearest &deepest) const
+void TerrainLines::Gather(const std::vector<uint32_t> &nearby, const vector3d &p, const vector3d &lobed, const double spacing, const double tierFade, Reached &reached, Nearest &deepest) const
 {
 	int unevenLine = -1;
 	double uneven = 0.0;
@@ -613,31 +613,45 @@ void TerrainLines::Gather(const std::vector<uint32_t> &nearby, const vector3d &p
 			}
 			continue;
 		}
-		// Of the same age, the nearest. A younger line cuts an older one, which goes on beyond its edge.
-		if (top.distance >= REACH) {
-			top = here;
-		} else if (here.generation == top.generation) {
-			if (here.kind == GRABEN && top.kind == GRABEN) {
+		// Each line once, at its nearest piece. They are all drawn, and none takes the place of another of its age: a
+		// ridge in a band rises from the band's floor (the nearest in widths of each won, and where a thin ridge took
+		// over from a wide band the band's depth was gone at once, in a cliff).
+		here.line = piece.line;
+		Nearest *same = nullptr;
+		for (int i = 0; i < reached.count && !same; i++) {
+			const Nearest &other = reached.items[i];
+			if (other.line == here.line || (here.kind == GRABEN && other.kind == GRABEN && other.generation == here.generation))
+				same = &reached.items[i];
+		}
+		if (same) {
+			if (here.kind == GRABEN && same->kind == GRABEN) {
 				// where two valleys meet the deeper wins and the taller rim stays, or the ground would jump
-				const double rim = std::max(here.rim, top.rim), nearest = std::min(here.distance, top.distance);
-				if (here.carve > top.carve)
-					top = here;
-				top.rim = rim;
-				top.distance = nearest;
-			} else if (d < top.distance) {
-				top = here;
+				const double rim = std::max(here.rim, same->rim), nearest = std::min(here.distance, same->distance);
+				if (here.carve > same->carve)
+					*same = here;
+				same->rim = rim;
+				same->distance = nearest;
+			} else if (d < same->distance) {
+				*same = here;
 			}
-		} else if (here.generation > top.generation) {
-			if (d < CutReach(here.kind)) {
-				under = top;
-				top = here;
-			}
-		} else if (top.distance >= CutReach(top.kind)) {
-			top = here;
-		} else if (d < under.distance) {
-			under = here;
+		} else if (reached.count < Reached::MOST) {
+			reached.items[reached.count++] = here;
+		} else {
+			// (hardly ever: the farthest makes way)
+			Nearest *farthest = &reached.items[0];
+			for (int i = 1; i < reached.count; i++)
+				if (reached.items[i].distance > farthest->distance)
+					farthest = &reached.items[i];
+			if (d < farthest->distance)
+				*farthest = here;
 		}
 	}
+}
+
+double TerrainLines::Cover(const Nearest &line)
+{
+	// (a faint line, as at its ends, takes away as little as it shows)
+	return (1.0 - Soft(line.distance, 0.7, CutReach(line.kind) - 0.7)) * line.fade;
 }
 
 void TerrainLines::Draw(const Nearest &line, const vector3d &p, const double spacing, const double scale, Sample &out) const
@@ -756,24 +770,40 @@ TerrainLines::Sample TerrainLines::At(const vector3d &p) const
 		lobed = (p + shift * SCARP_LOBES).Normalized();
 	}
 
-	Nearest top, under, deepest;
+	Reached reached;
+	Nearest deepest;
 	if (large)
-		Gather(*large, p, lobed, spacing, tierFade(LARGE), top, under, deepest);
+		Gather(*large, p, lobed, spacing, tierFade(LARGE), reached, deepest);
 	if (medium)
-		Gather(*medium, p, p, spacing, tierFade(MEDIUM), top, under, deepest);
+		Gather(*medium, p, p, spacing, tierFade(MEDIUM), reached, deepest);
 	if (mesh)
-		Gather(*mesh, p, p, spacing, tierFade(MESH), top, under, deepest);
+		Gather(*mesh, p, p, spacing, tierFade(MESH), reached, deepest);
 
 	// a crack takes away what it cuts through
 	const double kept = deepest.carve > 0.0 ? 1.0 - CrackShape(deepest, spacing) : 1.0;
-	if (top.distance < REACH) {
-		if (under.distance < REACH) {
-			const double cover = 1.0 - Soft(top.distance, 0.7, CutReach(top.kind) - 0.7);
-			if (cover < 1.0)
-				Draw(under, p, spacing, kept * (1.0 - cover), out);
+	// Every line in reach, less what younger lines across it take away; lines of one age add up. Where bands cross
+	// the deepest is kept, not their depths together. All of it changes smoothly, so the ground never steps.
+	double bandHeight = 0.0;
+	for (int i = 0; i < reached.count; i++) {
+		const Nearest &line = reached.items[i];
+		double covered = 0.0;
+		for (int j = 0; j < reached.count; j++)
+			if (reached.items[j].generation > line.generation)
+				covered = std::max(covered, Cover(reached.items[j]));
+		const double scale = kept * (1.0 - covered);
+		if (scale <= 0.0)
+			continue;
+		if (line.kind == BAND) {
+			Sample band;
+			Draw(line, p, spacing, scale, band);
+			bandHeight = std::min(bandHeight, band.height);
+			out.band = std::max(out.band, band.band);
+			out.dark = std::max(out.dark, band.dark);
+		} else {
+			Draw(line, p, spacing, scale, out);
 		}
-		Draw(top, p, spacing, kept, out);
 	}
+	out.height += bandHeight;
 	if (deepest.carve > 0.0)
 		Draw(deepest, p, spacing, 1.0, out);
 	return out;
