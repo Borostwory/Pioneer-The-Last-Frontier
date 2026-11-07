@@ -75,6 +75,10 @@ void SystemBodyData::SaveToJson(Json &out)
 	if (!m_heightMapFilename.empty()) {
 		out["heightMapFilename"] = m_heightMapFilename;
 		out["heightMapFractal"] = m_heightMapFractal;
+		if (m_heightMapScale != 1.0)
+			out["heightMapScale"] = m_heightMapScale;
+		if (m_heightMapOffset != 0.0)
+			out["heightMapOffset"] = m_heightMapOffset;
 	}
 }
 
@@ -130,6 +134,8 @@ void SystemBodyData::LoadFromJson(const Json &obj)
 	m_heightMapFractal = obj.value<uint32_t>("heightMapFractal", 0);
 
 	m_heightMapFractal = std::min(m_heightMapFractal, uint32_t(1));
+	m_heightMapScale = obj.value<double>("heightMapScale", 1.0);
+	m_heightMapOffset = obj.value<double>("heightMapOffset", 0.0);
 }
 
 double GetPlanckBrightness(const double wavelength_nm, const int temperature)

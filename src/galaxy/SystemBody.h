@@ -138,6 +138,10 @@ public:
 
 	std::string m_heightMapFilename;
 	unsigned int m_heightMapFractal;
+	// what a height map's stored values become, in metres: value * scale + offset, for a map stored
+	// compressed or from another datum
+	double m_heightMapScale = 1.0;
+	double m_heightMapOffset = 0.0;
 
 	std::string m_spaceStationType;
 
@@ -248,6 +252,8 @@ public:
 	int GetAverageTemp() const { return m_averageTemp; }
 	inline const std::string &GetHeightMapFilename() const { return m_heightMapFilename; }
 	unsigned int GetHeightMapFractal() const { return m_heightMapFractal; }
+	double GetHeightMapScale() const { return m_heightMapScale; }
+	double GetHeightMapOffset() const { return m_heightMapOffset; }
 
 	Uint32 GetSeed() const { return m_seed; }
 

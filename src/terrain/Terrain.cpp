@@ -545,8 +545,8 @@ Terrain::Terrain(const SystemBody *body) :
 				const Sint16 val = heightMap.get()[i];
 				minHMap = std::min(minHMap, val);
 				maxHMap = std::max(maxHMap, val);
-				// store then increment pointer
-				(*pHeightMap) = val;
+				// store then increment pointer, in metres
+				(*pHeightMap) = double(val) * body->GetHeightMapScale() + body->GetHeightMapOffset();
 				++pHeightMap;
 			}
 			assert(pHeightMap == &m_heightMap[heightmapPixelArea]);
@@ -580,7 +580,7 @@ Terrain::Terrain(const SystemBody *body) :
 				maxHMapScld = std::max(maxHMapScld, val);
 				// store then increment pointer
 				// pre-multiply and offset the height value
-				(*pHeightMap) = double(val) * m_heightScaling + m_minh;
+				(*pHeightMap) = (double(val) * m_heightScaling + m_minh) * body->GetHeightMapScale() + body->GetHeightMapOffset();
 				++pHeightMap;
 			}
 			assert(pHeightMap == &m_heightMap[heightmapPixelArea]);
