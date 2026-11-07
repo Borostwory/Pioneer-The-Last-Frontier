@@ -112,6 +112,13 @@ uniform vec4 PatchTile;
 // tile size
 #define MATERIAL_BUMP_HEIGHT 0.008
 
+// the ice photo's grain and bumps at least this strong, with no crust activity at all
+#define MATERIAL_ICE_LEAST 0.4
+// Old ice, with little crust activity (crack strength below MATERIAL_OLD_ICE_UNTIL), takes up to this share of the snow
+// photo's grain and bumps, which have no cracks: frosty, granular ground, not a flat sheet with faint cracks
+#define MATERIAL_OLD_ICE_UNTIL 0.5
+#define MATERIAL_OLD_ICE_SNOW 0.6
+
 // lava glow: average emission of the lava texture (used where it is not
 // sampled), and the glow's colour and strength
 #define MATERIAL_LAVA_MEAN_EMISSION 0.1
@@ -401,11 +408,22 @@ vec3 materialSample(int layer, MaterialMapping m, float level)
 		if (canopy > 0.0)
 			r = mix(r, mix(materialTileSample(MATERIAL_FOREST_FAR, m, k), materialTileSample(MATERIAL_FOREST_FAR, m, k + 1.0), level - k), canopy);
 	}
+	// (on old ice, the snow photo at the same sizes, read only there)
+	float oldIce = layer == MATERIAL_ICE && MaterialLook.y > 0.5 ? MATERIAL_OLD_ICE_SNOW * (1.0 - clamp(MaterialLook.x / MATERIAL_OLD_ICE_UNTIL, 0.0, 1.0)) : 0.0;
+	vec3 snow = vec3(0.0, 0.5, 0.5);
+	if (oldIce > 0.0) {
+		snow = materialTileSample(MATERIAL_SNOW, m, k);
+		if (level > k)
+			snow = mix(snow, materialTileSample(MATERIAL_SNOW, m, k + 1.0), level - k);
+	}
 	r.y *= 2.0;
-	// the ice photo has its cracks built in: as strong as this body's are
+	// the ice photo has its cracks built in: as strong as this body's are, but never gone, or an old ice moon's ground
+	// is flat and plain up close
 	if (layer == MATERIAL_ICE) {
-		r.y = 1.0 + (r.y - 1.0) * MaterialLook.x;
-		r.z = 0.5 + (r.z - 0.5) * MaterialLook.x;
+		float strength = max(MaterialLook.x, MATERIAL_ICE_LEAST);
+		r.y = 1.0 + (r.y - 1.0) * strength;
+		r.z = 0.5 + (r.z - 0.5) * strength;
+		r = mix(r, vec3(snow.x, 2.0 * snow.y, snow.z), oldIce);
 	}
 	return r;
 }
@@ -581,6 +599,8 @@ float materialRoughness(int m)
 	if (m == MATERIAL_ASH || m == MATERIAL_LAVA_FLOW || m == MATERIAL_METAL) return 0.05;
 	if (m == MATERIAL_SAND || m == MATERIAL_SNOW) return 0.04;
 	if (m == MATERIAL_SALT) return 0.025;
+	// (old ice, with little crust activity, is about as rough as dirty ice; an active shell's stays smooth)
+	if (m == MATERIAL_ICE) return mix(0.08, 0.02, clamp(MaterialLook.x / MATERIAL_OLD_ICE_UNTIL, 0.0, 1.0));
 	return 0.02; // lava, ice and dust are the smoothest
 }
 
