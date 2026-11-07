@@ -42,6 +42,10 @@ public:
 		bool byWater = false;	 // with water within 500 m, or on an island too small to see from afar
 		double variation = 0.0;	// metres, the most the ground there differs from its middle
 		double maxVariation = 0.0; // metres, the most the starport allows
+		const char *how = "";	// which step found the spot
+		int dryTries = 0;		// tries that came on ground above the sea and off lava
+		int landSpots = 0;		// land the whole-world search found, far from other starports and near them
+		int crowdedSpots = 0;
 	};
 	// Where a surface starport goes on its planet: where the system put it, or ground that's level enough and dry, from
 	// the terrain alone (as the game places it). radius: the planet's, maxFeatureRadius: TerrainBody::GetMaxFeatureRadius.

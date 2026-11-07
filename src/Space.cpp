@@ -133,6 +133,12 @@ void Space::PlaceSurfaceStarport(const SystemBody *sbody, const Terrain *terrain
 
 	bool isInitiallyUnderwater = false;
 	bool initialVariationTooHigh = false;
+	// the levelest spot above the sea and off lava the tries came on, however near water: the last resort
+	double bestDryVariation = 1e10;
+	vector3d bestDryPos = pos;
+	int dryTries = 0;
+	const char *how = "where the system put it";
+	int landSpots = 0, crowdedSpots = 0;
 
 	Random r(sbody->GetSeed());
 
@@ -163,7 +169,13 @@ void Space::PlaceSurfaceStarport(const SystemBody *sbody, const Terrain *terrain
 
 		// check if underwater. Rivers and lakes stand above sea level, so the height alone doesn't show them. Lava counts as water.
 		const double cityClearance = cityClearanceAt(tries);
-		const bool starportUnderwater = (height <= 0.0) || (cityClearance > 0.0 && terrain && terrain->HasWaterAround(pos_, cityClearance)) || onLava(pos_);
+		const bool dry = height > 0.0 && !onLava(pos_);
+		const bool starportUnderwater = !dry || (cityClearance > 0.0 && terrain && terrain->HasWaterAround(pos_, cityClearance));
+		dryTries += dry ? 1 : 0;
+		if (dry && variationMax < bestDryVariation) {
+			bestDryVariation = variationMax;
+			bestDryPos = pos_;
+		}
 
 		//Output("%s: try no: %i, Match found: %i, best variation in previous results %f, variationMax this try: %f, maxHeightVariation: %f, Starport is underwater: %i\n",
 		//	sbody->name.c_str(), tries, (variationWithinLimits && !starportUnderwater), bestVariation, variationMax, maxHeightVariation, starportUnderwater);
@@ -202,6 +214,7 @@ void Space::PlaceSurfaceStarport(const SystemBody *sbody, const Terrain *terrain
 	if (isInitiallyUnderwater || (isRelocatableIfBuried && initialVariationTooHigh)) {
 		pos = posNotUnderwaterWithLeastVariation;
 		rot = rotNotUnderwaterWithLeastVariation;
+		how = "a random try";
 	}
 
 	// A world nearly all sea, where the random tries never came on land: look over the whole of it, so the starport stands on
@@ -213,9 +226,11 @@ void Space::PlaceSurfaceStarport(const SystemBody *sbody, const Terrain *terrain
 		static constexpr int LAND_SEARCH_POINTS = 20000; // spread evenly, about 1/20000 of the surface apart
 		static constexpr double LAND_SEARCH_DETAIL_M = 2000.0; // the smallest features the look over it sees
 		static constexpr int LAND_FINALISTS = 40;
+		static constexpr int LAND_MORE = 200; // looked at, the highest first, when none of the finalists is level
 		static constexpr double LAND_SPACING_M = 10000.0; // from any other starport
+		static constexpr double LAND_SPACING_LAST_M = 2000.0; // when there's no land that far from them
 		const double golden = M_PI * (3.0 - std::sqrt(5.0));
-		std::vector<std::pair<double, vector3d>> land; // (height above the sea, place)
+		std::vector<std::pair<double, vector3d>> land, crowded; // (height above the sea, place); crowded: near another starport
 		{
 			TerrainNoise::ScopedBandLimit coarse(0.5 * radius / LAND_SEARCH_DETAIL_M);
 			for (int i = 0; i < LAND_SEARCH_POINTS; i++) {
@@ -225,45 +240,72 @@ void Space::PlaceSurfaceStarport(const SystemBody *sbody, const Terrain *terrain
 				const double height = heightAt(p);
 				if (height <= 0.0)
 					continue;
-				bool nearOther = false;
-				for (const vector3d &oldPos : prevPositions) {
-					if ((p - oldPos).Length() < LAND_SPACING_M / radius) {
-						nearOther = true;
-						break;
-					}
-				}
-				if (!nearOther)
+				double nearest = 1e10;
+				for (const vector3d &oldPos : prevPositions)
+					nearest = std::min(nearest, (p - oldPos).Length() * radius);
+				if (nearest >= LAND_SPACING_M)
 					land.emplace_back(height, p);
+				else if (nearest >= LAND_SPACING_LAST_M)
+					crowded.emplace_back(height, p);
 			}
 		}
 		// the highest first: the furthest from the water
-		std::sort(land.begin(), land.end(), [](const std::pair<double, vector3d> &a, const std::pair<double, vector3d> &b) { return a.first > b.first; });
-		if (land.size() > size_t(LAND_FINALISTS))
-			land.resize(LAND_FINALISTS);
+		const auto higher = [](const std::pair<double, vector3d> &a, const std::pair<double, vector3d> &b) { return a.first > b.first; };
+		std::sort(land.begin(), land.end(), higher);
+		std::sort(crowded.begin(), crowded.end(), higher);
+		landSpots = int(land.size());
+		crowdedSpots = int(crowded.size());
 		double bestLand = 1e10;
 		vector3d landPos;
-		for (const auto &candidate : land) {
-			const vector3d &p = candidate.second;
-			const double height = heightAt(p);
-			if (height <= 0.0 || onLava(p))
-				continue;
-			const vector3d around[6] = { vector3d(p.x + delta, p.y, p.z), vector3d(p.x - delta, p.y, p.z), vector3d(p.x, p.y, p.z + delta),
-				vector3d(p.x, p.y, p.z - delta), vector3d(p.x, p.y + delta, p.z), vector3d(p.x, p.y - delta, p.z) };
-			double variation = 0.0;
-			for (const vector3d &q : around)
-				variation = std::max(variation, std::abs(heightAt(q) - height));
-			if (variation < bestLand) {
-				bestLand = variation;
-				landPos = p;
+		// The levelest of these at full detail, stopping at the first level one. At full detail land seen from afar can turn
+		// out to be water, so it goes on past the finalists, and then nearer the other starports. Unless one is level, the
+		// starport takes the levelest dry spot found: it levels its own ground.
+		const auto look = [&](const std::vector<std::pair<double, vector3d>> &list, const size_t from, const size_t to) {
+			for (size_t i = from; i < list.size() && i < to; i++) {
+				const vector3d &p = list[i].second;
+				const double height = heightAt(p);
+				if (height <= 0.0 || onLava(p))
+					continue;
+				const vector3d around[6] = { vector3d(p.x + delta, p.y, p.z), vector3d(p.x - delta, p.y, p.z), vector3d(p.x, p.y, p.z + delta),
+					vector3d(p.x, p.y, p.z - delta), vector3d(p.x, p.y + delta, p.z), vector3d(p.x, p.y - delta, p.z) };
+				double variation = 0.0;
+				for (const vector3d &q : around)
+					variation = std::max(variation, std::abs(heightAt(q) - height));
+				if (variation < bestLand) {
+					bestLand = variation;
+					landPos = p;
+				}
+				if (variation < maxHeightVariation)
+					return true;
 			}
-			if (variation < maxHeightVariation)
-				break;
+			return false;
+		};
+		how = "nothing dry found";
+		if (look(land, 0, LAND_FINALISTS) || bestLand < 1e10)
+			how = "the land search";
+		else if (look(land, LAND_FINALISTS, LAND_MORE) || bestLand < 1e10)
+			how = "the land search, further down";
+		else if (look(crowded, 0, LAND_MORE) || bestLand < 1e10)
+			how = "the land search, near other starports";
+		else if (bestDryVariation < 1e10) {
+			bestLand = bestDryVariation;
+			landPos = bestDryPos;
+			how = "a random try by water";
 		}
 		if (bestLand < 1e10) {
 			pos = landPos;
 			const vector3d side = (std::abs(pos.y) < 0.9 ? vector3d(0.0, 1.0, 0.0) : vector3d(1.0, 0.0, 0.0)).Cross(pos).Normalized();
 			rot = matrix3x3d::FromVectors(side, pos);
 		}
+	}
+
+	// Never in the sea when there's dry ground: the height of a spot can come out differently once the ground around it
+	// has been looked at in more detail, so the end is checked once more
+	if (heightAt(pos) <= 0.0 && bestDryVariation < 1e10 && (pos - bestDryPos).LengthSqr() > 0.0) {
+		pos = bestDryPos;
+		const vector3d side = (std::abs(pos.y) < 0.9 ? vector3d(0.0, 1.0, 0.0) : vector3d(1.0, 0.0, 0.0)).Cross(pos).Normalized();
+		rot = matrix3x3d::FromVectors(side, pos);
+		how = "a random try by water, after the spot found was water";
 	}
 
 	if (report) {
@@ -278,6 +320,10 @@ void Space::PlaceSurfaceStarport(const SystemBody *sbody, const Terrain *terrain
 		report->moved = isInitiallyUnderwater || (isRelocatableIfBuried && initialVariationTooHigh);
 		report->variation = variation;
 		report->maxVariation = maxHeightVariation;
+		report->how = how;
+		report->dryTries = dryTries;
+		report->landSpots = landSpots;
+		report->crowdedSpots = crowdedSpots;
 		report->level = variation < maxHeightVariation;
 		report->underwater = height <= 0.0;
 		report->byWater = !report->underwater && terrain && terrain->HasWaterAround(pos, 500.0);

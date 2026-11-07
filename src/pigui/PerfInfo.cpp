@@ -904,10 +904,11 @@ namespace {
 					lavaPorts += lava > LAVA_SHARE ? 1 : 0;
 					const bool problem = !report.level || report.underwater || lava > LAVA_SHARE;
 					const std::string lavaText = lava > LAVA_SHARE ? fmt::format(", on lava ({:.0f} %)", 100.0 * lava) : std::string();
-					Log::Info("STARPORT CHECK {}{} on {} ({}, {}, {} #{}, {} terrain): {}, the ground varies {:.1f} m of {:.1f} allowed, {} tries{}{}{}",
+					Log::Info("STARPORT CHECK {}{} on {} ({}, {}, {} #{}, {} terrain): {}, the ground varies {:.1f} m of {:.1f} allowed, {} tries{}{}{}; found by {}, {} tries dry, land search {} spots far and {} near other starports",
 						problem ? "PROBLEM " : "", starport->GetName(), body->GetName(), path.sectorX, path.sectorY, path.sectorZ, path.systemIndex,
 						terrain->GetHeightFractalName(), report.moved ? "moved" : "where the system put it", report.variation, report.maxVariation,
-						report.tries, report.level ? "" : ", too uneven", report.underwater ? ", in water" : (report.byWater ? ", by water" : ""), lavaText);
+						report.tries, report.level ? "" : ", too uneven", report.underwater ? ", in water" : (report.byWater ? ", by water" : ""), lavaText,
+						report.how, report.dryTries, report.landSpots, report.crowdedSpots);
 				}
 			}
 		}
