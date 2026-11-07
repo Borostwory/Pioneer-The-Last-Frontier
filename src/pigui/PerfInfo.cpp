@@ -16,6 +16,10 @@
 #include "Space.h"
 #include "TerrainFarTexture.h"
 #include "TerrainSurfaceTiles.h"
+#include "Random.h"
+#include "galaxy/Galaxy.h"
+#include "galaxy/Sector.h"
+#include "galaxy/StarSystem.h"
 #include "galaxy/SystemBody.h"
 #include "terrain/Terrain.h"
 #include "core/Log.h"
@@ -822,6 +826,92 @@ void PiGui::PerfInfo::DrawFrontierTerrain()
 	}
 }
 
+namespace {
+	// The surface starports of up to 100 random bodies within 20 sectors of Sol, placed as the game places them (Space::
+	// PlaceSurfaceStarport), and how the ground is where they ended up, in output.txt. It builds each body's terrain on the
+	// spot, so it takes a while.
+	void CheckStarports()
+	{
+		static constexpr int BODIES = 100;
+		static constexpr int SECTORS = 20;
+		static constexpr double LAVA_SHARE = 0.25;
+		RefCountedPtr<Galaxy> galaxy = Pi::game->GetGalaxy();
+		Random rng(20261107u);
+		std::vector<SystemPath> seen;
+		int bodies = 0, ports = 0, moved = 0, uneven = 0, wet = 0, lavaPorts = 0;
+		Log::Info("STARPORT CHECK: the surface starports of up to {} random bodies within {} sectors of Sol", BODIES, SECTORS);
+		for (int attempt = 0; attempt < 5000 && bodies < BODIES; attempt++) {
+			const SystemPath sectorPath(int(rng.Int32(2 * SECTORS + 1)) - SECTORS, int(rng.Int32(2 * SECTORS + 1)) - SECTORS, int(rng.Int32(2 * SECTORS + 1)) - SECTORS);
+			RefCountedPtr<const Sector> sector = galaxy->GetSector(sectorPath);
+			if (!sector || sector->m_systems.empty())
+				continue;
+			const SystemPath path = sector->m_systems[rng.Int32(int(sector->m_systems.size()))].GetPath();
+			if (std::find(seen.begin(), seen.end(), path) != seen.end())
+				continue;
+			seen.push_back(path);
+			RefCountedPtr<StarSystem> system = galaxy->GetStarSystem(path);
+			if (!system)
+				continue;
+			for (const RefCountedPtr<SystemBody> &body : system->GetBodies()) {
+				if (bodies >= BODIES)
+					break;
+				if (body->GetSuperType() != SystemBody::SUPERTYPE_ROCKY_PLANET)
+					continue;
+				std::vector<const SystemBody *> starports;
+				for (const SystemBody *kid : body->GetChildren())
+					if (kid->GetType() == SystemBody::TYPE_STARPORT_SURFACE)
+						starports.push_back(kid);
+				if (starports.empty())
+					continue;
+				bodies++;
+				RefCountedPtr<Terrain> terrain(Terrain::InstanceTerrain(body.Get()));
+				const double radius = body->GetRadius();
+				const double maxFeatureRadius = (terrain->GetMaxHeight() + 1.0) * radius;
+				const TerrainMaterialTable &table = terrain->GetMaterialTable();
+				// how much of it is sea and lava, from its geology
+				std::string shares;
+				for (const std::string &line : terrain->GetGeologyInfo()) {
+					const size_t start = line.find_first_not_of(' ');
+					if (start != std::string::npos && (line.compare(start, 7, "Became:") == 0 || line.compare(start, 4, "Sea ") == 0))
+						shares += (shares.empty() ? "" : " | ") + line.substr(start);
+				}
+				Log::Info("STARPORT CHECK body {} in the {} system ({}, {}, {} #{}, {}): {}", body->GetName(), system->GetName(), path.sectorX, path.sectorY, path.sectorZ, path.systemIndex,
+					system->GetUnexplored() ? "unexplored" : "explored", shares);
+				std::vector<vector3d> placed;
+				for (const SystemBody *starport : starports) {
+					vector3d pos;
+					matrix3x3d rot;
+					Space::StarportPlacement report;
+					Space::PlaceSurfaceStarport(starport, terrain.Get(), radius, maxFeatureRadius, placed, pos, rot, false, &report);
+					placed.push_back(pos);
+					// lava under its middle
+					const vector3d up = pos.Normalized();
+					vector3d colour;
+					uint8_t weights[TerrainMaterialTable::SLOT_COUNT];
+					terrain->GetSurface(up, 0.0, up, colour, weights);
+					double lava = 0.0;
+					for (int slot = 0; slot < table.SlotCount(); slot++)
+						if (table.SlotLayer(slot) == TerrainMaterialTable::LAVA)
+							lava += weights[slot] / 255.0;
+					ports++;
+					moved += report.moved ? 1 : 0;
+					uneven += report.level ? 0 : 1;
+					wet += report.underwater ? 1 : 0;
+					lavaPorts += lava > LAVA_SHARE ? 1 : 0;
+					const bool problem = !report.level || report.underwater || lava > LAVA_SHARE;
+					const std::string lavaText = lava > LAVA_SHARE ? fmt::format(", on lava ({:.0f} %)", 100.0 * lava) : std::string();
+					Log::Info("STARPORT CHECK {}{} on {} ({}, {}, {} #{}, {} terrain): {}, the ground varies {:.1f} m of {:.1f} allowed, {} tries{}{}{}",
+						problem ? "PROBLEM " : "", starport->GetName(), body->GetName(), path.sectorX, path.sectorY, path.sectorZ, path.systemIndex,
+						terrain->GetHeightFractalName(), report.moved ? "moved" : "where the system put it", report.variation, report.maxVariation,
+						report.tries, report.level ? "" : ", too uneven", report.underwater ? ", in water" : (report.byWater ? ", by water" : ""), lavaText);
+				}
+			}
+		}
+		Log::Info("STARPORT CHECK done: {} bodies, {} starports: {} moved, {} on ground too uneven, {} in water, {} on lava", bodies, ports, moved, uneven, wet, lavaPorts);
+		FrontierLog::Note(fmt::format("starport check: {} bodies, {} starports, {} too uneven, {} in water, {} on lava (output.txt)", bodies, ports, uneven, wet, lavaPorts));
+	}
+} // namespace
+
 void PiGui::PerfInfo::DrawGeology()
 {
 	ImGui::Spacing();
@@ -833,6 +923,10 @@ void PiGui::PerfInfo::DrawGeology()
 		Pi::config->SetInt("TerrainGenerator", physical ? 1 : 0);
 		Pi::config->Save();
 	}
+
+	// the starports of 100 random bodies, as the game places them; builds their terrains, so the game stops for a while
+	if (Pi::game && ImGui::Button("Check Starports on 100 Random Bodies (to output.txt)"))
+		CheckStarports();
 
 	if (!Pi::player || !Pi::game || Pi::player->GetFlightState() == Ship::HYPERSPACE)
 		return;

@@ -9,10 +9,12 @@
 #include "IterationProxy.h"
 #include "RefCounted.h"
 #include "galaxy/StarSystem.h"
+#include "matrix3x3.h"
 #include "vector3.h"
 
 class Body;
 class Frame;
+class Terrain;
 class Game;
 enum class ObjectType;
 
@@ -30,6 +32,22 @@ public:
 	~Space();
 
 	void ToJson(Json &jsonObj);
+
+	// how a surface starport's placement went (PlaceSurfaceStarport)
+	struct StarportPlacement {
+		int tries = 0;			// positions looked at
+		bool moved = false;		// away from where the system put it
+		bool level = false;		// ground within the starport's limits where it ended up
+		bool underwater = false; // where it ended up: at or below the sea
+		bool byWater = false;	 // with water within 500 m, or on an island too small to see from afar
+		double variation = 0.0;	// metres, the most the ground there differs from its middle
+		double maxVariation = 0.0; // metres, the most the starport allows
+	};
+	// Where a surface starport goes on its planet: where the system put it, or ground that's level enough and dry, from
+	// the terrain alone (as the game places it). radius: the planet's, maxFeatureRadius: TerrainBody::GetMaxFeatureRadius.
+	// warnCustom: the warnings for authors of custom systems, in the log. report: how it went, if wanted.
+	static void PlaceSurfaceStarport(const SystemBody *sbody, const Terrain *terrain, double radius, double maxFeatureRadius,
+		const std::vector<vector3d> &prevPositions, vector3d &pos, matrix3x3d &rot, bool warnCustom, StarportPlacement *report = nullptr);
 
 	// body/sbody indexing for save/load. valid after
 	// construction/ToJson(), invalidated by TimeStep(). they will assert

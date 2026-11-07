@@ -25,6 +25,7 @@
 #include "galaxy/StarSystem.h"
 #include "galaxy/SystemBody.h"
 #include "terrain/Terrain.h"
+#include "terrain/TerrainNoise.h"
 #include "lua/LuaEvent.h"
 #include "lua/LuaTimer.h"
 #include "scenegraph/CollisionGeometry.h"
@@ -58,9 +59,16 @@ struct PrebuiltTerrains {
 };
 } // namespace
 
-static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vector3d &pos, matrix3x3d &rot, const std::vector<vector3d> &prevPositions)
+void Space::PlaceSurfaceStarport(const SystemBody *sbody, const Terrain *terrain, const double radius, const double maxFeatureRadius,
+	const std::vector<vector3d> &prevPositions, vector3d &pos, matrix3x3d &rot, const bool warnCustom, StarportPlacement *report)
 {
-	const double radius = planet->GetSystemBody()->GetRadius();
+	// the ground's height above the radius in metres, as TerrainBody::GetBaseTerrainHeight has it
+	auto heightAt = [terrain, radius](const vector3d &p) {
+		double h = 0.0;
+		if (terrain)
+			terrain->GetBaseHeights(&p, &h, 1);
+		return radius * h;
+	};
 
 	// suggested position
 	rot = sbody->GetOrbit().GetPlane();
@@ -79,7 +87,7 @@ static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vecto
 	matrix3x3d rotNotUnderwaterWithLeastVariation = rot;
 	vector3d posNotUnderwaterWithLeastVariation = pos;
 	const double heightVariationCheckThreshold = 0.008;					 // max variation to radius radius ratio to check for local slope, ganymede is around 0.01
-	const double terrainHeightVariation = planet->GetMaxFeatureRadius(); //in radii
+	const double terrainHeightVariation = maxFeatureRadius; //in radii
 
 	//Output("%s: terrain height variation %f\n", sbody->name.c_str(), terrainHeightVariation);
 
@@ -90,12 +98,35 @@ static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vecto
 	const double delta = 20.0 / radius;							 // in radii
 	const double maxSlope = 0.2;								 // 0.0 to 1.0
 	const double maxHeightVariation = maxSlope * delta * radius; // in m
-	const double cityClearance = 6000.0;						 // m of ground free of water around the starport
+	// m of ground free of water around the starport: as much as there is to be had. On a wet world with no such ground it comes
+	// down, so a starport stands on a coast or an island rather than in the sea. Last of all, any ground above the sea will do:
+	// the water check takes an island too small to see from afar for open water, and a world of small islands has no other
+	auto cityClearanceAt = [](const int tries) { return tries < 100 ? 6000.0 : (tries < 150 ? 2000.0 : (tries < 175 ? 500.0 : 0.0)); };
+	// Nor on molten lava, which is as level as water: its middle, and this many m round it
+	const double lavaClearance = 2000.0;
+	auto onLava = [terrain, radius, lavaClearance](const vector3d &p) {
+		const int slot = terrain ? terrain->GetMaterialTable().LavaSlot() : -1;
+		if (slot < 0)
+			return false;
+		const vector3d up = p.Normalized();
+		const vector3d side = (std::abs(up.y) < 0.9 ? vector3d(0.0, 1.0, 0.0) : vector3d(1.0, 0.0, 0.0)).Cross(up).Normalized();
+		const vector3d side2 = up.Cross(side);
+		const double reach = lavaClearance / radius;
+		const vector3d points[5] = { up, (up + side * reach).Normalized(), (up - side * reach).Normalized(), (up + side2 * reach).Normalized(), (up - side2 * reach).Normalized() };
+		for (const vector3d &q : points) {
+			vector3d colour;
+			uint8_t weights[TerrainMaterialTable::SLOT_COUNT];
+			terrain->GetSurface(q, 0.0, q, colour, weights);
+			if (weights[slot] > 64) // (a quarter of it)
+				return true;
+		}
+		return false;
+	};
 
 	matrix3x3d rot_ = rot;
 	vector3d pos_ = pos;
 
-	const bool manualRelocationIsEasy = !(planet->GetSystemBody()->GetType() == SystemBody::TYPE_PLANET_ASTEROID || terrainHeightVariation > heightVariationCheckThreshold);
+	const bool manualRelocationIsEasy = !(sbody->GetParent()->GetType() == SystemBody::TYPE_PLANET_ASTEROID || terrainHeightVariation > heightVariationCheckThreshold);
 
 	// warn and leave it up to the user to relocate custom starports when it's easy to relocate manually, i.e. not on asteroids and other planets which are likely to have high variation in a lot of places
 	const bool isRelocatableIfBuried = !(sbody->IsCustomBody() && manualRelocationIsEasy);
@@ -105,21 +136,22 @@ static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vecto
 
 	Random r(sbody->GetSeed());
 
-	for (int tries = 0; tries < 200; tries++) {
+	int tries = 0;
+	for (; tries < 200; tries++) {
 		variationWithinLimits = true;
 
-		const double height = planet->GetBaseTerrainHeight(pos_) - radius; // in m
+		const double height = heightAt(pos_); // in m
 
 		// check height at 6 points around the starport center stays within variation tolerances
 		// GetHeight gives a varying height field in 3 dimensions.
 		// Given it's smoothly varying it's fine to sample it in arbitrary directions to get an idea of how sharply it varies
 		double v[6]{
-			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x + delta, pos_.y, pos_.z)) - radius - height),
-			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x - delta, pos_.y, pos_.z)) - radius - height),
-			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x, pos_.y, pos_.z + delta)) - radius - height),
-			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x, pos_.y, pos_.z - delta)) - radius - height),
-			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x, pos_.y + delta, pos_.z)) - radius - height),
-			fabs(planet->GetBaseTerrainHeight(vector3d(pos_.x, pos_.y - delta, pos_.z)) - radius - height),
+			fabs(heightAt(vector3d(pos_.x + delta, pos_.y, pos_.z)) - height),
+			fabs(heightAt(vector3d(pos_.x - delta, pos_.y, pos_.z)) - height),
+			fabs(heightAt(vector3d(pos_.x, pos_.y, pos_.z + delta)) - height),
+			fabs(heightAt(vector3d(pos_.x, pos_.y, pos_.z - delta)) - height),
+			fabs(heightAt(vector3d(pos_.x, pos_.y + delta, pos_.z)) - height),
+			fabs(heightAt(vector3d(pos_.x, pos_.y - delta, pos_.z)) - height),
 		};
 
 		// break if variation for all points is within limits
@@ -129,8 +161,9 @@ static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vecto
 			variationMax = (v[i] > variationMax) ? v[i] : variationMax;
 		}
 
-		// check if underwater. Rivers and lakes stand above sea level, so the height alone doesn't show them
-		const bool starportUnderwater = (height <= 0.0) || planet->HasWaterAround(pos_, cityClearance);
+		// check if underwater. Rivers and lakes stand above sea level, so the height alone doesn't show them. Lava counts as water.
+		const double cityClearance = cityClearanceAt(tries);
+		const bool starportUnderwater = (height <= 0.0) || (cityClearance > 0.0 && terrain && terrain->HasWaterAround(pos_, cityClearance)) || onLava(pos_);
 
 		//Output("%s: try no: %i, Match found: %i, best variation in previous results %f, variationMax this try: %f, maxHeightVariation: %f, Starport is underwater: %i\n",
 		//	sbody->name.c_str(), tries, (variationWithinLimits && !starportUnderwater), bestVariation, variationMax, maxHeightVariation, starportUnderwater);
@@ -171,7 +204,86 @@ static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vecto
 		rot = rotNotUnderwaterWithLeastVariation;
 	}
 
-	if (sbody->IsCustomBody()) {
+	// A world nearly all sea, where the random tries never came on land: look over the whole of it, so the starport stands on
+	// what land there is, an island or a sand bank, rather than on the water. The look over it is at coarse detail: at full
+	// detail every point would build its stretch of the valley network, all over the planet, and that takes minutes. The
+	// highest land found is then checked at full detail, the highest first, until a level spot turns up: each check at full
+	// detail builds the valley network around it too, so as few as can be.
+	if (bestVariation >= 1e10 && terrain) {
+		static constexpr int LAND_SEARCH_POINTS = 20000; // spread evenly, about 1/20000 of the surface apart
+		static constexpr double LAND_SEARCH_DETAIL_M = 2000.0; // the smallest features the look over it sees
+		static constexpr int LAND_FINALISTS = 40;
+		static constexpr double LAND_SPACING_M = 10000.0; // from any other starport
+		const double golden = M_PI * (3.0 - std::sqrt(5.0));
+		std::vector<std::pair<double, vector3d>> land; // (height above the sea, place)
+		{
+			TerrainNoise::ScopedBandLimit coarse(0.5 * radius / LAND_SEARCH_DETAIL_M);
+			for (int i = 0; i < LAND_SEARCH_POINTS; i++) {
+				const double y = 1.0 - 2.0 * (i + 0.5) / LAND_SEARCH_POINTS;
+				const double across = std::sqrt(std::max(0.0, 1.0 - y * y));
+				const vector3d p(across * std::cos(golden * i), y, across * std::sin(golden * i));
+				const double height = heightAt(p);
+				if (height <= 0.0)
+					continue;
+				bool nearOther = false;
+				for (const vector3d &oldPos : prevPositions) {
+					if ((p - oldPos).Length() < LAND_SPACING_M / radius) {
+						nearOther = true;
+						break;
+					}
+				}
+				if (!nearOther)
+					land.emplace_back(height, p);
+			}
+		}
+		// the highest first: the furthest from the water
+		std::sort(land.begin(), land.end(), [](const std::pair<double, vector3d> &a, const std::pair<double, vector3d> &b) { return a.first > b.first; });
+		if (land.size() > size_t(LAND_FINALISTS))
+			land.resize(LAND_FINALISTS);
+		double bestLand = 1e10;
+		vector3d landPos;
+		for (const auto &candidate : land) {
+			const vector3d &p = candidate.second;
+			const double height = heightAt(p);
+			if (height <= 0.0 || onLava(p))
+				continue;
+			const vector3d around[6] = { vector3d(p.x + delta, p.y, p.z), vector3d(p.x - delta, p.y, p.z), vector3d(p.x, p.y, p.z + delta),
+				vector3d(p.x, p.y, p.z - delta), vector3d(p.x, p.y + delta, p.z), vector3d(p.x, p.y - delta, p.z) };
+			double variation = 0.0;
+			for (const vector3d &q : around)
+				variation = std::max(variation, std::abs(heightAt(q) - height));
+			if (variation < bestLand) {
+				bestLand = variation;
+				landPos = p;
+			}
+			if (variation < maxHeightVariation)
+				break;
+		}
+		if (bestLand < 1e10) {
+			pos = landPos;
+			const vector3d side = (std::abs(pos.y) < 0.9 ? vector3d(0.0, 1.0, 0.0) : vector3d(1.0, 0.0, 0.0)).Cross(pos).Normalized();
+			rot = matrix3x3d::FromVectors(side, pos);
+		}
+	}
+
+	if (report) {
+		// what the ground is like where it ended up
+		const double height = heightAt(pos);
+		const vector3d around[6] = { vector3d(pos.x + delta, pos.y, pos.z), vector3d(pos.x - delta, pos.y, pos.z), vector3d(pos.x, pos.y, pos.z + delta),
+			vector3d(pos.x, pos.y, pos.z - delta), vector3d(pos.x, pos.y + delta, pos.z), vector3d(pos.x, pos.y - delta, pos.z) };
+		double variation = 0.0;
+		for (const vector3d &p : around)
+			variation = std::max(variation, std::abs(heightAt(p) - height));
+		report->tries = std::min(tries + 1, 200);
+		report->moved = isInitiallyUnderwater || (isRelocatableIfBuried && initialVariationTooHigh);
+		report->variation = variation;
+		report->maxVariation = maxHeightVariation;
+		report->level = variation < maxHeightVariation;
+		report->underwater = height <= 0.0;
+		report->byWater = !report->underwater && terrain && terrain->HasWaterAround(pos, 500.0);
+	}
+
+	if (warnCustom && sbody->IsCustomBody()) {
 		const SystemPath &p = sbody->GetPath();
 		if (initialVariationTooHigh) {
 			if (isRelocatableIfBuried) {
@@ -187,6 +299,12 @@ static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vecto
 				sbody->GetName().c_str(), sbody->GetParent()->GetName().c_str(), p.sectorX, p.sectorY, p.sectorZ);
 		}
 	}
+}
+
+// the game's own placement of a surface starport, on its planet's terrain
+static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vector3d &pos, matrix3x3d &rot, const std::vector<vector3d> &prevPositions)
+{
+	Space::PlaceSurfaceStarport(sbody, planet->GetTerrain(), planet->GetSystemBody()->GetRadius(), planet->GetMaxFeatureRadius(), prevPositions, pos, rot, true);
 }
 
 void Space::BodyNearFinder::Prepare()

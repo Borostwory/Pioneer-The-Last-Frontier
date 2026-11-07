@@ -7,6 +7,7 @@
 local Game  = require 'Game'
 local Event = require 'Event'
 local Dev   = require 'Dev'
+local SystemPath = require 'SystemPath'
 
 local ui = require 'pigui'
 
@@ -158,6 +159,17 @@ end
 local function searchByName()
 	state.nameResults = {}
 	if #state.searchText < 2 then return end
+
+	-- a system's coordinates, x,y,z,index as the starport check logs them: that system, wherever it is
+	local x, y, z, i = state.searchText:match("^%s*%(?%s*(-?%d+)%s*,%s*(-?%d+)%s*,%s*(-?%d+)%s*,%s*(%d+)")
+	if x then
+		local ok, path = pcall(SystemPath.New, tonumber(x), tonumber(y), tonumber(z), tonumber(i))
+		-- (a system index past the sector's last has no system)
+		if ok and path and pcall(function() return path:GetStarSystem().name end) then
+			state.nameResults = { path }
+		end
+		return
+	end
 
 	local ok, result = pcall(function()
 		return Game.sectorView:GetMap():SearchNearbyStarSystemsByName(state.searchText)

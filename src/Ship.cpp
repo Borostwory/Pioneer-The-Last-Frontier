@@ -59,6 +59,8 @@ static const float TONS_HULL_PER_SHIELD = 10.f;
 // within LANDED_CONTACT_BAND of its bottom, the farthest one in each of
 // LANDED_CONTACT_SECTORS directions round the footprint.
 static const double LANDED_SETTLE_SPEED = 2.0;
+// metres off the ground beyond which a landed ship moves there at once (SettleOnDrawnGround)
+static const double LANDED_SNAP_DISTANCE = 20.0;
 static const double LANDED_TURN_SPEED = 0.5;
 static const double LANDED_MAX_TILT = 0.35; // 20 degrees
 static const double LANDED_CONTACT_BAND = 0.3;
@@ -1217,7 +1219,9 @@ void Ship::SettleOnDrawnGround(const float timeStep)
 		lift = std::max(lift, (radius + h[i]) - contact.Length());
 	}
 	const double step = LANDED_SETTLE_SPEED * timeStep;
-	const double rise = Clamp(lift, -step, step);
+	// (far off the ground at once: a saved game whose terrain has since changed, with the ship hanging in the air or
+	// buried. It goes straight there instead of easing for minutes.)
+	const double rise = std::abs(lift) > LANDED_SNAP_DISTANCE ? lift : Clamp(lift, -step, step);
 	if (std::abs(rise) < 0.001 && turn < 1e-5)
 		return;
 
