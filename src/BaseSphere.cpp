@@ -36,7 +36,7 @@ std::unique_ptr<Graphics::Drawables::Sphere3D> BaseSphere::m_atmos;
 
 BaseSphere::BaseSphere(const SystemBody *body) :
 	m_sbody(body),
-	m_terrain(Terrain::InstanceTerrain(body)) {}
+	m_terrain(Terrain::PrebuiltOrNew(body)) {}
 
 BaseSphere::~BaseSphere() {}
 

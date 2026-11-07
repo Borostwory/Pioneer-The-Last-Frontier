@@ -22,6 +22,9 @@
 #include "collider/CollisionSpace.h"
 #include "core/Log.h"
 #include "galaxy/Galaxy.h"
+#include "galaxy/StarSystem.h"
+#include "galaxy/SystemBody.h"
+#include "terrain/Terrain.h"
 #include "lua/LuaEvent.h"
 #include "lua/LuaTimer.h"
 #include "scenegraph/CollisionGeometry.h"
@@ -31,6 +34,29 @@
 #include <algorithm>
 
 //#define DEBUG_CACHE
+
+// The terrains of the system's stars and planets, built side by side before the bodies that take them
+// (BaseSphere, through Terrain::PrebuiltOrNew): made one at a time they held up the start of a game for seconds.
+// Any no body took are dropped at the end of the scope, also when a saved game turns out corrupt.
+namespace {
+struct PrebuiltTerrains {
+	explicit PrebuiltTerrains(const StarSystem *system)
+	{
+		std::vector<const SystemBody *> bodies;
+		for (const auto &sbody : system->GetBodies()) {
+			const SystemBody::BodyType type = sbody->GetType();
+			// the ones Space::GenBody makes a Star or a Planet of
+			if (type == SystemBody::TYPE_GRAVPOINT || type == SystemBody::TYPE_STARPORT_ORBITAL || type == SystemBody::TYPE_STARPORT_SURFACE)
+				continue;
+			bodies.push_back(sbody.Get());
+		}
+		Terrain::Prebuild(bodies);
+	}
+	~PrebuiltTerrains() { Terrain::DiscardPrebuilt(); }
+	PrebuiltTerrains(const PrebuiltTerrains &) = delete;
+	PrebuiltTerrains &operator=(const PrebuiltTerrains &) = delete;
+};
+} // namespace
 
 static void RelocateStarportIfNecessary(SystemBody *sbody, Planet *planet, vector3d &pos, matrix3x3d &rot, const std::vector<vector3d> &prevPositions)
 {
@@ -236,8 +262,11 @@ Space::Space(Game *game, RefCountedPtr<Galaxy> galaxy, const SystemPath &path, S
 
 	m_rootFrameId = Frame::CreateFrame(FrameId::Invalid, Lang::SYSTEM, Frame::FLAG_DEFAULT, FLT_MAX);
 
-	std::vector<vector3d> positionAccumulator;
-	GenBody(m_game->GetTime(), m_starSystem->GetRootBody().Get(), m_rootFrameId, positionAccumulator);
+	{
+		PrebuiltTerrains terrains(m_starSystem.Get());
+		std::vector<vector3d> positionAccumulator;
+		GenBody(m_game->GetTime(), m_starSystem->GetRootBody().Get(), m_rootFrameId, positionAccumulator);
+	}
 	Frame::UpdateOrbitRails(m_game->GetTime(), m_game->GetTimeStep());
 
 	GenSectorCache(galaxy, &path);
@@ -268,15 +297,18 @@ Space::Space(Game *game, RefCountedPtr<Galaxy> galaxy, const Json &jsonObj, doub
 	if (!spaceObj.count("frame")) throw SavedGameCorruptException();
 	m_rootFrameId = Frame::FromJson(spaceObj["frame"], this, FrameId::Invalid, at_time);
 
-	try {
-		Json bodyArray = spaceObj["bodies"].get<Json::array_t>();
-		for (Uint32 i = 0; i < bodyArray.size(); i++) {
-			if (bodyArray[i].count("is_not_in_space") > 0)
-				continue;
-			m_bodies.push_back(Body::FromJson(bodyArray[i], this));
+	{
+		PrebuiltTerrains terrains(m_starSystem.Get());
+		try {
+			Json bodyArray = spaceObj["bodies"].get<Json::array_t>();
+			for (Uint32 i = 0; i < bodyArray.size(); i++) {
+				if (bodyArray[i].count("is_not_in_space") > 0)
+					continue;
+				m_bodies.push_back(Body::FromJson(bodyArray[i], this));
+			}
+		} catch (Json::type_error &) {
+			throw SavedGameCorruptException();
 		}
-	} catch (Json::type_error &) {
-		throw SavedGameCorruptException();
 	}
 
 	RebuildBodyIndex();

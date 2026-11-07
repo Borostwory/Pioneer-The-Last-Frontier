@@ -71,9 +71,26 @@ namespace {
 	}
 } // namespace
 
+namespace {
+	// terrains being built side by side just now
+	std::atomic<int> s_sharedBuilds(0);
+} // namespace
+
+ScopedSharedCores::ScopedSharedCores()
+{
+	s_sharedBuilds++;
+}
+
+ScopedSharedCores::~ScopedSharedCores()
+{
+	s_sharedBuilds--;
+}
+
 void ParallelRows(const int rows, const std::function<void(int)> &row)
 {
-	const int count = std::clamp(int(std::thread::hardware_concurrency()), 1, 16);
+	// the rows don't depend on each other, so the count of threads changes the time only, never the result
+	const int sharing = std::max(s_sharedBuilds.load(), 1);
+	const int count = std::clamp(int(std::thread::hardware_concurrency()) / sharing, 1, 16);
 	std::atomic<int> next(0);
 	auto work = [&]() {
 		for (int r = next++; r < rows; r = next++)

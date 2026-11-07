@@ -5,6 +5,7 @@
 #include "TerrainErosion.h"
 #include "TerrainNoise.h"
 #include "TerrainPhysical.h"
+#include "TerrainPhysicalHydro.h"
 
 #include "FileSystem.h"
 #include "FloatComparison.h"
@@ -16,7 +17,11 @@
 #include "core/Log.h"
 #include "../galaxy/SystemBody.h"
 
+#include <atomic>
+#include <chrono>
 #include <iterator>
+#include <map>
+#include <thread>
 
 namespace {
 	// ground levelled beyond a starport's footprint (SpaceStationType::FlattenRadius)
@@ -408,6 +413,75 @@ Terrain *Terrain::InstanceTerrain(const SystemBody *body)
 	Terrain *terrain = gi(body);
 	terrain->AddStarportSites(body);
 	return terrain;
+}
+
+namespace {
+	std::mutex s_prebuiltLock;
+	std::map<const SystemBody *, Terrain *> s_prebuilt;
+} // namespace
+
+//static
+void Terrain::Prebuild(const std::vector<const SystemBody *> &bodies)
+{
+	// a body from before may have the address of one of these
+	DiscardPrebuilt();
+	if (bodies.empty())
+		return;
+
+	const auto started = std::chrono::steady_clock::now();
+	std::vector<Terrain *> built(bodies.size(), nullptr);
+	std::atomic<size_t> next(0);
+	auto work = [&]() {
+		for (size_t i = next++; i < bodies.size(); i = next++) {
+			ScopedSharedCores share;
+			try {
+				built[i] = InstanceTerrain(bodies[i]);
+			} catch (...) {
+				// left to PrebuiltOrNew, which builds it again on the main thread, where the error shows as it did
+				built[i] = nullptr;
+			}
+		}
+	};
+	// on a single core this is the same as before: one body after another
+	const int count = std::clamp(int(std::thread::hardware_concurrency()), 1, int(bodies.size()));
+	std::vector<std::thread> threads;
+	for (int i = 1; i < count; i++)
+		threads.emplace_back(work);
+	work();
+	for (std::thread &t : threads)
+		t.join();
+
+	std::lock_guard<std::mutex> lock(s_prebuiltLock);
+	for (size_t i = 0; i < bodies.size(); i++) {
+		if (built[i])
+			s_prebuilt[bodies[i]] = built[i];
+	}
+	Log::Info("Terrain: built {} bodies on {} threads in {:.0f} ms\n", bodies.size(), count,
+		std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count());
+}
+
+//static
+Terrain *Terrain::PrebuiltOrNew(const SystemBody *body)
+{
+	{
+		std::lock_guard<std::mutex> lock(s_prebuiltLock);
+		auto it = s_prebuilt.find(body);
+		if (it != s_prebuilt.end()) {
+			Terrain *terrain = it->second;
+			s_prebuilt.erase(it);
+			return terrain;
+		}
+	}
+	return InstanceTerrain(body);
+}
+
+//static
+void Terrain::DiscardPrebuilt()
+{
+	std::lock_guard<std::mutex> lock(s_prebuiltLock);
+	for (auto &entry : s_prebuilt)
+		delete entry.second;
+	s_prebuilt.clear();
 }
 
 static size_t bufread_or_die(void *ptr, size_t size, size_t nmemb, ByteRange &buf)

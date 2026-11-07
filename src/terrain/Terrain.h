@@ -41,6 +41,15 @@ public:
 
 	static Terrain *InstanceTerrain(const SystemBody *body);
 
+	// Builds the terrains of these bodies side by side, on as many threads as the processor has, for
+	// PrebuiltOrNew to hand out: a system's bodies are made one after another, and each waited for its
+	// own. The terrains are the same as InstanceTerrain makes. Any left from before are dropped first.
+	static void Prebuild(const std::vector<const SystemBody *> &bodies);
+	// the body's terrain from Prebuild, taken, or else a new one from InstanceTerrain
+	static Terrain *PrebuiltOrNew(const SystemBody *body);
+	// drops the terrains from Prebuild no body took
+	static void DiscardPrebuilt();
+
 	// 1: terrestrial bodies without a height map use the physical surface
 	// generator (TerrainPhysical); 0: the classic height and colour fractals.
 	// Bodies made after the call follow it.

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <mutex>
 
 extern "C" {
 #include "miniz/miniz.h"
@@ -125,6 +126,10 @@ namespace FileSystem {
 		const FileStat &st = (*i).second;
 
 		char *data = static_cast<char *>(std::malloc(st.size));
+		// the archive reads through one file handle; terrains being built on several threads at once
+		// (Terrain::Prebuild) may read a zipped mod's files
+		static std::mutex extracting;
+		std::unique_lock<std::mutex> lock(extracting);
 		if (!mz_zip_reader_extract_to_mem(zip, st.index, data, st.size, 0)) {
 			Output("FileSourceZip::ReadFile: couldn't extract '%s'\n", path.c_str());
 			return RefCountedPtr<FileData>();

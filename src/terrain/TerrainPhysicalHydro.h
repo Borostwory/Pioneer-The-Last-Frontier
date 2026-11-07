@@ -134,7 +134,18 @@ private:
 	double m_seaLevel = -1e30;
 };
 
-// Runs a function for each row, on several threads
+// Runs a function for each row, on several threads: the processor's cores (up to 16), shared out between
+// the terrains being built at the time (ScopedSharedCores)
 void ParallelRows(int rows, const std::function<void(int)> &row);
+
+// Held while a terrain is built alongside others (Terrain::Prebuild), so that each one's ParallelRows takes
+// its share of the cores and not all of them
+class ScopedSharedCores {
+public:
+	ScopedSharedCores();
+	~ScopedSharedCores();
+	ScopedSharedCores(const ScopedSharedCores &) = delete;
+	ScopedSharedCores &operator=(const ScopedSharedCores &) = delete;
+};
 
 #endif // _TERRAINPHYSICALHYDRO_H

@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cstdio>
 #include <map>
+#include <mutex>
 #include <string_view>
 
 #include <fmt/core.h>
@@ -84,6 +85,11 @@ void Log::Logger::LogLevel(Severity sv, std::string_view message)
 
 void Log::Logger::WriteLog(Time::DateTime time, Severity sv, std::string_view msg)
 {
+	// terrains are built on several threads at once (Terrain::Prebuild) and may log; one line at a time.
+	// Recursive in case a print callback logs.
+	static std::recursive_mutex writing;
+	std::lock_guard<std::recursive_mutex> lock(writing);
+
 	std::string &svName = s_severityNames.at(sv);
 
 	/* Don't output to the console on Windows
