@@ -24,6 +24,8 @@ using M = TerrainMaterialTable;
 namespace {
 	constexpr double NONE_LOW = -1e30;
 	constexpr double NONE_HIGH = 1e30;
+	// the share of active shells with ice in parts only whose ice is cracked as Europa's
+	constexpr double ICE_CAP_CRACKS_SHARE = 0.35;
 	constexpr double CRUST_ROOM = 1000.0; // metres the maps of an active shell's ground may reach from its level
 	// points the levels are set from, spread evenly over the sphere
 	constexpr int LEVEL_SAMPLES = 4096;
@@ -141,6 +143,13 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 	const auto started = std::chrono::steady_clock::now();
 	// this generator carves its own valleys
 	m_erosion.reset();
+
+	{
+		// Europa's cracks always where a shell is ice all over; where it's ice in parts only, as caps on a warm, wet world,
+		// only on some worlds. Drawn apart from all else, so the seed's other draws stay as they were.
+		Random cracks((m_core.seed ^ 0xC4ACu) & 0x7fffffffu);
+		m_iceCapCracks = cracks.Double() < ICE_CAP_CRACKS_SHARE;
+	}
 
 	if (m_core.asteroid) {
 		// the potato shapes of the classic asteroids; all that's on them comes from here
@@ -1739,6 +1748,16 @@ double TerrainPhysical::DuneField(const vector3d &p, const Ground &g) const
 	return -0.9 * latitude + 1.5 * SphereCells::FbmStretched(p, 1.1, 5, m_noiseSeed + 83) - 0.3 * g.base / m_reliefLimit;
 }
 
+double TerrainPhysical::ShellIce(const vector3d &p, const Ground &g) const
+{
+	if (m_state.ground == M::ICE)
+		return 1.0;
+	if (m_iceLevel >= NONE_HIGH || !m_iceCapCracks)
+		return 0.0;
+	// as Paint lays the ice of a crust
+	return Soft(CrustIceField(p, g) + 0.1 * Thinning(p, g), m_iceLevel, 0.015);
+}
+
 // Where ice shows first as the dark lag thins: in hollows and at random, not on rims.
 // Added to a region's field, it turns a hard outline into scattered patches.
 double TerrainPhysical::Thinning(const vector3d &p, const Ground &g) const
@@ -1824,10 +1843,13 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 	out.volcano = m_volcanoes.At(p);
 	const TerrainVolcanoes::Sample &volcano = out.volcano;
 	out.lines = m_lines.At(p);
-	// cliffs and cracks are sharp on bare ground only: weather wears them down, and a volcano buries them
-	double lineHeight = out.lines.height * (1.0 - 0.85 * m_state.wearSmall) * (1.0 - volcano.influence);
+	// (an active shell's cracks, ridges and chaos only where it's bare ice: not across the lag, sand or soil of a warm, wet one)
 	if (m_lines.IsActiveShell())
-		out.mapRelief = CrustMaps(p, out);
+		out.shellIce = ShellIce(p, out.g);
+	// cliffs and cracks are sharp on bare ground only: weather wears them down, and a volcano buries them
+	double lineHeight = out.lines.height * out.shellIce * (1.0 - 0.85 * m_state.wearSmall) * (1.0 - volcano.influence);
+	if (m_lines.IsActiveShell())
+		out.mapRelief = CrustMaps(p, out) * out.shellIce;
 	else if (m_grooved)
 		out.mapRelief = Grooves(p, out);
 	lineHeight += out.mapRelief;
@@ -2200,13 +2222,13 @@ void TerrainPhysical::Paint(const vector3d &p, const Point &point, Shares &share
 	// An active shell: clean pale ice on domes, reddish salts along its lines and in its freckles, and
 	// a soft low stain over one side, fading into the clean ice
 	if (m_lines.IsActiveShell()) {
-		paint(M::ICE, point.lines.pale);
+		paint(M::ICE, point.lines.pale * point.shellIce);
 		// (a small shell's plumes keep it clean)
 		if (!m_lines.IsPolar()) {
 			const double uneven = std::clamp(Fbm(p, 1.6, 4, m_noiseSeed + 301, 0.55) / 0.35, -1.0, 1.0);
 			const double stain = 0.42 * Soft(p.Dot(m_lines.StainAxis()) + 0.3 * uneven, 0.1, 0.8);
 			// (the rubble of chaos is brown, the plates in it are not)
-			paint(M::SALT, std::max({ 0.9 * point.lines.band, stain, 0.75 * point.crustRubble }));
+			paint(M::SALT, point.shellIce * std::max({ 0.9 * point.lines.band, stain, 0.75 * point.crustRubble }));
 		}
 	}
 
@@ -2468,11 +2490,11 @@ vector3d TerrainPhysical::ColourFrom(const vector3d &p, const Point &point, cons
 			const double share = 0.55 * m_iceDirt * 2.0 * dirt;
 			c = c * (1.0 - share) + Times(vector3d(0.27, 0.235, 0.20), m_tint) * m_bright * share;
 		}
-		c = c * (1.0 - 0.6 * std::max(point.lines.crack, point.crustCrack)) * (1.0 - 0.35 * point.lines.dark);
+		c = c * (1.0 - 0.6 * point.shellIce * std::max(point.lines.crack, point.crustCrack)) * (1.0 - 0.35 * point.shellIce * point.lines.dark);
 		// coarse fresh ice around an active pole looks bluer
 		if (m_lines.IsPolar())
 			c = c * (1.0 - 0.22 * g.polarCap) + Times(vector3d(0.70, 0.86, 0.96), m_tint) * m_bright * (0.22 * g.polarCap);
-		const double slot = point.lines.slot;
+		const double slot = point.lines.slot * point.shellIce;
 		const vector3d floorTone = point.lines.slotBlue ? vector3d(0.30, 0.55, 0.66) : vector3d(0.28, 0.13, 0.06);
 		c = c * (1.0 - slot) + Times(floorTone, m_tint) * m_bright * slot;
 	}

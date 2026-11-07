@@ -106,6 +106,7 @@ private:
 		double crustCrack = 0.0; // 0..1, a crack of the ground map there
 		double grooveDark = 0.0; // 0..1, how much dark ground shows on a grooved moon
 		double mapRelief = 0.0; // metres above or below the level of the ground's maps here
+		double shellIce = 1.0; // 0..1, how far an active shell is bare ice here, where its cracks and ridges show (ShellIce)
 		double lavaField = -1e30; // what decides where lava lies
 	};
 	enum class MoonStyle {
@@ -157,6 +158,8 @@ private:
 	double TwoToneSide(const vector3d &p, const Ground &g, double level, double darker) const;
 	double DuneField(const vector3d &p, const Ground &g) const;
 	double Thinning(const vector3d &p, const Ground &g) const;
+	// 0..1, how far an active shell's ground is bare ice at p: all of it on one of ice, its ice caps on a warm, wet one
+	double ShellIce(const vector3d &p, const Ground &g) const;
 	void Paint(const vector3d &p, const Point &point, Shares &shares) const;
 	void Climate(const vector3d &p, const Point &point, const std::function<void(TerrainMaterialTable::Layer, double)> &paint) const;
 	void Steep(const vector3d &p, const vector3d &normal, Shares &shares) const;
@@ -209,6 +212,7 @@ private:
 	double m_sandLevel = 1e30, m_mudLevel = 1e30, m_saltLevel = 1e30, m_beltLevel = 1e30;
 	double m_asteroidRelief = 0.0; // metres, of a small body's shape (TerrainAsteroid.h); 0: not one
 	double m_gravelLevel = 1e30; // of the lows on a small body, where rubble gathers
+	bool m_iceCapCracks = false; // an active shell with ice in parts only: whether that ice is cracked as Europa's (ShellIce)
 	double m_steepSlope = 1.0; // what counts as steep at the colours' scale, as a tangent
 	double m_buildMilliseconds = 0.0;
 
