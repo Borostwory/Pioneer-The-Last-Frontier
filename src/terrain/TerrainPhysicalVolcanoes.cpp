@@ -247,10 +247,17 @@ void TerrainVolcanoes::BuildConstructs(const PlanetPhysics::Core &core, const Pl
 	if (core.asteroid || it.iceCrust)
 		return;
 	if (heatPipe) {
+		// Mountain blocks as Io's (Schenk 2001): most a few km high, the tallest 17.5 km (Boosaule Montes), lower
+		// under stronger gravity and never more than that share of the radius. The tilt and roughness of a top lift
+		// its high edge to about BLOCK_TOP_MOST times the height it is given.
+		constexpr double IO_TALLEST_M = 17500.0, IO_G = 1.80, IO_TALLEST_PER_RADIUS = 0.0096, IO_LOWEST_SHARE = 0.1;
+		constexpr double BLOCK_TOP_MOST = 1.6;
+		const double tallest = std::min(IO_TALLEST_M * IO_G / std::max(it.gravity, 0.01), IO_TALLEST_PER_RADIUS * radiusMetres);
 		for (int i = 0; i < 90; i++) {
 			const vector3d centre = RandomDirection(rng);
 			const double radius = 0.03 + 0.07 * rng.Double();
-			const double height = std::min((0.25 + 0.55 * rng.Double()) * 0.6 * reliefLimit, 0.006 * radiusMetres);
+			const double u = rng.Double();
+			const double height = (IO_LOWEST_SHARE + (1.0 - IO_LOWEST_SHARE) * u * u) * tallest / BLOCK_TOP_MOST;
 			const uint16_t id = uint16_t(m_blocks.size());
 			m_blocks.push_back(MakeItem(centre, radius, 1.6, height, rng.Double()));
 			m_blockIndex.Add(centre, 1.6 * radius, id);
@@ -737,6 +744,8 @@ TerrainVolcanoes::Construct TerrainVolcanoes::ConstructAt(const vector3d &p) con
 		}
 	}
 	if (const std::vector<uint16_t> *nearby = m_blockIndex.At(p)) {
+		// where blocks overlap, the higher one stands: one block doesn't sit on another
+		double blocks = 0.0;
 		for (const uint16_t id : *nearby) {
 			const Item &item = m_blocks[id];
 			if (p.Dot(item.centre) < item.cosReach)
@@ -754,9 +763,10 @@ TerrainVolcanoes::Construct TerrainVolcanoes::ConstructAt(const vector3d &p) con
 			const double tilt = 1.0 + 0.5 * (p - item.centre).Dot(vector3d(0.6, 0.3, -0.7)) / item.radius;
 			const double rough = std::clamp(SphereCells::Fbm(p, 5.0 / item.radius, 7, m_noiseSeed + 168, 0.58) / 0.35, -1.0, 1.0);
 			const double top = scarp * tilt * (1.0 + 0.3 * rough);
-			out.height += item.height * std::max(top, apron) * fade;
+			blocks = std::max(blocks, item.height * std::max(top, apron) * fade);
 			out.block = std::max(out.block, std::max(scarp, 2.0 * apron) * fade);
 		}
+		out.height += blocks;
 	}
 	if (const std::vector<uint16_t> *nearby = m_pateraIndex.At(p)) {
 		for (const uint16_t id : *nearby) {

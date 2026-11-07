@@ -20,6 +20,12 @@ namespace {
 	// stay where nothing wears them; Earth's air and water wear them down to the second
 	constexpr double PLATES_CRATERS = 0.35;
 	constexpr double PLATES_CRATERS_WORN = 0.06;
+	// craters other worlds lose to their surface: thick air screens out small impactors and buries or wears
+	// the rest (Titan, Venus), and on ice, fresh flows from cryovolcanoes cover them (Triton). Air in kg/m3,
+	// volcanicity 0..1, from where it starts to where it takes off the most
+	constexpr double THICK_AIR_FROM = 0.5, THICK_AIR_FULL = 5.0;
+	constexpr double CRYO_FROM = 0.05, CRYO_FULL = 0.35;
+	constexpr double RESURFACED_MOST = 0.9;
 
 	double Smooth(const double a, const double b, const double x)
 	{
@@ -327,10 +333,15 @@ namespace PlanetPhysics {
 		return st;
 	}
 
-	void WearCraters(Interior &it, const Surface &st)
+	void WearCraters(Interior &it, const SurfaceInputs &in, const Surface &st)
 	{
-		if (it.plates)
+		if (it.plates) {
 			it.cratering = PLATES_CRATERS + (PLATES_CRATERS_WORN - PLATES_CRATERS) * std::clamp(st.wear, 0.0, 1.0);
+			return;
+		}
+		const double air = Smooth(THICK_AIR_FROM, THICK_AIR_FULL, in.airDensity);
+		const double cryo = it.iceCrust ? Smooth(CRYO_FROM, CRYO_FULL, in.volcanicity) : 0.0;
+		it.cratering *= 1.0 - RESURFACED_MOST * std::max({ air, cryo, std::clamp(st.wear, 0.0, 1.0) });
 	}
 
 	vector3d PlantColour(const Core &core)

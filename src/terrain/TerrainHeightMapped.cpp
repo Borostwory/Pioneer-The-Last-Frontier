@@ -6,6 +6,13 @@
 
 using namespace TerrainNoise;
 
+namespace {
+	// The map's mountains are smoothed to its pixels (about 18 km on Earth's), so noise adds up to this share of
+	// their height: Earth's highest map point, 6.9 km, can reach about 8.6 km, near Everest's 8.85. It added
+	// height^2 / 1000 m before, which tripled the Himalaya and Olympus Mons.
+	constexpr double MOUNTAIN_NOISE_SHARE = 0.25;
+} // namespace
+
 template <>
 const char *TerrainHeightFractal<TerrainHeightMapped>::GetHeightFractalName() const { return "Mapped"; }
 
@@ -39,7 +46,7 @@ void TerrainHeightFractal<TerrainHeightMapped>::GetBaseHeights(const vector3d *v
 
 		//Here's where we add some noise over the heightmap so it doesnt look so boring, we scale by height so values are greater high up
 		//large mountainous shapes
-		double mountains = h * h * 0.001 * octavenoise(m_fracdef[3], 0.5 * octavenoise(m_fracdef[5], 0.45, p), p) * ridged_octavenoise(m_fracdef[4], 0.475 * octavenoise(m_fracdef[6], 0.4, p), p);
+		double mountains = h * MOUNTAIN_NOISE_SHARE * octavenoise(m_fracdef[3], 0.5 * octavenoise(m_fracdef[5], 0.45, p), p) * ridged_octavenoise(m_fracdef[4], 0.475 * octavenoise(m_fracdef[6], 0.4, p), p);
 		v += mountains;
 		//smaller ridged mountains
 		if (v < 50.0) {

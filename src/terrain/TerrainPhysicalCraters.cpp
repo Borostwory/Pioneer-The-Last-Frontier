@@ -20,6 +20,22 @@ namespace {
 	constexpr double REACH = 2.8;
 	constexpr double REACH_RAYS = 7.5;
 	constexpr double RAYS_FROM = 0.93;
+	// Complex craters, past the transition: depth grows as the diameter to this power, as on the Moon (Pike 1977,
+	// d = 1.044 D^0.301 km), after a drop through the transition to this share of a simple crater's depth, over
+	// this many transition diameters
+	constexpr double COMPLEX_POWER = 0.301;
+	constexpr double COMPLEX_SHARE = 0.67;
+	constexpr double COMPLEX_STEP = 0.5;
+	// Large craters on ice sag flat (Schenk 2002): on Ganymede, past about 26 km across they stop at about 1.1 km
+	// deep and get shallower the larger they are, the old ones faster, down to flat scars (palimpsests). Both
+	// sizes go as 1 / gravity, so small cold moons keep deep basins (Odysseus on Tethys)
+	constexpr double ICE_PEAK_KM = 26.0;
+	constexpr double ICE_PEAK_DEPTH_M = 1100.0;
+	constexpr double ICE_PEAK_G = 1.43;
+	constexpr double ICE_FALL_FRESH = 0.3, ICE_FALL_OLD = 0.8; // the power the depth falls with past that, fresh to old
+	// Where large craters overlap, the deepest hollow counts in full and the others by this share: a crater digs
+	// out what was there, so saturated ground doesn't sink without end
+	constexpr double OVERLAP_SHARE = 0.5;
 
 	std::atomic<uint64_t> s_nextId(1);
 
@@ -84,6 +100,9 @@ void TerrainCraters::Build(const PlanetPhysics::Core &core, const PlanetPhysics:
 	m_gullies = st.wear;
 	m_flatten = it.plates ? 0.15 : 1.0;
 	m_sponge = it.porous;
+	const double iceGravity = ICE_PEAK_G / std::max(it.gravity, 0.01);
+	m_icePeakKm = it.iceCrust ? ICE_PEAK_KM * iceGravity : 0.0;
+	m_icePeakDepth = it.iceCrust ? ICE_PEAK_DEPTH_M * iceGravity : 0.0;
 	if (it.cratering <= 0.0 && !it.basin)
 		return;
 
@@ -188,7 +207,17 @@ void TerrainCraters::AddSite(const Crater &crater, const double spacing, std::ve
 	const double age = std::pow(1.0 - crater.fresh, 2.0) * std::min(1.0, 0.35 + 8.0 / std::max(crater.diameter, 1.0)) * 0.75;
 	s.wear = 1.0 - (1.0 - age) * (1.0 - (s.large ? m_wearLarge : m_wearSmall));
 	const double metres = crater.diameter * 1000.0;
-	const double depth = std::min((m_sponge ? 1.5 : 1.0) * (s.ratio <= 1.0 ? 0.2 * metres : 0.2 * metres * std::pow(s.ratio, -0.65)), 0.7 * m_reliefLimit);
+	double depth = 0.2 * metres;
+	if (s.ratio > 1.0) {
+		const double step = SmoothEdge(Clamp01((s.ratio - 1.0) / COMPLEX_STEP));
+		depth *= std::pow(s.ratio, COMPLEX_POWER - 1.0) * (1.0 - (1.0 - COMPLEX_SHARE) * step);
+	}
+	depth *= m_sponge ? 1.5 : 1.0;
+	if (m_icePeakKm > 0.0 && crater.diameter > m_icePeakKm) {
+		const double fall = ICE_FALL_FRESH + (ICE_FALL_OLD - ICE_FALL_FRESH) * (1.0 - crater.fresh);
+		depth = std::min(depth, m_icePeakDepth * std::pow(crater.diameter / m_icePeakKm, -fall));
+	}
+	depth = std::min(depth, 0.7 * m_reliefLimit);
 	s.depth = depth;
 	s.wornDepth = depth * (1.0 - 0.72 * s.wear);
 	s.rim = (s.ratio <= 1.0 ? 0.18 : 0.13) * (s.giant ? 2.5 : 1.0) * depth * (1.0 - 0.85 * s.wear);
@@ -311,10 +340,17 @@ void TerrainCraters::Accumulate(const Site &s, const vector3d &p, Sample &out) c
 		h -= m_gullies * s.depth * 0.12 * std::min(1.0, std::sqrt(60.0 / std::max(s.diameter, 1.0))) * g * g * g * groups * (1.0 - std::abs(t - 0.85) / 0.25);
 	}
 	h *= s.fade * m_flatten;
-	if (s.large)
-		out.large += h;
-	else
+	if (s.large) {
+		if (h >= 0.0) {
+			out.largeUp += h;
+		} else {
+			out.largeDown += h;
+			out.largeDeepest = std::min(out.largeDeepest, h);
+		}
+		out.large = out.largeUp + out.largeDeepest + OVERLAP_SHARE * (out.largeDown - out.largeDeepest);
+	} else {
 		out.small += h;
+	}
 
 	// old floors gather dust
 	if (m_sponge || (s.fresh < 0.1 && s.diameter < 0.15 * m_radiusKm))

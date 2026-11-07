@@ -30,6 +30,8 @@ public:
 		double floor = 0.0; // 0..1, the floor of an old crater, where dust gathers
 		double ejecta = 0.0; // 0..1, star-shaped debris of a young crater
 		double rays = 0.0; // 0..1, long rays of the youngest
+		// what large is made of: rims and the like, the hollows, and the deepest one hollow
+		double largeUp = 0.0, largeDown = 0.0, largeDeepest = 0.0;
 	};
 
 	// brightRays: it has some large young craters, whose bright rays stand out from afar
@@ -98,6 +100,8 @@ private:
 	double m_wearLarge = 0.0, m_wearSmall = 0.0, m_gullies = 0.0;
 	double m_flatten = 1.0;
 	bool m_sponge = false; // holes crowded together, deep and sharp, as on Hyperion
+	// on an ice crust: the diameter, km, past which large craters sag, and how deep they are there, metres; 0 on rock
+	double m_icePeakKm = 0.0, m_icePeakDepth = 0.0;
 };
 
 #endif // _TERRAINPHYSICALCRATERS_H

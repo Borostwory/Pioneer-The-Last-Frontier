@@ -138,8 +138,13 @@ private:
 	double OwnRelief(const vector3d &p, const Ground &g) const;
 	// metres: lava plains up close, the lobed fronts of flows laid over one another and their rough tops
 	double LavaPlainsRelief(const vector3d &p, const Ground &g) const;
-	// metres: the relief all solid ground has at every size down to the samples, before the ground's share of it
-	double BaseRelief(const vector3d &p) const;
+	// metres: the relief all solid ground has at every size down to the samples, before the ground's share of it:
+	// young ground's (YoungRelief), old crust's (OldRelief), and the two mixed by OldShare
+	double YoungRelief(const vector3d &p) const;
+	double OldRelief(const vector3d &p) const;
+	double BaseRelief(const vector3d &p, double oldShare) const;
+	// 0..1, how much of the ground is old, battered crust: none on plains, none where the ground has maps of its own
+	double OldShare(const Ground &g) const;
 	// 0..1, the share of the base relief this ground keeps
 	double BaseShare(const Ground &g) const;
 	// where chaos lies on an active shell, 0..1

@@ -36,15 +36,27 @@ namespace {
 	constexpr double FLOW_FRONT_SHOW_KM = 0.06;
 	constexpr double FLOW_ROUGH_M = 20.0;
 	constexpr double FLOW_ROUGH_KM = 2.0;
-	// Base relief (BaseRelief): all solid ground is rough at every size, as real ground is: a fractal about this high (m)
-	// at features this many km across, each halving of the size this power of two lower (2^-0.8, about 0.57), down to the
-	// samples. Only liquid is flat. To be judged in game.
+	// Base relief (BaseRelief): all solid ground is rough at every size, as real ground is: a fractal this high (m) at
+	// features BASE_RELIEF_KM across, each halving of the size a power of two lower, down to the samples. Only liquid is
+	// flat. Young ground (plains, frozen seas, worn or resurfaced worlds) is as the Moon's maria, old battered crust as
+	// its highlands (LRO, Rosenburg 2011): median slopes over 17 m of 2.0 and 7.5 degrees, Hurst exponents 0.76 and 0.95,
+	// so the highlands stay rough at every size while the maria smooth out. Set so the bend over 30 m, 300 m and 3 km
+	// is about 1.9, 1.1 and 0.6 degrees on young ground and 3.8, 3.4 and 3.0 on old.
 	constexpr double BASE_RELIEF_M = 60.0;
 	constexpr double BASE_RELIEF_KM = 10.0;
-	constexpr double BASE_RELIEF_ROUGH = 0.8;
+	constexpr double BASE_RELIEF_ROUGH = 0.76;
+	constexpr double OLD_RELIEF_M = 360.0;
+	constexpr double OLD_RELIEF_ROUGH = 0.95;
 	constexpr int BASE_RELIEF_OCTAVES = 12; // 10 km down to about 5 m
-	constexpr double BASE_RELIEF_PLAINS = 0.3; // the share flood plains and frozen seas keep
+	// crust counts as old by its craters: none below this cratering, all of it this much higher (Moon and Mercury
+	// are at about 1)
+	constexpr double OLD_FROM_CRATERING = 0.2, OLD_CRATERING_WIDTH = 0.6;
+	constexpr double BASE_RELIEF_PLAINS = 1.0; // the share of young ground's relief flood plains and frozen seas keep
 	constexpr double BASE_RELIEF_MAPPED = 0.3; // at most, where an active shell or grooves have maps of their own
+	// Small bodies get rounder as they grow, their own gravity pulling them in: an asteroid's lumps shrink as
+	// 1 / (1 + (radius / this)^2), so about 40 % of the radius under 50 km (Amalthea, Phobos), a quarter at 150 km
+	// and about 15 % at 250 km (Proteus 10 %, Vesta 15 %)
+	constexpr double ASTEROID_ROUNDING_KM = 150.0;
 	constexpr double CRUST_ROOM = 1000.0; // metres the maps of an active shell's ground may reach from its level
 	// points the levels are set from, spread evenly over the sphere
 	constexpr int LEVEL_SAMPLES = 4096;
@@ -188,7 +200,7 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 	const auto started = std::chrono::steady_clock::now();
 	// this generator carves its own valleys
 	m_erosion.reset();
-	PlanetPhysics::WearCraters(m_interior, m_state);
+	PlanetPhysics::WearCraters(m_interior, m_inputs, m_state);
 
 	{
 		// Europa's cracks always where a shell is ice all over; where it's ice in parts only, as caps on a warm, wet world,
@@ -199,7 +211,8 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 
 	if (m_core.asteroid) {
 		// the potato shapes of the classic asteroids; all that's on them comes from here
-		m_asteroidRelief = m_maxHeightInMeters;
+		const double rounding = m_planetRadius / 1000.0 / ASTEROID_ROUNDING_KM;
+		m_asteroidRelief = m_maxHeightInMeters / (1.0 + rounding * rounding);
 		Random shape((m_core.seed ^ 0x90F7u) & 0x7fffffffu);
 		const double lobeWidth = shape.Double(1.2, 2.5) * m_planetRadius;
 		SetFracDef(0, m_asteroidRelief, lobeWidth, lobeWidth / 8.0);
@@ -454,7 +467,7 @@ void TerrainPhysical::BuildLevels()
 			const Ground &g = point.g;
 			const double shore = g.base + Coast(p, point, g.base);
 			return std::max(shore - m_hydro.valley.Smooth(point.place) + (g.craters.small + g.small) * KeepOf(m_state.ground) + OwnRelief(p, g) +
-					LavaPlainsRelief(p, g) + BaseShare(g) * BaseRelief(p),
+					LavaPlainsRelief(p, g) + BaseShare(g) * BaseRelief(p, OldShare(g)),
 				sea);
 		});
 	}
@@ -1704,13 +1717,38 @@ double TerrainPhysical::LavaPlainsRelief(const vector3d &p, const Ground &g) con
 // Real ground is rough at every size, more at large sizes than small in a steady ratio. Without this, a world whose
 // geology adds nothing between a few km and the samples (few craters, no weather, ground with no relief of its own)
 // came out flat up close. Fixed in space; the octaves finer than the samples are left out (Fbm).
-double TerrainPhysical::BaseRelief(const vector3d &p) const
-{
-	const double radiusKm = m_core.radius * 6378.135;
+namespace {
 	// (a small body's begins at its own size, as high as the steady ratio makes it there)
-	const double startKm = std::min(BASE_RELIEF_KM, radiusKm / 8.0);
-	const double height = BASE_RELIEF_M * std::pow(startKm / BASE_RELIEF_KM, BASE_RELIEF_ROUGH);
-	return height * Fbm(p, radiusKm / startKm, BASE_RELIEF_OCTAVES, m_noiseSeed + 461, std::pow(2.0, -BASE_RELIEF_ROUGH)) / 0.35;
+	double BaseFractal(const vector3d &p, const double radiusKm, const double metres, const double rough, const uint32_t seed)
+	{
+		const double startKm = std::min(BASE_RELIEF_KM, radiusKm / 8.0);
+		const double height = metres * std::pow(startKm / BASE_RELIEF_KM, rough);
+		return height * Fbm(p, radiusKm / startKm, BASE_RELIEF_OCTAVES, seed, std::pow(2.0, -rough)) / 0.35;
+	}
+} // namespace
+
+double TerrainPhysical::YoungRelief(const vector3d &p) const
+{
+	return BaseFractal(p, m_core.radius * 6378.135, BASE_RELIEF_M, BASE_RELIEF_ROUGH, m_noiseSeed + 461);
+}
+
+double TerrainPhysical::OldRelief(const vector3d &p) const
+{
+	return BaseFractal(p, m_core.radius * 6378.135, OLD_RELIEF_M, OLD_RELIEF_ROUGH, m_noiseSeed + 462);
+}
+
+double TerrainPhysical::BaseRelief(const vector3d &p, const double oldShare) const
+{
+	const double young = YoungRelief(p);
+	return oldShare > 0.0 ? young + (OldRelief(p) - young) * oldShare : young;
+}
+
+double TerrainPhysical::OldShare(const Ground &g) const
+{
+	// (what has maps of its own keeps the look it was judged with)
+	if (m_lines.IsActiveShell() || m_grooved)
+		return 0.0;
+	return Soft(m_interior.cratering, OLD_FROM_CRATERING, OLD_CRATERING_WIDTH) * (1.0 - g.plains);
 }
 
 double TerrainPhysical::BaseShare(const Ground &g) const
@@ -1959,7 +1997,9 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 	}
 	// a volcano keeps its own shape
 	// (the grooved ground is younger than the dark, with less on it)
-	const double baseRelief = BaseRelief(p);
+	const double youngRelief = YoungRelief(p);
+	const double oldShare = OldShare(g);
+	const double baseRelief = oldShare > 0.0 ? youngRelief + (OldRelief(p) - youngRelief) * oldShare : youngRelief;
 	const double reliefScale = out.quiet * (1.0 - volcano.smooth) * (m_grooved ? 0.4 + 0.6 * out.grooveDark : 1.0);
 	const double base = BaseShare(g) * baseRelief * reliefScale;
 	const double relief = ((g.craters.small + g.small) * Keep(g) + OwnRelief(p, g) + LavaPlainsRelief(p, g)) * reliefScale + base;
@@ -1969,9 +2009,9 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 		const double ground = g.base - valley + peaks + volcano.height;
 		double settledBase = base;
 		if (m_seaLevel > NONE_LOW) {
-			// (a frozen sea is ice, as rough as a flood plain)
+			// (a frozen sea is young ice, as rough as a flood plain)
 			const double land = Soft(ground - m_seaLevel, 0.0, 0.02 * m_reliefLimit);
-			const double iceRelief = BASE_RELIEF_PLAINS * baseRelief * (1.0 - land);
+			const double iceRelief = BASE_RELIEF_PLAINS * youngRelief * (1.0 - land);
 			out.height = std::max(ground, m_seaLevel) + relief * land + iceRelief;
 			settledBase = base * land + iceRelief;
 		} else
