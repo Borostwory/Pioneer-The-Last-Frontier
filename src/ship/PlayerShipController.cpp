@@ -373,6 +373,12 @@ void PlayerShipController::FlightAssist(const float timeStep, TotalDesiredAction
 	vector3d &lin = outParams.desiredLinear;
 	vector3d &rot = outParams.desiredAngular;
 
+	// the player's keys only steer the ship where PollControls reads them
+	// (world view and system map). Elsewhere, e.g. the sector map, the same
+	// keys belong to that view - its WASD pans the map - and must not change
+	// cruise speed or strafe; the hold of cruise speed and the compensation
+	// below keep running
+	const bool keysLive = !AreControlsLocked();
 
 	// even under reduced thrust conditions, we have to calculate and
 	// compensate for the external forces and inertial forces due to follow
@@ -408,7 +414,7 @@ void PlayerShipController::FlightAssist(const float timeStep, TotalDesiredAction
 
 	// thrust weaking (power ratio 0.0 .. 1.0)
 	vector3d &power = outParams.linPower;
-	const float linearThrustPower = (InputBindings.thrustLowPower->IsActive() ? m_lowThrustPower : 1.0f);
+	const float linearThrustPower = (keysLive && InputBindings.thrustLowPower->IsActive() ? m_lowThrustPower : 1.0f);
 
 	// apply follow velocity
 	vector3d base_vel = Util::GetFollowBaseVelocity(*this);
@@ -426,7 +432,7 @@ void PlayerShipController::FlightAssist(const float timeStep, TotalDesiredAction
 	// strafing:
 	// in CRUISE_FWD mode, the longitudinal strafe changes the 'cruise speed'
 	// in CRUISE_UP  mode, the vectical     strafe changes the 'cruise speed'
-	if (IsAnyLinearThrusterKeyDown()) {
+	if (keysLive && IsAnyLinearThrusterKeyDown()) {
 
 		vector3d strafe(0.0);												// requred velocity for strafe
 		double maxStrafeSpeed = m_speedLimiterActive ? m_speedLimit : 1000; // m/s
@@ -487,7 +493,7 @@ void PlayerShipController::FlightAssist(const float timeStep, TotalDesiredAction
 	}
 
 	// thrust-independent setting of cruise speed
-	if (!m_stickySpeedKey && InputBindings.speedControl->IsActive()) {
+	if (keysLive && !m_stickySpeedKey && InputBindings.speedControl->IsActive()) {
 		Util::ChangeCruiseSpeedConstrained(*this, InputBindings.speedControl->GetValue() * std::max(std::abs(m_cruiseSpeed) * 0.05, 1.0));
 	}
 
