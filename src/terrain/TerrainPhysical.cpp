@@ -569,21 +569,8 @@ void TerrainPhysical::BuildTones()
 	const double iron = metal * Soft(std::min(m_inputs.oxidizing, 1.0), 0.2, 0.5);
 	const vector3d rock = vector3d(0.42, 0.39, 0.35) * (1.25 - 0.55 * metal) + vector3d(0.16, 0.05, -0.04) * iron;
 
-	// Vegetation by the star's colour, going smoothly from one to the next: it takes the light it gets the most of. And
-	// each living world has its own shade of that, drawn apart so the seed's other draws stay as they were.
-	{
-		static const double STAR_T[5] = { 3300.0, 4400.0, 5700.0, 7000.0, 10000.0 };
-		// (under red and orange stars they take in all the light they can, so they're dark, and don't vanish into the desert)
-		static const vector3d STAR_PLANTS[5] = { vector3d(0.16, 0.09, 0.12), vector3d(0.22, 0.20, 0.06), vector3d(0.12, 0.32, 0.08), vector3d(0.05, 0.28, 0.15), vector3d(0.04, 0.22, 0.24) };
-		const double starT = m_core.starTemperature;
-		int k = 0;
-		while (k < 3 && starT > STAR_T[k + 1])
-			k++;
-		const double t = std::clamp((starT - STAR_T[k]) / (STAR_T[k + 1] - STAR_T[k]), 0.0, 1.0);
-		const vector3d plants = STAR_PLANTS[k] * (1.0 - t) + STAR_PLANTS[k + 1] * t;
-		Random shade((m_core.seed ^ 0xA1F5u) & 0x7fffffffu);
-		m_vegetation = vector3d(plants.x * (0.85 + 0.3 * shade.Double()), plants.y * (0.85 + 0.3 * shade.Double()), plants.z * (0.85 + 0.3 * shade.Double()));
-	}
+	// vegetation by the star's colour (PlanetPhysics, so the debug tools can ask for it too)
+	m_vegetation = PlanetPhysics::PlantColour(m_core);
 	const vector3d veg = m_vegetation;
 
 	auto set = [&](const M::Layer layer, const vector3d &c) { m_tones[layer] = c; };

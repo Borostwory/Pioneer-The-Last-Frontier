@@ -5,6 +5,7 @@
 #define _PLANETPHYSICS_H
 
 #include "TerrainMaterials.h"
+#include "../vector3.h"
 
 #include <cstdint>
 #include <string>
@@ -115,6 +116,10 @@ namespace PlanetPhysics {
 	// What the surface does to the interior's craters, once both are known: on a world with plates, air and water
 	// wear away the old craters the plates leave on the continents
 	void WearCraters(Interior &interior, const Surface &surface);
+
+	// The colour of a world's plants, by its star's colour, going smoothly from one to the next: they take the light
+	// they get the most of. And each living world has its own shade of that.
+	vector3d PlantColour(const Core &core);
 
 	const char *LayerName(TerrainMaterialTable::Layer layer);
 	// readable lines for the Terrain Debug window

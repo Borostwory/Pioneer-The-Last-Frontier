@@ -17,9 +17,11 @@
 #include "galaxy/GalaxyCache.h"
 #include "galaxy/GalaxyGenerator.h"
 #include "galaxy/Sector.h"
+#include "galaxy/SystemBody.h"
 #include "graphics/Renderer.h"
 #include "graphics/Texture.h"
 #include "surface/Excursion.h"
+#include "terrain/PlanetPhysics.h"
 #include "terrain/Terrain.h"
 #include "terrain/TerrainNoise.h"
 #include "terrain/TerrainPhysicalHydro.h"
@@ -684,6 +686,72 @@ static int l_dev_log_note(lua_State *l)
 	return 0;
 }
 
+/*
+ * What planetgen makes of a rocky planet's, moon's or asteroid's surface, from its system data alone: the same
+ * PlanetPhysics steps TerrainPhysical starts from (the "Became:" line of the log), without building the terrain,
+ * so it's quick enough for thousands of bodies. Any system's body, not only the current system's.
+ *
+ * > surface = Dev.PlanetSurface(systemBody)
+ *
+ * Returns nil for bodies planetgen doesn't make (stars, gas giants, stations), else a table:
+ *   sea         0..1 of the surface under a liquid sea
+ *   seaState    "none", "liquid water", "liquid hydrocarbon", "frozen" or "too hot"
+ *   frozen      0..1, the data's ocean frozen solid
+ *   ice, air, rain, lava, lavaPlanet, melted, molten    0..1
+ *   ground      the ground's layer: "SOIL", "DUST", "ICE", "DIRTY_ICE", "REGOLITH", "BASALT", "LAVA", "SALT"
+ *   analogue    what the interior is like: "Earth", "Mars", "Callisto", ...
+ *   iceCrust    true when the crust is ice
+ *   temperature, starTemperature    K
+ *   plants      { r, g, b }, the colour its plants would have (by its star)
+ */
+static int l_dev_planet_surface(lua_State *l)
+{
+	const SystemBody *sbody = LuaObject<SystemBody>::CheckFromLua(1);
+	if (sbody->GetType() != SystemBody::TYPE_PLANET_TERRESTRIAL && sbody->GetType() != SystemBody::TYPE_PLANET_ASTEROID) {
+		lua_pushnil(l);
+		return 1;
+	}
+
+	const PlanetPhysics::Core core = PlanetPhysics::CoreOf(sbody);
+	const PlanetPhysics::SurfaceInputs inputs = PlanetPhysics::SurfaceInputsOf(sbody);
+	const PlanetPhysics::Interior interior = PlanetPhysics::MakeInterior(core);
+	const PlanetPhysics::Surface st = PlanetPhysics::MakeSurface(core, inputs, interior);
+	const vector3d plants = PlanetPhysics::PlantColour(core);
+
+	lua_newtable(l);
+	const auto number = [l](const char *key, const double value) {
+		lua_pushnumber(l, value);
+		lua_setfield(l, -2, key);
+	};
+	const auto text = [l](const char *key, const char *value) {
+		lua_pushstring(l, value);
+		lua_setfield(l, -2, key);
+	};
+	number("sea", st.sea);
+	text("seaState", st.seaState);
+	number("frozen", st.frozen);
+	number("ice", st.ice);
+	number("air", st.air);
+	number("rain", st.rain);
+	number("lava", st.lava);
+	number("lavaPlanet", st.lavaPlanet);
+	number("melted", st.melted);
+	number("molten", st.molten);
+	text("ground", PlanetPhysics::LayerName(st.ground));
+	text("analogue", interior.analogue);
+	lua_pushboolean(l, interior.iceCrust);
+	lua_setfield(l, -2, "iceCrust");
+	number("temperature", core.temperature);
+	number("starTemperature", core.starTemperature);
+
+	lua_newtable(l);
+	number("r", plants.x);
+	number("g", plants.y);
+	number("b", plants.z);
+	lua_setfield(l, -2, "plants");
+	return 1;
+}
+
 void LuaDev::Register()
 {
 	lua_State *l = Lua::manager->GetLuaState();
@@ -702,6 +770,7 @@ void LuaDev::Register()
 		{ "ReleaseTerrainMap", l_dev_release_terrain_map },
 		{ "SetNoonAt", l_dev_set_noon_at },
 		{ "LogNote", l_dev_log_note },
+		{ "PlanetSurface", l_dev_planet_surface },
 		{ 0, 0 }
 	};
 
