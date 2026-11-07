@@ -123,7 +123,8 @@ private:
 	double SmallLakeLevel(const vector3d &place, double radius) const;
 	double Temperature(const vector3d &p, double warp) const;
 	// lava lies flat, within the depth limit, and the floors of craters and pits are level
-	double SettleLava(const Point &point, double h) const;
+	// molten lava lies level: base, the base relief in h, stays out of it
+	double SettleLava(const Point &point, double h, double base) const;
 	void BuildLavaFields(const TerrainHydro::Field &ground, const std::vector<float> &areas);
 	void BuildPlumes();
 	double Coast(const vector3d &p, const Point &point, double plainGround) const;
@@ -137,6 +138,10 @@ private:
 	double OwnRelief(const vector3d &p, const Ground &g) const;
 	// metres: lava plains up close, the lobed fronts of flows laid over one another and their rough tops
 	double LavaPlainsRelief(const vector3d &p, const Ground &g) const;
+	// metres: the relief all solid ground has at every size down to the samples, before the ground's share of it
+	double BaseRelief(const vector3d &p) const;
+	// 0..1, the share of the base relief this ground keeps
+	double BaseShare(const Ground &g) const;
 	// where chaos lies on an active shell, 0..1
 	double CrustChaos(const vector3d &p) const;
 	// metres above the ground, from the maps of an active shell's rough ground (tools/europa-tiles); they average out to nothing

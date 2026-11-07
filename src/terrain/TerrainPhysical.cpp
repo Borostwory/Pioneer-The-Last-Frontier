@@ -36,6 +36,15 @@ namespace {
 	constexpr double FLOW_FRONT_SHOW_KM = 0.06;
 	constexpr double FLOW_ROUGH_M = 20.0;
 	constexpr double FLOW_ROUGH_KM = 2.0;
+	// Base relief (BaseRelief): all solid ground is rough at every size, as real ground is: a fractal about this high (m)
+	// at features this many km across, each halving of the size this power of two lower (2^-0.8, about 0.57), down to the
+	// samples. Only liquid is flat. To be judged in game.
+	constexpr double BASE_RELIEF_M = 60.0;
+	constexpr double BASE_RELIEF_KM = 10.0;
+	constexpr double BASE_RELIEF_ROUGH = 0.8;
+	constexpr int BASE_RELIEF_OCTAVES = 12; // 10 km down to about 5 m
+	constexpr double BASE_RELIEF_PLAINS = 0.3; // the share flood plains and frozen seas keep
+	constexpr double BASE_RELIEF_MAPPED = 0.3; // at most, where an active shell or grooves have maps of their own
 	constexpr double CRUST_ROOM = 1000.0; // metres the maps of an active shell's ground may reach from its level
 	// points the levels are set from, spread evenly over the sphere
 	constexpr int LEVEL_SAMPLES = 4096;
@@ -115,9 +124,10 @@ namespace {
 	double KeepOf(const M::Layer layer)
 	{
 		switch (layer) {
+		case M::CRACKED_MUD: return 0.0;
+		// (an Io-like world's sulphur plains and a lava world's crust aren't flat; molten lava settles level anyway)
 		case M::LAVA:
-		case M::CRACKED_MUD:
-		case M::SALT: return 0.0;
+		case M::SALT: return 0.3;
 		case M::ICE: return 0.1;
 		case M::LAVA_FLOW: return 0.2;
 		case M::DUST:
@@ -132,6 +142,31 @@ namespace {
 		case M::TUNDRA: return 0.7;
 		case M::REGOLITH: return 0.8;
 		default: return 1.0;
+		}
+	}
+
+	// the share of the base relief (BaseRelief) a world's ground keeps: rough rock, softer where something lies on it
+	double BaseOf(const M::Layer layer)
+	{
+		switch (layer) {
+		case M::ROCK:
+		case M::METAL: return 1.2;
+		case M::LAVA:
+		case M::SALT:
+		case M::CRACKED_MUD:
+		case M::SAND: return 0.3;
+		case M::SNOW: return 0.4;
+		case M::ICE:
+		case M::BASALT:
+		case M::ASH: return 0.6;
+		case M::SOIL:
+		case M::GRASS:
+		case M::FOREST:
+		case M::FOREST_FAR:
+		case M::TUNDRA: return 0.7;
+		case M::DUST:
+		case M::LAVA_FLOW: return 0.8;
+		default: return 1.0; // regolith, gravel, dirty ice
 		}
 	}
 
@@ -153,6 +188,7 @@ TerrainPhysical::TerrainPhysical(const SystemBody *body) :
 	const auto started = std::chrono::steady_clock::now();
 	// this generator carves its own valleys
 	m_erosion.reset();
+	PlanetPhysics::WearCraters(m_interior, m_state);
 
 	{
 		// Europa's cracks always where a shell is ice all over; where it's ice in parts only, as caps on a warm, wet world,
@@ -417,7 +453,9 @@ void TerrainPhysical::BuildLevels()
 			point.rain = m_hydro.moisture.Smooth(point.place);
 			const Ground &g = point.g;
 			const double shore = g.base + Coast(p, point, g.base);
-			return std::max(shore - m_hydro.valley.Smooth(point.place) + (g.craters.small + g.small) * KeepOf(m_state.ground) + OwnRelief(p, g), sea);
+			return std::max(shore - m_hydro.valley.Smooth(point.place) + (g.craters.small + g.small) * KeepOf(m_state.ground) + OwnRelief(p, g) +
+					LavaPlainsRelief(p, g) + BaseShare(g) * BaseRelief(p),
+				sea);
 		});
 	}
 
@@ -1676,6 +1714,28 @@ double TerrainPhysical::LavaPlainsRelief(const vector3d &p, const Ground &g) con
 	return weight * kept * (fronts + rough);
 }
 
+// Real ground is rough at every size, more at large sizes than small in a steady ratio. Without this, a world whose
+// geology adds nothing between a few km and the samples (few craters, no weather, ground with no relief of its own)
+// came out flat up close. Fixed in space; the octaves finer than the samples are left out (Fbm).
+double TerrainPhysical::BaseRelief(const vector3d &p) const
+{
+	const double radiusKm = m_core.radius * 6378.135;
+	// (a small body's begins at its own size, as high as the steady ratio makes it there)
+	const double startKm = std::min(BASE_RELIEF_KM, radiusKm / 8.0);
+	const double height = BASE_RELIEF_M * std::pow(startKm / BASE_RELIEF_KM, BASE_RELIEF_ROUGH);
+	return height * Fbm(p, radiusKm / startKm, BASE_RELIEF_OCTAVES, m_noiseSeed + 461, std::pow(2.0, -BASE_RELIEF_ROUGH)) / 0.35;
+}
+
+double TerrainPhysical::BaseShare(const Ground &g) const
+{
+	double share = BaseOf(m_state.ground);
+	// (what has maps of its own keeps the look it was judged with)
+	if (m_lines.IsActiveShell() || m_grooved)
+		share = std::min(share, BASE_RELIEF_MAPPED);
+	// flood plains are smoother, never smooth
+	return share + (std::min(share, BASE_RELIEF_PLAINS) - share) * g.plains;
+}
+
 double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 {
 	// (a small body's relief is its shape and its craters)
@@ -1912,17 +1972,25 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 	}
 	// a volcano keeps its own shape
 	// (the grooved ground is younger than the dark, with less on it)
-	const double relief = ((g.craters.small + g.small) * Keep(g) + OwnRelief(p, g) + LavaPlainsRelief(p, g)) * out.quiet * (1.0 - volcano.smooth) * (m_grooved ? 0.4 + 0.6 * out.grooveDark : 1.0);
+	const double baseRelief = BaseRelief(p);
+	const double reliefScale = out.quiet * (1.0 - volcano.smooth) * (m_grooved ? 0.4 + 0.6 * out.grooveDark : 1.0);
+	const double base = BaseShare(g) * baseRelief * reliefScale;
+	const double relief = ((g.craters.small + g.small) * Keep(g) + OwnRelief(p, g) + LavaPlainsRelief(p, g)) * reliefScale + base;
 
 	if (m_state.sea <= 0.0) {
 		// the surface of a frozen sea is level; relief fades in on land
 		const double ground = g.base - valley + peaks + volcano.height;
-		if (m_seaLevel > NONE_LOW)
-			out.height = std::max(ground, m_seaLevel) + relief * Soft(ground - m_seaLevel, 0.0, 0.02 * m_reliefLimit);
-		else
+		double settledBase = base;
+		if (m_seaLevel > NONE_LOW) {
+			// (a frozen sea is ice, as rough as a flood plain)
+			const double land = Soft(ground - m_seaLevel, 0.0, 0.02 * m_reliefLimit);
+			const double iceRelief = BASE_RELIEF_PLAINS * baseRelief * (1.0 - land);
+			out.height = std::max(ground, m_seaLevel) + relief * land + iceRelief;
+			settledBase = base * land + iceRelief;
+		} else
 			out.height = ground + relief;
 		out.shore = g.base + volcano.height;
-		out.height = SettleLava(out, out.height) + lineHeight;
+		out.height = SettleLava(out, out.height, settledBase) + lineHeight;
 		out.height += Dunes(p, out, calm);
 		return;
 	}
@@ -1939,7 +2007,8 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 	// land relief fades out towards the water, so a sharp waterline doesn't turn it into a false cliff
 	const double broad = std::max(3.0 * m_hydro.slope.Linear(out.place), 0.001);
 	const double band = std::clamp(1e4 * broad, 1.0, std::max(0.015 * m_reliefLimit, 1.0));
-	double h = out.shore - valley + peaks + relief * Soft(out.shore - m_seaLevel, 0.0, band);
+	const double toWater = Soft(out.shore - m_seaLevel, 0.0, band);
+	double h = out.shore - valley + peaks + relief * toWater;
 
 	// the map's lakes are flat, with flat ground beside them, so the ground meets the water at its edge
 	if (!m_hydro.lake.Empty()) {
@@ -1986,11 +2055,11 @@ void TerrainPhysical::Evaluate(const vector3d &p, Point &out) const
 			}
 		}
 	}
-	out.height = std::max(SettleLava(out, h) + lineHeight, m_seaLevel);
+	out.height = std::max(SettleLava(out, h, base * toWater) + lineHeight, m_seaLevel);
 	out.height += Dunes(p, out, calm);
 }
 
-double TerrainPhysical::SettleLava(const Point &point, const double h) const
+double TerrainPhysical::SettleLava(const Point &point, const double h, const double base) const
 {
 	const TerrainVolcanoes::Sample &volcano = point.volcano;
 	double out = h;
@@ -1999,9 +2068,11 @@ double TerrainPhysical::SettleLava(const Point &point, const double h) const
 		if (share > 0.0) {
 			// Lava flows downhill, so it doesn't stand above the ground around it: it lies at the map's smooth
 			// ground there, a little lower, or at the ground itself where that is lower. Only where most of the
-			// surface is molten is there one sea, whose level high ground is cut down to.
+			// surface is molten is there one sea, whose level high ground is cut down to. (A liquid, so without the
+			// base relief.)
 			const double env = m_reliefLimit;
-			const double settled = m_state.molten > 0.5 ? h + std::max(m_lavaSeaLevel - h, -0.25 * env) : std::min(h, m_ground.Smooth(point.place) - 0.004 * std::min(env, 7000.0));
+			const double level = h - base;
+			const double settled = m_state.molten > 0.5 ? level + std::max(m_lavaSeaLevel - level, -0.25 * env) : std::min(level, m_ground.Smooth(point.place) - 0.004 * std::min(env, 7000.0));
 			out = h + (settled - h) * share;
 		}
 	}

@@ -16,6 +16,10 @@ namespace {
 	constexpr double SOL_MASS_IN_EARTHS = 332946.0;
 	constexpr double EARTH_RADIUS_M = 6378135.0;
 	constexpr double EARTH_RADIUS_KM = 6378.135;
+	// craters a world with plates keeps: plates recycle the sea floor but leave the continents, whose old craters
+	// stay where nothing wears them; Earth's air and water wear them down to the second
+	constexpr double PLATES_CRATERS = 0.35;
+	constexpr double PLATES_CRATERS_WORN = 0.06;
 
 	double Smooth(const double a, const double b, const double x)
 	{
@@ -153,7 +157,7 @@ namespace PlanetPhysics {
 		else if (ice)
 			it.cratering = (1.0 - 0.97 * Smooth(0.05, 0.4, it.iceActivity)) * (0.8 + 0.4 * cratersDraw) * (it.past ? 0.6 : 1.0);
 		else if (it.plates)
-			it.cratering = 0.06;
+			it.cratering = PLATES_CRATERS; // (WearCraters takes off what weather wears away)
 		else if (it.lid && it.plains > 0.6)
 			it.cratering = 0.12;
 		else
@@ -321,6 +325,12 @@ namespace PlanetPhysics {
 			st.rain = st.air * std::min(1.0, ocean / 0.05) * falls * (1.0 - Smooth(340.0, 373.0, T));
 		}
 		return st;
+	}
+
+	void WearCraters(Interior &it, const Surface &st)
+	{
+		if (it.plates)
+			it.cratering = PLATES_CRATERS + (PLATES_CRATERS_WORN - PLATES_CRATERS) * std::clamp(st.wear, 0.0, 1.0);
 	}
 
 	const char *LayerName(const TerrainMaterialTable::Layer layer)

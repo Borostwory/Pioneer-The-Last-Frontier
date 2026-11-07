@@ -112,6 +112,9 @@ namespace PlanetPhysics {
 
 	Interior MakeInterior(const Core &core);
 	Surface MakeSurface(const Core &core, const SurfaceInputs &inputs, const Interior &interior);
+	// What the surface does to the interior's craters, once both are known: on a world with plates, air and water
+	// wear away the old craters the plates leave on the continents
+	void WearCraters(Interior &interior, const Surface &surface);
 
 	const char *LayerName(TerrainMaterialTable::Layer layer);
 	// readable lines for the Terrain Debug window

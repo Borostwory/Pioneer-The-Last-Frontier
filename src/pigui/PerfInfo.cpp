@@ -21,6 +21,7 @@
 #include "galaxy/StarSystem.h"
 #include "galaxy/SystemBody.h"
 #include "terrain/Terrain.h"
+#include "terrain/TerrainNoise.h"
 #include "core/Log.h"
 #include "graphics/Renderer.h"
 #include "graphics/Stats.h"
@@ -34,6 +35,7 @@
 #include <fmt/core.h>
 #include <imgui/imgui.h>
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <fstream>
 #include <functional>
@@ -909,6 +911,111 @@ namespace {
 		Log::Info("STARPORT CHECK done: {} bodies, {} starports: {} moved, {} on ground too uneven, {} in water, {} on lava", bodies, ports, moved, uneven, wet, lavaPorts);
 		FrontierLog::Note(fmt::format("starport check: {} bodies, {} starports, {} too uneven, {} in water, {} on lava (output.txt)", bodies, ports, uneven, wet, lavaPorts));
 	}
+
+	// How rough the solid ground of up to 100 random rocky bodies within 20 sectors of Sol is, at full detail, in
+	// output.txt: at random points on land (not in water or on lava), the bumpiness at 30 m, 300 m and 3 km, as the
+	// angle of the bend between the ground on either side (the second difference over the distance), which a steady
+	// slope doesn't count. A body whose median at 30 m and 300 m are both under FLAT_DEGREES is marked FLAT.
+	void CheckFlatness()
+	{
+		static constexpr int BODIES = 100;
+		static constexpr int SECTORS = 20;
+		static constexpr int POINTS = 48;
+		static constexpr double FLAT_DEGREES = 0.3;
+		static constexpr double LIQUID_SHARE = 0.5;
+		static constexpr double PI = 3.14159265358979323846;
+		static constexpr double SCALES[3] = { 30.0, 300.0, 3000.0 };
+		RefCountedPtr<Galaxy> galaxy = Pi::game->GetGalaxy();
+		Random rng(20261108u);
+		std::vector<SystemPath> seen;
+		int bodies = 0, flat = 0;
+		Log::Info("FLATNESS CHECK: the solid ground of up to {} random rocky bodies within {} sectors of Sol, bumpiness in degrees at 30 m, 300 m and 3 km", BODIES, SECTORS);
+		TerrainNoise::ScopedBandLimit fullDetail(0.0);
+		for (int attempt = 0; attempt < 5000 && bodies < BODIES; attempt++) {
+			const SystemPath sectorPath(int(rng.Int32(2 * SECTORS + 1)) - SECTORS, int(rng.Int32(2 * SECTORS + 1)) - SECTORS, int(rng.Int32(2 * SECTORS + 1)) - SECTORS);
+			RefCountedPtr<const Sector> sector = galaxy->GetSector(sectorPath);
+			if (!sector || sector->m_systems.empty())
+				continue;
+			const SystemPath path = sector->m_systems[rng.Int32(int(sector->m_systems.size()))].GetPath();
+			if (std::find(seen.begin(), seen.end(), path) != seen.end())
+				continue;
+			seen.push_back(path);
+			RefCountedPtr<StarSystem> system = galaxy->GetStarSystem(path);
+			if (!system)
+				continue;
+			for (const RefCountedPtr<SystemBody> &body : system->GetBodies()) {
+				if (bodies >= BODIES)
+					break;
+				if (body->GetSuperType() != SystemBody::SUPERTYPE_ROCKY_PLANET)
+					continue;
+				RefCountedPtr<Terrain> terrain(Terrain::InstanceTerrain(body.Get()));
+				const double radius = body->GetRadius();
+				const TerrainMaterialTable &table = terrain->GetMaterialTable();
+				std::vector<double> bumps[3];
+				int liquid = 0;
+				for (int i = 0; i < POINTS; i++) {
+					const double y = 2.0 * rng.Double() - 1.0;
+					const double angle = 2.0 * PI * rng.Double();
+					const double r = std::sqrt(std::max(0.0, 1.0 - y * y));
+					const vector3d p(r * std::cos(angle), y, r * std::sin(angle));
+					double h0 = 0.0;
+					terrain->GetHeights(&p, &h0, 1);
+					// water: below 0 altitude; lava: most of its material
+					bool fluid = terrain->GetSurfaceAltitude(p, h0) < 0.0;
+					if (!fluid) {
+						vector3d colour;
+						uint8_t weights[TerrainMaterialTable::SLOT_COUNT];
+						terrain->GetSurface(p, h0, p, colour, weights);
+						double lava = 0.0;
+						for (int slot = 0; slot < table.SlotCount(); slot++)
+							if (table.SlotLayer(slot) == TerrainMaterialTable::LAVA)
+								lava += weights[slot] / 255.0;
+						fluid = lava > LIQUID_SHARE;
+					}
+					if (fluid) {
+						liquid++;
+						continue;
+					}
+					const vector3d e1 = (std::abs(p.y) < 0.9 ? p.Cross(vector3d(0.0, 1.0, 0.0)) : p.Cross(vector3d(1.0, 0.0, 0.0))).Normalized();
+					const vector3d e2 = p.Cross(e1);
+					for (int s = 0; s < 3; s++) {
+						const double step = SCALES[s] / radius;
+						const vector3d around[4] = { (p + e1 * step).Normalized(), (p - e1 * step).Normalized(), (p + e2 * step).Normalized(), (p - e2 * step).Normalized() };
+						double h[4];
+						terrain->GetHeights(around, h, 4);
+						const double bend = 0.5 * (std::abs(h[0] + h[1] - 2.0 * h0) + std::abs(h[2] + h[3] - 2.0 * h0)) * radius / SCALES[s];
+						bumps[s].push_back(std::atan(bend) * 180.0 / PI);
+					}
+				}
+				bodies++;
+				std::string geology;
+				for (const std::string &line : terrain->GetGeologyInfo()) {
+					const size_t start = line.find_first_not_of(' ');
+					if (start != std::string::npos && (line.compare(start, 9, "Interior:") == 0 || line.compare(start, 7, "Became:") == 0))
+						geology += (geology.empty() ? "" : " | ") + line.substr(start);
+				}
+				if (bumps[0].empty()) {
+					Log::Info("FLATNESS CHECK body {} ({}, {}, {} #{}, {} terrain): all {} points liquid | {}", body->GetName(), path.sectorX, path.sectorY, path.sectorZ,
+						path.systemIndex, terrain->GetHeightFractalName(), POINTS, geology);
+					continue;
+				}
+				double median[3], low[3];
+				for (int s = 0; s < 3; s++) {
+					std::vector<double> &b = bumps[s];
+					std::sort(b.begin(), b.end());
+					median[s] = b[b.size() / 2];
+					low[s] = b[b.size() / 10];
+				}
+				const bool isFlat = median[0] < FLAT_DEGREES && median[1] < FLAT_DEGREES;
+				flat += isFlat ? 1 : 0;
+				Log::Info("FLATNESS CHECK {}body {} ({}, {}, {} #{}, {} terrain): {} land points, {} liquid; median {:.2f} / {:.2f} / {:.2f} deg, lowest tenth {:.2f} / {:.2f} / {:.2f} deg | {}",
+					isFlat ? "FLAT " : "", body->GetName(), path.sectorX, path.sectorY, path.sectorZ, path.systemIndex, terrain->GetHeightFractalName(),
+					int(bumps[0].size()), liquid, median[0], median[1], median[2], low[0], low[1], low[2], geology);
+			}
+		}
+		Log::Info("FLATNESS CHECK done: {} bodies, {} flat (median under {} deg at 30 m and 300 m)", bodies, flat, FLAT_DEGREES);
+		FrontierLog::Note(fmt::format("flatness check: {} bodies, {} flat (output.txt)", bodies, flat));
+	}
 } // namespace
 
 void PiGui::PerfInfo::DrawGeology()
@@ -926,6 +1033,9 @@ void PiGui::PerfInfo::DrawGeology()
 	// the starports of 100 random bodies, as the game places them; builds their terrains, so the game stops for a while
 	if (Pi::game && ImGui::Button("Check Starports on 100 Random Bodies (to output.txt)"))
 		CheckStarports();
+	// how rough the solid ground of 100 random bodies is up close; builds their terrains, so the game stops for a while
+	if (Pi::game && ImGui::Button("Check Flatness on 100 Random Bodies (to output.txt)"))
+		CheckFlatness();
 
 	if (!Pi::player || !Pi::game || Pi::player->GetFlightState() == Ship::HYPERSPACE)
 		return;
