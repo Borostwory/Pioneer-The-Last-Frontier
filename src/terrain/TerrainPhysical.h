@@ -46,6 +46,7 @@ public:
 	double GetTileLandformTop() const override { return m_lines.IsActiveShell() || m_grooved ? 0.0 : (m_core.asteroid ? std::min(10000.0, 0.25 * m_planetRadius) : 10000.0); }
 	double GetTileCraterTop() const override { return TerrainCraters::SMALLEST_KM * 1000.0; }
 	bool HasFixedDetail() const override { return true; }
+	double GetFarReliefSlopes() const override { return IsSmallOldIce() ? 2.5 : 4.0; }
 	bool HasWaterAround(const vector3d &p, double radiusMetres) const override;
 	std::vector<std::string> GetGeologyInfo() const override;
 	std::vector<Feature> FindFeatures(const std::string &kind, const vector3d &around) const override;
@@ -56,6 +57,9 @@ public:
 
 private:
 	using Shares = std::array<double, TerrainMaterialTable::LAYER_COUNT>;
+
+	// a small, airless world of old ice: all its relief is kept, nothing having smoothed it, so it's built quieter
+	bool IsSmallOldIce() const { return m_interior.iceCrust && !m_state.weather && m_core.radius < 0.25 && !m_lines.IsActiveShell(); }
 
 	// what is under a point, in metres
 	struct Ground {

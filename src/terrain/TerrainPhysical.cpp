@@ -764,6 +764,8 @@ TerrainPhysical::Ground TerrainPhysical::GroundAt(const vector3d &p) const
 	// (a small active shell is smooth with fresh snow, though its old craters still show)
 	if (m_lines.IsPolar())
 		g.small *= 0.3;
+	else if (IsSmallOldIce())
+		g.small *= 0.4;
 	return g;
 }
 
@@ -1633,9 +1635,18 @@ double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 		return 0.0;
 	const double cap = 0.05 * m_reliefLimit;
 	const double fMin = std::max(m_core.radius * 6378.135 / 100.0, 3.0);
+	constexpr double ROUND_CREST = 0.05; // of the noise, how far to each side of a crest it's rounded
 	auto own = [&](const double amplitude, const double frequency, const int octaves, const uint32_t seed, const bool ridged) {
 		const double n = Fbm(p, std::max(frequency, fMin), octaves, m_noiseSeed + seed);
 		return amplitude * (ridged ? 1.0 - 2.0 * std::abs(n) * 2.2 : n);
+	};
+	// An ice crust's ridges. On a small old ice world they are lower, with round crests: sharp ones come out as thin
+	// wandering lines, and from orbit, where the light takes slopes as steeper, as worm-like wrinkles all over it.
+	auto iceRidges = [&]() {
+		if (!IsSmallOldIce())
+			return own(0.25 * cap, fMin * 9.0, 5, 208, true);
+		const double n = Fbm(p, fMin * 9.0, 5, m_noiseSeed + 208);
+		return 0.12 * cap * (1.0 - 2.0 * (std::sqrt(n * n + ROUND_CREST * ROUND_CREST) - ROUND_CREST) * 2.2);
 	};
 	double out = 0.0;
 	switch (m_state.ground) {
@@ -1645,9 +1656,9 @@ double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 		if (m_lines.IsActiveShell())
 			out = own((m_lines.IsPolar() ? 0.2 : 0.7) * cap, fMin * 1.5, 4, 211, false);
 		else if (m_interior.iceCrust && !m_state.weather)
-			out = own(0.35 * cap, fMin * 2.0, 3, 202, false) + own(0.25 * cap, fMin * 9.0, 5, 208, true);
+			out = own(0.35 * cap, fMin * 2.0, 3, 202, false) + iceRidges();
 		break;
-	case M::DIRTY_ICE: out = own(0.35 * cap, fMin * 2.0, 3, 202, false) + own(0.25 * cap, fMin * 9.0, 5, 208, true); break;
+	case M::DIRTY_ICE: out = own(0.35 * cap, fMin * 2.0, 3, 202, false) + iceRidges(); break;
 	case M::GRAVEL: out = own(0.2 * cap, fMin * 8.0, 3, 203, false); break;
 	case M::LAVA_FLOW: out = own(0.25 * cap, fMin * 2.0, 3, 204, false); break;
 	case M::BASALT: out = own(0.1 * cap, fMin * 2.0, 3, 205, false); break;

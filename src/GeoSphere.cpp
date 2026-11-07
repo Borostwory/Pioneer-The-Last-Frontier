@@ -631,7 +631,7 @@ void GeoSphere::SetFarTexture()
 	m_farFadeDrawn = 0.0f;
 	m_surfaceMaterial->SetTexture("farColour"_hash, nullptr);
 	m_surfaceMaterial->SetTexture("farNormal"_hash, nullptr);
-	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(0.0f, 0.0f, float(GetLodForeshortening())),
+	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(float(m_terrain->GetFarReliefSlopes()), 0.0f, float(GetLodForeshortening())),
 		Pi::config->Int("TerrainTileBicubic", 1) != 0 ? 1.0f : 0.0f);
 }
 

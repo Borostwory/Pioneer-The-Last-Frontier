@@ -94,6 +94,8 @@ public:
 	virtual double GetTileLandformTop() const { return 0.0; }
 	// True: all detail is fixed in space, so the shaders leave out what they size by the view
 	virtual bool HasFixedDetail() const { return false; }
+	// how many times as steep the light takes slopes from afar (terrainFarRelief in terrain-far.glsl)
+	virtual double GetFarReliefSlopes() const { return 4.0; }
 	// Water that the height doesn't show, such as rivers and lakes above sea level, within radiusMetres of p
 	virtual bool HasWaterAround(const vector3d &p, double radiusMetres) const { return false; }
 	// what the Terrain Debug window shows of a body's geology
