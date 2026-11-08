@@ -77,6 +77,12 @@ local worldTypes = {
 	{ "Asteroid", function(s, p) return s.type == "PLANET_ASTEROID" end },
 }
 
+-- a type's name without its explanation in brackets, for the per-world log lines: "Ocean world (liquid sea 50%+)"
+-- becomes "Ocean world"
+local function shortTypeName(name)
+	return (name:gsub("%s*%b()", ""))
+end
+
 local function plantsWord(p)
 	if greenPlants(p) then return "green" end
 	if p.plants.b > p.plants.g then return "teal" end
@@ -284,17 +290,22 @@ local function count()
 				if b ~= "none" then
 					line = line .. string.format("  BASES ground %d orbital %d", ground, orbital)
 				end
-				table.insert(worldLines, line)
 
 				local p = sbody.superType == "ROCKY_PLANET" and Dev.PlanetSurface(sbody) or nil
 				local types = {}
+				local typeNames = {}
 				for i, t in ipairs(worldTypes) do
 					if t[2](sbody, p) then
 						types[i] = true
 						typeCounts[i].all = typeCounts[i].all + 1
 						if b ~= "none" then typeCounts[i].based = typeCounts[i].based + 1 end
+						if i > 1 then table.insert(typeNames, shortTypeName(t[1])) end
 					end
 				end
+				if #typeNames > 0 then
+					line = line .. "  TYPES " .. table.concat(typeNames, "; ")
+				end
+				table.insert(worldLines, line)
 				local label = string.format("%5.1f ly  %s, %s  (%s, %.0f km", entry.distance, sbody.name, system.name, k, sbody.radius / 1000)
 				if p then
 					label = label .. string.format(", %.0f K, %.2f atm, sea %.0f%% %s, ice %.2f, rain %.2f, ground %s",
@@ -318,6 +329,19 @@ local function count()
 		state.range, here.name, totals.systems, totals.explored, totals.withBases, totals.stars, kinds.n))
 	table.insert(s, string.format("Bases: %d ground stations, %d orbital stations (%d of them orbit a star, not a world)",
 		totals.ground, totals.orbital, totals.starOrbit))
+
+	table.insert(s, "Worlds by picker type (a world can be several types; same tests as the picker below):")
+	local typeOrder = {}   -- most common first; "Any world" (1) left out
+	for i = 2, #worldTypes do table.insert(typeOrder, i) end
+	table.sort(typeOrder, function(a, b)
+		if typeCounts[a].all ~= typeCounts[b].all then return typeCounts[a].all > typeCounts[b].all end
+		return a < b
+	end)
+	for _, i in ipairs(typeOrder) do
+		local c = typeCounts[i]
+		table.insert(s, string.format("    %-40s %5d  (%.1f%%), %d with bases",
+			worldTypes[i][1], c.all, 100 * c.all / math.max(kinds.n, 1), c.based))
+	end
 
 	countLines(s, "Worlds by kind:", kinds, kindOrder)
 	countLines(s, "Rocky worlds (planets and moons, not asteroids) by look:", looks, lookOrder)
