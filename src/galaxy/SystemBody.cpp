@@ -750,6 +750,90 @@ bool rayCircleIntersection(double *x1, double *x2, const vector2d v, const doubl
 }
 
 // Calculate parameters used in the atmospheric model for shaders
+SystemBody::SkyLook SystemBody::CalcSkyLook() const
+{
+	using namespace AtmosphereProfile;
+	SkyLook look;
+
+	// The body's scattering, as multiples of Earth's (rayleigh-lib.glsl)
+	const GasInfo &gas = GetGas(m_atmosProfile.gas);
+	const vector3d starRatio = StarlightScatterRatio(FindLightingStar());
+	look.rayleighScale[0] = gas.scatterPerKg * float(starRatio.x);
+	look.rayleighScale[1] = gas.scatterPerKg * float(starRatio.y);
+	look.rayleighScale[2] = gas.scatterPerKg * float(starRatio.z);
+
+	// Thick air: light that bounces many times gets through much thicker air than the
+	// shader's single bounce allows. It comes in from 3 times Earth's column of air (by
+	// scattering) and is full from 30 times, so Earth and Mars have none.
+	const double gravity = std::max(CalcSurfaceGravity(), 1e-3);
+	const double column = m_visualAir.pressure * 101325.0 / gravity; // kg/m^2
+	const double columnRatio = column * gas.scatterPerKg / 10329.0;	 // Earth: 101325 / 9.81
+	const double t = Clamp((columnRatio - 3.0) / (30.0 - 3.0), 0.0, 1.0);
+	look.thickAir = float(t * t * (3.0 - 2.0 * t));
+
+	look.earthValues = m_atmosProfile.gas == GAS_AIR && m_atmosProfile.haze == HAZE_NONE &&
+		look.rayleighScale[0] == 1.0f && look.rayleighScale[1] == 1.0f && look.rayleighScale[2] == 1.0f &&
+		look.thickAir == 0.0f;
+	// Earth's values keep the clouds' old sums (cloud-march.glsl) and the old colour
+	if (look.earthValues)
+		return look;
+
+	// The air straight up, per atm of pressure, in the clouds' Earth numbers: the gas's
+	// scattering as multiples of Earth air's, and its absorption in the same ratio to the
+	// scattering as the sky has it (rayleigh-lib.glsl: 1e-6 * absorb against ATMOS_BETA_R0).
+	// An atm is more air on a body with less gravity.
+	static const double EARTH_DEPTH[3] = { 0.03, 0.06, 0.13 };
+	static const double BETA_R0[3] = { 3.8e-6, 13.5e-6, 33.1e-6 };
+	const double perAtm = 9.80665 / gravity;
+	const double pressure = std::max(m_visualAir.pressure, 0.0);
+
+	// The haze, by its optical depth straight up (given in green light)
+	const HazeInfo &haze = GetHaze(m_atmosProfile.haze);
+	const double hazeDepth = double(haze.opticalDepth) * m_atmosProfile.hazeAmount;
+	const double hazeGreen = std::max(double(haze.scatter[1] + haze.absorb[1]), 1e-9);
+
+	// The sky's colour, seen from below with the sun high: in thin air the scattered light
+	// grows with the air's depth (blue the most); in thick air every colour is scattered
+	// fully, and what is left is the colour that survives the many bounces, (1 - g)/(1 + g)
+	// with g = sqrt(1 - the share of the dimming that is scattering), as the smog's glow in
+	// rayleigh_geosphere_terrain.vert. So Titan's sky is orange and a thick clear sky white.
+	double sky[3];
+	for (int c = 0; c < 3; c++) {
+		const double depth = EARTH_DEPTH[c] * perAtm * (look.rayleighScale[c] + 1e-6 * gas.absorb[c] / BETA_R0[c]);
+		look.depthPerAtm[c] = float(depth);
+		const double scatter = EARTH_DEPTH[c] * perAtm * look.rayleighScale[c] * pressure + hazeDepth * haze.scatter[c] / hazeGreen;
+		const double all = depth * pressure + hazeDepth * (haze.scatter[c] + haze.absorb[c]) / hazeGreen;
+		const double share = all > 0.0 ? Clamp(scatter / all, 0.0, 1.0) : 1.0;
+		const double gam = sqrt(1.0 - share);
+		sky[c] = (1.0 - gam) / (1.0 + gam) * (1.0 - exp(-2.0 * all));
+	}
+	const double brightest = std::max(sky[0], std::max(sky[1], sky[2]));
+	if (brightest <= 0.0)
+		return look;
+	for (int c = 0; c < 3; c++)
+		look.skyColour[c] = float(sky[c] / brightest);
+
+	// The sky's light on clouds: four fifths the sky's colour and one fifth its average (the
+	// light thrown back by the ground and other clouds), sized so that Earth's air under the
+	// Sun gives Earth's light (its blue: 0.946, cloud-march.glsl), and never brighter than
+	// that, however thick the air. Thin air gives less.
+	double earthSky[3], earthMean = 0.0;
+	for (int c = 0; c < 3; c++) {
+		earthSky[c] = 1.0 - exp(-2.0 * EARTH_DEPTH[c]);
+		earthMean += earthSky[c] / 3.0;
+	}
+	const double size = 0.946 / (0.8 * earthSky[2] + 0.2 * earthMean);
+	const double mean = (sky[0] + sky[1] + sky[2]) / 3.0;
+	double light[3];
+	for (int c = 0; c < 3; c++)
+		light[c] = size * (0.8 * sky[c] + 0.2 * mean);
+	const double strongest = std::max(light[0], std::max(light[1], light[2]));
+	const double cap = strongest > 1.0 ? 1.0 / strongest : 1.0;
+	for (int c = 0; c < 3; c++)
+		look.cloudSkyLight[c] = float(light[c] * cap);
+	return look;
+}
+
 void SystemBody::CalcAtmosphereParams(AtmosphereParameters &params) const
 {
 	PROFILE_SCOPED()
@@ -863,12 +947,11 @@ void SystemBody::CalcAtmosphereParams(AtmosphereParameters &params) const
 	// The body's scattering, as multiples of Earth's (rayleigh-lib.glsl)
 	{
 		const GasInfo &gas = GetGas(m_atmosProfile.gas);
-		const vector3d starRatio = StarlightScatterRatio(FindLightingStar());
-		params.rayleighScale[0] = gas.scatterPerKg * float(starRatio.x);
-		params.rayleighScale[1] = gas.scatterPerKg * float(starRatio.y);
-		params.rayleighScale[2] = gas.scatterPerKg * float(starRatio.z);
-		for (int c = 0; c < 3; c++)
+		const SkyLook look = CalcSkyLook();
+		for (int c = 0; c < 3; c++) {
+			params.rayleighScale[c] = look.rayleighScale[c];
 			params.gasAbsorb[c] = gas.absorb[c];
+		}
 
 		// a haze other than Earth's is scaled to its optical depth straight up (in green light),
 		// in the units of the 2D table below: density times metres
@@ -888,21 +971,14 @@ void SystemBody::CalcAtmosphereParams(AtmosphereParameters &params) const
 			params.hazeGlow[c] = haze.glow[c];
 		}
 
-		// Thick air: light that bounces many times gets through much thicker air than the
-		// shader's single bounce allows. It comes in from 3 times Earth's column of air (by
-		// scattering) and is full from 30 times, so Earth and Mars have none.
-		const double column = m_visualAir.pressure * 101325.0 / std::max(CalcSurfaceGravity(), 1e-3); // kg/m^2
-		const double columnRatio = column * gas.scatterPerKg / 10329.0;							  // Earth: 101325 / 9.81
-		const double t = Clamp((columnRatio - 3.0) / (30.0 - 3.0), 0.0, 1.0);
-		params.thickAir = float(t * t * (3.0 - 2.0 * t));
+		// thick air (CalcSkyLook)
+		params.thickAir = look.thickAir;
 
 		// a smog's many-bounce glow seen from above (rayleigh_geosphere_terrain.vert); the acid
 		// deck's look from above comes from its clouds
 		params.hazeGlowFromAbove = m_atmosProfile.haze == HAZE_SMOG ? 1.0f : 0.0f;
 
-		params.earthValues = m_atmosProfile.gas == GAS_AIR && m_atmosProfile.haze == HAZE_NONE &&
-			params.rayleighScale[0] == 1.0f && params.rayleighScale[1] == 1.0f && params.rayleighScale[2] == 1.0f &&
-			params.thickAir == 0.0f;
+		params.earthValues = look.earthValues;
 	}
 
 	// TEMPORARY CHECK for the atmosphere work: what each body with air got, and whether its

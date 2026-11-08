@@ -557,10 +557,19 @@ float cloudHazeView(float altCam, float altC, float mu)
 	return exp(-tau / max(abs(mu), 0.05));
 }
 
+// Bodies with Earth's values (SystemBody::CalcSkyLook): the old sums for the sky
+// light and the sunlight's reddening, to the last bit.
+bool cloudEarthAir()
+{
+	return cloudSkyLight.w > 0.5;
+}
+
 // Sunlight arriving at pos, excluding the cloud self-shadow: planet shadow
-// and Rayleigh-like reddening along the air mass (Kasten-Young), scaled by
-// the surface pressure. White at noon, orange near the horizon.
-vec3 cloudSunAt(vec3 pos, vec3 L, vec3 lightCol)
+// and Rayleigh-like reddening along the air mass (Kasten-Young). With Earth's
+// values it is scaled by the surface pressure (at most 3 atm); otherwise it
+// is the body's own air (its gas, its star, its gravity) above the cloud.
+// White at noon, orange near the horizon.
+vec3 cloudSunAt(CloudPlanet cp, vec3 pos, vec3 L, vec3 lightCol)
 {
 	// planet shadow, soft over ~0.2% of the radius
 	float dp = dot(pos, L);
@@ -572,7 +581,11 @@ vec3 cloudSunAt(vec3 pos, vec3 L, vec3 lightCol)
 	float cz = dot(up, L);
 	float zen = degrees(acos(clamp(cz, -1.0, 1.0)));
 	float airmass = 1.0 / (max(cz, 0.0) + 0.50572 * pow(max(96.07995 - zen, 0.1), -1.6364));
-	vec3 tAtm = exp(-vec3(0.03, 0.06, 0.13) * min(airmass, 40.0) * clamp(cloudAtmos.y, 0.0, 3.0));
+	vec3 tAtm;
+	if (cloudEarthAir())
+		tAtm = exp(-vec3(0.03, 0.06, 0.13) * min(airmass, 40.0) * clamp(cloudAtmos.y, 0.0, 3.0));
+	else
+		tAtm = exp(-cloudAirDepth.rgb * min(airmass, 40.0) * cloudPressAt(cp, (length(pos) - 1.0) * cloudGeom.x));
 	// and the haze over the clouds dims it (Titan's smog)
 	if (cloudAxisZ.w > 0.0)
 		tAtm *= exp(-cloudHazeAbove((length(pos) - 1.0) * cloudGeom.x) / max(cz, 0.05));
@@ -599,12 +612,13 @@ void cloudShadeSample(CloudPlanet cp, int li, vec3 pos, vec3 dens, float ds, vec
 	float sigmaCol = slabDepth >= 0.0 ? sigmaE : cloudSigmaMax(li, dens.y) * ly.sigmaScale * max(dens.x, 0.3);
 
 #if (CLOUD_NL > 0)
-	// sky light: the atmosphere colour, pulled towards Rayleigh blue-white
-	vec3 sky = mix(toLinear(atmosColor.rgb), vec3(0.55, 0.7, 1.0), 0.5) * CLOUD_AMBIENT;
+	// sky light: with Earth's values the atmosphere colour, pulled towards Rayleigh
+	// blue-white; otherwise the body's own sky light, from its gas, haze and star
+	vec3 sky = cloudEarthAir() ? mix(toLinear(atmosColor.rgb), vec3(0.55, 0.7, 1.0), 0.5) * CLOUD_AMBIENT : cloudSkyLight.rgb * CLOUD_AMBIENT;
 	for (int i = 0; i < CLOUD_NL; i++) {
 		vec3 L = normalize(uLight[i].position.xyz);
 		vec3 lightCol = toLinear(uLight[i].diffuse.rgb) / max(length(uLight[i].position.xyz / CLOUD_AU), 0.05);
-		vec3 sun = cloudSunAt(pos, L, lightCol);
+		vec3 sun = cloudSunAt(cp, pos, L, lightCol);
 
 		// light enters through the top, or through the side for a low sun
 		float tauSun = sigmaCol * min(depth / max(dot(up, L), 0.05), 4.0 * d);

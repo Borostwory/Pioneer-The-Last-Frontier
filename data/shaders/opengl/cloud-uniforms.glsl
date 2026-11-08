@@ -19,6 +19,8 @@ layout(std140) uniform CloudData {
 	vec4 cloudTuneCluster;		// xyz: user clustering 0 (scattered) .. 1 (solid decks) per layer; w: the air's specific heat [J/(kg K)]
 	vec4 cloudWeatherCyc0;		// cloud cycle held by the weather maps: layer 0 slot 0, 1, layer 1 slot 0, 1
 	vec4 cloudWeatherCyc1;		// xy: layer 2 slot 0, 1; z: weather maps valid (0/1)
+	vec4 cloudSkyLight;			// rgb: the sky's light on the clouds (SystemBody::CalcSkyLook); w: 1 = Earth's values (the old sums)
+	vec4 cloudAirDepth;			// rgb: optical depth of the air straight up per atm of pressure above, for the sunlight on clouds
 };
 
 // Equirectangular terrain height in metres (u = longitude, v = latitude)

@@ -283,6 +283,16 @@ void StarSystemLegacyGeneratorBase::PickAtmosphere(SystemBody *sbody)
 				b = 1.0f;
 			}
 			sbody->m_atmosColor = Color(r * 255, g * 255, b * 255, 255);
+
+			// A rocky world whose air isn't Earth's (SystemBody::CalcSkyLook) takes the colour
+			// of its own sky, from its gas, haze and star, instead of the band above. Earth's
+			// values keep the band, so Earth, Mars and the moons with a trace of air stay as they
+			// were. (Custom bodies come through here too: their data's colour is overwritten.)
+			if (sbody->GetSuperType() == SystemBody::SUPERTYPE_ROCKY_PLANET) {
+				const SystemBody::SkyLook look = sbody->CalcSkyLook();
+				if (!look.earthValues && std::max(look.skyColour[0], std::max(look.skyColour[1], look.skyColour[2])) > 0.0f)
+					sbody->m_atmosColor = Color(look.skyColour[0] * 255, look.skyColour[1] * 255, look.skyColour[2] * 255, 255);
+			}
 		} else {
 			sbody->m_atmosColor = Color::BLANK;
 		}

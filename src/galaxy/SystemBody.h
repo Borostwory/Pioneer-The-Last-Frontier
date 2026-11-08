@@ -340,6 +340,23 @@ public:
 	// planet, for a moon), or the brightest of a pair it orbits
 	const SystemBody *FindLightingStar() const;
 
+	// What this body's air does to light, as the sky (CalcAtmosphereParams), the clouds
+	// (PlanetClouds::FillCloudData) and the atmosphere colour (StarSystemGenerator's
+	// PickAtmosphere) all need it.
+	struct SkyLook {
+		float rayleighScale[3] = { 1.0f, 1.0f, 1.0f }; // the gas's scattering as multiples of Earth air's, in this star's light
+		float thickAir = 0.0f;						   // 0..1, how far beyond Earth's the air's column is (CalcAtmosphereParams)
+		bool earthValues = true;					   // everything as Earth's: the old sums stay, to the last bit
+		// optical depth of the air straight up for each atm of pressure above, in the clouds'
+		// Earth numbers (0.03, 0.06, 0.13; cloud-march.glsl): its scattering and its gas's absorption
+		float depthPerAtm[3] = { 0.03f, 0.06f, 0.13f };
+		// the light of the sky on clouds (linear, as Earth's mix of its colour and blue in
+		// cloud-march.glsl), and the sky's own colour (brightest channel 1)
+		float cloudSkyLight[3] = { 0.0f, 0.0f, 0.0f };
+		float skyColour[3] = { 0.0f, 0.0f, 0.0f };
+	};
+	SkyLook CalcSkyLook() const;
+
 	// Calculate atmosphere pressure at given altitude (atm)
 	double GetAtmPressure(double altitude) const;
 

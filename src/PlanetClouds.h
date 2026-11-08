@@ -53,8 +53,10 @@ namespace PlanetClouds {
 		float tuneCluster[4];	   // user clustering 0 (scattered) .. 1 (solid decks): low, medium, high; w: air's specific heat [J/(kg K)]
 		float weatherCyc0[4];	   // cloud cycle held by the weather maps: layer 0 slot 0, 1, layer 1 slot 0, 1
 		float weatherCyc1[4];	   // xy: layer 2 slot 0, 1; z: weather maps valid (0/1)
+		float skyLight[4];		   // rgb: the sky's light on the clouds (SystemBody::CalcSkyLook); w: 1 = Earth's values (the old sums)
+		float airDepth[4];		   // rgb: optical depth of the air straight up per atm of pressure above, for the sunlight on clouds
 	};
-	static_assert(sizeof(CloudDataBlock) == 240, "CloudDataBlock must match the std140 CloudData block");
+	static_assert(sizeof(CloudDataBlock) == 272, "CloudDataBlock must match the std140 CloudData block");
 
 	// Coarse equirectangular terrain-height map (metres above sea level),
 	// baked once on the async job queue.

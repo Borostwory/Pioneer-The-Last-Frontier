@@ -760,6 +760,12 @@ namespace PlanetClouds {
 		// no weather maps until RenderCloudPasses bakes them for the nearest planet
 		SetVec4(out.weatherCyc0, -1.0, -1.0, -1.0, -1.0);
 		SetVec4(out.weatherCyc1, -1.0, -1.0, 0.0, 0.0);
+
+		// the sky's light on the clouds and the air the sunlight comes through, from the body's
+		// gas, haze and star; bodies with Earth's values keep the old sums (cloud-march.glsl)
+		const SystemBody::SkyLook look = sbody->CalcSkyLook();
+		SetVec4(out.skyLight, look.cloudSkyLight[0], look.cloudSkyLight[1], look.cloudSkyLight[2], look.earthValues ? 1.0 : 0.0);
+		SetVec4(out.airDepth, look.depthPerAtm[0], look.depthPerAtm[1], look.depthPerAtm[2], 0.0);
 	}
 
 	void SetMaterialCloudData(Graphics::Material *mat, CloudDataBlock &data, CloudHeightMap *heightMap)
