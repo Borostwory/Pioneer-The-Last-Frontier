@@ -936,12 +936,9 @@ void SystemBody::EditorAPI::EditProperties(SystemBody *body, Random &rng, UndoSy
 		double atmRadius = body->GetAtmRadius() / 1000.0;
 		ImGui::InputDouble("Atmosphere Height", &atmRadius, 0.0, 0.0, "%.2f km");
 
-		// the air that is seen, with the main gas's own weight (flight still uses Earth air's)
-		double visualPressure = body->GetVisualAtmSurfacePressure();
-		ImGui::InputDouble("Sky Pressure", &visualPressure, 0.0, 0.0, "%.4f atm");
-
-		double visualRadius = body->GetVisualAtmRadius() / 1000.0;
-		ImGui::InputDouble("Sky Height", &visualRadius, 0.0, 0.0, "%.2f km");
+		// (both from the main gas's own weight: Atm. Gas)
+		double airMolarMass = body->GetAirMolarMass() * 1000.0;
+		ImGui::InputDouble("Air Molar Mass", &airMolarMass, 0.0, 0.0, "%.2f g/mol");
 
 		bool scoopable = body->IsScoopable();
 		ImGui::Checkbox("Is Scoopable", &scoopable);

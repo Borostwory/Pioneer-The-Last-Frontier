@@ -444,7 +444,10 @@ void StarSystemCustomGenerator::CustomGetKidsOf(RefCountedPtr<StarSystem::Genera
 
 				fixed lowestOrbit = fixed().FromDouble(parentAtmosRadius + 500000.0 / EARTH_RADIUS);
 				if (kid->GetOrbit().GetSemiMajorAxis() < lowestOrbit.ToDouble()) {
-					Error("%s's orbit is too close to its parent (%.2f/%.2f)", kid->m_name.c_str(), kid->GetOrbit().GetSemiMajorAxis(), lowestOrbit.ToFloat());
+					// a warning, not a stop: each world's air now has its own gas's weight, so a
+					// lighter gas reaches a little higher than the Earth air these orbits were
+					// checked against, and a station set close to it is still fine to fly to
+					Warning("%s's orbit is too close to its parent (%.2f/%.2f)", kid->m_name.c_str(), kid->GetOrbit().GetSemiMajorAxis(), lowestOrbit.ToFloat());
 				}
 			} else {
 				if (kid->GetOrbit().GetSemiMajorAxis() < 1.2 * parent->GetRadius()) {

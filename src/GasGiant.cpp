@@ -678,7 +678,7 @@ void GasGiant::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView,
 		const SystemBody *sbody = GetSystemBody();
 		const double camAlt = (campos.Length() - 1.0) * sbody->GetRadius(); // m above the cloud tops
 		const double g = std::max(sbody->CalcSurfaceGravity(), 1e-3);
-		const double molarMass = std::max(sbody->GetVisualMolarMass(), 1e-4);
+		const double molarMass = std::max(sbody->GetAirMolarMass(), 1e-4);
 		const double scaleHeight = GAS_CONSTANT_R * std::max(double(sbody->GetAverageTemp()), 1.0) / (molarMass * g);
 		const double t = Clamp(1.0 - camAlt / scaleHeight, 0.0, 1.0);
 		const float amount = float(t * t * (3.0 - 2.0 * t));

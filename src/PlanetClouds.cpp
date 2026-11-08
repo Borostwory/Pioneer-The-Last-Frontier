@@ -716,7 +716,7 @@ namespace PlanetClouds {
 			if (haze.haze == HAZE_DUST || haze.haze == HAZE_SMOG || haze.haze == HAZE_ICE) {
 				const HazeInfo &info = GetHaze(haze.haze);
 				const double g = std::max(sbody->CalcSurfaceGravity(), 1e-3);
-				const double airHeight = 8.3144621 * std::max(double(sbody->GetAverageTemp()), 1.0) / (sbody->GetVisualMolarMass() * g);
+				const double airHeight = 8.3144621 * std::max(double(sbody->GetAverageTemp()), 1.0) / (sbody->GetAirMolarMass() * g);
 				hazeDepth = info.opticalDepth * haze.hazeAmount;
 				hazeHeight = float(airHeight / std::max(double(info.heightFactor), 0.05));
 			}
@@ -725,9 +725,9 @@ namespace PlanetClouds {
 		SetAxis(out.axisZ, trans.ApplyRotationOnly(vector3d(0.0, 0.0, 1.0)).NormalizedSafe(), hazeHeight);
 
 		const double radius = sbody->GetRadius();
-		// the air that is seen: its gas's own weight (for Earth air, the same as the air for flight)
-		SetVec4(out.atmos, sbody->GetAverageTemp(), sbody->GetVisualAtmSurfacePressure(), sbody->GetAtmSurfaceDensity(), sbody->CalcSurfaceGravity());
-		SetVec4(out.geom, radius, sbody->GetVisualTropopause(), sbody->GetVisualAtmRadius(), maxFeatureHeight * radius);
+		// the air, with its gas's own weight (SystemBody::PickAtmosphereProfile)
+		SetVec4(out.atmos, sbody->GetAverageTemp(), sbody->GetAtmSurfacePressure(), sbody->GetAtmSurfaceDensity(), sbody->CalcSurfaceGravity());
+		SetVec4(out.geom, radius, sbody->GetTropopause(), sbody->GetAtmRadius(), maxFeatureHeight * radius);
 		SetVec4(out.comp, sbody->GetVolatileLiquid(), sbody->GetVolatileIces(), sbody->GetAtmosOxidizing(), sbody->GetVolcanicity());
 
 		// the orbit period only matters for tidal locking to a star (a moon
@@ -753,10 +753,10 @@ namespace PlanetClouds {
 		SetVec4(out.tuneTransparency, LayerPercent("CloudTransparencyLow", 248, 25, 1000), LayerPercent("CloudTransparencyMedium", 100, 25, 1000), LayerPercent("CloudTransparencyHigh", 218, 25, 1000),
 			double(profile.cloudSpecies));
 		SetVec4(out.tuneSystem, LayerPercent("CloudSystemSizeLow", 25, 25, 400), LayerPercent("CloudSystemSizeMedium", 177, 25, 400), LayerPercent("CloudSystemSizeHigh", 400, 25, 400),
-			sbody->GetVisualMolarMass());
+			sbody->GetAirMolarMass());
 		SetVec4(out.tuneCluster, Clamp(Pi::config->Int("CloudClusteringLow", 0), 0, 100) / 100.0,
 			Clamp(Pi::config->Int("CloudClusteringMedium", 63), 0, 100) / 100.0,
-			Clamp(Pi::config->Int("CloudClusteringHigh", 75), 0, 100) / 100.0, sbody->GetVisualSpecificHeat());
+			Clamp(Pi::config->Int("CloudClusteringHigh", 75), 0, 100) / 100.0, sbody->GetAirSpecificHeat());
 		// no weather maps until RenderCloudPasses bakes them for the nearest planet
 		SetVec4(out.weatherCyc0, -1.0, -1.0, -1.0, -1.0);
 		SetVec4(out.weatherCyc1, -1.0, -1.0, 0.0, 0.0);

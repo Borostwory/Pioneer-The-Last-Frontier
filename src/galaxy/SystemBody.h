@@ -316,11 +316,9 @@ public:
 	double GetAtmRadius() const { return m_atmosRadius; }
 	double GetTropopause() const { return m_tropopause; }
 
-	// The air for what is seen: the sky, the ground light and the clouds. It uses the main
-	// gas's own weight and specific heat; the air above (GetAtmPressure etc., flight and
-	// everything else) still uses Earth air's for every rocky body. For Earth air the two
-	// are the same to the last bit. Joining them is the possible last stage of
-	// docs/implementation_plans/atmosphere-types_plan.md.
+	// The air uses its main gas's own weight and specific heat (the atmosphere profile), for
+	// flight and for everything that is seen alike. Earth air keeps exactly the numbers it
+	// always had (0.02897 kg/mol, 1000.5 J/(kg K)), so Earth's air doesn't move in the last bit.
 	// A gas giant's radius is its visible cloud tops, where Jupiter's air is about 0.6 atm (its
 	// ammonia clouds): the air model starts there, whatever density the system data gives for
 	// the radius (often of 7 atm or more), and goes on down (Planet::GetAtmosphericState).
@@ -328,13 +326,8 @@ public:
 	static constexpr double GAS_GIANT_CLOUD_TOP_ATM = 0.6;
 
 	const AtmosphereProfile::Profile &GetAtmosProfile() const { return m_atmosProfile; }
-	double GetVisualMolarMass() const { return m_visualAir.molarMass; }
-	double GetVisualSpecificHeat() const { return m_visualAir.specificHeat; }
-	double GetVisualAtmSurfacePressure() const { return m_visualAir.pressure; }
-	double GetVisualAtmRadius() const { return m_visualAir.radius; }
-	double GetVisualTropopause() const { return m_visualAir.tropopause; }
-	double GetVisualAtmPressure(double altitude) const;
-	double GetVisualAtmDensity(double altitude, double pressure) const;
+	double GetAirMolarMass() const { return m_airMolarMass; }		  // kg/mol
+	double GetAirSpecificHeat() const { return m_airSpecificHeat; } // J/(kg K)
 
 	// the star whose light this body's sky is worked out for: the one it orbits (through its
 	// planet, for a moon), or the brightest of a pair it orbits
@@ -422,18 +415,12 @@ private:
 	// tropopause height at 0.1atm, unit: meters
 	double m_tropopause;
 
-	// the same three for the air that is seen (GetVisualAtmPressure etc.), with its gas
-	struct AirColumn {
-		double molarMass = 0.0;	   // kg/mol
-		double specificHeat = 0.0; // J/(kg K)
-		double pressure = 0.0;	   // atm
-		double radius = 0.0;	   // m
-		double tropopause = 0.0;   // m
-	};
-	AirColumn m_visualAir;
+	// the air's main gas: its weight [kg/mol] and specific heat [J/(kg K)]
+	double m_airMolarMass = 0.02897;
+	double m_airSpecificHeat = 1000.5;
 	AtmosphereProfile::Profile m_atmosProfile;
 
-	void PickAtmosphereProfile(); // part of SetAtmFromParameters
+	void PickAtmosphereProfile(); // part of SetAtmFromParameters: the gas, the air, the clouds and the haze
 	// the surface density the air model starts from, for a gas of this molar mass (a gas
 	// giant's is taken down to its visible cloud tops: GAS_GIANT_CLOUD_TOP_ATM)
 	double AirModelDensity(double molarMass) const;
