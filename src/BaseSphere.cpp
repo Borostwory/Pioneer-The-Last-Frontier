@@ -29,8 +29,15 @@ struct BaseSphereDataBlock {
 	alignas(16) vector3f srad;
 	alignas(16) vector3f lrad;
 	alignas(16) vector3f sdivlrad;
+
+	// the body's own scattering (AtmosphereParameters; basesphere_uniforms.glsl)
+	alignas(16) float atmosRayleigh[4];		  // rgb: of Earth's Rayleigh values; w: 1 = all Earth's values
+	alignas(16) float atmosHazeScatter[4];	  // rgb: of Earth's haze scattering; w: thick air 0..1
+	alignas(16) float atmosHazeExtinction[4]; // rgb: of Earth's haze, scattering and absorption
+	alignas(16) float atmosHazeGlow[4];		  // rgb: forward scattering (g)
+	alignas(16) float atmosGasAbsorb[4];	  // rgb: colour the gas absorbs, in 1e-6
 };
-static_assert(sizeof(BaseSphereDataBlock) == 144, "");
+static_assert(sizeof(BaseSphereDataBlock) == 224, "");
 
 std::unique_ptr<Graphics::Drawables::Sphere3D> BaseSphere::m_atmos;
 
@@ -102,6 +109,19 @@ void BaseSphere::SetMaterialParameters(const matrix4x4d &trans, const float radi
 	matData.geosphereAtmosFogDensity = ap.atmosDensity;
 	matData.geosphereAtmosInvScaleHeight = ap.atmosInvScaleHeight;
 	matData.atmosColor = ap.atmosCol.ToColor4f();
+
+	for (int c = 0; c < 3; c++) {
+		matData.atmosRayleigh[c] = ap.rayleighScale[c];
+		matData.atmosHazeScatter[c] = ap.hazeScatter[c];
+		matData.atmosHazeExtinction[c] = ap.hazeExtinction[c];
+		matData.atmosHazeGlow[c] = ap.hazeGlow[c];
+		matData.atmosGasAbsorb[c] = ap.gasAbsorb[c];
+	}
+	matData.atmosRayleigh[3] = ap.earthValues ? 1.0f : 0.0f;
+	matData.atmosHazeScatter[3] = ap.thickAir;
+	matData.atmosHazeExtinction[3] = ap.hazeGlowFromAbove;
+	matData.atmosHazeGlow[3] = 0.0f;
+	matData.atmosGasAbsorb[3] = 0.0f;
 
 	// we handle up to three shadows at a time
 	auto it = shadows.cbegin(), itEnd = shadows.cend();

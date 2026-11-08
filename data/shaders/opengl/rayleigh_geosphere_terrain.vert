@@ -126,7 +126,9 @@ void main(void)
 		lightAtSurface[i] = sunLight;
 		// start with diffuse terrain color
 		vec3 terrain = vertexColor.xyz * sunLight * max(0.f, dot(L, tnorm));
-		lightColor *= intensity;
+		// The air's glow gets the falloff the ground gets, so far from the sun a thick haze
+		// still hides the ground (Titan). Bodies with Earth's values keep the old falloff.
+		lightColor *= atmosEarthValues() ? intensity : sunIntensity;
 
 		// TODO: this should compute inscattering + A/B transmittance and pass
 		// as a varying to fragment shader so we can run Blinn-Phong lighting
@@ -167,6 +169,28 @@ void main(void)
 		terrain += inscattering * 4;
 		viewTransmittance = viewLoss;
 		viewInscatter += inscattering * 4;
+
+		// A thick haze seen from above (Titan's smog, atmosHazeExtinction.w): the light that
+		// bounces many times inside it comes back out as if off a pale ground of the haze's own
+		// colour, which the single bounce above can't give. Its brightness is a thick layer's:
+		// (1 - g) / (1 + g) with g = sqrt(1 - share of the dimming that is scattering), lit
+		// like the ground (sun height), a little darker towards the limb, and only as much as
+		// the haze along the view hides what is behind it.
+		if (!atmosEarthValues() && atmosHazeExtinction.w > 0.0) {
+			vec3 tauHaze = ATMOS_BETA_M0 * atmosHazeExtinction.rgb * opticalDistance.y;
+			vec3 scatterShare = atmosHazeScatter.rgb / max(atmosHazeExtinction.rgb, vec3(1e-9));
+			vec3 gam = sqrt(max(1.0 - scatterShare, vec3(0.0)));
+			vec3 layerAlbedo = (1.0 - gam) / (1.0 + gam);
+			vec3 up = normalize(P);
+			float muS = max(dot(up, L), 0.0);
+			float muV = max(dot(up, -eyenorm), 0.0);
+			vec3 glow = atmosHazeExtinction.w * layerAlbedo * lightColor.xyz * uneclipsed * muS * (0.6 + 0.4 * muV) *
+				(1.0 - exp(-tauHaze));
+			// in place of the single bounce where the haze hides the view (atmosHazeCover)
+			vec3 swap = glow - inscattering * 4.0 * atmosHazeCover(opticalDistance.y);
+			terrain += swap;
+			viewInscatter += swap;
+		}
 
 #endif // ATMOSPHERE
 

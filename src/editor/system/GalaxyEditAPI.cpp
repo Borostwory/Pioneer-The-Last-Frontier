@@ -819,6 +819,81 @@ void SystemBody::EditorAPI::EditProperties(SystemBody *body, Random &rng, UndoSy
 	Draw::HelpMarker("Proportion of oxidizing elements in atmosphere, e.g. CO², O².\n"
 		"Oxidizing elements are a hallmark of outdoor worlds and are needed for human life to survive.");
 
+	// the air's main gas and haze, for the sky and the clouds; "Automatic" leaves them to
+	// the rules (SystemBody::PickAtmosphereProfile)
+	{
+		using namespace AtmosphereProfile;
+		const Profile &profile = body->GetAtmosProfile();
+
+		const std::string gasPreview = (body->m_atmosGasName.empty() ? "Automatic: " : "") + std::string(GetGas(profile.gas).label);
+		if (Draw::ComboUndoHelper("Edit Atmosphere Gas", "Atm. Gas", gasPreview.c_str(), undo)) {
+			if (ImGui::IsWindowAppearing())
+				AddUndoSingleValueClosure(undo, &body->m_atmosGasName, updateBodyDerived);
+
+			bool changed = false;
+			if (ImGui::Selectable("Automatic", body->m_atmosGasName.empty())) {
+				body->m_atmosGasName.clear();
+				changed = true;
+			}
+			for (int i = 0; i < GAS_COUNT; i++) {
+				const GasInfo &gas = GetGas(Gas(i));
+				if (ImGui::Selectable(gas.label, body->m_atmosGasName == gas.name)) {
+					body->m_atmosGasName = gas.name;
+					changed = true;
+				}
+			}
+			if (changed)
+				updateBodyDerived();
+
+			ImGui::EndCombo();
+		}
+
+		Draw::HelpMarker("The main gas of the air: how it scatters and absorbs light, and how tall the air is for the sky and the clouds.\n"
+			"Automatic works it out from the oxygen, life, temperature and mass.");
+
+		const std::string hazePreview = (body->m_atmosHazeName.empty() ? "Automatic: " : "") + std::string(GetHaze(profile.haze).label);
+		if (Draw::ComboUndoHelper("Edit Atmosphere Haze", "Atm. Haze", hazePreview.c_str(), undo)) {
+			if (ImGui::IsWindowAppearing())
+				AddUndoSingleValueClosure(undo, &body->m_atmosHazeName, updateBodyDerived);
+
+			bool changed = false;
+			if (ImGui::Selectable("Automatic", body->m_atmosHazeName.empty())) {
+				body->m_atmosHazeName.clear();
+				changed = true;
+			}
+			for (int i = 0; i < HAZE_COUNT; i++) {
+				const HazeInfo &haze = GetHaze(Haze(i));
+				if (ImGui::Selectable(haze.label, body->m_atmosHazeName == haze.name)) {
+					body->m_atmosHazeName = haze.name;
+					changed = true;
+				}
+			}
+			if (changed)
+				updateBodyDerived();
+
+			ImGui::EndCombo();
+		}
+
+		Draw::HelpMarker("What floats in the air and colours the sky: an acid deck, dust, smog or ice haze.\n"
+			"Automatic works it out from the gas, the clouds and the dryness of the ground.");
+
+		float amount = float(profile.hazeAmount);
+		if (ImGui::SliderFloat("Haze Amount", &amount, 0.0f, 1.0f, body->m_atmosHazeAmount < 0.0 ? "Automatic: %.2f" : "%.2f")) {
+			body->m_atmosHazeAmount = amount;
+			updateBodyDerived();
+		}
+		if (Draw::UndoHelper("Edit Atmosphere Haze Amount", undo))
+			AddUndoSingleValueClosure(undo, &body->m_atmosHazeAmount, updateBodyDerived);
+
+		ImGui::SameLine();
+		if (ImGui::SmallButton("Auto##HazeAmount")) {
+			body->m_atmosHazeAmount = -1.0;
+			updateBodyDerived();
+		}
+
+		Draw::HelpMarker("How much haze, 0 to 1. Its full amount is set for each kind of haze. Only used when the haze is set by hand.");
+	}
+
 	Draw::InputFixedSlider("Ocean Coverage", &body->m_volatileLiquid);
 	if (Draw::UndoHelper("Edit Ocean Coverage", undo))
 		AddUndoSingleValue(undo, &body->m_volatileLiquid);
@@ -860,6 +935,13 @@ void SystemBody::EditorAPI::EditProperties(SystemBody *body, Random &rng, UndoSy
 
 		double atmRadius = body->GetAtmRadius() / 1000.0;
 		ImGui::InputDouble("Atmosphere Height", &atmRadius, 0.0, 0.0, "%.2f km");
+
+		// the air that is seen, with the main gas's own weight (flight still uses Earth air's)
+		double visualPressure = body->GetVisualAtmSurfacePressure();
+		ImGui::InputDouble("Sky Pressure", &visualPressure, 0.0, 0.0, "%.4f atm");
+
+		double visualRadius = body->GetVisualAtmRadius() / 1000.0;
+		ImGui::InputDouble("Sky Height", &visualRadius, 0.0, 0.0, "%.2f km");
 
 		bool scoopable = body->IsScoopable();
 		ImGui::Checkbox("Is Scoopable", &scoopable);

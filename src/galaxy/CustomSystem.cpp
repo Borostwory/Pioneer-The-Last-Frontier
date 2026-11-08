@@ -147,6 +147,9 @@ CSB_FIELD_SETTER_FIXED(ocean_cover, bodyData.m_volatileLiquid)
 CSB_FIELD_SETTER_FIXED(ice_cover, bodyData.m_volatileIces)
 CSB_FIELD_SETTER_FIXED(life, bodyData.m_life)
 CSB_FIELD_SETTER_STRING(space_station_type, bodyData.m_spaceStationType)
+CSB_FIELD_SETTER_STRING(atmos_gas, bodyData.m_atmosGasName)
+CSB_FIELD_SETTER_STRING(atmos_haze, bodyData.m_atmosHazeName)
+CSB_FIELD_SETTER_REAL(atmos_haze_amount, bodyData.m_atmosHazeAmount)
 
 #undef CSB_FIELD_SETTER_FIXED
 #undef CSB_FIELD_SETTER_FLOAT
@@ -333,6 +336,9 @@ static luaL_Reg LuaCustomSystemBody_meta[] = {
 	{ "volcanicity", &l_csb_volcanicity },
 	{ "atmos_density", &l_csb_atmos_density },
 	{ "atmos_oxidizing", &l_csb_atmos_oxidizing },
+	{ "atmos_gas", &l_csb_atmos_gas },
+	{ "atmos_haze", &l_csb_atmos_haze },
+	{ "atmos_haze_amount", &l_csb_atmos_haze_amount },
 	{ "ocean_cover", &l_csb_ocean_cover },
 	{ "ice_cover", &l_csb_ice_cover },
 	{ "space_station_type", &l_csb_space_station_type },

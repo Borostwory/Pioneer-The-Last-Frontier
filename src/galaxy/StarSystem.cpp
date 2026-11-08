@@ -450,6 +450,14 @@ std::string StarSystem::ExportBodyToLua(FILE *f, SystemBody *body)
 				int(round(body->GetVolatileLiquid() * multiplier)), multiplier,
 				int(round(body->GetVolatileIces() * multiplier)), multiplier,
 				int(round(body->GetLife() * multiplier)), multiplier);
+
+		// the air's main gas and haze, when they are set by hand
+		if (!body->m_atmosGasName.empty())
+			fprintf(f, "\t:atmos_gas('%s')\n", body->m_atmosGasName.c_str());
+		if (!body->m_atmosHazeName.empty())
+			fprintf(f, "\t:atmos_haze('%s')\n", body->m_atmosHazeName.c_str());
+		if (body->m_atmosHazeAmount >= 0.0)
+			fprintf(f, "\t:atmos_haze_amount(%g)\n", body->m_atmosHazeAmount);
 	}
 
 	fprintf(f, "\n");

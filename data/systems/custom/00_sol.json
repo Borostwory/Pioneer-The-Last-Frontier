@@ -97,6 +97,8 @@
 				255
 			],
 			"atmosDensity": "f64/3972844717",
+			"atmosGas": "co2",
+			"atmosHaze": "acid_deck",
 			"atmosOxidizing": "f0/515396075",
 			"averageTemp": 735,
 			"axialTilt": "f3/413236383",
@@ -133,6 +135,8 @@
 				255
 			],
 			"atmosDensity": "f1/966367641",
+			"atmosGas": "air",
+			"atmosHaze": "none",
 			"atmosOxidizing": "f0/4252017623",
 			"averageTemp": 288,
 			"axialTilt": "f0/1757097442",
@@ -623,6 +627,8 @@
 				255
 			],
 			"atmosDensity": "f0/2572792783",
+			"atmosGas": "air",
+			"atmosHaze": "none",
 			"atmosOxidizing": "f0/4080223226",
 			"averageTemp": 278,
 			"axialTilt": "f0/1888280059",
@@ -1110,6 +1116,8 @@
 				3
 			],
 			"atmosDensity": "f1/1305670057",
+			"atmosGas": "h2_he",
+			"atmosHaze": "ice",
 			"atmosOxidizing": "f0/780903168",
 			"averageTemp": 165,
 			"axialTilt": "f0/234629479",
@@ -1868,6 +1876,8 @@
 				3
 			],
 			"atmosDensity": "f1/2319282339",
+			"atmosGas": "h2_he",
+			"atmosHaze": "ice",
 			"atmosOxidizing": "f0/317241888",
 			"averageTemp": 134,
 			"axialTilt": "f0/2003720761",
@@ -2030,6 +2040,8 @@
 				255
 			],
 			"atmosDensity": "f5/1717986918",
+			"atmosGas": "n2_ch4",
+			"atmosHaze": "smog",
 			"atmosOxidizing": "f0/2576980377",
 			"averageTemp": 94,
 			"axialTilt": "f0/0",
@@ -2251,6 +2263,8 @@
 				3
 			],
 			"atmosDensity": "f3/1803886264",
+			"atmosGas": "h2_he_ch4",
+			"atmosHaze": "ice",
 			"atmosOxidizing": "f0/170822560",
 			"averageTemp": 76,
 			"axialTilt": "f1/3034018070",
@@ -2446,6 +2460,8 @@
 				3
 			],
 			"atmosDensity": "f3/2873333121",
+			"atmosGas": "h2_he_ch4",
+			"atmosHaze": "ice",
 			"atmosOxidizing": "f0/73209672",
 			"averageTemp": 72,
 			"axialTilt": "f0/2122909538",

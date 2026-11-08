@@ -32,6 +32,15 @@ layout(std140) uniform BaseSphereData {
 
 	// Eclipse data
 	Eclipse eclipse;
+
+	// The body's own scattering, as multiples of Earth's (rayleigh-lib.glsl): its gas, its
+	// star's light and its haze. Filled from AtmosphereParameters by
+	// BaseSphere::SetMaterialParameters; see docs/implementation_plans/atmosphere-types_plan.md.
+	vec4 atmosRayleigh;		  // rgb: of Earth's Rayleigh values; w: 1 = every value is Earth's
+	vec4 atmosHazeScatter;	  // rgb: of Earth's haze scattering; w: thick air 0..1
+	vec4 atmosHazeExtinction; // rgb: of Earth's haze, scattering and absorption
+	vec4 atmosHazeGlow;		  // rgb: the haze's forward scattering (g), per colour
+	vec4 atmosGasAbsorb;	  // rgb: colour the gas absorbs, in 1e-6 like betaR
 };
 
 // The scattering tables hold the path through the air, not how dense the air is, so a trace

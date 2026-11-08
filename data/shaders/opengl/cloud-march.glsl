@@ -538,6 +538,25 @@ float cloudPhaseFn(CloudLayer ly, float mu, float gScale)
 	return mix(cloudHG(ly.g2 * gScale, mu), cloudHG(ly.g1 * gScale, mu), ly.lobeMix);
 }
 
+// The haze over the clouds (a smog, dust or ice haze; SystemBody's atmosphere
+// profile, PlanetClouds::FillCloudData): its optical depth above an altitude
+// [m], thinning exponentially with its scale height. 0 without one.
+float cloudHazeAbove(float alt)
+{
+	if (cloudAxisZ.w <= 0.0) return 0.0;
+	return cloudAxisY.w * exp(-max(alt, 0.0) / cloudAxisZ.w);
+}
+
+// How much of a cloud at altitude altC, seen from altitude altCam along a ray
+// at cosine mu to the vertical, shows through the haze between them (the sky
+// behind already has the haze's glow). 1 without a haze.
+float cloudHazeView(float altCam, float altC, float mu)
+{
+	if (cloudAxisZ.w <= 0.0) return 1.0;
+	float tau = abs(cloudHazeAbove(altCam) - cloudHazeAbove(altC));
+	return exp(-tau / max(abs(mu), 0.05));
+}
+
 // Sunlight arriving at pos, excluding the cloud self-shadow: planet shadow
 // and Rayleigh-like reddening along the air mass (Kasten-Young), scaled by
 // the surface pressure. White at noon, orange near the horizon.
@@ -554,6 +573,9 @@ vec3 cloudSunAt(vec3 pos, vec3 L, vec3 lightCol)
 	float zen = degrees(acos(clamp(cz, -1.0, 1.0)));
 	float airmass = 1.0 / (max(cz, 0.0) + 0.50572 * pow(max(96.07995 - zen, 0.1), -1.6364));
 	vec3 tAtm = exp(-vec3(0.03, 0.06, 0.13) * min(airmass, 40.0) * clamp(cloudAtmos.y, 0.0, 3.0));
+	// and the haze over the clouds dims it (Titan's smog)
+	if (cloudAxisZ.w > 0.0)
+		tAtm *= exp(-cloudHazeAbove((length(pos) - 1.0) * cloudGeom.x) / max(cz, 0.05));
 	return lightCol * tAtm * lit;
 }
 
@@ -690,11 +712,15 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 	cloudSortIntervals(iv, n);
 
 	// aerial perspective: from inside the cloud region, distant clouds fade
-	// into the (already rendered) hazy sky; visibility grows in thinner air
+	// into the (already rendered) hazy sky; visibility grows in thinner air,
+	// and shrinks in thicker: under Venus's ~90 atm the deck 45 km up can't be
+	// seen at all (the 3 atm cap this had left it at 30 km, and the cut below
+	// at 4 x that drew a ring of cloud around the sky). Nothing changes at or
+	// below 3 atm.
 	float camAlt = (length(camPos) - 1.0) * cp.a;
 	float hazeDist = 1e30;
 	if (camAlt < topAll + 10000.0)
-		hazeDist = CLOUD_VISIBILITY / clamp(cloudPressAt(cp, max(camAlt, 0.0)), 0.05, 3.0);
+		hazeDist = CLOUD_VISIBILITY / max(cloudPressAt(cp, max(camAlt, 0.0)), 0.05);
 
 	for (int k = 0; k < 6; k++) {
 		if (k >= n || res.transmittance < CLOUD_MIN_TRANSMITTANCE) break;
@@ -757,7 +783,8 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 				}
 				cloudShadeSample(cp, li, pos, dens, ds, rayDir, albedo, -1.0, res);
 			}
-			float fadeC = exp(-(0.5 * (t0 + t1) * cp.a) / hazeDist);
+			float fadeC = exp(-(0.5 * (t0 + t1) * cp.a) / hazeDist) *
+				cloudHazeView(camAlt, (length(midPos) - 1.0) * cp.a, dot(rayDir, normalize(midPos)));
 			res.inscatter = mix(before.inscatter, res.inscatter, fadeC);
 			res.transmittance = mix(before.transmittance, res.transmittance, fadeC);
 			continue;
@@ -877,7 +904,9 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 		}
 
 		// aerial perspective for this segment
-		float fade = exp(-(0.5 * (t0 + t1) * cp.a) / hazeDist);
+		// and the haze between the viewer and the cloud (Titan's smog over its clouds)
+		float fade = exp(-(0.5 * (t0 + t1) * cp.a) / hazeDist) *
+			cloudHazeView(camAlt, (length(midPos) - 1.0) * cp.a, dot(rayDir, normalize(midPos)));
 		res.inscatter = mix(before.inscatter, res.inscatter, fade);
 		res.transmittance = mix(before.transmittance, res.transmittance, fade);
 	}

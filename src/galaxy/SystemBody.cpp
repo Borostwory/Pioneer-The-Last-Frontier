@@ -55,6 +55,12 @@ void SystemBodyData::SaveToJson(Json &out)
 	out["atmosDensity"] = m_volatileGas;
 	out["atmosOxidizing"] = m_atmosOxidizing;
 	out["atmosColor"] = m_atmosColor;
+	if (!m_atmosGasName.empty())
+		out["atmosGas"] = m_atmosGasName;
+	if (!m_atmosHazeName.empty())
+		out["atmosHaze"] = m_atmosHazeName;
+	if (m_atmosHazeAmount >= 0.0)
+		out["atmosHazeAmount"] = m_atmosHazeAmount;
 	out["life"] = m_life;
 
 	out["population"] = m_population;
@@ -113,6 +119,9 @@ void SystemBodyData::LoadFromJson(const Json &obj)
 	m_volatileGas = obj.value<fixed>("atmosDensity", 0);
 	m_atmosOxidizing = obj.value<fixed>("atmosOxidizing", 0);
 	m_atmosColor = obj.value<Color>("atmosColor", 0);
+	m_atmosGasName = obj.value<std::string>("atmosGas", "");
+	m_atmosHazeName = obj.value<std::string>("atmosHaze", "");
+	m_atmosHazeAmount = obj.value<double>("atmosHazeAmount", -1.0);
 	m_life = obj.value<fixed>("life", 0);
 
 	m_population = obj.value<fixed>("population", 0);
@@ -240,6 +249,50 @@ void SystemBodyData::GenerateStarColor()
 	m_starColor = Color(rgb.x, rgb.y, rgb.z, 255);
 }
 
+// For each colour channel, the Rayleigh scattering (1 / wavelength^4) averaged over a
+// star's light in that channel. The game draws light with three colours, which misses
+// that a hot star's "blue" holds more violet (which scatters more) than a cool star's.
+// The channels are the positive part of the colour table GenerateStarColor uses.
+static vector3d RayleighAverageInStarlight(int temperature)
+{
+	// the same matrix as GenerateStarColor
+	const matrix3x3d xyz2rgb = matrix3x3d::FromVectors(
+		vector3d( 3.2404542,-0.9692660, 0.0556434),
+		vector3d(-1.5371385, 1.8760108,-0.2040259),
+		vector3d(-0.4985314, 0.0415560, 1.0572252)
+	);
+
+	vector3d scattered(0.0), total(0.0);
+	for (int i = 0; i < 48; i++) {
+		const double wavelength = 360 + (10 * i);
+		const double light = GetPlanckBrightness(wavelength, temperature);
+		vector3d w = xyz2rgb * nm_to_rgb[i];
+		w.x = std::max(w.x, 0.0);
+		w.y = std::max(w.y, 0.0);
+		w.z = std::max(w.z, 0.0);
+		const double r = 550.0 / wavelength;
+		const double rayleigh = r * r * r * r;
+		total += w * light;
+		scattered += w * (light * rayleigh);
+	}
+	return vector3d(
+		total.x > 0.0 ? scattered.x / total.x : 1.0,
+		total.y > 0.0 ? scattered.y / total.y : 1.0,
+		total.z > 0.0 ? scattered.z / total.z : 1.0);
+}
+
+// how much more (or less) each channel scatters in a star's light than in the Sun's:
+// exactly 1 for the Sun (5772 K, as in data/systems/custom/00_sol.json)
+static vector3d StarlightScatterRatio(const SystemBody *star)
+{
+	// (a star as hot as the Sun has its light: no sums, so nothing can round)
+	if (!star || star->GetAverageTemp() <= 0 || star->GetAverageTemp() == 5772)
+		return vector3d(1.0);
+	static const vector3d sun = RayleighAverageInStarlight(5772);
+	const vector3d here = RayleighAverageInStarlight(star->GetAverageTemp());
+	return vector3d(here.x / sun.x, here.y / sun.y, here.z / sun.z);
+}
+
 SystemBody::SystemBody(const SystemPath &path, StarSystem *system) :
 	m_parent(nullptr),
 	m_system(system),
@@ -306,44 +359,132 @@ double GetMolarMass(SystemBody::BodySuperType superType)
 		return 0.02897;
 }
 
+// The engine's air model: the temperature falls at g / cp up to the tropopause (0.1 atm),
+// and the pressure falls exponentially above it. The air for flight (GetAtmPressure etc.)
+// and the air that is seen (GetVisualAtmPressure etc.) both use these, so for the same gas
+// they give the same numbers to the last bit.
+namespace {
+	double AirPressureAt(double gasMolarMass, double specificHeat, double surfaceGravity_g, double surfaceTemperature_T0,
+		double surfacePressure, double tropopause, double altitude)
+	{
+		const double lapseRate_L = surfaceGravity_g / specificHeat; // deg/m
+
+		// pressure below tropopause
+		const double atmosPressure = surfacePressure * pow((1 - lapseRate_L * altitude / surfaceTemperature_T0),
+						(specificHeat * gasMolarMass / GAS_CONSTANT_R)); // in ATM since p0 was in ATM
+
+		if (atmosPressure > 0.1) {
+			return atmosPressure;
+		} else {
+			// above tropopause
+			const double tropopauseTemp = surfaceTemperature_T0 - lapseRate_L * tropopause;
+			return 0.1 * exp((-surfaceGravity_g * gasMolarMass * (altitude - tropopause)) / (GAS_CONSTANT_R * tropopauseTemp));
+		}
+	}
+
+	double AirTempAt(double specificHeat, double surfaceGravity_g, double surfaceTemperature_T0, double tropopause, double altitude)
+	{
+		// temperature at height
+		const double lapseRate_L = surfaceGravity_g / specificHeat; // deg/m
+		if (altitude > tropopause) {
+			return surfaceTemperature_T0 - lapseRate_L * tropopause;
+		}
+
+		return surfaceTemperature_T0 - lapseRate_L * altitude;
+	}
+
+	double AirDensityAt(double gasMolarMass, double aerialTemp, double pressure)
+	{
+		return (pressure / (PA_2_ATMOS * GAS_CONSTANT_R * aerialTemp)) * gasMolarMass;
+	}
+
+	// surface pressure, and the heights of the tropopause and the top of the air (1e-15 atm);
+	// the tropopause is left alone when there is too little air for one
+	void AirColumnFor(double gasMolarMass, double specificHeat, double surfaceGravity_g, double surfaceTemperature_T0,
+		double density, double &outPressure, double &outRadius, double &outTropopause)
+	{
+		double surfaceDensity = density / gasMolarMass; // kg / m^3, convert to moles/m^3
+
+		// surface pressure
+		//P = density*R*T=(n/V)*R*T
+		outPressure = PA_2_ATMOS * ((surfaceDensity) * GAS_CONSTANT_R * surfaceTemperature_T0); // in atmospheres
+
+		const double lapseRate_L = surfaceGravity_g / specificHeat; // deg/m
+
+		if (outPressure < 0.002)
+			outRadius = 0; // no meaningful radius for atmosphere
+		else {
+			//*outPressure = p0*(1-l*h/T0)^(g*M/(R*L);
+			// want height for pressure 0.001 atm:
+			// h = (1 - exp(RL/gM * log(P/p0))) * T0 / l
+			double RLdivgM = (GAS_CONSTANT_R * lapseRate_L) / (surfaceGravity_g * gasMolarMass);
+
+			// get tropopause: height for pressure 0.1 atm
+			outTropopause = (1.0 - exp(RLdivgM * log(0.1 / outPressure))) * surfaceTemperature_T0 / lapseRate_L;
+
+			// if tropopause is below surface (surface pressure < 0.1 atm)
+			if (outTropopause < 0.0) {
+				outTropopause = 0.0;
+			}
+
+			double tropopause_temperature = surfaceTemperature_T0 - lapseRate_L * outTropopause;
+			outRadius = log(1e-15 / 0.1) * GAS_CONSTANT_R * tropopause_temperature / (-surfaceGravity_g * gasMolarMass) + outTropopause;
+		}
+	}
+} // namespace
+
 double SystemBody::GetAtmPressure(double altitude) const
 {
-	const double gasMolarMass = GetMolarMass(GetSuperType());
-	const double surfaceGravity_g = CalcSurfaceGravity();
-	const double specificHeat = GetSpecificHeat(GetSuperType());
-	const double lapseRate_L = surfaceGravity_g / specificHeat; // deg/m
-	const double surfaceTemperature_T0 = GetAverageTemp();	//K
-
-	// pressure below tropopause
-	const double atmosPressure = m_atmosPressure * pow((1 - lapseRate_L * altitude / surfaceTemperature_T0),
-					(specificHeat * gasMolarMass / GAS_CONSTANT_R)); // in ATM since p0 was in ATM
-
-	if (atmosPressure > 0.1) {
-		return atmosPressure;
-	} else {
-		// above tropopause
-		const double tropopauseTemp = surfaceTemperature_T0 - lapseRate_L * m_tropopause;
-		return 0.1 * exp((-surfaceGravity_g * gasMolarMass * (altitude - m_tropopause)) / (GAS_CONSTANT_R * tropopauseTemp));
-	}
+	return AirPressureAt(GetMolarMass(GetSuperType()), GetSpecificHeat(GetSuperType()), CalcSurfaceGravity(), GetAverageTemp(),
+		m_atmosPressure, m_tropopause, altitude);
 }
 
 double SystemBody::GetAtmDensity(double altitude, double pressure) const
 {
-	double gasMolarMass = GetMolarMass(GetSuperType());
-	double aerialTemp = GetAtmAverageTemp(altitude);
-
-	return (pressure / (PA_2_ATMOS * GAS_CONSTANT_R * aerialTemp)) * gasMolarMass;
+	return AirDensityAt(GetMolarMass(GetSuperType()), GetAtmAverageTemp(altitude), pressure);
 }
 
 double SystemBody::GetAtmAverageTemp(double altitude) const
 {
-	// temperature at height
-	const double lapseRate_L = CalcSurfaceGravity() / GetSpecificHeat(GetSuperType()); // deg/m
-	if (altitude > m_tropopause) {
-		return double(GetAverageTemp()) - lapseRate_L * m_tropopause;
-	}
+	return AirTempAt(GetSpecificHeat(GetSuperType()), CalcSurfaceGravity(), double(GetAverageTemp()), m_tropopause, altitude);
+}
 
-	return double(GetAverageTemp()) - lapseRate_L * altitude;
+double SystemBody::GetVisualAtmPressure(double altitude) const
+{
+	return AirPressureAt(m_visualAir.molarMass, m_visualAir.specificHeat, CalcSurfaceGravity(), GetAverageTemp(),
+		m_visualAir.pressure, m_visualAir.tropopause, altitude);
+}
+
+double SystemBody::GetVisualAtmDensity(double altitude, double pressure) const
+{
+	const double aerialTemp = AirTempAt(m_visualAir.specificHeat, CalcSurfaceGravity(), double(GetAverageTemp()), m_visualAir.tropopause, altitude);
+	return AirDensityAt(m_visualAir.molarMass, aerialTemp, pressure);
+}
+
+const SystemBody *SystemBody::FindLightingStar() const
+{
+	for (const SystemBody *b = m_parent; b; b = b->m_parent) {
+		if (b->GetSuperType() == SUPERTYPE_STAR)
+			return b;
+		if (b->GetType() == TYPE_GRAVPOINT) {
+			// a pair: the one giving the most light (temperature^4 * radius^2)
+			const SystemBody *best = nullptr;
+			double bestLight = 0.0;
+			for (const SystemBody *kid : b->m_children) {
+				if (kid->GetSuperType() != SUPERTYPE_STAR)
+					continue;
+				const double T = kid->GetAverageTemp(), r = kid->GetRadius();
+				const double light = T * T * T * T * r * r;
+				if (!best || light > bestLight) {
+					best = kid;
+					bestLight = light;
+				}
+			}
+			if (best)
+				return best;
+		}
+	}
+	return nullptr;
 }
 
 void SystemBody::SetAtmFromParameters()
@@ -369,34 +510,113 @@ void SystemBody::SetAtmFromParameters()
 		m_volatileGas = fixed::FromDouble(density);
 	}
 
-	double surfaceDensity = GetAtmSurfaceDensity() / gasMolarMass; // kg / m^3, convert to moles/m^3
-	double surfaceTemperature_T0 = GetAverageTemp(); //K
+	// the air for flight: Earth air's weight for every rocky body
+	AirColumnFor(gasMolarMass, GetSpecificHeat(GetSuperType()), surfaceGravity_g, GetAverageTemp(), GetAtmSurfaceDensity(),
+		m_atmosPressure, m_atmosRadius, m_tropopause);
 
-	// surface pressure
-	//P = density*R*T=(n/V)*R*T
-	m_atmosPressure = PA_2_ATMOS * ((surfaceDensity) * GAS_CONSTANT_R * surfaceTemperature_T0); // in atmospheres
+	// the main gas and haze, and the air that is seen
+	PickAtmosphereProfile();
+}
 
-	const double lapseRate_L = surfaceGravity_g / GetSpecificHeat(GetSuperType()); // deg/m
+void SystemBody::PickAtmosphereProfile()
+{
+	using namespace AtmosphereProfile;
+	Profile p;
 
-	if (m_atmosPressure < 0.002)
-		m_atmosRadius = 0; // no meaningful radius for atmosphere
-	else {
-		//*outPressure = p0*(1-l*h/T0)^(g*M/(R*L);
-		// want height for pressure 0.001 atm:
-		// h = (1 - exp(RL/gM * log(P/p0))) * T0 / l
-		double RLdivgM = (GAS_CONSTANT_R * lapseRate_L) / (surfaceGravity_g * GetMolarMass(GetSuperType()));
+	const double T0 = GetAverageTemp();
+	const double density = GetAtmSurfaceDensity();
+	const bool isStar = GetSuperType() == SUPERTYPE_STAR;
+	const bool isGasGiant = GetSuperType() == SUPERTYPE_GAS_GIANT;
 
-		// get tropopause: height for pressure 0.1 atm
-		m_tropopause = (1.0 - exp(RLdivgM * log(0.1 / m_atmosPressure))) * surfaceTemperature_T0 / lapseRate_L;
+	// main gas: from the system data, or from the body's own values
+	const int gasData = GasFromName(m_atmosGasName);
+	if (gasData >= 0) {
+		p.gas = Gas(gasData);
+		p.gasFromData = true;
+	} else {
+		if (!m_atmosGasName.empty())
+			Output("%s: unknown atmosGas \"%s\", using the rules\n", m_name.c_str(), m_atmosGasName.c_str());
 
-		// if tropopause is below surface (surface pressure < 0.1 atm)
-		if (m_tropopause < 0.0) {
-			m_tropopause = 0.0;
-		}
-
-		double tropopause_temperature = surfaceTemperature_T0 - lapseRate_L * m_tropopause;
-		m_atmosRadius = log(1e-15 / 0.1) * GAS_CONSTANT_R * tropopause_temperature / (-surfaceGravity_g * GetMolarMass(GetSuperType())) + m_tropopause;
+		const float ox = float(GetAtmosOxidizing());
+		const float life = float(GetLife());
+		const float temp = float(T0);
+		if (isStar)
+			p.gas = GAS_H2_HE;
+		else if (isGasGiant)
+			p.gas = temp < 110.0f ? GAS_H2_HE_CH4 : GAS_H2_HE; // the cold giants show their methane
+		else if (density < 0.05)
+			p.gas = GAS_AIR; // a trace of air (Sol's icy moons have 0.015): no gas to see, so it keeps the look it had
+		else if (ox > 0.7f)
+			p.gas = life >= 0.1f ? GAS_AIR : GAS_CO2; // life keeps the oxygen there
+		else if (ox >= 0.3f)
+			p.gas = temp < 200.0f ? GAS_N2_CH4 : GAS_AIR;
+		else
+			// (not hydrogen for heavy rocky worlds: its air would be many times taller than
+			// the planet's physics radius, Planet::InitParams, until flight uses this air too)
+			p.gas = temp < 200.0f ? GAS_N2_CH4 : GAS_N2_NH3;
 	}
+
+	// the air that is seen, with the gas's own weight and specific heat (for Earth air and
+	// for gas giants these are the numbers the air for flight uses, so nothing moves)
+	if (isStar) {
+		m_visualAir.molarMass = GetMolarMass(GetSuperType());
+		m_visualAir.specificHeat = GetSpecificHeat(GetSuperType());
+		m_visualAir.pressure = m_atmosPressure;
+		m_visualAir.radius = m_atmosRadius;
+		m_visualAir.tropopause = m_atmosRadius > 0.0 ? m_tropopause : 0.0;
+	} else {
+		m_visualAir.molarMass = GetGas(p.gas).molarMass;
+		m_visualAir.specificHeat = SpecificHeat(p.gas, T0);
+		m_visualAir.tropopause = 0.0;
+		AirColumnFor(m_visualAir.molarMass, m_visualAir.specificHeat, CalcSurfaceGravity(), GetAverageTemp(), density,
+			m_visualAir.pressure, m_visualAir.radius, m_visualAir.tropopause);
+	}
+
+	// cloud species, as the cloud shader would choose it from the values it gets
+	// (PlanetClouds::FillCloudData); its other checks (R1) stay in the shader
+	if (!isStar && density > 0.01 && m_visualAir.pressure >= 0.005)
+		p.cloudSpecies = CloudSpeciesFor(float(GetAverageTemp()), float(m_visualAir.pressure), float(GetVolatileLiquid()),
+			float(GetVolatileIces()), float(GetAtmosOxidizing()), float(GetVolcanicity()));
+
+	// haze: from the system data, or from the gas and the clouds
+	const int hazeData = HazeFromName(m_atmosHazeName);
+	if (hazeData >= 0) {
+		p.haze = Haze(hazeData);
+		p.hazeFromData = true;
+	} else {
+		if (!m_atmosHazeName.empty())
+			Output("%s: unknown atmosHaze \"%s\", using the rules\n", m_name.c_str(), m_atmosHazeName.c_str());
+
+		// (a haze is scaled to its own optical depth, whatever the air: a trace of air, like the
+		// 0.015 kg/m^3 Sol's icy moons are given, must not carry one)
+		if (isStar || density < 0.05)
+			p.haze = HAZE_NONE;
+		else if (p.cloudSpecies == CLOUD_H2SO4)
+			p.haze = HAZE_ACID_DECK;
+		else if ((p.gas == GAS_N2_CH4 || p.gas == GAS_CH4) && T0 <= 200.0 && density >= 0.1)
+			p.haze = HAZE_SMOG;
+		else if (GetSuperType() == SUPERTYPE_ROCKY_PLANET && CalcSurfaceDustiness() > 0.5 && density <= 2.0)
+			p.haze = HAZE_DUST;
+		else if (isGasGiant || p.cloudSpecies == CLOUD_CH4 || p.cloudSpecies == CLOUD_NH3)
+			p.haze = HAZE_ICE;
+		else
+			p.haze = HAZE_NONE;
+	}
+
+	// how much of it
+	if (p.hazeFromData && m_atmosHazeAmount >= 0.0) {
+		p.hazeAmount = float(Clamp(m_atmosHazeAmount, 0.0, 1.0));
+	} else {
+		switch (p.haze) {
+		case HAZE_ACID_DECK: p.hazeAmount = float(Clamp(1.25 * GetVolcanicity(), 0.0, 1.0)); break; // as the acid clouds' cover
+		case HAZE_SMOG: p.hazeAmount = float(Clamp(density / 5.4, 0.2, 1.0)); break; // 1 at Titan's density
+		case HAZE_DUST: p.hazeAmount = float(Clamp(CalcSurfaceDustiness(), 0.0, 1.0)); break;
+		case HAZE_ICE: p.hazeAmount = 0.5f; break;
+		default: p.hazeAmount = 0.0f; break;
+		}
+	}
+
+	m_atmosProfile = p;
 }
 
 bool SystemBody::HasAtmosphere() const
@@ -563,15 +783,18 @@ void SystemBody::CalcAtmosphereParams(AtmosphereParameters &params) const
 	if (T < 1)
 		T = 165;
 
-	// We have two kinds of atmosphere: Earth-like and gas giant (hydrogen/helium)
-	const double M = m_type == TYPE_PLANET_GAS_GIANT ? 0.0023139903 : 0.02897f; // in kg/mol
+	// the weight of the air that is seen (Earth air keeps the float it always had here, so
+	// its scale height doesn't move in the last bit; gas giants' is the same as before)
+	const double M = (m_atmosProfile.gas == AtmosphereProfile::GAS_AIR || GetSuperType() == SUPERTYPE_STAR) ?
+		0.02897f :
+		m_visualAir.molarMass; // in kg/mol
 
 	float atmosScaleHeight = static_cast<float>(GAS_CONSTANT_R * T / (M * g));
 
 	// min of 2.0 corresponds to a scale height of 1/20 of the planet's radius,
 	params.atmosInvScaleHeight = std::max(20.0f, static_cast<float>(GetRadius() / atmosScaleHeight));
 
-	params.atmosRadius = 1.0f + static_cast<float>(m_atmosRadius) / GetRadius();
+	params.atmosRadius = 1.0f + static_cast<float>(m_visualAir.radius) / GetRadius();
 
 	params.planetRadius = static_cast<float>(radiusPlanet_in_m);
 
@@ -583,16 +806,122 @@ void SystemBody::CalcAtmosphereParams(AtmosphereParameters &params) const
 		return;
 
 	float atmosHeight = radiusPlanet_in_m * (params.atmosRadius - 1);;
+
+	using namespace AtmosphereProfile;
+	const HazeInfo &haze = GetHaze(m_atmosProfile.haze);
+
+	// an acid deck lies where the acid clouds would: between the 370 K and 230 K heights
+	// (cloudDerive in cloud-derive.glsl), with the visual air's lapse rate
+	double deckCentre = 0.0, deckHalf = 1.0;
+	if (m_atmosProfile.haze == HAZE_ACID_DECK) {
+		const double lapse = CalcSurfaceGravity() / m_visualAir.specificHeat;
+		const double trop = m_visualAir.tropopause > 0.0 ? m_visualAir.tropopause : 0.5 * atmosHeight;
+		const double base = Clamp((T - 370.0) / lapse, 0.0, trop);
+		const double top = Clamp((T - 230.0) / lapse, 0.0, trop);
+		if (top - base > 1000.0) {
+			deckCentre = 0.5 * (base + top);
+			deckHalf = 0.5 * (top - base);
+		} else {
+			deckCentre = 0.5 * trop;
+			deckHalf = 0.25 * trop;
+		}
+	}
+
+	// how the haze thins with height. HAZE_NONE is the old "mie decays ~6.66 times faster"
+	// (ugly fallback, will be fixed with new atmosphere model), unchanged for Earth.
+	auto hazeDensityAt = [&](double height) -> double {
+		if (m_atmosProfile.haze == HAZE_NONE)
+			return GetVisualAtmDensity(6.66 * height, GetVisualAtmPressure(6.66 * height));
+		if (m_atmosProfile.haze == HAZE_ACID_DECK) {
+			// (never 0: the tables hold its log). Above its middle it thins half as
+			// fast, like the haze over Venus's clouds, which keeps the thin air above
+			// the deck from showing a blue Earth-like edge.
+			const double x = (height - deckCentre) / (height > deckCentre ? 2.0 * deckHalf : deckHalf);
+			return std::max(exp(-x * x), 1e-30);
+		}
+		const double h = double(haze.heightFactor) * height;
+		double density = GetVisualAtmDensity(h, GetVisualAtmPressure(h));
+		if (m_atmosProfile.haze == HAZE_SMOG) {
+			// the orange smog fades out slowly towards the top of the air, so the planet's edge fades smoothly
+			const double t = Clamp((height - 0.45 * atmosHeight) / (0.3 * atmosHeight), 0.0, 1.0);
+			density *= std::max(1.0 - t * t * (3.0 - 2.0 * t), 1e-12);
+		}
+		return density;
+	};
+
+
+	// The body's scattering, as multiples of Earth's (rayleigh-lib.glsl)
+	{
+		const GasInfo &gas = GetGas(m_atmosProfile.gas);
+		const vector3d starRatio = StarlightScatterRatio(FindLightingStar());
+		params.rayleighScale[0] = gas.scatterPerKg * float(starRatio.x);
+		params.rayleighScale[1] = gas.scatterPerKg * float(starRatio.y);
+		params.rayleighScale[2] = gas.scatterPerKg * float(starRatio.z);
+		for (int c = 0; c < 3; c++)
+			params.gasAbsorb[c] = gas.absorb[c];
+
+		// a haze other than Earth's is scaled to its optical depth straight up (in green light),
+		// in the units of the 2D table below: density times metres
+		float hazeScale = 1.0f;
+		if (m_atmosProfile.haze != HAZE_NONE) {
+			const int steps = 400;
+			double hazeColumn = 0.0;
+			for (int i = 0; i < steps; i++)
+				hazeColumn += hazeDensityAt((i + 0.5) * atmosHeight / steps) * (atmosHeight / steps);
+			const double extinctionG = 21e-6 * (haze.scatter[1] + haze.absorb[1]);
+			const double depth = double(haze.opticalDepth) * m_atmosProfile.hazeAmount;
+			hazeScale = (hazeColumn > 0.0 && extinctionG > 0.0) ? float(depth / (extinctionG * hazeColumn)) : 0.0f;
+		}
+		for (int c = 0; c < 3; c++) {
+			params.hazeScatter[c] = hazeScale * haze.scatter[c];
+			params.hazeExtinction[c] = hazeScale * (haze.scatter[c] + haze.absorb[c]);
+			params.hazeGlow[c] = haze.glow[c];
+		}
+
+		// Thick air: light that bounces many times gets through much thicker air than the
+		// shader's single bounce allows. It comes in from 3 times Earth's column of air (by
+		// scattering) and is full from 30 times, so Earth and Mars have none.
+		const double column = m_visualAir.pressure * 101325.0 / std::max(CalcSurfaceGravity(), 1e-3); // kg/m^2
+		const double columnRatio = column * gas.scatterPerKg / 10329.0;							  // Earth: 101325 / 9.81
+		const double t = Clamp((columnRatio - 3.0) / (30.0 - 3.0), 0.0, 1.0);
+		params.thickAir = float(t * t * (3.0 - 2.0 * t));
+
+		// a smog's many-bounce glow seen from above (rayleigh_geosphere_terrain.vert); the acid
+		// deck's look from above comes from its clouds
+		params.hazeGlowFromAbove = m_atmosProfile.haze == HAZE_SMOG ? 1.0f : 0.0f;
+
+		params.earthValues = m_atmosProfile.gas == GAS_AIR && m_atmosProfile.haze == HAZE_NONE &&
+			params.rayleighScale[0] == 1.0f && params.rayleighScale[1] == 1.0f && params.rayleighScale[2] == 1.0f &&
+			params.thickAir == 0.0f;
+	}
+
+	// TEMPORARY CHECK for the atmosphere work: what each body with air got, and whether its
+	// seen air is still its flight air (it must be, to the last bit, for Earth air)
+	{
+		const bool sameAir = m_visualAir.molarMass == GetMolarMass(GetSuperType()) &&
+			m_visualAir.specificHeat == GetSpecificHeat(GetSuperType()) &&
+			m_visualAir.pressure == m_atmosPressure && m_visualAir.radius == m_atmosRadius &&
+			m_visualAir.tropopause == m_tropopause;
+		Output("Atmosphere %s: gas %s%s, haze %s%s %.2f, clouds %s | seen air P0 %.4g atm (%.17g), top %.1f km, tropopause %.1f km | "
+			"flight air P0 %.4g atm, top %.1f km | same air: %s | scattering %.4f %.4f %.4f, thick air %.3f, Earth values: %s\n",
+			GetName().c_str(), GetGas(m_atmosProfile.gas).name, m_atmosProfile.gasFromData ? " (data)" : "",
+			haze.name, m_atmosProfile.hazeFromData ? " (data)" : "", m_atmosProfile.hazeAmount,
+			CloudSpeciesName(m_atmosProfile.cloudSpecies),
+			m_visualAir.pressure, m_visualAir.pressure, m_visualAir.radius / 1000.0, m_visualAir.tropopause / 1000.0,
+			m_atmosPressure, m_atmosRadius / 1000.0, sameAir ? "yes" : "no",
+			params.rayleighScale[0], params.rayleighScale[1], params.rayleighScale[2], params.thickAir,
+			params.earthValues ? "yes" : "no");
+	}
+
 	for (int i = 0; i <= DENSITY_STEPS; i++) {
 		float height = i * atmosHeight / DENSITY_STEPS;
 
 		// mie decays ~6.66 times faster
 		float rLogDensity, mLogDensity;
 
-		rLogDensity = log(GetAtmDensity(height, GetAtmPressure(height)));
+		rLogDensity = log(GetVisualAtmDensity(height, GetVisualAtmPressure(height)));
 
-		// ugly fallback, will be fixed with new atmosphere model
-		mLogDensity = log(GetAtmDensity(6.66 * height, GetAtmPressure(6.66 * height)));
+		mLogDensity = log(hazeDensityAt(height));
 		if (std::isnan(mLogDensity))
 			mLogDensity = -128.0;
 
@@ -644,8 +973,8 @@ void SystemBody::CalcAtmosphereParams(AtmosphereParameters &params) const
 				vector2d samplePosition = tCurrent + (segment * 0.5) * direction;
 				double sampleHeight = std::max(samplePosition.Length() - radiusPlanet_in_m, 1.0);
 
-				double sampleDensityR = GetAtmDensity(sampleHeight, GetAtmPressure(sampleHeight));
-				double sampleDensityM = GetAtmDensity(6.66 * sampleHeight, GetAtmPressure(6.66 * sampleHeight));
+				double sampleDensityR = GetVisualAtmDensity(sampleHeight, GetVisualAtmPressure(sampleHeight));
+				double sampleDensityM = hazeDensityAt(sampleHeight);
 				if (std::isnan(sampleDensityM))
 					sampleDensityM = 0.0;
 

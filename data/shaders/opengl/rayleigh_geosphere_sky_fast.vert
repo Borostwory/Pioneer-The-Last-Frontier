@@ -42,6 +42,10 @@ void main(void)
 
 		vec3 lightPosAU = uLight[i].position.xyz / AU;
 		float intensity = 1.f / dot(lightPosAU, lightPosAU); // magic to avoid calculating length and then squaring it
+		// bodies without Earth's values: the gentler falloff their ground and haze get far from the
+		// sun (rayleigh_geosphere_terrain.vert), so Titan's glow isn't left at 1% of Earth's
+		if (!atmosEarthValues())
+			intensity = inversesqrt(max(length(lightPosAU), 1e-3));
 
 		specularHighlight += calculateAtmosphereColor(planet, atmosphere, toLinear(uLight[i].diffuse), lightDir, vec3(0.0), eyenorm, uneclipsed, densityLUT, scatterLUT) * intensity;
 

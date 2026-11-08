@@ -6,8 +6,10 @@
 // Requires: cloud-config.glsl, cloud-uniforms.glsl
 
 #define CLOUD_GAS_R 8.3144621
-#define CLOUD_MOLAR_MASS 0.02897
-#define CLOUD_CP 1000.5
+// the planet's air: its gas's molar mass and specific heat (SystemBody's atmosphere
+// profile, PlanetClouds::FillCloudData); Earth air's are 0.02897 and 1000.5
+#define CLOUD_MOLAR_MASS (cloudTuneSystem.w > 0.0 ? cloudTuneSystem.w : 0.02897)
+#define CLOUD_CP (cloudTuneCluster.w > 0.0 ? cloudTuneCluster.w : 1000.5)
 #define CLOUD_DEG (PI / 180.0)
 
 #define CLOUD_SPECIES_NONE 0.0
@@ -190,18 +192,10 @@ CloudPlanet cloudDerive()
 	float w = liq + 0.2 * ice;
 	float m = clamp(w / 0.8, 0.0, 1.25);
 
-	// R2: primary species, first eligible wins (plan 4.2.1)
-	float s = CLOUD_SPECIES_NONE;
-	if (cp.T0 >= 500.0 && cp.P0 >= 10.0 && volc >= 0.3)
-		s = CLOUD_SPECIES_H2SO4;
-	else if (w >= 0.02 && cp.T0 >= 230.0 && cp.T0 <= 373.0)
-		s = CLOUD_SPECIES_H2O;
-	else if (cp.T0 <= 120.0 && cp.P0 >= 0.5)
-		s = CLOUD_SPECIES_CH4;
-	else if (cp.T0 > 120.0 && cp.T0 <= 240.0 && ox < 0.3 && cp.P0 >= 0.3)
-		s = CLOUD_SPECIES_NH3;
-	else if (cp.T0 < 250.0 && ox >= 0.5)
-		s = CLOUD_SPECIES_CO2;
+	// R2: primary species, first eligible wins (plan 4.2.1). Chosen once per body in C++
+	// (AtmosphereProfile::CloudSpeciesFor, the same rule in the same float maths), so the
+	// sky's haze agrees with the clouds.
+	float s = floor(cloudTuneTransparency.w + 0.5);
 	if (s == CLOUD_SPECIES_NONE)
 		return cp;
 

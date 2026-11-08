@@ -33,6 +33,8 @@ local mercury = CustomSystemBody:new('Mercury', 'PLANET_TERRESTRIAL')
 	:rings(false)
 
 local venus = CustomSystemBody:new('Venus', 'PLANET_TERRESTRIAL')
+	:atmos_gas('co2')
+	:atmos_haze('acid_deck')
 	:radius(f(95,100))
 	:mass(f(815,1000))
 	:temp(735)
@@ -52,6 +54,8 @@ local venus = CustomSystemBody:new('Venus', 'PLANET_TERRESTRIAL')
 	:rings(false)
 
 local earth = CustomSystemBody:new('Earth', 'PLANET_TERRESTRIAL')
+	:atmos_gas('air')
+	:atmos_haze('none')
 	:radius(f(1,1))
 	:mass(f(1,1))
 	:temp(288)
@@ -136,6 +140,8 @@ local moon = {
 }
 
 local mars = CustomSystemBody:new('Mars', 'PLANET_TERRESTRIAL')
+	:atmos_gas('air')
+	:atmos_haze('none')
 	:seed(-1317315059)
 	:radius(f(533,1000))
 	:mass(f(107,1000))
@@ -258,6 +264,8 @@ local ceres = CustomSystemBody:new('Ceres', 'PLANET_TERRESTRIAL')
 	:rings(false)
 
 local jupiter = CustomSystemBody:new('Jupiter', 'PLANET_GAS_GIANT')
+	:atmos_gas('h2_he')
+	:atmos_haze('ice')
 	:seed(786424632)
 	:radius(f(11,1))
 	:mass(f(3178,10))
@@ -498,6 +506,8 @@ local jupiter_moons = {
 }
 
 local saturn = CustomSystemBody:new('Saturn', 'PLANET_GAS_GIANT')
+	:atmos_gas('h2_he')
+	:atmos_haze('ice')
 	:seed(174249538)
 	:radius(f(9,1))
 	:mass(f(95152,1000))
@@ -567,6 +577,8 @@ local saturn_moons = {
 		:atmos_density(f(82,1000))
 		:rings(false),
 	CustomSystemBody:new('Titan', 'PLANET_TERRESTRIAL')
+		:atmos_gas('n2_ch4')
+		:atmos_haze('smog')
 		:seed(0)
 		:radius(f(400,1000))
 		:mass(f(225,10000))
@@ -615,6 +627,8 @@ local saturn_moons = {
 }
 
 local uranus = CustomSystemBody:new('Uranus', 'PLANET_GAS_GIANT')
+	:atmos_gas('h2_he_ch4')
+	:atmos_haze('ice')
 	:seed(1365118445)
 	:radius(f(4,1))
 	:mass(f(145,10))
@@ -680,6 +694,8 @@ local uranus_moons = {
 }
 
 local neptune = CustomSystemBody:new('Neptune', 'PLANET_GAS_GIANT')
+	:atmos_gas('h2_he_ch4')
+	:atmos_haze('ice')
 	:seed(1365118457)
 	:radius(f(38,10))
 	:mass(f(17147,1000))

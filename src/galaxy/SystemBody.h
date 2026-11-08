@@ -10,6 +10,7 @@
 #include "Orbit.h"
 #include "RefCounted.h"
 #include "fixed.h"
+#include "galaxy/AtmosphereProfile.h"
 #include "galaxy/RingStyle.h"
 #include "galaxy/SystemPath.h"
 #include "gameconsts.h"
@@ -135,6 +136,12 @@ public:
 
 	RingStyle m_rings;
 	Color m_atmosColor;
+
+	// the air's main gas and haze set by hand (AtmosphereProfile names such as "co2" and
+	// "acid_deck"); empty, and an amount below 0, leave them to SystemBody's rules
+	std::string m_atmosGasName;
+	std::string m_atmosHazeName;
+	double m_atmosHazeAmount = -1.0;
 
 	std::string m_heightMapFilename;
 	unsigned int m_heightMapFractal;
@@ -309,6 +316,24 @@ public:
 	double GetAtmRadius() const { return m_atmosRadius; }
 	double GetTropopause() const { return m_tropopause; }
 
+	// The air for what is seen: the sky, the ground light and the clouds. It uses the main
+	// gas's own weight and specific heat; the air above (GetAtmPressure etc., flight and
+	// everything else) still uses Earth air's for every rocky body. For Earth air the two
+	// are the same to the last bit. Joining them is the possible last stage of
+	// docs/implementation_plans/atmosphere-types_plan.md.
+	const AtmosphereProfile::Profile &GetAtmosProfile() const { return m_atmosProfile; }
+	double GetVisualMolarMass() const { return m_visualAir.molarMass; }
+	double GetVisualSpecificHeat() const { return m_visualAir.specificHeat; }
+	double GetVisualAtmSurfacePressure() const { return m_visualAir.pressure; }
+	double GetVisualAtmRadius() const { return m_visualAir.radius; }
+	double GetVisualTropopause() const { return m_visualAir.tropopause; }
+	double GetVisualAtmPressure(double altitude) const;
+	double GetVisualAtmDensity(double altitude, double pressure) const;
+
+	// the star whose light this body's sky is worked out for: the one it orbits (through its
+	// planet, for a moon), or the brightest of a pair it orbits
+	const SystemBody *FindLightingStar() const;
+
 	// Calculate atmosphere pressure at given altitude (atm)
 	double GetAtmPressure(double altitude) const;
 
@@ -373,6 +398,19 @@ private:
 	double m_atmosRadius;
 	// tropopause height at 0.1atm, unit: meters
 	double m_tropopause;
+
+	// the same three for the air that is seen (GetVisualAtmPressure etc.), with its gas
+	struct AirColumn {
+		double molarMass = 0.0;	   // kg/mol
+		double specificHeat = 0.0; // J/(kg K)
+		double pressure = 0.0;	   // atm
+		double radius = 0.0;	   // m
+		double tropopause = 0.0;   // m
+	};
+	AirColumn m_visualAir;
+	AtmosphereProfile::Profile m_atmosProfile;
+
+	void PickAtmosphereProfile(); // part of SetAtmFromParameters
 };
 
 #endif // SYSTEMBODY_H

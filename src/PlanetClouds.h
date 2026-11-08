@@ -39,8 +39,8 @@ namespace PlanetClouds {
 	// Must match the CloudData block in cloud-uniforms.glsl (std140, vec4s only)
 	struct CloudDataBlock {
 		float axisX[4]; // xyz: planet +X axis in view space; w: height map state (0 none, 0.5 baking, 1 ready)
-		float axisY[4]; // xyz: planet +Y (spin) axis in view space
-		float axisZ[4]; // xyz: planet +Z axis in view space
+		float axisY[4]; // xyz: planet +Y (spin) axis in view space; w: optical depth of the haze over the clouds, straight up from the surface
+		float axisZ[4]; // xyz: planet +Z axis in view space; w: scale height of that haze [m] (0: none)
 		float atmos[4]; // average temp [K], surface pressure [atm], surface density [kg/m^3], gravity [m/s^2]
 		float geom[4];	// radius [m], tropopause [m], atmosphere top [m], max terrain height [m]
 		float comp[4];	// volatileLiquid, volatileIces, atmosOxidizing, volcanicity
@@ -48,9 +48,9 @@ namespace PlanetClouds {
 		float time[4];	// fmod(t, 2^20) [s], floor(t / 2^20), seed & 0xFFFF, seed >> 16 (t = cloud clock)
 		float tuneDensity[4]; // user amount multiplier: low, medium, high layer; w: terrain shadow mode
 		float tuneSize[4];	  // user cloud size multiplier: low, medium, high layer; w: max raymarch steps
-		float tuneTransparency[4]; // user transparency multiplier: low, medium, high layer
-		float tuneSystem[4];	   // user cloud system (weather pattern) size multiplier: low, medium, high
-		float tuneCluster[4];	   // user clustering 0 (scattered) .. 1 (solid decks): low, medium, high
+		float tuneTransparency[4]; // user transparency multiplier: low, medium, high layer; w: cloud species (AtmosphereProfile)
+		float tuneSystem[4];	   // user cloud system (weather pattern) size multiplier: low, medium, high; w: air's molar mass [kg/mol]
+		float tuneCluster[4];	   // user clustering 0 (scattered) .. 1 (solid decks): low, medium, high; w: air's specific heat [J/(kg K)]
 		float weatherCyc0[4];	   // cloud cycle held by the weather maps: layer 0 slot 0, 1, layer 1 slot 0, 1
 		float weatherCyc1[4];	   // xy: layer 2 slot 0, 1; z: weather maps valid (0/1)
 	};
