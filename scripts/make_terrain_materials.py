@@ -10,21 +10,28 @@ Poly Haven (https://polyhaven.com), 1K downloads, one folder per asset, with
 the files named the same way for both:
     <source_dir>/Rock030/Rock030_1K-JPG_Color.jpg
     <source_dir>/Rock030/Rock030_1K-JPG_Displacement.jpg
+    <source_dir>/Rock030/Rock030_1K-JPG_Roughness.jpg
     ...
+(tools/material-preview/fetch_candidates.py downloads them into
+tools/material-preview/sources/1K)
 
 Each becomes a greyscale detail texture, so the planet's own colours still
 show through: the colour photo's brightness with its large-scale shading
-removed, at a set contrast, stored with a mean of 0.5 in green and blue (the
-shader doubles it); the displacement map in alpha, used to blend materials
-along their bumps; the emission map, where there is one (lava), in red.
-DXT5 with a full mipmap chain, as texture arrays need DDS.
+removed, at a set contrast, stored with a mean of 0.5 in green (the shader
+doubles it); the roughness map in blue, as it is (0 a mirror, 1 fully matte),
+for the shine; the displacement map in alpha, used to blend materials along
+their bumps; the emission map, where there is one (lava), in red.
+DXT5 with a full mipmap chain, as texture arrays need DDS. The encoder is this
+script's own (encode_dxt5): Pillow's lost much of the detail once blue held
+something other than a copy of green, while this one loses less than Pillow's
+did before.
 
 usage: python make_terrain_materials.py <source_dir> <output_dir> [layer ...]
 (only the named layers, when given)
-needs numpy and Pillow (11 or later, for DXT5 encoding)
+needs numpy and Pillow; prints each material's mean roughness, for
+materialMeanRoughness() in terrain-materials.glsl
 """
 
-import io
 import os
 import struct
 import sys
@@ -106,23 +113,149 @@ def detail_and_height(src_dir, asset, contrast):
         if e.ndim == 3:
             e = srgb_to_linear(e[..., :3]) @ np.array([0.2126, 0.7152, 0.0722])
         emission = np.clip(e / max(np.percentile(e, 99.5), 1e-6), 0.0, 1.0)
-    return detail, height, emission
+
+    rough_path = os.path.join(src_dir, asset, f"{asset}_1K-JPG_Roughness.jpg")
+    if os.path.exists(rough_path):
+        roughness = load(rough_path)
+        if roughness.ndim == 3:
+            roughness = roughness[..., 0]
+    else:
+        roughness = np.full(lum.shape, 0.7)
+    return detail, height, emission, roughness
+
+
+def _blocks(img):
+    """(h, w, c) to (blocks, 16 pixels, c), row by row within a block"""
+    h, w, c = img.shape
+    return img.reshape(h // 4, 4, w // 4, 4, c).transpose(0, 2, 1, 3, 4).reshape(-1, 16, c)
+
+
+def _quantise565(e):
+    return np.stack([np.clip(np.round(e[:, 0] * 31 / 255), 0, 31), np.clip(np.round(e[:, 1] * 63 / 255), 0, 63),
+                     np.clip(np.round(e[:, 2] * 31 / 255), 0, 31)], -1).astype(np.int64)
+
+
+def _expand565(q):
+    """as the GPU expands 5:6:5 to 8 bits"""
+    r, g, b = q[:, 0], q[:, 1], q[:, 2]
+    return np.stack([(r << 3) | (r >> 2), (g << 2) | (g >> 4), (b << 3) | (b >> 2)], -1).astype(np.float64)
+
+
+# share of the second endpoint for each code
+COLOUR_SHARE = np.array([0.0, 1.0, 1 / 3, 2 / 3])
+ALPHA_SHARE = np.array([0.0, 1.0, 1 / 7, 2 / 7, 3 / 7, 4 / 7, 5 / 7, 6 / 7])
+# how much each colour channel's error counts: emission, detail, roughness
+COLOUR_WEIGHTS = np.array([0.5, 1.0, 0.6])
+FIT_ROUNDS = 6
+
+
+def _endpoints_lsq(share, x, e0, e1):
+    """least-squares endpoints for the pixels x, given each one's share of the second endpoint"""
+    a, b = share, 1.0 - share
+    aa, bb, ab = (a * a).sum(1), (b * b).sum(1), (a * b).sum(1)
+    if x.ndim == 3:
+        a, b = a[..., None], b[..., None]
+        aa, bb, ab = aa[:, None], bb[:, None], ab[:, None]
+    ax, bx = (a * x).sum(1), (b * x).sum(1)
+    det = aa * bb - ab * ab
+    ok = det > 1e-6
+    safe = np.where(ok, det, 1.0)
+    return np.where(ok, (aa * bx - ab * ax) / safe, e0), np.where(ok, (bb * ax - ab * bx) / safe, e1)
+
+
+def _keep_better(best, best_err, err, values):
+    if best is None:
+        return list(values), err
+    better = err < best_err
+    for kept, new in zip(best, values):
+        kept[better] = new[better]
+    return best, np.minimum(err, best_err)
+
+
+def _colour_fit(x):
+    """endpoints at the ends of the block's main axis (weighted), then a few rounds of least squares"""
+    wt = COLOUR_WEIGHTS
+    xs = x * wt
+    mean = xs.mean(1, keepdims=True)
+    d = xs - mean
+    cov = np.einsum("nki,nkj->nij", d, d)
+    v = np.full((x.shape[0], 3), 1.0 / np.sqrt(3.0))
+    for _ in range(8):
+        v = np.einsum("nij,nj->ni", cov, v)
+        v /= np.maximum(np.linalg.norm(v, axis=1, keepdims=True), 1e-9)
+    t = np.einsum("nki,ni->nk", d, v)
+    e0 = (mean[:, 0] + t.min(1)[:, None] * v) / wt
+    e1 = (mean[:, 0] + t.max(1)[:, None] * v) / wt
+    # (also the two steps either side of the block's mean, so that flat blocks, the smallest mip levels among them,
+    # keep their mean between the 5:6:5 steps instead of rounding it to one)
+    steps = np.array([31.0, 63.0, 31.0])
+    low = np.clip(np.floor(x.mean(1) * steps / 255), 0, steps - 1).astype(np.int64)
+    bracket = (low, low + 1)
+    best, best_err = None, None
+    for rnd in range(-1, FIT_ROUNDS + 1):
+        if rnd < 0:
+            q0, q1 = bracket
+        else:
+            q0, q1 = _quantise565(np.clip(e0, 0, 255)), _quantise565(np.clip(e1, 0, 255))
+        p0, p1 = _expand565(q0), _expand565(q1)
+        palette = p0[:, None, :] + COLOUR_SHARE[None, :, None] * (p1 - p0)[:, None, :]
+        dist = (((x[:, :, None, :] - palette[:, None, :, :]) * wt) ** 2).sum(-1)
+        idx = dist.argmin(-1)
+        err = np.take_along_axis(dist, idx[..., None], -1)[..., 0].sum(1)
+        best, best_err = _keep_better(best, best_err, err, (q0.copy(), q1.copy(), idx))
+        if 0 <= rnd < FIT_ROUNDS:
+            e0, e1 = _endpoints_lsq(COLOUR_SHARE[idx], x, e0, e1)
+    q0, q1, idx = best
+    c0 = (q0[:, 0] << 11) | (q0[:, 1] << 5) | q0[:, 2]
+    c1 = (q1[:, 0] << 11) | (q1[:, 1] << 5) | q1[:, 2]
+    # four-colour blocks need c0 > c1: swap them (codes 0 and 1, 2 and 3 trade places); equal ones are one colour
+    swap = c0 < c1
+    c0, c1 = np.where(swap, c1, c0), np.where(swap, c0, c1)
+    idx = np.where(swap[:, None], idx ^ 1, idx)
+    idx = np.where((c0 == c1)[:, None], 0, idx)
+    return c0, c1, idx
+
+
+def _alpha_fit(x):
+    """eight-value alpha blocks: the block's range, then a few rounds of least squares"""
+    e0, e1 = x.max(1), x.min(1)
+    best, best_err = None, None
+    for rnd in range(FIT_ROUNDS + 1):
+        a0, a1 = np.clip(np.round(e0), 0, 255), np.clip(np.round(e1), 0, 255)
+        a0, a1 = np.maximum(a0, a1), np.minimum(a0, a1)
+        # (eight values need a0 > a1)
+        same, top = a0 == a1, a0 >= 255
+        a0 = np.where(same & ~top, a0 + 1, a0)
+        a1 = np.where(same & top, a1 - 1, a1)
+        palette = a0[:, None] + ALPHA_SHARE[None, :] * (a1 - a0)[:, None]
+        dist = (x[:, :, None] - palette[:, None, :]) ** 2
+        idx = dist.argmin(-1)
+        err = np.take_along_axis(dist, idx[..., None], -1)[..., 0].sum(1)
+        best, best_err = _keep_better(best, best_err, err, (a0, a1, idx))
+        if rnd < FIT_ROUNDS:
+            e0, e1 = _endpoints_lsq(ALPHA_SHARE[idx], x, e0, e1)
+    return best
 
 
 def encode_dxt5(rgba):
-    """DXT5 blocks of one mip level (via Pillow), padded to whole 4x4 blocks."""
+    """DXT5 blocks of one mip level, padded to whole 4x4 blocks."""
     h, w = rgba.shape[:2]
-    pw, ph = max(w, 4), max(h, 4)
+    pw, ph = (w + 3) // 4 * 4, (h + 3) // 4 * 4
     if (pw, ph) != (w, h):
         rgba = np.pad(rgba, ((0, ph - h), (0, pw - w), (0, 0)), mode="edge")
-    buf = io.BytesIO()
-    Image.fromarray(rgba, "RGBA").save(buf, "DDS", pixel_format="DXT5")
-    data = buf.getvalue()[128:]
-    blocks = ((w + 3) // 4) * ((h + 3) // 4)
-    if (pw, ph) != (w, h):
-        data = data[:16]  # a padded 1x1 or 2x2 level is a single block
-    assert len(data) == blocks * 16, (w, h, len(data))
-    return data
+    blocks = _blocks(rgba.astype(np.float64))
+    c0, c1, cidx = _colour_fit(blocks[..., :3])
+    a0, a1, aidx = _alpha_fit(blocks[..., 3])
+    out = np.zeros((blocks.shape[0], 16), np.uint8)
+    out[:, 0], out[:, 1] = a0, a1
+    abits = (aidx.astype(np.uint64) << (np.uint64(3) * np.arange(16, dtype=np.uint64))).sum(1)
+    for k in range(6):
+        out[:, 2 + k] = (abits >> np.uint64(8 * k)) & np.uint64(255)
+    out[:, 8], out[:, 9], out[:, 10], out[:, 11] = c0 & 255, c0 >> 8, c1 & 255, c1 >> 8
+    cbits = (cidx.astype(np.uint64) << (np.uint64(2) * np.arange(16, dtype=np.uint64))).sum(1)
+    for k in range(4):
+        out[:, 12 + k] = (cbits >> np.uint64(8 * k)) & np.uint64(255)
+    return out.tobytes()
 
 
 def write_dds(path, levels):
@@ -153,13 +286,14 @@ def main():
     for name, asset, contrast in MATERIALS:
         if only and name not in only:
             continue
-        detail, height, emission = detail_and_height(src_dir, asset, contrast)
-        v = np.round(detail * 255.0)
-        rgba = np.stack([np.round(emission * 255.0), v, v, np.round(height * 255.0)], axis=-1).astype(np.uint8)
+        detail, height, emission, roughness = detail_and_height(src_dir, asset, contrast)
+        rgba = np.stack([np.round(emission * 255.0), np.round(detail * 255.0), np.round(roughness * 255.0),
+                         np.round(height * 255.0)], axis=-1).astype(np.uint8)
         path = os.path.join(out_dir, f"{name}.dds")
         write_dds(path, mip_chain(rgba))
         print(f"{path}: {asset}, detail mean {detail.mean() * 2.0:.3f} (x2), "
-              f"5-95% {np.percentile(detail, 5) * 2:.2f}-{np.percentile(detail, 95) * 2:.2f}")
+              f"5-95% {np.percentile(detail, 5) * 2:.2f}-{np.percentile(detail, 95) * 2:.2f}, "
+              f"roughness mean {roughness.mean():.3f}")
 
 
 if __name__ == "__main__":

@@ -101,10 +101,11 @@ void main(void)
 	MaterialMapping mapping = materialMapping(varyingEyepos, materialDx, materialDy, surfaceUp);
 	vec4 tile = terrainTileSample(texCoord0);
 	vec2 bump;
+	float surfaceRoughness;
 	vec4 materialSlots[MATERIAL_SLOT_GROUPS] = vec4[MATERIAL_SLOT_GROUPS](materialWeights0, materialWeights1, materialWeights2, materialWeights3);
 	vec4 lightWeights = materialLightWeights(materialSlots);
 	vec4 surfaceMaterial = terrainMaterialDetail(materialSlots, albedo.rgb, mapping,
-		dist, tnorm, surfaceUp, altitude, hasWater, tile.w, bump);
+		dist, tnorm, surfaceUp, altitude, hasWater, tile.w, bump, surfaceRoughness);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	// (the patterns stand in for detail the baked surface has)
 	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - surfaceWeight) * (1.0 - MaterialLook.y);
@@ -125,10 +126,13 @@ void main(void)
 	albedo.rgb = mix(albedo.rgb, cityPaving, paved);
 	if (garden.w > 0.0) {
 		vec2 gardenBump;
-		float gardenDetail = cityGardenDetail(garden, mapping, dist, gardenBump);
+		float gardenRoughness;
+		float gardenDetail = cityGardenDetail(garden, mapping, dist, gardenBump, gardenRoughness);
 		detailMul.rgb = mix(detailMul.rgb, vec3(gardenDetail), garden.w);
 		bump = mix(bump, gardenBump, garden.w);
+		surfaceRoughness = mix(surfaceRoughness, gardenRoughness, garden.w);
 	}
+	surfaceRoughness = mix(surfaceRoughness, MATERIAL_PAVING_ROUGHNESS, paved);
 	detailMul.rgb = mix(detailMul.rgb, vec3(1.0), pavingSmoothing);
 
 	// the relief between the mesh and the pixel
@@ -168,7 +172,7 @@ void main(void)
 		uneclipsed *= cloudShadowTerrain(clouds, eyeposScaled - geosphereCenter, L, max(dist * CLOUD_SHADOW_PIXEL_ANGLE, 1.0));
 #endif
 		CalcPlanetDiffuse(diff, uLight[i].diffuse, L, tnorm, uneclipsed);
-		materialGlint += uLight[i].diffuse.rgb * uneclipsed * materialGloss(lightWeights, tnorm, -eyenorm, L, dist);
+		materialGlint += uLight[i].diffuse.rgb * uneclipsed * materialGloss(lightWeights, surfaceRoughness, tnorm, -eyenorm, L, dist);
 		backscatter = max(backscatter, materialBackscatter(lightWeights, -eyenorm, L));
 
 #ifdef TERRAIN_WITH_WATER

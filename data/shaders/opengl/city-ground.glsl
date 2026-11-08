@@ -275,30 +275,36 @@ float groundGarden(vec3 pos, float px, vec3 soil, out vec3 colour, out vec3 mate
 // The photo textures' detail of the gardens (terrain-materials.glsl, which
 // must come first): grass, moss on the bushes and soil, in the shares of
 // garden.xyz (from cityGroundAt), fading out with distance as the terrain's
-// own. Returns the detail (mean 1); bump: their height and its scale, as
-// terrainMaterialDetail()'s
-float cityGardenDetail(vec4 garden, MaterialMapping mapping, float distMetres, out vec2 bump)
+// own. Returns the detail (mean 1); bump: their height and its scale, and
+// roughness, as terrainMaterialDetail()'s
+float cityGardenDetail(vec4 garden, MaterialMapping mapping, float distMetres, out vec2 bump, out float roughness)
 {
 	bump = vec2(0.5, 0.0);
+	float meanTotal = garden.x + garden.y + garden.z;
+	float meanRoughness = meanTotal > 0.0 ? (garden.x * materialMeanRoughness(MATERIAL_GRASS) + garden.y * materialMeanRoughness(MATERIAL_TUNDRA)
+		+ garden.z * materialMeanRoughness(MATERIAL_SOIL)) / meanTotal : materialMeanRoughness(MATERIAL_GRASS);
+	roughness = meanRoughness;
 	float contrast = 1.0 - smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, distMetres);
 	if (garden.w <= 0.0 || contrast <= 0.0)
 		return 1.0;
 	float coarse = mapping.level + MATERIAL_COARSE_LEVELS;
-	float detail = 0.0, height = 0.0, total = 0.0;
+	float detail = 0.0, height = 0.0, rough = 0.0, total = 0.0;
 	for (int k = 0; k < 3; k++) {
 		float w = garden[k];
 		if (w < 0.02)
 			continue;
 		int layer = k == 0 ? MATERIAL_GRASS : k == 1 ? MATERIAL_TUNDRA : MATERIAL_SOIL;
-		vec3 f = materialSample(layer, mapping, mapping.level);
-		vec3 c = materialSample(layer, mapping, coarse);
+		vec4 f = materialSample(layer, mapping, mapping.level);
+		vec4 c = materialSample(layer, mapping, coarse);
 		detail += w * f.y * c.y;
 		height += w * f.z;
+		rough += w * f.w;
 		total += w;
 	}
 	if (total <= 0.0)
 		return 1.0;
 	bump = vec2(height / total, contrast * MATERIAL_BUMP_HEIGHT * exp2(mapping.level));
+	roughness = mix(meanRoughness, rough / total, contrast);
 	return 1.0 + (detail / total - 1.0) * contrast;
 }
 

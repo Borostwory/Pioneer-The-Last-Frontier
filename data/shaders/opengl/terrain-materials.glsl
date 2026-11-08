@@ -9,11 +9,12 @@
 //   forest, snow, ice, basalt, lava, ash, regolith, salt, tundra, dirty ice,
 //   cooled lava flows, cracked mud, dust, metal), greyscale so any
 //   palette works (scripts/make_terrain_materials.py), the two strongest
-//   materials of a pixel blended along their bumps so borders look natural;
+//   materials of a pixel blended along their bumps so borders look natural,
+//   each with its own roughness map;
 // - materials the vertex colour cannot show: bare ground on steep slopes, snow
 //   sliding off them, beaches along the shore. These shift the colour too;
 // - the glow of lava, from the lava texture's emission;
-// - how the materials take the light: gloss on ice, lava and metal, blue
+// - how the materials take the light: shine from the roughness maps, blue
 //   shadows on ice, backscatter on airless regolith and dust.
 //
 // Each body has up to sixteen materials (its slots, TerrainMaterialTable in
@@ -132,6 +133,17 @@ uniform vec4 PatchTile;
 #define MATERIAL_FOREST_NEAR_LEVEL 7.0
 #define MATERIAL_FOREST_FAR_LEVEL 10.0
 
+// shine: the share of light a material reflects as a mirror would, head on (Schlick's F0): ice, metal, and all the
+// rest; and the least roughness used, for the sharpest highlight allowed, so small bumps don't sparkle and flicker
+#define MATERIAL_F0_ICE 0.018
+#define MATERIAL_F0_METAL 0.5
+#define MATERIAL_F0_GROUND 0.04
+#define MATERIAL_ROUGHNESS_MIN 0.25
+// how much rougher the ground looks from afar, where its small bumps have faded out (added at RELIEF_FAR_DIST)
+#define MATERIAL_FAR_ROUGHENING 0.15
+// roughness of city paving
+#define MATERIAL_PAVING_ROUGHNESS 0.6
+
 vec3 materialHsv(float h, float s, float v)
 {
 	vec3 rgb = clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
@@ -187,6 +199,32 @@ float terrainOcclusion(vec3 normal, vec3 up, vec4 tile)
 	return mix(1.0, slopes * hollows, 1.0 - 0.7 * airShare());
 }
 
+// Each texture's mean roughness (its blue channel; printed by scripts/make_terrain_materials.py), for where the
+// texture isn't read. Forest is its canopy, as it is seen from afar.
+float materialMeanRoughness(int m)
+{
+	if (m == MATERIAL_ROCK) return 0.693;
+	if (m == MATERIAL_GRAVEL) return 0.541;
+	if (m == MATERIAL_SAND) return 0.652;
+	if (m == MATERIAL_SOIL) return 0.675;
+	if (m == MATERIAL_GRASS) return 0.263;
+	if (m == MATERIAL_FOREST || m == MATERIAL_FOREST_FAR) return 0.612;
+	if (m == MATERIAL_SNOW) return 0.707;
+	// (old ice takes in the snow photo, as in materialSample())
+	if (m == MATERIAL_ICE) return mix(0.140, 0.707, MaterialLook.y > 0.5 ? MATERIAL_OLD_ICE_SNOW * (1.0 - clamp(MaterialLook.x / MATERIAL_OLD_ICE_UNTIL, 0.0, 1.0)) : 0.0);
+	if (m == MATERIAL_BASALT) return 0.689;
+	if (m == MATERIAL_LAVA) return 0.418;
+	if (m == MATERIAL_ASH || m == MATERIAL_DUST) return 0.967;
+	if (m == MATERIAL_REGOLITH) return 0.593;
+	if (m == MATERIAL_SALT) return 0.598;
+	if (m == MATERIAL_TUNDRA) return 0.609;
+	if (m == MATERIAL_DIRTY_ICE) return 0.937;
+	if (m == MATERIAL_LAVA_FLOW) return 0.414;
+	if (m == MATERIAL_CRACKED_MUD) return 0.756;
+	if (m == MATERIAL_METAL) return 0.456;
+	return 0.7;
+}
+
 // texture layer of a slot (-1: unused)
 int materialSlotLayer(int slot)
 {
@@ -198,6 +236,21 @@ int materialSlotLayer(int slot)
 float materialSlotWeight(vec4 slots[MATERIAL_SLOT_GROUPS], int slot)
 {
 	return slots[slot >> 2][slot & 3];
+}
+
+// roughness from the vertex's materials alone, at their means
+float materialVertexRoughness(vec4 slots[MATERIAL_SLOT_GROUPS])
+{
+	float r = 0.0, total = 0.0;
+	for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
+		int layer = materialSlotLayer(i);
+		if (layer < 0)
+			continue;
+		float w = materialSlotWeight(slots, i);
+		r += w * materialMeanRoughness(layer);
+		total += w;
+	}
+	return total > 1e-3 ? r / total : 0.7;
 }
 
 // slot weights with this pixel's slope and altitude: steep ground becomes
@@ -339,22 +392,23 @@ const vec2 MATERIAL_TURNS[8] = vec2[8](vec2(1.0, 0.0), vec2(0.6, 0.8), vec2(0.0,
 // Reads the tile turned and shifted one way or the next, by a field fixed in space, blended along their bumps: no two
 // places alike, and no grid. uvPatch, uvFar: this place in cells of a patch, and 32 times that, for the field's long
 // repeats. turnStep: 1 for all eight turns, 2 for right angles only. blend: how far they blend into each other.
-vec3 materialVariedRead(int layer, vec2 uv, vec2 dx, vec2 dy, vec2 uvPatch, vec2 uvFar, int turnStep, float blend)
+// Emission (x), detail (y), height (z), roughness (w), as materialTileSample().
+vec4 materialVariedRead(int layer, vec2 uv, vec2 dx, vec2 dy, vec2 uvPatch, vec2 uvFar, int turnStep, float blend)
 {
 	float count = float(8 / turnStep);
 	float field = count * fract(materialRegionNoise(uvPatch, 0.0) + 3.0 * materialRegionNoise(uvFar, 5.7));
 	float index = floor(field);
 	vec2 a = MATERIAL_TURNS[int(index) * turnStep], b = MATERIAL_TURNS[int(mod(index + 1.0, count)) * turnStep];
 	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * (index + 1.0));
-	vec3 ra = textureGrad(terrainMaterials, vec3(vec2(a.x * uv.x - a.y * uv.y, a.y * uv.x + a.x * uv.y) + offsetA, float(layer)),
-		vec2(a.x * dx.x - a.y * dx.y, a.y * dx.x + a.x * dx.y), vec2(a.x * dy.x - a.y * dy.y, a.y * dy.x + a.x * dy.y)).rga;
-	vec3 rb = textureGrad(terrainMaterials, vec3(vec2(b.x * uv.x - b.y * uv.y, b.y * uv.x + b.x * uv.y) + offsetB, float(layer)),
-		vec2(b.x * dx.x - b.y * dx.y, b.y * dx.x + b.x * dx.y), vec2(b.x * dy.x - b.y * dy.y, b.y * dy.x + b.x * dy.y)).rga;
+	vec4 ra = textureGrad(terrainMaterials, vec3(vec2(a.x * uv.x - a.y * uv.y, a.y * uv.x + a.x * uv.y) + offsetA, float(layer)),
+		vec2(a.x * dx.x - a.y * dx.y, a.y * dx.x + a.x * dx.y), vec2(a.x * dy.x - a.y * dy.y, a.y * dy.x + a.x * dy.y)).rgab;
+	vec4 rb = textureGrad(terrainMaterials, vec3(vec2(b.x * uv.x - b.y * uv.y, b.y * uv.x + b.x * uv.y) + offsetB, float(layer)),
+		vec2(b.x * dx.x - b.y * dx.y, b.y * dx.x + b.x * dx.y), vec2(b.x * dy.x - b.y * dy.y, b.y * dy.x + b.x * dy.y)).rgab;
 	return mix(ra, rb, smoothstep(0.5 - blend, 0.5 + blend, field - index + 0.8 * (rb.z - ra.z)));
 }
 
-// one tile size of 2^level metres. Emission (x), detail (y), height (z).
-vec3 materialTileSample(int layer, MaterialMapping m, float level)
+// one tile size of 2^level metres. Emission (x), detail (y), height (z), roughness (w: 0 a mirror, 1 fully matte).
+vec4 materialTileSample(int layer, MaterialMapping m, float level)
 {
 	float tile = exp2(level);
 	vec3 q = materialTileCoord(m, level);
@@ -367,16 +421,16 @@ vec3 materialTileSample(int layer, MaterialMapping m, float level)
 		vec3 qPatch = rotation.y < -0.5 ? q * 2.0 : (rotation.y < 0.5 ? q : materialTileCoord(m, min(level + rotation.y, MATERIAL_MAX_LEVEL)));
 		vec3 qFar = materialTileCoord(m, min(level + max(rotation.y, 0.0) + 5.0, MATERIAL_MAX_LEVEL));
 		int turnStep = rotation.x < 1.5 ? 2 : 1;
-		vec3 varied = m.plane.x * materialVariedRead(layer, materialPlaneUV(q, m.axes.x), materialPlaneUV(qx, m.axes.x), materialPlaneUV(qy, m.axes.x), materialPlaneUV(qPatch, m.axes.x), materialPlaneUV(qFar, m.axes.x), turnStep, rotation.z);
+		vec4 varied = m.plane.x * materialVariedRead(layer, materialPlaneUV(q, m.axes.x), materialPlaneUV(qx, m.axes.x), materialPlaneUV(qy, m.axes.x), materialPlaneUV(qPatch, m.axes.x), materialPlaneUV(qFar, m.axes.x), turnStep, rotation.z);
 		if (m.plane.y > 0.0)
 			varied += m.plane.y * materialVariedRead(layer, materialPlaneUV(q, m.axes.y), materialPlaneUV(qx, m.axes.y), materialPlaneUV(qy, m.axes.y), materialPlaneUV(qPatch, m.axes.y), materialPlaneUV(qFar, m.axes.y), turnStep, rotation.z);
 		return varied;
 	}
-	vec3 r = m.plane.x * textureGrad(terrainMaterials, vec3(materialPlaneUV(q, m.axes.x), float(layer)),
-		materialPlaneUV(qx, m.axes.x), materialPlaneUV(qy, m.axes.x)).rga;
+	vec4 r = m.plane.x * textureGrad(terrainMaterials, vec3(materialPlaneUV(q, m.axes.x), float(layer)),
+		materialPlaneUV(qx, m.axes.x), materialPlaneUV(qy, m.axes.x)).rgab;
 	if (m.plane.y > 0.0)
 		r += m.plane.y * textureGrad(terrainMaterials, vec3(materialPlaneUV(q, m.axes.y), float(layer)),
-			materialPlaneUV(qx, m.axes.y), materialPlaneUV(qy, m.axes.y)).rga;
+			materialPlaneUV(qx, m.axes.y), materialPlaneUV(qy, m.axes.y)).rgab;
 	return r;
 }
 
@@ -391,13 +445,13 @@ float materialLavaPatches(MaterialMapping m)
 	return clamp(1.0 + (e - 0.078) * 12.0, 0.25, 2.0);
 }
 
-// emission (x), detail (y, mean 1) and height (z) of one material at a tile
+// emission (x), detail (y, mean 1), height (z) and roughness (w) of one material at a tile
 // level, blended between the two power-of-two sizes around it
-vec3 materialSample(int layer, MaterialMapping m, float level)
+vec4 materialSample(int layer, MaterialMapping m, float level)
 {
 	level = clamp(level, 0.0, MATERIAL_MAX_LEVEL - 1.0);
 	float k = floor(level);
-	vec3 r = materialTileSample(layer, m, k);
+	vec4 r = materialTileSample(layer, m, k);
 	// (level is often a whole number, as MATERIAL_FIXED_MAX_LEVEL holds it at one over most of the screen: then the next
 	// size would count for nothing, so it isn't read)
 	if (level > k)
@@ -410,7 +464,7 @@ vec3 materialSample(int layer, MaterialMapping m, float level)
 	}
 	// (on old ice, the snow photo at the same sizes, read only there)
 	float oldIce = layer == MATERIAL_ICE && MaterialLook.y > 0.5 ? MATERIAL_OLD_ICE_SNOW * (1.0 - clamp(MaterialLook.x / MATERIAL_OLD_ICE_UNTIL, 0.0, 1.0)) : 0.0;
-	vec3 snow = vec3(0.0, 0.5, 0.5);
+	vec4 snow = vec4(0.0, 0.5, 0.5, materialMeanRoughness(MATERIAL_SNOW));
 	if (oldIce > 0.0) {
 		snow = materialTileSample(MATERIAL_SNOW, m, k);
 		if (level > k)
@@ -423,7 +477,7 @@ vec3 materialSample(int layer, MaterialMapping m, float level)
 		float strength = max(MaterialLook.x, MATERIAL_ICE_LEAST);
 		r.y = 1.0 + (r.y - 1.0) * strength;
 		r.z = 0.5 + (r.z - 0.5) * strength;
-		r = mix(r, vec3(snow.x, 2.0 * snow.y, snow.z), oldIce);
+		r = mix(r, vec4(snow.x, 2.0 * snow.y, snow.z, snow.w), oldIce);
 	}
 	return r;
 }
@@ -447,11 +501,14 @@ float materialBumpStrength(int m)
 // altitude: metres above sea level (only used with water); landform: from
 // the detail tile (0.5 without one): bare rock on crests and rims.
 // bump: the blended texture height (x, 0..1) and its scale in metres (y),
-// for terrainBumpNormal()
+// for terrainBumpNormal(); roughness: for materialGloss(), from the textures
+// near the camera, the materials' means further out
 vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, MaterialMapping mapping,
-	float distMetres, vec3 normal, vec3 up, float altitude, bool hasWater, float landform, out vec2 bump)
+	float distMetres, vec3 normal, vec3 up, float altitude, bool hasWater, float landform, out vec2 bump,
+	out float roughness)
 {
 	bump = vec2(0.5, 0.0);
+	roughness = materialVertexRoughness(slots);
 	int lavaSlot = int(MaterialSpecial.w);
 	float lavaWeight = lavaSlot < 0 ? 0.0 : materialSlotWeight(slots, lavaSlot);
 	float farGlow = lavaWeight * MATERIAL_LAVA_MEAN_EMISSION;
@@ -499,17 +556,17 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 
 	int l1 = materialSlotLayer(m1), l2 = materialSlotLayer(m2);
 	float w1 = w[m1], w2 = l2 >= 0 ? w[m2] : 0.0;
-	vec3 d1 = vec3(0.0, 1.0, 0.5), d2 = vec3(0.0, 1.0, 0.5);
+	vec4 d1 = vec4(0.0, 1.0, 0.5, materialMeanRoughness(l1)), d2 = vec4(0.0, 1.0, 0.5, materialMeanRoughness(l2));
 	float coarse = mapping.level + MATERIAL_COARSE_LEVELS;
 	if (l1 >= 0) {
-		vec3 f1 = materialSample(l1, mapping, mapping.level);
-		vec3 c1 = materialSample(l1, mapping, coarse);
-		d1 = vec3(f1.x, f1.y * c1.y, f1.z);
+		vec4 f1 = materialSample(l1, mapping, mapping.level);
+		vec4 c1 = materialSample(l1, mapping, coarse);
+		d1 = vec4(f1.x, f1.y * c1.y, f1.z, f1.w);
 	}
 	if (w2 > 0.01) {
-		vec3 f2 = materialSample(l2, mapping, mapping.level);
-		vec3 c2 = materialSample(l2, mapping, coarse);
-		d2 = vec3(f2.x, f2.y * c2.y, f2.z);
+		vec4 f2 = materialSample(l2, mapping, mapping.level);
+		vec4 c2 = materialSample(l2, mapping, coarse);
+		d2 = vec4(f2.x, f2.y * c2.y, f2.z, f2.w);
 	}
 
 	// blend the two along their bumps: the higher one shows through first
@@ -525,10 +582,14 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 	// colour: shift by the materials gained and lost against the vertex
 	// colour; near the camera only, so planets keep their look from afar
 	vec3 shifted = albedo;
+	// (and the roughness of the land not in the two strongest, at their means)
+	float restRoughness = 0.0;
 	for (int i = 0; i < usedSlots; ++i) {
 		int layer = materialSlotLayer(i);
 		if (layer < 0)
 			continue;
+		if (i != m1 && i != m2)
+			restRoughness += w[i] * materialMeanRoughness(layer);
 		float wi = (i == m1) ? n1 : (i == m2) ? n2 : w[i];
 		// (with detail fixed in space, the vertex colours are the materials' own; these
 		// generic colours would turn floors tan and the walls of dark moons white)
@@ -549,6 +610,9 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 	float bumps = (n1 * (l1 >= 0 ? materialBumpStrength(l1) : 1.0) + n2 * (l2 >= 0 ? materialBumpStrength(l2) : 1.0) + (landWeight - total)) / landWeight;
 	bump.y = contrast * MATERIAL_BUMP_HEIGHT * exp2(mapping.level) * bumps;
 	detail = 1.0 + (detail - 1.0) * contrast;
+
+	// roughness: the blended materials' textures, fading to the vertex's means as the textures do
+	roughness = mix(roughness, (n1 * d1.w + n2 * d2.w + restRoughness) / landWeight, contrast);
 
 	// lava glow: the texture's emission near the camera, its average further out
 	float glow = (l1 == MATERIAL_LAVA ? n1 * d1.x : 0.0) + (l2 == MATERIAL_LAVA ? n2 * d2.x : 0.0);
@@ -702,20 +766,31 @@ vec4 materialLightWeights(vec4 slots[MATERIAL_SLOT_GROUPS])
 	return look;
 }
 
-// sun glint on ice, lava and metal, weaker from afar so that a whole moon
-// doesn't carry one highlight. N, V, L: view space, unit length
-float materialGloss(vec4 look, vec3 N, vec3 V, vec3 L, float distMetres)
+// The ground's shine, from its roughness (terrainMaterialDetail(): 0 a mirror, 1 fully matte): a sharp, bright
+// highlight on smooth ground, a broad, faint one on rough ground, the same light in all (GGX, with Smith-Schlick
+// shadowing and Schlick's Fresnel, scaled as the terrain's diffuse light, which leaves out pi). Weaker from afar, so
+// that a whole moon doesn't carry one highlight, and rougher, as the bumps below the pixels fade out. look:
+// materialLightWeights(), for what reflects how much head on; N, V, L: view space, unit length. Times the light's
+// colour, added after lighting.
+float materialGloss(vec4 look, float roughness, vec3 N, vec3 V, vec3 L, float distMetres)
 {
-	float weight = look.x + look.y + look.z;
-	if (weight < 0.01)
-		return 0.0;
 	float NdotL = dot(N, L);
 	if (NdotL <= 0.0)
 		return 0.0;
-	float strength = 0.35 * look.x + 0.5 * look.y + 0.6 * look.z;
-	float shine = (80.0 * look.x + 40.0 * look.y + 60.0 * look.z) / weight;
-	float distant = mix(1.0, 0.3, smoothstep(RELIEF_NEAR_DIST, RELIEF_FAR_DIST, distMetres));
-	return strength * distant * pow(max(dot(N, normalize(V + L)), 0.0), shine) * smoothstep(0.0, 0.1, NdotL);
+	float farShare = smoothstep(RELIEF_NEAR_DIST, RELIEF_FAR_DIST, distMetres);
+	float r = clamp(roughness + MATERIAL_FAR_ROUGHENING * farShare, MATERIAL_ROUGHNESS_MIN, 1.0);
+	float a = r * r, a2 = a * a;
+	vec3 H = normalize(V + L);
+	float NdotH = max(dot(N, H), 0.0), NdotV = max(dot(N, V), 1e-3);
+	float d = NdotH * NdotH * (a2 - 1.0) + 1.0;
+	float k = 0.5 * a;
+	float visibility = 0.25 / ((NdotL * (1.0 - k) + k) * (NdotV * (1.0 - k) + k));
+	float ice = clamp(look.x, 0.0, 1.0), metal = clamp(look.z, 0.0, 1.0 - ice);
+	float f0 = MATERIAL_F0_GROUND * (1.0 - ice - metal) + MATERIAL_F0_ICE * ice + MATERIAL_F0_METAL * metal;
+	// (rough ground rises less toward grazing light, its bumps shadowing each other: Lagarde's form)
+	float fresnel = f0 + (max(1.0 - r, f0) - f0) * pow(1.0 - clamp(dot(V, H), 0.0, 1.0), 5.0);
+	float distant = mix(1.0, 0.3, farShare);
+	return distant * a2 / (d * d) * visibility * fresnel * NdotL * smoothstep(0.0, 0.1, NdotL);
 }
 
 // powder with no air brightens with the sun behind the viewer; a multiplier for the light
