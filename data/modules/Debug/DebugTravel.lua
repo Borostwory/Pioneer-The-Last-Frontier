@@ -80,7 +80,17 @@ local state = {
 
 	-- teleport to do once the hyperjump arrives: { path = SystemPath, radii = number }
 	pending = nil,
+
+	-- the player's ship takes no damage (crashes, heat, weapons).
+	-- The game clears this on load and on a new ship type, so it is set again then.
+	indestructible = false,
 }
+
+local function applyIndestructible()
+	if Game.player then
+		Game.player:SetInvulnerable(state.indestructible)
+	end
+end
 
 --=============================================================================
 
@@ -321,6 +331,12 @@ Event.Register("onEnterSystem", function(ship)
 	teleportTo(pending.path:GetSystemBody(), pending.radii)
 end)
 
+Event.Register("onGameStart", applyIndestructible)
+
+Event.Register("onShipTypeChanged", function(ship)
+	if ship:IsPlayer() then applyIndestructible() end
+end)
+
 Event.Register("onGameEnd", function()
 	state.pending = nil
 	state.system = nil
@@ -337,6 +353,16 @@ debugView.registerTab("DebugTravel", {
 		if not state.system and Game.system then
 			selectSystem(Game.system.path)
 		end
+
+		local changed, value = ui.checkbox("Indestructible ship", state.indestructible)
+		if changed then
+			state.indestructible = value
+			applyIndestructible()
+		end
+		if ui.isItemHovered() then
+			ui.setTooltip("The ship takes no damage from crashes, heat or weapons")
+		end
+		ui.separator()
 
 		if ui.collapsingHeader("Find system by name", { "DefaultOpen" }) then
 			drawSystemPicker()
