@@ -321,6 +321,12 @@ public:
 	// everything else) still uses Earth air's for every rocky body. For Earth air the two
 	// are the same to the last bit. Joining them is the possible last stage of
 	// docs/implementation_plans/atmosphere-types_plan.md.
+	// A gas giant's radius is its visible cloud tops, where Jupiter's air is about 0.6 atm (its
+	// ammonia clouds): the air model starts there, whatever density the system data gives for
+	// the radius (often of 7 atm or more), and goes on down (Planet::GetAtmosphericState).
+	// Galileo's probe found some 22 atm 150 km below them; this model gives about that.
+	static constexpr double GAS_GIANT_CLOUD_TOP_ATM = 0.6;
+
 	const AtmosphereProfile::Profile &GetAtmosProfile() const { return m_atmosProfile; }
 	double GetVisualMolarMass() const { return m_visualAir.molarMass; }
 	double GetVisualSpecificHeat() const { return m_visualAir.specificHeat; }
@@ -411,6 +417,9 @@ private:
 	AtmosphereProfile::Profile m_atmosProfile;
 
 	void PickAtmosphereProfile(); // part of SetAtmFromParameters
+	// the surface density the air model starts from, for a gas of this molar mass (a gas
+	// giant's is taken down to its visible cloud tops: GAS_GIANT_CLOUD_TOP_ATM)
+	double AirModelDensity(double molarMass) const;
 };
 
 #endif // SYSTEMBODY_H

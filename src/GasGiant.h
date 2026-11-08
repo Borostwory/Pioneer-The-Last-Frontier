@@ -68,6 +68,9 @@ private:
 
 	std::unique_ptr<GasPatch> m_patches[NUM_PATCHES];
 
+	// the fog inside its clouds, when the camera is down in them (gassphere_fog)
+	RefCountedPtr<Graphics::Material> m_fogMaterial;
+
 	bool m_hasTempCampos;
 	vector3d m_tempCampos;
 

@@ -4,6 +4,8 @@
 Shader gassphere_base
 
 Texture samplerCube texture0
+Texture sampler2D densityLUT
+Texture sampler2D scatterLUT
 
 Buffer LightData binding=0
 Buffer DrawData binding=1

@@ -1265,7 +1265,10 @@ static void CollideWithTerrain(Body *body, float timeStep)
 	if (altitude >= (terrain->GetMaxFeatureRadius() * 2.0))
 		return;
 
-	double terrHeight = terrain->GetTerrainHeightFrom(body->GetPosition().Normalized(), body->GetPosition().Length());
+	// (a gas giant has no ground, only a floor deep inside: Planet::GetCollisionRadius)
+	double terrHeight = terrain->IsType(ObjectType::PLANET) ?
+		static_cast<Planet *>(terrain)->GetCollisionRadius(body->GetPosition().Normalized(), body->GetPosition().Length()) :
+		terrain->GetTerrainHeightFrom(body->GetPosition().Normalized(), body->GetPosition().Length());
 	if (altitude >= terrHeight)
 		return;
 

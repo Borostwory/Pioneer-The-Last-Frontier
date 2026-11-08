@@ -511,11 +511,21 @@ void SystemBody::SetAtmFromParameters()
 	}
 
 	// the air for flight: Earth air's weight for every rocky body
-	AirColumnFor(gasMolarMass, GetSpecificHeat(GetSuperType()), surfaceGravity_g, GetAverageTemp(), GetAtmSurfaceDensity(),
+	AirColumnFor(gasMolarMass, GetSpecificHeat(GetSuperType()), surfaceGravity_g, GetAverageTemp(), AirModelDensity(gasMolarMass),
 		m_atmosPressure, m_atmosRadius, m_tropopause);
 
 	// the main gas and haze, and the air that is seen
 	PickAtmosphereProfile();
+}
+
+double SystemBody::AirModelDensity(double molarMass) const
+{
+	const double density = GetAtmSurfaceDensity();
+	if (GetSuperType() != SUPERTYPE_GAS_GIANT || molarMass <= 0.0)
+		return density;
+	// the pressure this density would give at the radius, as AirColumnFor works it out
+	const double pressure = PA_2_ATMOS * ((density / molarMass) * GAS_CONSTANT_R * double(GetAverageTemp()));
+	return pressure > GAS_GIANT_CLOUD_TOP_ATM ? density * (GAS_GIANT_CLOUD_TOP_ATM / pressure) : density;
 }
 
 void SystemBody::PickAtmosphereProfile()
@@ -568,7 +578,7 @@ void SystemBody::PickAtmosphereProfile()
 		m_visualAir.molarMass = GetGas(p.gas).molarMass;
 		m_visualAir.specificHeat = SpecificHeat(p.gas, T0);
 		m_visualAir.tropopause = 0.0;
-		AirColumnFor(m_visualAir.molarMass, m_visualAir.specificHeat, CalcSurfaceGravity(), GetAverageTemp(), density,
+		AirColumnFor(m_visualAir.molarMass, m_visualAir.specificHeat, CalcSurfaceGravity(), GetAverageTemp(), AirModelDensity(m_visualAir.molarMass),
 			m_visualAir.pressure, m_visualAir.radius, m_visualAir.tropopause);
 	}
 

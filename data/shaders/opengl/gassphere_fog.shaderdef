@@ -1,0 +1,16 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+Shader gassphere_fog
+
+Texture samplerCube texture0
+
+Buffer LightData binding=0
+Buffer DrawData binding=1
+
+PushConstant vec4 FogUp binding=0
+PushConstant vec4 FogCloud binding=1
+PushConstant vec4 FogAmount binding=2
+
+Vertex "gassphere_fog.vert"
+Fragment "gassphere_fog.frag"

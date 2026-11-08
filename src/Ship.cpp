@@ -1064,6 +1064,10 @@ void Ship::TestLanded()
 	Frame *f = Frame::GetFrame(GetFrame());
 
 	if (f->GetBody()->IsType(ObjectType::PLANET)) {
+		// nothing to land on in a gas giant (Planet::GAS_GIANT_FLOOR)
+		if (static_cast<Planet *>(f->GetBody())->IsGasGiant())
+			return;
+
 		double speed = GetVelocity().Length();
 		vector3d up = GetPosition().Normalized();
 

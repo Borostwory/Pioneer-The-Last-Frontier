@@ -5,9 +5,17 @@
 #include "lib.glsl"
 #include "basesphere_uniforms.glsl"
 
+// as rayleigh-lib.glsl
+bool atmosEarthValues()
+{
+	return atmosRayleigh.w > 0.5;
+}
+
 in vec3 varyingEyepos;
 in vec3 varyingNormal;
 in vec3 varyingTexCoord0;
+in vec3 viewTransmittance;
+in vec3 viewInscatter;
 
 uniform samplerCube texture0; //diffuse
 
@@ -39,6 +47,14 @@ void main(void)
 	vec4 sunset = vec4(0.8,clamp(pow(atmpower,0.8),0.0,1.0),clamp(pow(atmpower,1.2),0.0,1.0),1.0);
 
 	vec4 texColor = texture(texture0, varyingTexCoord0);
+
+	if (!atmosEarthValues()) {
+		// the cloud tops as lit, seen through the air above them as the sky and the ground of
+		// other bodies are: no white fog, and an edge that fades into the sky's
+		vec4 lit = material.emission + scene.ambient * texColor + diff * texColor;
+		frag_color = vec4(lit.rgb * viewTransmittance + toSRGB(1.0 - exp(-viewInscatter)), lit.a);
+		return;
+	}
 
 	frag_color =
 		material.emission +

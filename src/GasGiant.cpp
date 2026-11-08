@@ -8,6 +8,7 @@
 #include "GameConfig.h"
 #include "Pi.h"
 #include "galaxy/AtmosphereParameters.h"
+#include "galaxy/SystemBody.h"
 #include "graphics/Drawables.h"
 #include "graphics/Frustum.h"
 #include "graphics/Graphics.h"
@@ -347,6 +348,7 @@ void GasGiant::Reset()
 	m_surfaceTextureSmall.Reset();
 	m_surfaceTexture.Reset();
 	m_surfaceMaterial.Reset();
+	m_fogMaterial.Reset();
 }
 
 //static
@@ -667,6 +669,41 @@ void GasGiant::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView,
 
 	for (int i = 0; i < NUM_PATCHES; i++) {
 		m_patches[i]->Render(renderer, campos, modelView, frustum);
+	}
+
+	// Down in the clouds there is no ground (Planet::GAS_GIANT_FLOOR): the view fills with a fog
+	// of the clouds' own colour, which darkens with depth (gassphere_fog). It comes in over one
+	// scale height above the cloud tops, and the light fades over two below them.
+	{
+		const SystemBody *sbody = GetSystemBody();
+		const double camAlt = (campos.Length() - 1.0) * sbody->GetRadius(); // m above the cloud tops
+		const double g = std::max(sbody->CalcSurfaceGravity(), 1e-3);
+		const double molarMass = std::max(sbody->GetVisualMolarMass(), 1e-4);
+		const double scaleHeight = GAS_CONSTANT_R * std::max(double(sbody->GetAverageTemp()), 1.0) / (molarMass * g);
+		const double t = Clamp(1.0 - camAlt / scaleHeight, 0.0, 1.0);
+		const float amount = float(t * t * (3.0 - 2.0 * t));
+		if (amount > 0.0f && m_atmos) {
+			if (!m_fogMaterial) {
+				Graphics::MaterialDescriptor fogDesc;
+				fogDesc.lighting = true;
+				fogDesc.textures = 1;
+				Graphics::RenderStateDesc rsd;
+				rsd.blendMode = Graphics::BLEND_ALPHA_PREMULT;
+				rsd.cullMode = Graphics::CULL_FRONT; // the camera is inside the sphere
+				rsd.depthTest = false;
+				rsd.depthWrite = false;
+				m_fogMaterial.Reset(Pi::renderer->CreateMaterial("gassphere_fog", fogDesc, rsd, m_atmos->GetVertexFormat()));
+			}
+			m_fogMaterial->SetTexture("texture0"_hash, m_surfaceTexture.Valid() ? m_surfaceTexture.Get() : m_surfaceTextureSmall.Get());
+
+			const vector3d upView = -(trans * vector3d(0.0)).NormalizedSafe();
+			const double depth = std::max(-camAlt, 0.0);
+			const float light = float(exp(-depth / (2.0 * scaleHeight)));
+			m_fogMaterial->SetPushConstant("FogUp"_hash, vector3f(upView), 0.0f);
+			m_fogMaterial->SetPushConstant("FogCloud"_hash, vector3f(campos.NormalizedSafe()), 0.0f);
+			m_fogMaterial->SetPushConstant("FogAmount"_hash, vector3f(amount, light, 0.0f), 0.0f);
+			DrawAtmosphereSurface(renderer, trans, campos, m_atmosphereParameters.atmosRadius * 1.01, m_fogMaterial);
+		}
 	}
 
 	renderer->SetAmbientColor(oldAmbient);

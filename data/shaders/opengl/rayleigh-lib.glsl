@@ -298,15 +298,18 @@ vec3 atmosHazeGlowSky(const in float hazeDensity, const in vec3 at, const in vec
 // Seen from high above, the sky around a planet's edge at the ground's x4 rather than the sky's
 // x20 (rayleigh_geosphere_terrain.vert shows the same air over the disc at x4): otherwise the
 // edge of the air stands out against the disc as a bright, sharp ring. From the ground the sky
-// keeps its x20; in between it changes smoothly with height. Bodies with Earth's values keep
-// the old sky.
+// keeps its x20; it changes smoothly between half a scale height and four up. Bodies with
+// Earth's values keep the old sky.
 float atmosEdgeScale(const in vec3 rayStart)
 {
 	if (atmosEarthValues())
 		return 1.0;
-	float atmosHeight = (geosphereAtmosTopRad - 1.0) * geosphereRadius;
+	// by the camera's height in scale heights: the top of the air (at 1e-15 atm) is dozens of
+	// them up, and judged by it a ship far above nearly all of the air still counted as inside
+	// it, so the ring came back on the way down (Saturn at 300 km, 6.6 scale heights up)
+	float scaleHeight = geosphereRadius / max(geosphereAtmosInvScaleHeight, 1.0);
 	float camAlt = length(rayStart) - geosphereRadius;
-	return mix(1.0, 4.0 / 20.0, smoothstep(0.2, 1.0, camAlt / max(atmosHeight, 1.0)));
+	return mix(1.0, 4.0 / 20.0, smoothstep(0.5, 4.0, camAlt / max(scaleHeight, 1.0)));
 }
 
 // How much a thick haze (atmosHazeExtinction.w) hides along a path with this much haze: there

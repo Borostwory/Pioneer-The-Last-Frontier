@@ -61,6 +61,18 @@ void Planet::InitParams(const SystemBody *sbody)
  * function is slightly different from the isothermal earth-based approximation used in shaders,
  * but it isn't visually noticeable.
  */
+bool Planet::IsGasGiant() const
+{
+	return GetSystemBody()->GetSuperType() == SystemBody::SUPERTYPE_GAS_GIANT;
+}
+
+double Planet::GetCollisionRadius(const vector3d &dir, double dist) const
+{
+	if (IsGasGiant())
+		return GAS_GIANT_FLOOR * GetSystemBody()->GetRadius();
+	return GetTerrainHeightFrom(dir, dist);
+}
+
 void Planet::GetAtmosphericState(double dist, double *outPressure, double *outDensity) const
 {
 	PROFILE_SCOPED()
@@ -86,8 +98,11 @@ void Planet::GetAtmosphericState(double dist, double *outPressure, double *outDe
 	const SystemBody *sbody = GetSystemBody();
 	const double height_h = (dist - sbody->GetRadius()); // height in m
 
-	// height below zero should not occur
-	if (height_h < 0.0) {
+	// height below zero should not occur on a rocky body. A gas giant has no ground: its air goes
+	// on down, ever hotter and denser, until it crushes whatever falls in (Ship's pressure
+	// damage); Space's terrain collision keeps bodies above a floor deep inside
+	// (Planet::GAS_GIANT_FLOOR), where the numbers are already far beyond anything that lasts.
+	if (height_h < 0.0 && sbody->GetSuperType() != SystemBody::SUPERTYPE_GAS_GIANT) {
 		*outPressure = sbody->GetAtmSurfacePressure();
 		*outDensity = sbody->GetAtmSurfaceDensity();
 		return;

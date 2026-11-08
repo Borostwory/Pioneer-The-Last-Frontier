@@ -27,6 +27,14 @@ public:
 	void GetAtmosphericState(double dist, double *outPressure, double *outDensity) const;
 	double GetAtmosphereRadius() const { return m_atmosphereRadius; }
 
+	// A gas giant has no ground to land or crash on: its air goes on down (GetAtmosphericState).
+	// Only this floor, deep inside, stops what falls in, so the numbers never run away; nothing
+	// gets there whole (at Jupiter, 1,400 km down: some 2,800 K and 10^5 atm).
+	static constexpr double GAS_GIANT_FLOOR = 0.98; // of the radius
+	bool IsGasGiant() const;
+	// what a falling body stops on: the ground, or a gas giant's floor
+	double GetCollisionRadius(const vector3d &dir, double dist) const;
+
 	friend class ObjectViewerView;
 
 protected:
