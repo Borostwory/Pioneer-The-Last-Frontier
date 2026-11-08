@@ -101,6 +101,8 @@ public:
 	// metres: the tile's landforms, of every size up to this and fixed in space, instead of only those near the patch's
 	// own scale (0)
 	virtual double GetTileLandformTop() const { return 0.0; }
+	// 0..1: how much of the tile's landforms are cracked slabs and blocks, as on young lava and bare rock
+	virtual double GetTileBlocks() const { return 0.0; }
 	// True: all detail is fixed in space, so the shaders leave out what they size by the view
 	virtual bool HasFixedDetail() const { return false; }
 	// how many times as steep the light takes slopes from afar (terrainFarRelief in terrain-far.glsl)

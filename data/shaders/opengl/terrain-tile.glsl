@@ -106,6 +106,49 @@ vec4 tileDunes(vec3 q, float salt)
 	return vec4(g * 0.075, h * 2.0 - 1.0);
 }
 
+// Cracked slabs: the cells of a jittered lattice as plates, each at its own height and tilted its own way, split by
+// narrow cracks, as on young lava (pahoehoe slabs, tumuli and the blocks of 'a'a) and on bare rock ledges
+#define BLOCK_CRACK 0.1
+vec4 tileBlocks(vec3 q, float salt)
+{
+	vec3 cell = floor(q);
+	float d1 = 1e9, d2 = 1e9;
+	vec3 p1 = vec3(0.0), p2 = vec3(0.0), c1 = vec3(0.0);
+	for (int z = -1; z <= 1; ++z)
+		for (int y = -1; y <= 1; ++y)
+			for (int x = -1; x <= 1; ++x) {
+				vec3 c = cell + vec3(x, y, z);
+				vec3 p = c + 0.15 + 0.7 * tileHash33(c, salt + 131.0);
+				vec3 r = q - p;
+				float d = dot(r, r);
+				if (d < d1) {
+					d2 = d1;
+					p2 = p1;
+					d1 = d;
+					p1 = p;
+					c1 = c;
+				} else if (d < d2) {
+					d2 = d;
+					p2 = p;
+				}
+			}
+	vec3 h = tileHash33(c1, salt + 137.0);
+	// the plate: its own height, and a tilt of up to about 0.25
+	vec3 tilt = (tileHash33(c1, salt + 139.0) - 0.5) * 0.5;
+	float top = (h.x - 0.5) * 0.6 + dot(q - p1, tilt);
+	// the crack along the plane halfway to the next plate's point
+	vec3 axis = p2 - p1;
+	float len = max(length(axis), 1e-4);
+	float toCrack = (0.5 * dot(p1 + p2, axis) - dot(q, axis)) / len;
+	float t = clamp(toCrack / BLOCK_CRACK, 0.0, 1.0);
+	float whole = t * t * (3.0 - 2.0 * t);
+	float floorHeight = -0.35;
+	float height = mix(floorHeight, top, whole);
+	// the slope: the plate's tilt where it is whole, and the crack's wall
+	vec3 grad = whole * tilt + (top - floorHeight) * (6.0 * t * (1.0 - t) / BLOCK_CRACK) * (-axis / len);
+	return vec4(grad * 0.12, clamp(height * 1.5, -1.0, 1.0));
+}
+
 // where small craters lie thick or thin, 0..1: smooth, from the place on the body alone, so tiles agree
 float tileCraterRegion(vec3 up)
 {

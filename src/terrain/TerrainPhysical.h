@@ -45,6 +45,7 @@ public:
 	// (nor landforms larger than a small body could hold)
 	double GetTileLandformTop() const override { return m_lines.IsActiveShell() || m_grooved ? 0.0 : (m_core.asteroid ? std::min(10000.0, 0.25 * m_planetRadius) : 10000.0); }
 	double GetTileCraterTop() const override { return TerrainCraters::SMALLEST_KM * 1000.0; }
+	double GetTileBlocks() const override;
 	bool HasFixedDetail() const override { return true; }
 	double GetFarReliefSlopes() const override { return IsSmallOldIce() ? 2.5 : 4.0; }
 	bool HasWaterAround(const vector3d &p, double radiusMetres) const override;
@@ -145,6 +146,9 @@ private:
 	double BaseRelief(const vector3d &p, double oldShare) const;
 	// 0..1, how much of the ground is old, battered crust: none on plains, none where the ground has maps of its own
 	double OldShare(const Ground &g) const;
+	// 0..1, how young the world's lava is: 1 where few craters have had time to gather, 0 on old plains under dust
+	double LavaYouth() const;
+	bool IsLavaGround() const;
 	// 0..1, the share of the base relief this ground keeps
 	double BaseShare(const Ground &g) const;
 	// where chaos lies on an active shell, 0..1

@@ -32,6 +32,8 @@ uniform vec4 TileStyle;
 uniform float TileCraterTop;
 // metres: landforms of every size up to this, fixed in space, instead of the band's (0)
 uniform float TileLandformTop;
+// weight of the cracked slabs and blocks (Terrain::GetTileBlocks)
+uniform float TileBlocks;
 
 // as TerrainTiles::MAX_OCTAVES
 #define TILE_MAX_OCTAVES 16
@@ -95,6 +97,8 @@ void main(void)
 				o += TileStyle.y * tileRidged(q, salt);
 			if (TileStyle.z > 0.0)
 				o += TileStyle.z * tileDunes(q, salt);
+			if (TileBlocks > 0.0)
+				o += TileBlocks * tileBlocks(q, salt);
 		}
 		if (TileStyle.w > 0.0 && (TileCraterTop <= 0.0 || lambda <= TileCraterTop * 1.01)) {
 			// faded craters do not count towards the nesting

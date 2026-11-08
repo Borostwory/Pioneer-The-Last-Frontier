@@ -36,6 +36,14 @@ namespace {
 	constexpr double FLOW_FRONT_SHOW_KM = 0.06;
 	constexpr double FLOW_ROUGH_M = 20.0;
 	constexpr double FLOW_ROUGH_KM = 2.0;
+	// 2 km down to about 125 m on old lava, and on young lava on down to about 16 m: tumuli and pressure ridges
+	constexpr int FLOW_ROUGH_OCTAVES_OLD = 5, FLOW_ROUGH_OCTAVES_YOUNG = 8;
+	// Young lava is rough at every size (Hawaii, Idaho's Craters of the Moon): slabs, tumuli and blocks. Old lava plains
+	// on airless worlds are ground to dust by billions of years of small impacts (the Moon's maria), and stay as gentle as
+	// before. Young lava ground keeps up to these shares of the base relief, the small relief and its own relief, and the
+	// GPU tiles draw this much of their landforms as cracked slabs (up to; rock gets ROCK_TILE_BLOCKS of them).
+	constexpr double YOUNG_LAVA_BASE = 1.0, YOUNG_LAVA_KEEP = 0.8, YOUNG_LAVA_OWN = 0.2;
+	constexpr double LAVA_TILE_BLOCKS = 0.8, ROCK_TILE_BLOCKS = 0.5;
 	// Base relief (BaseRelief): all solid ground is rough at every size, as real ground is: a fractal this high (m) at
 	// features BASE_RELIEF_KM across, each halving of the size a power of two lower, down to the samples. Only liquid is
 	// flat. Young ground (plains, frozen seas, worn or resurfaced worlds) is as the Moon's maria, old battered crust as
@@ -907,10 +915,14 @@ double TerrainPhysical::CutValleys(const vector3d &p, Point &point, const double
 double TerrainPhysical::Keep(const Ground &g) const
 {
 	// (nothing has smoothed an old ice moon, unlike an ice sheet or a frozen sea)
-	const double ground = m_core.asteroid || (m_interior.iceCrust && !m_state.weather && (!m_lines.IsActiveShell() || m_lines.IsPolar())) ? 1.0 : KeepOf(m_state.ground);
+	double ground = m_core.asteroid || (m_interior.iceCrust && !m_state.weather && (!m_lines.IsActiveShell() || m_lines.IsPolar())) ? 1.0 : KeepOf(m_state.ground);
+	// young lava keeps more of it
+	const double basalt = KeepOf(M::BASALT) + (std::max(KeepOf(M::BASALT), YOUNG_LAVA_KEEP) - KeepOf(M::BASALT)) * LavaYouth();
+	if (IsLavaGround())
+		ground = std::max(ground, ground + (YOUNG_LAVA_KEEP - ground) * LavaYouth());
 	if (!m_plainsAreBasalt || g.plains <= 0.0)
 		return ground;
-	return ground + (KeepOf(M::BASALT) - ground) * g.plains;
+	return ground + (basalt - ground) * g.plains;
 }
 
 namespace {
@@ -1710,7 +1722,8 @@ double TerrainPhysical::LavaPlainsRelief(const vector3d &p, const Ground &g) con
 		steps += show * (level + Soft(u - level, 1.0 - FLOW_FRONT_EDGE, FLOW_FRONT_EDGE) - u);
 	}
 	const double fronts = FLOW_FRONT_M * steps;
-	const double rough = FLOW_ROUGH_M * Fbm(p, radiusKm / FLOW_ROUGH_KM, 5, m_noiseSeed + 452, 0.65) / 0.35;
+	const int octaves = FLOW_ROUGH_OCTAVES_OLD + int(std::lround((FLOW_ROUGH_OCTAVES_YOUNG - FLOW_ROUGH_OCTAVES_OLD) * LavaYouth()));
+	const double rough = FLOW_ROUGH_M * Fbm(p, radiusKm / FLOW_ROUGH_KM, octaves, m_noiseSeed + 452, 0.65) / 0.35;
 	return weight * kept * (fronts + rough);
 }
 
@@ -1743,6 +1756,28 @@ double TerrainPhysical::BaseRelief(const vector3d &p, const double oldShare) con
 	return oldShare > 0.0 ? young + (OldRelief(p) - young) * oldShare : young;
 }
 
+double TerrainPhysical::LavaYouth() const
+{
+	return 1.0 - Soft(m_interior.cratering, OLD_FROM_CRATERING, OLD_CRATERING_WIDTH);
+}
+
+bool TerrainPhysical::IsLavaGround() const
+{
+	return m_state.ground == M::BASALT || m_state.ground == M::LAVA_FLOW;
+}
+
+double TerrainPhysical::GetTileBlocks() const
+{
+	// (what has maps of its own keeps the look it was judged with)
+	if (m_lines.IsActiveShell() || m_grooved)
+		return 0.0;
+	if (IsLavaGround() || m_state.ground == M::LAVA || m_state.ground == M::SALT)
+		return LAVA_TILE_BLOCKS * LavaYouth();
+	if (m_state.ground == M::ROCK || m_state.ground == M::METAL)
+		return ROCK_TILE_BLOCKS;
+	return 0.0;
+}
+
 double TerrainPhysical::OldShare(const Ground &g) const
 {
 	// (what has maps of its own keeps the look it was judged with)
@@ -1754,6 +1789,8 @@ double TerrainPhysical::OldShare(const Ground &g) const
 double TerrainPhysical::BaseShare(const Ground &g) const
 {
 	double share = BaseOf(m_state.ground);
+	if (IsLavaGround())
+		share += (std::max(share, YOUNG_LAVA_BASE) - share) * LavaYouth();
 	// (what has maps of its own keeps the look it was judged with)
 	if (m_lines.IsActiveShell() || m_grooved)
 		share = std::min(share, BASE_RELIEF_MAPPED);
@@ -1793,8 +1830,8 @@ double TerrainPhysical::OwnRelief(const vector3d &p, const Ground &g) const
 		break;
 	case M::DIRTY_ICE: out = own(0.35 * cap, fMin * 2.0, 3, 202, false) + iceRidges(); break;
 	case M::GRAVEL: out = own(0.2 * cap, fMin * 8.0, 3, 203, false); break;
-	case M::LAVA_FLOW: out = own(0.25 * cap, fMin * 2.0, 3, 204, false); break;
-	case M::BASALT: out = own(0.1 * cap, fMin * 2.0, 3, 205, false); break;
+	case M::LAVA_FLOW: out = own((0.25 + YOUNG_LAVA_OWN * LavaYouth()) * cap, fMin * 2.0, 3, 204, false); break;
+	case M::BASALT: out = own((0.1 + YOUNG_LAVA_OWN * LavaYouth()) * cap, fMin * 2.0, 3, 205, false); break;
 	case M::METAL: out = own(cap, fMin * 2.0, 4, 206, true); break;
 	case M::SOIL: out = own(0.2 * cap, fMin * 1.5, 3, 207, false); break;
 	default: break;

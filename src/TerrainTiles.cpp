@@ -263,5 +263,6 @@ void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patc
 	m->SetPushConstant("TileStyle"_hash, vector3f(style[0], style[1], style[2]), style[3]);
 	m->SetPushConstant("TileCraterTop"_hash, float(sphere->GetTerrain()->GetTileCraterTop()));
 	m->SetPushConstant("TileLandformTop"_hash, float(landformTop));
+	m->SetPushConstant("TileBlocks"_hash, float(sphere->GetTerrain()->GetTileBlocks()));
 	r->DrawBuffer(m_triangle.get(), m);
 }
