@@ -78,10 +78,14 @@ uniform vec4 PatchTile;
 // slots this body uses; the rest are empty
 #define MATERIAL_USED_SLOTS int(MaterialLook.w)
 
-#define MATERIAL_TEXTURE_SIZE 1024.0
+// (as scripts/make_terrain_materials.py makes them)
+#define MATERIAL_TEXTURE_SIZE 4096.0
 // on-screen size of a texel in pixels: grain, and mottling from the same
-// texture 8x larger
-#define MATERIAL_FINE_PIXELS_PER_TEXEL 2.5
+// texture 8x larger. Below 1 the texture is finer than the screen, and the
+// mipmaps show it as sharp as the pixels allow. 0.625 keeps the tiles the
+// size the 1K textures had at 2.5, so the grain looks the same size, only
+// sharper.
+#define MATERIAL_FINE_PIXELS_PER_TEXEL 0.625
 #define MATERIAL_COARSE_LEVELS 3.0
 // tile sizes are 2^level metres: 1 m to 128 km; MaterialOrigin covers levels
 // up to MATERIAL_FINE_ORIGIN_LEVEL, MaterialOriginCoarse the rest

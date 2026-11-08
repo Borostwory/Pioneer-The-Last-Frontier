@@ -6,14 +6,14 @@
 by data/shaders/opengl/terrain-materials.glsl.
 
 The sources are CC0 photo materials from ambientCG (https://ambientcg.com) and
-Poly Haven (https://polyhaven.com), 1K downloads, one folder per asset, with
-the files named the same way for both:
+Poly Haven (https://polyhaven.com), 1K, 2K or 4K downloads, one folder per
+asset, with the files named the same way for both (here 1K):
     <source_dir>/Rock030/Rock030_1K-JPG_Color.jpg
     <source_dir>/Rock030/Rock030_1K-JPG_Displacement.jpg
     <source_dir>/Rock030/Rock030_1K-JPG_Roughness.jpg
     ...
 (tools/material-preview/fetch_candidates.py downloads them into
-tools/material-preview/sources/1K)
+tools/material-preview/sources/<resolution>)
 
 Each becomes a greyscale detail texture, so the planet's own colours still
 show through: the colour photo's brightness with its large-scale shading
@@ -26,8 +26,10 @@ script's own (encode_dxt5): Pillow's lost much of the detail once blue held
 something other than a copy of green, while this one loses less than Pillow's
 did before.
 
-usage: python make_terrain_materials.py <source_dir> <output_dir> [layer ...]
-(only the named layers, when given)
+usage: python make_terrain_materials.py <source_dir> <output_dir> [--res 1K|2K|4K] [layer ...]
+(--res: the downloads used and the size made, 4K by default, as the game uses;
+MATERIAL_TEXTURE_SIZE in terrain-materials.glsl must match it. Only the named
+layers, when given)
 needs numpy and Pillow; prints each material's mean roughness, for
 materialMeanRoughness() in terrain-materials.glsl
 """
@@ -64,7 +66,11 @@ MATERIALS = [
     ("forest_far", "Moss003", 0.34),
 ]
 
-SIZE = 1024
+RESOLUTIONS = {"1K": 1024, "2K": 2048, "4K": 4096}
+RES = "4K"
+SIZE = RESOLUTIONS[RES]
+# blocks encoded at a time (memory)
+ENCODE_CHUNK = 32768
 
 
 def srgb_to_linear(c):
@@ -88,7 +94,7 @@ def load(path):
 
 
 def detail_and_height(src_dir, asset, contrast):
-    colour = load(os.path.join(src_dir, asset, f"{asset}_1K-JPG_Color.jpg"))
+    colour = load(os.path.join(src_dir, asset, f"{asset}_{RES}-JPG_Color.jpg"))
     lum = srgb_to_linear(colour[..., :3]) @ np.array([0.2126, 0.7152, 0.0722])
     # log brightness, minus its broad shading, at the set contrast
     d = np.log(np.maximum(lum, 1e-3))
@@ -96,7 +102,7 @@ def detail_and_height(src_dir, asset, contrast):
     d *= contrast / max(d.std(), 1e-6)
     detail = np.clip(0.5 * np.exp(d - np.log(np.mean(np.exp(d)))), 0.0, 1.0)
 
-    disp_path = os.path.join(src_dir, asset, f"{asset}_1K-JPG_Displacement.jpg")
+    disp_path = os.path.join(src_dir, asset, f"{asset}_{RES}-JPG_Displacement.jpg")
     if os.path.exists(disp_path):
         disp = load(disp_path)
         if disp.ndim == 3:
@@ -107,14 +113,14 @@ def detail_and_height(src_dir, asset, contrast):
         height = np.full(lum.shape, 0.5)
 
     emission = np.zeros_like(height)
-    emission_path = os.path.join(src_dir, asset, f"{asset}_1K-JPG_Emission.jpg")
+    emission_path = os.path.join(src_dir, asset, f"{asset}_{RES}-JPG_Emission.jpg")
     if os.path.exists(emission_path):
         e = load(emission_path)
         if e.ndim == 3:
             e = srgb_to_linear(e[..., :3]) @ np.array([0.2126, 0.7152, 0.0722])
         emission = np.clip(e / max(np.percentile(e, 99.5), 1e-6), 0.0, 1.0)
 
-    rough_path = os.path.join(src_dir, asset, f"{asset}_1K-JPG_Roughness.jpg")
+    rough_path = os.path.join(src_dir, asset, f"{asset}_{RES}-JPG_Roughness.jpg")
     if os.path.exists(rough_path):
         roughness = load(rough_path)
         if roughness.ndim == 3:
@@ -244,8 +250,10 @@ def encode_dxt5(rgba):
     if (pw, ph) != (w, h):
         rgba = np.pad(rgba, ((0, ph - h), (0, pw - w), (0, 0)), mode="edge")
     blocks = _blocks(rgba.astype(np.float64))
-    c0, c1, cidx = _colour_fit(blocks[..., :3])
-    a0, a1, aidx = _alpha_fit(blocks[..., 3])
+    parts = [(_colour_fit(chunk[..., :3]), _alpha_fit(chunk[..., 3]))
+             for chunk in (blocks[i:i + ENCODE_CHUNK] for i in range(0, blocks.shape[0], ENCODE_CHUNK))]
+    c0, c1, cidx = (np.concatenate([p[0][k] for p in parts]) for k in range(3))
+    a0, a1, aidx = (np.concatenate([p[1][k] for p in parts]) for k in range(3))
     out = np.zeros((blocks.shape[0], 16), np.uint8)
     out[:, 0], out[:, 1] = a0, a1
     abits = (aidx.astype(np.uint64) << (np.uint64(3) * np.arange(16, dtype=np.uint64))).sum(1)
@@ -280,8 +288,13 @@ def mip_chain(rgba):
 
 
 def main():
+    global RES, SIZE
     src_dir, out_dir = sys.argv[1], sys.argv[2]
-    only = set(sys.argv[3:])
+    rest = sys.argv[3:]
+    if len(rest) >= 2 and rest[0] == "--res":
+        RES, rest = rest[1], rest[2:]
+        SIZE = RESOLUTIONS[RES]
+    only = set(rest)
     os.makedirs(out_dir, exist_ok=True)
     for name, asset, contrast in MATERIALS:
         if only and name not in only:
