@@ -407,10 +407,13 @@ MaterialMapping materialMapping(vec3 eyepos, vec3 dpdx, vec3 dpdy, vec3 up)
 	float footprint = sqrt(length(m.relDx) * length(m.relDy));
 	m.level = log2(max(footprint * MATERIAL_TEXTURE_SIZE * MATERIAL_FINE_PIXELS_PER_TEXEL, 1.0));
 	// P4b: near the camera, one size fixed on the ground, so what the textures show (gravel, stones, cracks) keeps its
-	// size as the camera moves; beyond, back to the size by distance, never smaller than the near one
+	// size as the camera moves; beyond, back to the size by distance, never smaller than the near one. Back gradually:
+	// from the fixed size at MaterialNear.y, growing 1.5 levels each time the distance doubles (the size by distance
+	// grows 1), until it meets the size by distance. (Until 2026-11-09 it went back between MaterialNear.y and twice
+	// that: with level 4 out to 100 m, 8 times larger within 100 m, a ring sweeping over the ground as the camera moved.)
 	if (MaterialNear.z > 0.5) {
-		float far = smoothstep(MaterialNear.y, 2.0 * MaterialNear.y, length(m.rel));
-		m.level = mix(MaterialNear.x, max(MaterialNear.x, m.level), far);
+		float grown = MaterialNear.x + 1.5 * max(log2(max(length(m.rel), 1e-3) / max(MaterialNear.y, 1e-3)), 0.0);
+		m.level = max(MaterialNear.x, min(m.level, grown));
 	}
 	if (MaterialLook.y > 0.5)
 		m.level = min(m.level, MATERIAL_FIXED_MAX_LEVEL);
