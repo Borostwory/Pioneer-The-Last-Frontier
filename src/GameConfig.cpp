@@ -52,6 +52,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["TerrainTileBicubic"] = "1"; // read the surface tiles with a sharper filter
 	map["TerrainSurfaceTiles"] = "1"; // bake colour and normal tiles for nearby terrain patches at twice their vertex density (TerrainSurfaceTiles.h, 128 MB of video memory)
 	map["TerrainErosion"] = "1"; // cut river valleys into the mountains of planets with liquid water (TerrainErosion.cpp)
+	map["TerrainStones"] = "1"; // the ground textures' stones raised out of the ground near the camera (GeoSphere, P4 of the OpenGL 4.6 plan; the settings window's mod tab)
 	map["ShadowQuality"] = "3";   // sun shadows of ships, stations, buildings and terrain: 0 off, 1 1024, 2 2048, 3 4096 maps (SceneShadows.cpp)
 	map["ShadowNearRadius"] = "120"; // metres around the player's ship with sharp shadows, redrawn every frame
 	map["ShadowDistance"] = "10000";  // metres around the camera with shadows of terrain, stations, cities and parked ships

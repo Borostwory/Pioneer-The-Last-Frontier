@@ -685,6 +685,15 @@ local function showModOptions()
 		Engine.SettingsSetInt("PlanetOrbitSurface", orbitSurface + 1)
 	end
 
+	-- The stones raised out of the ground near you (src/GeoSphere.cpp, P4 of the OpenGL 4.6 plan); applied immediately.
+	-- Their height, shade, feet on them and the ground's tessellation are fine tuning, in the debug window.
+	ui.separator()
+	local stones = Engine.SettingsGetInt("TerrainStones") ~= 0
+	c,stones = checkbox(lui.STONES_RAISED, stones, lui.STONES_RAISED_DESC)
+	if c then
+		Engine.SettingsSetInt("TerrainStones", stones and 1 or 0)
+	end
+
 	-- Sun shadows of ships, stations and buildings (src/SceneShadows.cpp); applied immediately
 	ui.separator()
 	local shadowQualityLabels = { lui.OFF, lui.SHADOW_QUALITY_LOW, lui.SHADOW_QUALITY_MEDIUM, lui.SHADOW_QUALITY_HIGH }

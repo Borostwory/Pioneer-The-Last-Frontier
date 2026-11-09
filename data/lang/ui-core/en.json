@@ -2603,6 +2603,14 @@
     "description": "Settings window, The Last Frontier tab: tooltip of the 'Planets from orbit' choice",
     "message": "How planets are drawn from high orbit. Full detail keeps the terrain sharp; surface tiles cost less."
   },
+  "STONES_RAISED": {
+    "description": "Settings window, The Last Frontier tab, Graphics: checkbox that raises the stones and lumps of the ground textures out of the ground near the camera",
+    "message": "Ground tessellation and bump mapping"
+  },
+  "STONES_RAISED_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Ground tessellation and bump mapping' checkbox",
+    "message": "Raises the stones and lumps of the ground near you out of it, so they stand up instead of being painted flat. Costs some speed."
+  },
   "ORBIT_SURFACE_FULL": {
     "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the default",
     "message": "Full detail"

@@ -927,12 +927,10 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 	ImGui::Spacing();
 	ImGui::SeparatorText("P4c: the stones raised near the camera");
 	{
-		bool stones = GeoSphere::StonesEnabled();
-		if (ImGui::Checkbox("Raise the stones##openglPlan", &stones)) {
-			Pi::config->SetInt("TerrainStones", stones ? 1 : 0);
-			Pi::config->Save();
-			FrontierLog::Note(std::string("stones raised near the camera: ") + (stones ? "on" : "off"));
-		}
+		// (switched in the settings window's The Last Frontier tab since 2026-11-09)
+		ImGui::Text("Stones raised: %s", GeoSphere::StonesEnabled() ? "on" : "off");
+		ImGui::SameLine();
+		ImGui::TextColored(dim, "(Settings, The Last Frontier tab: \"Ground tessellation and bump mapping\")");
 		float height = float(GeoSphere::StonesHeight());
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
 		if (ImGui::SliderFloat("height##openglPlanStones", &height, 0.0f, 4.0f, "x %.2f"))
