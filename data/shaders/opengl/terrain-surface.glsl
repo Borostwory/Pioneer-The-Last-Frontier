@@ -36,15 +36,25 @@ uniform int GroundSkip;
 // each material's own height; z: 1 if they shade the ground from the main light (P4e); w: the tallest of this body's
 // materials' stones, as a share of the tile (how finely the ground is cut at a distance, terrain-stone-aim.glsl)
 uniform vec4 MaterialStones;
-// P4: the ground kept free of stones in circles: the cities (their streets, lots and pads) and landed ships
-// (GeoSphere::UpdateStoneFlats). xyz: the centre in view space, w: the radius in metres (0: none); the stones come back
-// over STONE_FLAT_MARGIN beyond it
+// P4: the ground kept free of stones: the cities (their streets, lots and pads; circles) and landed ships (along the
+// hull, as wide as it; GeoSphere::UpdateStoneFlats). Within the half-width of a line: StoneFlat xyz one end in view
+// space, w the half-width in metres (0: none); StoneFlatEnd xyz the other end (the same for a circle), w how far
+// beyond it the stones come back, metres
 uniform vec4 StoneFlat0;
 uniform vec4 StoneFlat1;
 uniform vec4 StoneFlat2;
 uniform vec4 StoneFlat3;
 uniform vec4 StoneFlat4;
 uniform vec4 StoneFlat5;
+uniform vec4 StoneFlatEnd0;
+uniform vec4 StoneFlatEnd1;
+uniform vec4 StoneFlatEnd2;
+uniform vec4 StoneFlatEnd3;
+uniform vec4 StoneFlatEnd4;
+uniform vec4 StoneFlatEnd5;
+// the mesh's vertex spacing, which the stones are smoothed to where it's cut as finely as it can be
+// (terrainStoneSpacing()): x the finest, metres; y per metre of distance (GeoSphere::StoneMeshSpacing)
+uniform vec4 StoneMesh;
 // as in the tessellation control shaders: x pixels per radian of the view, y the edge on screen they aim for (pixels);
 // for how far apart the cut points are, which the stones are smoothed to
 uniform vec4 TessParams;

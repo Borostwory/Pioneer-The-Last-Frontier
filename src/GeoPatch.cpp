@@ -815,8 +815,9 @@ void GeoPatch::ReceiveJobHandle(Job::Handle job)
 bool GeoPatch::IsPatchVisible(const Graphics::Frustum &frustum, const vector3d &camPos) const
 {
 	PROFILE_SCOPED()
-	// Test if this patch is visible
-	if (!frustum.TestSphere(m_clipCentroid, m_clipRadius))
+	// Test if this patch is visible (with the stones raised, as far out as the tallest of them could raise the ground:
+	// ground just below the bottom of the screen comes into view raised)
+	if (!frustum.TestSphere(m_clipCentroid, m_clipRadius + m_geosphere->GetStoneCullMargin()))
 		return false; // nothing below this patch is visible
 
 	// We only want to horizon cull patches that can actually be over the horizon!

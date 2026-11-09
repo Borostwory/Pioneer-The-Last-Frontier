@@ -817,18 +817,34 @@ float materialStoneDepth(int m)
 // how finely the ground is cut for the stones at a distance
 #include "terrain-stone-aim.glsl"
 
-// how far beyond a circle kept free of stones they are back in full (metres)
-#define STONE_FLAT_MARGIN 10.0
-
-float terrainStoneFlatOne(vec3 p, vec4 circle)
+// 0 within a flat's half-width of its line, 1 from its margin beyond (a, b: StoneFlat, StoneFlatEnd)
+float terrainStoneFlatOne(vec3 p, vec4 a, vec4 b)
 {
-	return circle.w <= 0.0 ? 1.0 : smoothstep(circle.w, circle.w + STONE_FLAT_MARGIN, length(p - circle.xyz));
+	if (a.w <= 0.0)
+		return 1.0;
+	vec3 ab = b.xyz - a.xyz;
+	float t = clamp(dot(p - a.xyz, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
+	return smoothstep(a.w, a.w + max(b.w, 1e-3), length(p - (a.xyz + t * ab)));
 }
 
-// 0 inside the circles kept free of stones (cities, landed ships), 1 well clear of them; p: view space
+// 0 in the ground kept free of stones (cities, landed ships), 1 well clear of it; p: view space
 float terrainStoneFlat(vec3 p)
 {
-	return terrainStoneFlatOne(p, StoneFlat0) * terrainStoneFlatOne(p, StoneFlat1) * terrainStoneFlatOne(p, StoneFlat2) * terrainStoneFlatOne(p, StoneFlat3) * terrainStoneFlatOne(p, StoneFlat4) * terrainStoneFlatOne(p, StoneFlat5);
+	return terrainStoneFlatOne(p, StoneFlat0, StoneFlatEnd0) * terrainStoneFlatOne(p, StoneFlat1, StoneFlatEnd1) *
+		terrainStoneFlatOne(p, StoneFlat2, StoneFlatEnd2) * terrainStoneFlatOne(p, StoneFlat3, StoneFlatEnd3) *
+		terrainStoneFlatOne(p, StoneFlat4, StoneFlatEnd4) * terrainStoneFlatOne(p, StoneFlat5, StoneFlatEnd5);
+}
+
+// The cut points' spacing at a distance (metres), which the stones' heights are smoothed to: the edge on screen aimed
+// for (terrainStoneAim()), but no finer than the mesh can be cut, its vertices' spacing there over the most cuts per
+// edge (StoneMesh, TessParams.z). Until 2026-11-09 the aim alone: near the camera that read the heights in full detail,
+// 1.6 cm, onto cuts 19 cm apart (64 to a patch's 12 m), so the shape drawn was a rough sample of them, and as the detail
+// read changed with the distance, so did the shape: the bumps changed shape as you walked.
+float terrainStoneSpacing(float dist)
+{
+	float aimed = dist * terrainStoneAim(dist) / max(TessParams.x, 1.0);
+	float mesh = max(StoneMesh.x, StoneMesh.y * dist) / max(TessParams.z, 1.0);
+	return max(max(aimed, mesh), 1e-3);
 }
 
 // The stone heights (terrainStoneHeights) at tile coordinates uv, smoothed to lod (in the heights' own pixels). Read at a
@@ -1002,8 +1018,8 @@ void terrainStones(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 eyepos, vec3 normal, v
 	if (!terrainStonePick(slots, eyepos, normal, up, altitude, hasWater, p))
 		return;
 	mat3 toPlanet = transpose(mat3(cloudAxisX.xyz, cloudAxisY.xyz, cloudAxisZ.xyz));
-	// (the cut points' spacing there: the edge on screen aimed for, at this distance)
-	float spacing = max(length(eyepos) * terrainStoneAim(length(eyepos)) / max(TessParams.x, 1.0), 1e-3);
+	// (the cut points' spacing there)
+	float spacing = terrainStoneSpacing(length(eyepos));
 	MaterialMapping m = terrainStoneMapping(eyepos, up, toPlanet);
 	lift = terrainStoneAt(p, m, spacing);
 

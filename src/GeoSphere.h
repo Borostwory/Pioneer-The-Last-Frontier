@@ -183,6 +183,12 @@ public:
 	// how many pixels tall the tallest stone of this body could stand on screen at a distance (metres), as
 	// terrainStonePixels() works it out
 	double StonePixelsAt(double metres) const;
+	// the mesh's vertex spacing, metres: the finest (the deepest patches, with the extra near the player) and per metre
+	// of distance, which the stones are smoothed to where it's cut as finely as it can be (terrainStoneSpacing())
+	void StoneMeshSpacing(double &finest, double &perMetre) const;
+	// how far below the screen ground may lie and still be raised into view by the stones, planet radii
+	// (GeoPatch::IsPatchVisible)
+	double GetStoneCullMargin() const { return m_stoneCullMargin; }
 	// P4d's check: the stones' height under the camera, worked out by the main processor and by the graphics card
 	struct StoneProbe {
 		bool valid = false; // both are in
@@ -221,16 +227,21 @@ private:
 	DrawnPatches m_drawnPatches;
 	double m_pixelAngle = 0.0;
 	int m_tessellatedThisFrame = 0;
+	// GetStoneCullMargin, set in Render
+	double m_stoneCullMargin = 0.0;
 	// Render: the ground's version with the stones started building (SetUpMaterials starts the plain one)
 	bool m_stonesVersionStarted = false;
 	// P4d: the stones' height at a point of the drawn mesh (planet radii), from what the mesh holds there, in metres
 	double StoneLiftAt(const vector3d &point, const vector3d &normal, const float slots[16], float seaHeight) const;
 	// P4d's check, in Render: reads last frame's answer from the graphics card and asks again
 	void RunStoneProbe(Graphics::Renderer *renderer, const matrix4x4d &trans, const vector3d &campos, PlanetClouds::CloudDataBlock &cloudData);
-	// P4: the circles kept free of stones near the camera (planet-fixed, metres): the cities and the landed ships
+	// P4: the ground kept free of stones near the camera (planet-fixed, metres): the cities and the landed ships. Within
+	// radius of the line from centre to end (the same for a city's circle), the stones back over margin beyond
 	struct StoneFlat {
 		vector3d centre;
+		vector3d end;
 		double radius;
+		double margin;
 	};
 	std::vector<StoneFlat> m_stoneFlats;
 	void UpdateStoneFlats(const vector3d &campos);

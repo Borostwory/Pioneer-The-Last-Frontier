@@ -72,6 +72,13 @@ PushConstant vec4 StoneFlat5 binding=26
 PushConstant int GroundSkip binding=27
 PushConstant vec4 TextureLod binding=28
 PushConstant float TextureTurnTable binding=29
+PushConstant vec4 StoneFlatEnd0 binding=30
+PushConstant vec4 StoneFlatEnd1 binding=31
+PushConstant vec4 StoneFlatEnd2 binding=32
+PushConstant vec4 StoneFlatEnd3 binding=33
+PushConstant vec4 StoneFlatEnd4 binding=34
+PushConstant vec4 StoneFlatEnd5 binding=35
+PushConstant vec4 StoneMesh binding=36
 
 Vertex "rayleigh_geosphere_terrain.vert"
 Fragment "rayleigh_geosphere_terrain.frag"

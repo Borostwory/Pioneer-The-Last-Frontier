@@ -514,9 +514,25 @@ double GeoSphere::StoneLiftAt(const vector3d &point, const vector3d &normal, con
 	params.flatCount = std::min(int(m_stoneFlats.size()), int(TerrainStones::Params::MAX_FLATS));
 	for (int i = 0; i < params.flatCount; i++) {
 		params.flatCentre[i] = m_stoneFlats[i].centre;
+		params.flatEnd[i] = m_stoneFlats[i].end;
 		params.flatRadius[i] = m_stoneFlats[i].radius;
+		params.flatMargin[i] = m_stoneFlats[i].margin;
 	}
+	double finest, perMetre;
+	StoneMeshSpacing(finest, perMetre);
+	params.meshFinest = float(finest);
+	params.meshPerMetre = float(perMetre);
+	params.maxCuts = 64.0f;
 	return TerrainStones::Lift(params, pt);
+}
+
+void GeoSphere::StoneMeshSpacing(double &finest, double &perMetre) const
+{
+	// (as GetDeepestVertexSpacing, at the depth the patches near the player reach; and as ReliefScale: a patch at a
+	// distance d is about d / 1.4K wide within the terrain detail distance K, split into the context's vertex gaps)
+	const int depth = std::min(int(GEOPATCH_MAX_DEPTH), int(m_maxDepth + m_extraDepth));
+	finest = m_sbody->GetRadius() * 0.5 * M_PI / std::pow(2.0, double(depth)) * GeoPatchContext::GetFrac();
+	perMetre = 1.0 / (1.41 * GetLodDistance() * double(s_patchContext->GetEdgeLen() - 3));
 }
 
 double GeoSphere::StonesFadePixels()
@@ -546,10 +562,13 @@ void GeoSphere::UpdateStoneFlats(const vector3d &campos)
 	const double radius = GetSystemBody()->GetRadius();
 	const vector3d camera = campos * radius;
 	std::vector<StoneFlat> all;
-	// the cities, as far out as their glow from afar reaches (their streets, lots, pads and gardens)
+	// the cities, as far out as their glow from afar reaches (their streets, lots, pads and gardens), the stones back
+	// over 10 m beyond
 	for (const GlowCity &city : m_glowCities)
-		all.push_back({ city.pos, city.radius });
-	// the ships landed on this body (docked ones are on the cities' pads)
+		all.push_back({ city.pos, city.pos, city.radius, 10.0 });
+	// The ships landed on this body (docked ones are on the cities' pads): the ground under the hull, along its length as
+	// wide as it is, at its bottom, the stones back over 3 m beyond. (Until 2026-11-09 a circle as wide as the ship's whole
+	// bounding sphere, and 10 m more: standing beside the ship there were no stones round you.)
 	if (Pi::game && Pi::game->GetSpace()) {
 		for (const Body *body : Pi::game->GetSpace()->GetBodies()) {
 			if (!body->IsType(ObjectType::SHIP) || !static_cast<const Ship *>(body)->IsLanded())
@@ -557,16 +576,33 @@ void GeoSphere::UpdateStoneFlats(const vector3d &campos)
 			const Frame *frame = Frame::GetFrame(body->GetFrame());
 			if (!frame || !frame->IsRotFrame() || !frame->GetBody() || frame->GetBody()->GetSystemBody() != GetSystemBody())
 				continue;
-			all.push_back({ body->GetPosition(), body->GetPhysRadius() });
+			const Aabb &box = static_cast<const Ship *>(body)->GetAabb();
+			if (!(box.max.x > box.min.x && box.max.z > box.min.z)) {
+				all.push_back({ body->GetPosition(), body->GetPosition(), body->GetPhysRadius(), 3.0 });
+				continue;
+			}
+			// (in the ship's own axes, y up: the longer of x and z is its length)
+			const vector3d half = (box.max - box.min) * 0.5;
+			const bool alongZ = half.z >= half.x;
+			const double width = alongZ ? half.x : half.z;
+			const double along = std::max((alongZ ? half.z : half.x) - width, 0.0);
+			const vector3d bottom = vector3d((box.min.x + box.max.x) * 0.5, box.min.y, (box.min.z + box.max.z) * 0.5);
+			const vector3d axis = alongZ ? vector3d(0.0, 0.0, along) : vector3d(along, 0.0, 0.0);
+			const matrix3x3d orient = body->GetOrient();
+			const vector3d pos = body->GetPosition();
+			all.push_back({ pos + orient * (bottom - axis), pos + orient * (bottom + axis), width, 3.0 });
 		}
 	}
 	// the nearest to the camera that the stones could reach
+	auto gap = [&](const StoneFlat &flat) {
+		const vector3d ab = flat.end - flat.centre;
+		const double t = std::clamp((camera - flat.centre).Dot(ab) / std::max(ab.LengthSqr(), 1e-6), 0.0, 1.0);
+		return (camera - (flat.centre + ab * t)).Length() - flat.radius;
+	};
 	const double reach = StonesReach() + 10.0;
-	std::sort(all.begin(), all.end(), [&](const StoneFlat &a, const StoneFlat &b) {
-		return (a.centre - camera).Length() - a.radius < (b.centre - camera).Length() - b.radius;
-	});
+	std::sort(all.begin(), all.end(), [&](const StoneFlat &a, const StoneFlat &b) { return gap(a) < gap(b); });
 	for (const StoneFlat &flat : all) {
-		if (int(m_stoneFlats.size()) >= TerrainStones::Params::MAX_FLATS || (flat.centre - camera).Length() - flat.radius > reach)
+		if (int(m_stoneFlats.size()) >= TerrainStones::Params::MAX_FLATS || gap(flat) > reach)
 			break;
 		m_stoneFlats.push_back(flat);
 	}
@@ -575,12 +611,17 @@ void GeoSphere::UpdateStoneFlats(const vector3d &campos)
 void GeoSphere::SetStoneFlats(Graphics::Material *material, const matrix4x4d &trans) const
 {
 	static const size_t names[TerrainStones::Params::MAX_FLATS] = { "StoneFlat0"_hash, "StoneFlat1"_hash, "StoneFlat2"_hash, "StoneFlat3"_hash, "StoneFlat4"_hash, "StoneFlat5"_hash };
+	static const size_t ends[TerrainStones::Params::MAX_FLATS] = { "StoneFlatEnd0"_hash, "StoneFlatEnd1"_hash, "StoneFlatEnd2"_hash, "StoneFlatEnd3"_hash, "StoneFlatEnd4"_hash, "StoneFlatEnd5"_hash };
 	const double radius = GetSystemBody()->GetRadius();
 	for (int i = 0; i < TerrainStones::Params::MAX_FLATS; i++) {
-		if (i < int(m_stoneFlats.size()))
-			material->SetPushConstant(names[i], vector3f(trans * (m_stoneFlats[i].centre / radius)), float(m_stoneFlats[i].radius));
-		else
+		if (i < int(m_stoneFlats.size())) {
+			const StoneFlat &flat = m_stoneFlats[i];
+			material->SetPushConstant(names[i], vector3f(trans * (flat.centre / radius)), float(flat.radius));
+			material->SetPushConstant(ends[i], vector3f(trans * (flat.end / radius)), float(flat.margin));
+		} else {
 			material->SetPushConstant(names[i], vector3f(0.0f), 0.0f);
+			material->SetPushConstant(ends[i], vector3f(0.0f), 0.0f);
+		}
 	}
 }
 
@@ -877,6 +918,11 @@ void GeoSphere::RunStoneProbe(Graphics::Renderer *renderer, const matrix4x4d &tr
 	m->SetPushConstant("MaterialNear"_hash, vector3f(float(TextureFixedLevel()), float(TextureFixedRange()), TextureFixedEnabled() ? 1.0f : 0.0f), float(StonesFadePixels()));
 	m->SetPushConstant("MaterialStones"_hash, vector3f(1.0f, float(StonesHeight()), 0.0f), DeepestStone(m_terrain.Get()));
 	m->SetPushConstant("TessParams"_hash, vector3f(float(1.0 / std::max(m_pixelAngle, 1e-9)), float(TessellationPixels()), 64.0f), float(StonesFullPixels()));
+	{
+		double finest, perMetre;
+		StoneMeshSpacing(finest, perMetre);
+		m->SetPushConstant("StoneMesh"_hash, vector3f(float(finest), float(perMetre), 0.0f), 0.0f);
+	}
 	const vector3d camMetres = campos * radius;
 	m->SetPushConstant("MaterialOrigin"_hash, FractionalPart(camMetres / (5.0 * 256.0)), 0.0f);
 	m->SetPushConstant("MaterialOriginCoarse"_hash, FractionalPart(camMetres / (5.0 * 131072.0)), 0.0f);
@@ -1225,6 +1271,14 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	m_surfaceMaterial->SetPushConstant("TextureTurnTable"_hash, TurnTable() ? 1.0f : 0.0f);
 	// P4c: the stones raised near the camera (terrain-materials.glsl, terrainStones)
 	m_surfaceMaterial->SetPushConstant("MaterialStones"_hash, vector3f(StonesActive() ? 1.0f : 0.0f, float(StonesHeight()), StoneShadowsEnabled() ? 1.0f : 0.0f), DeepestStone(m_terrain.Get()));
+	// the mesh's own vertex spacing, which the stones are smoothed to where it's cut as finely as it can be
+	{
+		double finest, perMetre;
+		StoneMeshSpacing(finest, perMetre);
+		m_surfaceMaterial->SetPushConstant("StoneMesh"_hash, vector3f(float(finest), float(perMetre), 0.0f), 0.0f);
+	}
+	// and the patches kept in view as far below the screen as the tallest stone could raise them (GeoPatch::IsPatchVisible)
+	m_stoneCullMargin = StonesActive() ? DeepestStone(m_terrain.Get()) * StonesHeight() * std::exp2(TextureFixedLevel()) / GetSystemBody()->GetRadius() : 0.0;
 	// and the viewport, for the edges' length on screen (terrain-tess-edges.glsl)
 	m_surfaceMaterial->SetPushConstant("TessScreen"_hash, vector3f(0.5f * float(renderer->GetViewport().w), 0.5f * float(renderer->GetViewport().h), 0.0f), 0.0f);
 	Graphics::CityGlowDataBlock cityGlow{};

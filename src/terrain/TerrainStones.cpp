@@ -43,7 +43,6 @@ namespace {
 	constexpr float MATERIAL_BEACH_FULL = 2.0f;
 	constexpr float MATERIAL_BLEND_DEPTH = 0.2f;
 	constexpr float MATERIAL_ICE_LEAST = 0.4f;
-	constexpr float STONE_FLAT_MARGIN = 10.0f;
 	// terrain-stone-aim.glsl
 	const vector2f MATERIAL_TURNS[8] = { { 1.0f, 0.0f }, { 0.6f, 0.8f }, { 0.0f, 1.0f }, { -0.8f, 0.6f }, { -1.0f, 0.0f },
 		{ -0.6f, -0.8f }, { 0.0f, -1.0f }, { 0.8f, -0.6f } };
@@ -431,10 +430,15 @@ namespace TerrainStones {
 		float near = 1.0f - SmoothStep(P.nearRange, 2.0f * P.nearRange, distance);
 		const float fadePixels = std::max(P.fadePixels, 0.1f);
 		near *= SmoothStep(0.5f * fadePixels, fadePixels, StonePixels(P, distance));
+		// terrainStoneFlat()
 		for (int i = 0; i < std::min(P.flatCount, int(Params::MAX_FLATS)); i++) {
-			const float r = float(P.flatRadius[i]);
-			if (r > 0.0f)
-				near *= SmoothStep(r, r + STONE_FLAT_MARGIN, vector3f(pt.position - P.flatCentre[i]).Length());
+			const double r = P.flatRadius[i];
+			if (r <= 0.0)
+				continue;
+			const vector3d ab = P.flatEnd[i] - P.flatCentre[i];
+			const double t = std::clamp((pt.position - P.flatCentre[i]).Dot(ab) / std::max(ab.LengthSqr(), 1e-6), 0.0, 1.0);
+			const double d = (pt.position - (P.flatCentre[i] + ab * t)).Length();
+			near *= SmoothStep(float(r), float(r + std::max(P.flatMargin[i], 1e-3)), float(d));
 		}
 		if (pt.hasWater)
 			near *= SmoothStep(0.5f, 2.0f, pt.altitude);
@@ -482,8 +486,10 @@ namespace TerrainStones {
 		m.plane[0] = 1.0f - 0.5f * edge;
 		m.plane[1] = 0.5f * edge;
 
-		// terrainStones(): the cut points' spacing; terrainStoneAt()
-		const float spacing = std::max(distance * StoneAim(P, distance) / std::max(P.pixelsPerRadian, 1.0f), 1e-3f);
+		// terrainStones(): the cut points' spacing (terrainStoneSpacing()); terrainStoneAt()
+		const float aimed = distance * StoneAim(P, distance) / std::max(P.pixelsPerRadian, 1.0f);
+		const float mesh = std::max(P.meshFinest, P.meshPerMetre * distance) / std::max(P.maxCuts, 1.0f);
+		const float spacing = std::max(std::max(aimed, mesh), 1e-3f);
 		const float h1 = StoneSample(P, l1, m, P.nearLevel, spacing);
 		const float h2 = w2 > 0.01f ? StoneSample(P, l2, m, P.nearLevel, spacing) : 0.5f;
 		const float s1 = w1 / std::max(total, 1e-6f) + h1;

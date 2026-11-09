@@ -35,5 +35,12 @@ PushConstant vec4 StoneFlat2 binding=21
 PushConstant vec4 StoneFlat3 binding=22
 PushConstant vec4 StoneFlat4 binding=23
 PushConstant vec4 StoneFlat5 binding=24
+PushConstant vec4 StoneFlatEnd0 binding=25
+PushConstant vec4 StoneFlatEnd1 binding=26
+PushConstant vec4 StoneFlatEnd2 binding=27
+PushConstant vec4 StoneFlatEnd3 binding=28
+PushConstant vec4 StoneFlatEnd4 binding=29
+PushConstant vec4 StoneFlatEnd5 binding=30
+PushConstant vec4 StoneMesh binding=31
 
 Compute "stone_probe.comp"

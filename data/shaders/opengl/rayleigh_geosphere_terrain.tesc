@@ -11,6 +11,10 @@ uniform vec4 TessParams;
 // xy: half the viewport's width and height, in pixels
 uniform vec4 TessScreen;
 
+// (the view's matrices and the planet's centre, for what's off screen with the stones raised)
+#include "attributes.glsl"
+#include "lib.glsl"
+#include "basesphere_uniforms.glsl"
 #include "terrain-tess-edges.glsl"
 
 in vec3 varyingEyepos[];

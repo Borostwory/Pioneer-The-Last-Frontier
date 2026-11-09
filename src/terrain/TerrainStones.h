@@ -38,11 +38,17 @@ namespace TerrainStones {
 		float pixelsPerRadian = 1.0f, aimPixels = 1.0f; // TessParams.xy
 		float fullPixels = 8.0f; // TessParams.w: the stones' height on screen (pixels) below which the cuts thin out
 		float fadePixels = 2.0f; // MaterialNear.w: the stones' height on screen (pixels) from which they fade out
-		// the circles kept free of stones (StoneFlat0..5): planet-fixed centres in metres, radii in metres
+		// the ground kept free of stones (StoneFlat0..5, StoneFlatEnd0..5): within flatRadius of the line from flatCentre
+		// to flatEnd (planet-fixed, metres; a circle where they're the same), the stones back over flatMargin beyond
 		static constexpr int MAX_FLATS = 6;
 		int flatCount = 0;
 		vector3d flatCentre[MAX_FLATS];
+		vector3d flatEnd[MAX_FLATS];
 		double flatRadius[MAX_FLATS] = {};
+		double flatMargin[MAX_FLATS] = {};
+		// the mesh's vertex spacing (StoneMesh): the finest, metres, and per metre of distance; the most cuts per edge
+		// (TessParams.z)
+		float meshFinest = 0.0f, meshPerMetre = 0.0f, maxCuts = 64.0f;
 	};
 
 	// a point of the drawn ground, as the evaluation shaders get it
