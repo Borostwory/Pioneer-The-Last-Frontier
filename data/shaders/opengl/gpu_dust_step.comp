@@ -1,0 +1,61 @@
+// Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+// Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+// P7 of the OpenGL 4.6 plan: the rover's dust on the graphics card (GpuDust in Sfx.cpp). One step of every puff, as
+// Sfx::TimeStepUpdate moves a TYPE_DUST: slowed toward the wind, falling, and lying on the ground once back on it,
+// sliding to a stop. Positions are relative to an anchor near the rover (single precision holds centimetres there, not
+// a planet's whole radius).
+
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(binding = 0, rgba32f) uniform image2D dustState0; // position from the anchor (m, frame axes), age (s)
+layout(binding = 1, rgba32f) uniform image2D dustState1; // velocity (m/s), lifetime (s); dead once age >= lifetime
+layout(binding = 2, rgba32f) uniform image2D dustState2; // start size, end size (m), drag (1/s), gravity (m/s^2)
+layout(binding = 3, rgba32f) uniform image2D dustState3; // wind (m/s), the ground's height above the anchor's sphere (m)
+
+// x: the time of a step (s), y: how many steps, z: 1 to clear every puff
+uniform vec4 DustStep;
+// xyz: straight up at the anchor (frame axes), w: the anchor's distance from the planet's centre (m)
+uniform vec4 DustAnchor;
+// xyz: taken from every position, as the anchor moved by it
+uniform vec4 DustShift;
+
+void main(void)
+{
+	ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 size = imageSize(dustState0);
+	if (p.x >= size.x || p.y >= size.y)
+		return;
+	if (DustStep.z > 0.5) {
+		imageStore(dustState0, p, vec4(0.0));
+		imageStore(dustState1, p, vec4(0.0));
+		return;
+	}
+	vec4 s0 = imageLoad(dustState0, p);
+	vec4 s1 = imageLoad(dustState1, p);
+	if (s0.w >= s1.w)
+		return;
+	vec4 s2 = imageLoad(dustState2, p);
+	vec4 s3 = imageLoad(dustState3, p);
+
+	vec3 pos = s0.xyz - DustShift.xyz;
+	vec3 vel = s1.xyz;
+	float dt = DustStep.x;
+	int steps = int(DustStep.y + 0.5);
+	for (int i = 0; i < steps; i++) {
+		vec3 up = normalize(DustAnchor.xyz * DustAnchor.w + pos);
+		float drag = clamp(s2.z * dt, 0.0, 0.85);
+		vel += (s3.xyz - vel) * drag;
+		vel -= up * (s2.w * dt);
+		pos += vel * dt;
+		// its height above the anchor's sphere (for a position near the anchor, without the planet's whole radius)
+		float along = dot(pos, DustAnchor.xyz);
+		float height = along + (dot(pos, pos) - along * along) / (2.0 * DustAnchor.w);
+		if (height < s3.w) {
+			pos += up * (s3.w - height);
+			vel -= up * min(dot(vel, up), 0.0);
+			vel *= max(0.0, 1.0 - 4.0 * dt);
+		}
+	}
+	imageStore(dustState0, p, vec4(pos, s0.w + dt * float(steps)));
+	imageStore(dustState1, p, vec4(vel, s1.w));
+}

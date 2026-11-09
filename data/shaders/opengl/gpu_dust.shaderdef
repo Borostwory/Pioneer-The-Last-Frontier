@@ -1,0 +1,22 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# P7 of the OpenGL 4.6 plan: the rover's dust on the graphics card, with the exhaust's look (GpuDust in Sfx.cpp)
+Shader gpu_dust
+
+Buffer DrawData binding=1
+
+Texture sampler2D dustState0
+Texture sampler2D dustState1
+Texture sampler2D dustState2
+Texture sampler2D dustState4
+Texture sampler2D dustState5
+
+PushConstant vec4 DustView binding=0
+PushConstant vec4 DustAxisX binding=1
+PushConstant vec4 DustAxisY binding=2
+PushConstant vec4 DustAxisZ binding=3
+PushConstant vec4 DustLight binding=4
+
+Vertex "gpu_dust.vert"
+Fragment "exhaust.frag"

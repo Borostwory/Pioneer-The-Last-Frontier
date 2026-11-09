@@ -734,7 +734,9 @@ void Excursion::RaiseDust()
 	windDir = windDir.LengthSqr() > 1e-12 ? windDir.Normalized() : vector3d(1.0, 0.0, 0.0);
 	const vector3f wind(windDir * (DUST_WIND * air));
 	const double sizeUp = std::min(speed / Rover::MAX_SPEED, 1.0);
-	const double perMetre = mix(VACUUM_PUFFS_PER_METRE, AIR_PUFFS_PER_METRE) * dustiness;
+	// (P7 of the OpenGL 4.6 plan: on the graphics card the puffs cost next to nothing, so more of them if wanted)
+	const double amount = Pi::config->Int("GpuDust", 1) ? Clamp(double(Pi::config->Float("RoverDustAmount", 1.0f)), 0.0, 8.0) : 1.0;
+	const double perMetre = mix(VACUUM_PUFFS_PER_METRE, AIR_PUFFS_PER_METRE) * dustiness * amount;
 	const double dt = m_game->GetTimeStep();
 
 	for (int i = 0; i < 4; i++) {

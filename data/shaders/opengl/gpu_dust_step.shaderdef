@@ -1,0 +1,19 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# P7 of the OpenGL 4.6 plan: one step of the rover's dust on the graphics card (GpuDust in Sfx.cpp)
+Shader gpu_dust_step
+
+# (every shader must name one buffer: the engine adds DrawData after the last one, and with none it reads past an empty list)
+Buffer DrawData binding=1
+
+Image image2D dustState0 binding=0 format=rgba32f access=readwrite
+Image image2D dustState1 binding=1 format=rgba32f access=readwrite
+Image image2D dustState2 binding=2 format=rgba32f access=readwrite
+Image image2D dustState3 binding=3 format=rgba32f access=readwrite
+
+PushConstant vec4 DustStep binding=0
+PushConstant vec4 DustAnchor binding=1
+PushConstant vec4 DustShift binding=2
+
+Compute "gpu_dust_step.comp"

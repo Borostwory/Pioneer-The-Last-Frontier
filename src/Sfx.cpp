@@ -7,6 +7,7 @@
 #include "FileSystem.h"
 #include "Frame.h"
 #include "Game.h"
+#include "GameConfig.h"
 #include "GameSaveError.h"
 #include "Json.h"
 #include "JsonUtils.h"
@@ -18,6 +19,7 @@
 #include "matrix4x4.h"
 
 #include "core/IniConfig.h"
+#include "core/Log.h"
 #include "graphics/Drawables.h"
 #include "graphics/Graphics.h"
 #include "graphics/Material.h"
@@ -492,8 +494,190 @@ void SfxManager::Cleanup()
 	}
 }
 
+// ---------------------------------------------------------------- the rover's dust on the graphics card
+
+// P7 of docs/implementation_plans/opengl46-tessellation-compute_plan.md: TYPE_DUST, moved and drawn on the graphics card
+// (gpu_dust_step.comp, gpu_dust.vert), the same puffs moving the same way, so many more of them cost next to nothing.
+// The puffs are kept in six small float textures, one texel each, filled in turn as they're thrown up; a compute step
+// moves them all each frame, and one instanced draw shows them. Their positions are taken from an anchor near the rover,
+// moved along when it has gone far, so single precision holds centimetres. Only one frame's dust at a time: the rover's.
+namespace {
+	constexpr int GPU_DUST_SIDE = 64;
+	constexpr int GPU_DUST_COUNT = GPU_DUST_SIDE * GPU_DUST_SIDE;
+	constexpr int GPU_DUST_STATES = 6;
+	// the anchor moves to the newest puff when it's this far off (m)
+	constexpr double GPU_DUST_ANCHOR_REACH = 1000.0;
+
+	struct GpuDustPuff {
+		float state[GPU_DUST_STATES][4];
+	};
+
+	struct GpuDust {
+		bool tried = false, ready = false;
+		RefCountedPtr<Graphics::Texture> state[GPU_DUST_STATES];
+		std::unique_ptr<Graphics::Material> step, draw;
+		bool hasAnchor = false;
+		FrameId frame;
+		vector3d anchor;
+		vector3d shift = vector3d(0.0); // not yet taken from the puffs
+		bool clear = false;
+		int head = 0; // the next texel to fill
+		std::vector<GpuDustPuff> pending; // thrown up since the last step
+		double lastTime = -1.0;
+	};
+	GpuDust s_gpuDust;
+
+	bool GpuDustEnabled()
+	{
+		return Pi::config->Int("GpuDust", 1) != 0;
+	}
+
+	bool GpuDustInit(Graphics::Renderer *r)
+	{
+		GpuDust &d = s_gpuDust;
+		if (d.tried)
+			return d.ready;
+		d.tried = true;
+		const Graphics::TextureDescriptor desc(Graphics::TEXTURE_RGBA32F, vector3f(float(GPU_DUST_SIDE), float(GPU_DUST_SIDE), 0.0f), Graphics::NEAREST_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
+		const std::vector<float> zeros(size_t(GPU_DUST_COUNT) * 4, 0.0f);
+		for (int i = 0; i < GPU_DUST_STATES; i++) {
+			d.state[i].Reset(r->CreateTexture(desc));
+			if (!d.state[i])
+				return false;
+			d.state[i]->Update(zeros.data(), desc.dataSize, Graphics::TEXTURE_RGBA32F);
+		}
+		d.step.reset(r->CreateMaterial("gpu_dust_step", Graphics::MaterialDescriptor(), Graphics::RenderStateDesc(), Graphics::VertexFormatDesc()));
+		static const size_t imageNames[4] = { "dustState0"_hash, "dustState1"_hash, "dustState2"_hash, "dustState3"_hash };
+		for (int i = 0; i < 4; i++)
+			d.step->SetTexture(imageNames[i], d.state[i].Get());
+
+		// drawn as the exhaust's dust is: alpha blended, no depth written, quads from gl_VertexID, one per instance
+		Graphics::RenderStateDesc state;
+		state.blendMode = Graphics::BLEND_ALPHA;
+		state.depthWrite = false;
+		state.primitiveType = Graphics::TRIANGLE_STRIP;
+		state.cullMode = Graphics::CULL_NONE;
+		Graphics::VertexFormatDesc format = {};
+		format.attribs[0] = { Graphics::ATTRIB_FORMAT_FLOAT, 6, 0, 0 };
+		format.bindings[0] = { sizeof(float), true, Graphics::ATTRIB_RATE_INSTANCE };
+		Graphics::MaterialDescriptor drawDesc;
+		drawDesc.textures = 0;
+		drawDesc.effect = Graphics::EFFECT_BILLBOARD;
+		d.draw.reset(r->CreateMaterial("gpu_dust", drawDesc, state, format));
+		static const size_t textureNames[5] = { "dustState0"_hash, "dustState1"_hash, "dustState2"_hash, "dustState4"_hash, "dustState5"_hash };
+		static const int textureStates[5] = { 0, 1, 2, 4, 5 };
+		for (int i = 0; i < 5; i++)
+			d.draw->SetTexture(textureNames[i], d.state[textureStates[i]].Get());
+
+		d.ready = r->MaterialCompiled(d.step.get()) && r->MaterialCompiled(d.draw.get());
+		if (!d.ready)
+			Log::Warning("The rover's dust on the graphics card didn't compile; it stays on the main processor.\n");
+		return d.ready;
+	}
+
+	void GpuDustAdd(FrameId fId, const vector3d &pos, const vector3d &vel, float startSize, float endSize, float lifetime, const Color &color, float drag, const vector3f &windVel, float gravity, double groundRadius, float streak)
+	{
+		GpuDust &d = s_gpuDust;
+		if (!d.hasAnchor || d.frame != fId) {
+			// a new frame: the old dust goes
+			d.clear = d.hasAnchor;
+			d.hasAnchor = true;
+			d.frame = fId;
+			d.anchor = pos;
+			d.shift = vector3d(0.0);
+			d.pending.clear();
+		} else if ((pos - d.anchor).Length() > GPU_DUST_ANCHOR_REACH) {
+			// the rover has gone far: the anchor follows it, the puffs kept where they are
+			const vector3d moved = pos - d.anchor;
+			d.shift += moved;
+			for (GpuDustPuff &puff : d.pending) {
+				puff.state[0][0] -= float(moved.x);
+				puff.state[0][1] -= float(moved.y);
+				puff.state[0][2] -= float(moved.z);
+			}
+			d.anchor = pos;
+		}
+		if (int(d.pending.size()) >= GPU_DUST_COUNT)
+			d.pending.erase(d.pending.begin());
+		const vector3d rel = pos - d.anchor;
+		GpuDustPuff puff = {};
+		const float s0[4] = { float(rel.x), float(rel.y), float(rel.z), 0.0f };
+		const float s1[4] = { float(vel.x), float(vel.y), float(vel.z), lifetime };
+		const float s2[4] = { startSize, endSize, drag, gravity };
+		const float s3[4] = { windVel.x, windVel.y, windVel.z, float(groundRadius - d.anchor.Length()) };
+		const float s4[4] = { color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f };
+		const float s5[4] = { streak, 1.0f, 0.0f, 0.0f };
+		const float *states[GPU_DUST_STATES] = { s0, s1, s2, s3, s4, s5 };
+		for (int i = 0; i < GPU_DUST_STATES; i++)
+			std::copy(states[i], states[i] + 4, puff.state[i]);
+		d.pending.push_back(puff);
+	}
+
+	// steps and draws the dust if it's in frame fId; forient, fpos: that frame relative to the camera's
+	void GpuDustRender(Graphics::Renderer *r, FrameId fId, const matrix3x3d &forient, const vector3d &fpos, float illuminationFactor)
+	{
+		GpuDust &d = s_gpuDust;
+		if (!d.hasAnchor || d.frame != fId || !Pi::game || !GpuDustInit(r))
+			return;
+
+		// the puffs thrown up since the last step, into the next texels in turn, a row's run at a time
+		std::vector<float> rows(size_t(GPU_DUST_SIDE) * 4);
+		size_t at = 0;
+		while (at < d.pending.size()) {
+			const int x = d.head % GPU_DUST_SIDE, y = d.head / GPU_DUST_SIDE;
+			const int run = int(std::min<size_t>(size_t(GPU_DUST_SIDE - x), d.pending.size() - at));
+			for (int i = 0; i < GPU_DUST_STATES; i++) {
+				for (int k = 0; k < run; k++)
+					std::copy(d.pending[at + k].state[i], d.pending[at + k].state[i] + 4, rows.data() + k * 4);
+				d.state[i]->Update(rows.data(), vector2f(float(x), float(y)), vector3f(float(run), 1.0f, 0.0f), Graphics::TEXTURE_RGBA32F);
+			}
+			at += run;
+			d.head = (d.head + run) % GPU_DUST_COUNT;
+		}
+		d.pending.clear();
+
+		// one step of everything, in as many short steps as the time since the last one needs
+		const double now = Pi::game->GetTime();
+		const double elapsed = d.lastTime < 0.0 ? 0.0 : Clamp(now - d.lastTime, 0.0, 1.0);
+		d.lastTime = now;
+		const int steps = Clamp(int(std::ceil(elapsed * 60.0)), 1, 8);
+		const double up = d.anchor.Length();
+		const vector3d upDir = up > 0.0 ? d.anchor / up : vector3d(0.0, 1.0, 0.0);
+		d.step->SetPushConstant("DustStep"_hash, vector3f(float(elapsed / steps), float(steps), d.clear ? 1.0f : 0.0f), 0.0f);
+		d.step->SetPushConstant("DustAnchor"_hash, vector3f(upDir), float(up));
+		d.step->SetPushConstant("DustShift"_hash, vector3f(d.shift), 0.0f);
+		r->BeginGpuTimer("dust");
+		r->DispatchCompute(d.step.get(), GPU_DUST_SIDE / 8, GPU_DUST_SIDE / 8, 1);
+		r->AddComputeBarrier(Graphics::Renderer::BARRIER_TEXTURE_FETCH | Graphics::Renderer::BARRIER_IMAGE_ACCESS);
+		d.shift = vector3d(0.0);
+		d.clear = false;
+
+		// and every puff drawn, the dead ones off screen
+		d.draw->SetPushConstant("DustView"_hash, vector3f(forient * d.anchor + fpos), 0.0f);
+		d.draw->SetPushConstant("DustAxisX"_hash, vector3f(forient * vector3d(1.0, 0.0, 0.0)), 0.0f);
+		d.draw->SetPushConstant("DustAxisY"_hash, vector3f(forient * vector3d(0.0, 1.0, 0.0)), 0.0f);
+		d.draw->SetPushConstant("DustAxisZ"_hash, vector3f(forient * vector3d(0.0, 0.0, 1.0)), 0.0f);
+		d.draw->SetPushConstant("DustLight"_hash, vector3f(illuminationFactor, float(GPU_DUST_SIDE), 0.0f), 0.0f);
+		Graphics::BufferBinding<Graphics::VertexBuffer> instances = r->CreateTempVertexBuffer(GPU_DUST_COUNT, sizeof(float));
+		float *index = instances.buffer->MapRange<float>(instances, Graphics::BUFFER_MAP_WRITE);
+		if (index) {
+			for (int i = 0; i < GPU_DUST_COUNT; i++)
+				index[i] = float(i);
+			instances.buffer->UnmapRange(false);
+		}
+		r->SetTransform(matrix4x4f::Identity);
+		r->Draw({ instances }, {}, d.draw.get(), 4, GPU_DUST_COUNT);
+		r->EndGpuTimer();
+	}
+} // namespace
+
 void SfxManager::AddDust(FrameId fId, const vector3d &pos, const vector3d &vel, float startSize, float endSize, float lifetime, const Color &color, float drag, const vector3f &windVel, float gravity, double groundRadius, float streak)
 {
+	// P7: on the graphics card, unless it's off or didn't compile
+	if (GpuDustEnabled() && !(s_gpuDust.tried && !s_gpuDust.ready)) {
+		GpuDustAdd(fId, pos, vel, startSize, endSize, lifetime, color, drag, windVel, gravity, groundRadius, streak);
+		return;
+	}
 	SfxManager *sfxman = AllocSfxInFrame(fId);
 	if (!sfxman) return;
 
@@ -516,6 +700,10 @@ void SfxManager::RenderAll(Renderer *renderer, FrameId fId, FrameId camFrameId, 
 
 	Frame *f = Frame::GetFrame(fId);
 	int screenHeight = renderer->GetWindowHeight();
+
+	// P7: the rover's dust on the graphics card, if it's in this frame
+	if (GpuDustEnabled())
+		GpuDustRender(renderer, fId, f->GetInterpOrientRelTo(camFrameId), f->GetInterpPositionRelTo(camFrameId), illuminationFactor);
 
 	if (f->m_sfx) {
 		matrix4x4d ftran;
@@ -881,6 +1069,7 @@ void SfxManager::Init(Graphics::Renderer *r)
 
 void SfxManager::Uninit()
 {
+	s_gpuDust = GpuDust();
 	damageParticle.reset();
 	ecmParticle.reset();
 	smokeParticle.reset();

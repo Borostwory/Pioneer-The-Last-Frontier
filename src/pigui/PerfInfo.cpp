@@ -1012,6 +1012,26 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 		ImGui::TextColored(dim, "distance as the stones do. Landed ships stay on the flat ground. The first switch-on loads the heights.");
 	}
 
+	// P7: the rover's dust on the graphics card
+	ImGui::Spacing();
+	ImGui::SeparatorText("P7: the rover's dust on the graphics card");
+	{
+		bool gpuDust = Pi::config->Int("GpuDust", 1) != 0;
+		if (ImGui::Checkbox("Rover dust on the graphics card##openglPlan", &gpuDust)) {
+			Pi::config->SetInt("GpuDust", gpuDust ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("rover dust on the graphics card: ") + (gpuDust ? "on" : "off"));
+		}
+		float amount = Pi::config->Float("RoverDustAmount", 1.0f);
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		if (ImGui::SliderFloat("how much dust##openglPlanDust", &amount, 0.0f, 8.0f, "x %.1f"))
+			Pi::config->SetFloat("RoverDustAmount", amount);
+		if (ImGui::IsItemDeactivatedAfterEdit())
+			Pi::config->Save();
+		ImGui::TextColored(dim, "The same puffs as before, moved and drawn on the graphics card (GPU time: \"dust\"), up to 4096 at once.");
+		ImGui::TextColored(dim, "x1 throws up as many as before; more is cheap now. Switching it takes effect for new puffs.");
+	}
+
 	// P8: the sky from a table
 	ImGui::Spacing();
 	ImGui::SeparatorText("P8: the sky's light from a table, worked out once a frame");

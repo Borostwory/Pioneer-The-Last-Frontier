@@ -109,9 +109,11 @@ Shader::Shader(const std::string &name) :
 	}
 
 	if (GetBufferBindingInfo("DrawData"_hash).binding == InvalidBinding) {
+		// (after the last buffer named; a shaderdef naming none got a crash here, reading past the empty list)
+		const uint32_t next = info.bufferBindings.empty() ? 1 : info.bufferBindings.back().binding + 1;
 		Log::Warning("Shaderdef file {} is missing DrawData buffer assignment! Defaulting to {}.\n",
-			fileInfo.GetName(), info.bufferBindings.back().binding + 1);
-		AddBufferBinding("DrawData", info.bufferBindings.back().binding + 1);
+			fileInfo.GetName(), next);
+		AddBufferBinding("DrawData", next);
 	}
 }
 
