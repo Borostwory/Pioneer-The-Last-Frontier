@@ -360,6 +360,10 @@ void CommandList::ApplyDrawData(Program *program, char *drawData) const
 
 void CommandList::ExecuteDrawMeshCmd(const DrawMeshCmd &cmd)
 {
+	// (a program still being built in the background, or that didn't compile, is left out: it has no uniform
+	// locations to set, and using one being built would wait for it)
+	if (!cmd.program || !cmd.program->Loaded())
+		return;
 	RenderStateCache *stateCache = m_renderer->GetStateCache();
 	stateCache->SetRenderState(cmd.renderStateHash);
 	CHECKERRORS();
@@ -383,6 +387,9 @@ void CommandList::ExecuteDrawMeshCmd(const DrawMeshCmd &cmd)
 
 void CommandList::ExecuteDrawBuffersCmd(const DrawBuffersCmd &cmd)
 {
+	// (as ExecuteDrawMeshCmd)
+	if (!cmd.program || !cmd.program->Loaded())
+		return;
 	RenderStateCache *stateCache = m_renderer->GetStateCache();
 	stateCache->SetRenderState(cmd.renderStateHash);
 	CHECKERRORS();

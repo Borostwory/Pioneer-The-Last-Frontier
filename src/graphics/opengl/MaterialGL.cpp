@@ -55,7 +55,7 @@ namespace Graphics {
 		void Material::SetShader(Shader *s)
 		{
 			m_shader = s;
-			m_activeVariant = s->GetProgramForDesc(GetDescriptor());
+			m_activeVariant = s->GetProgramForDesc(GetDescriptor(), m_compileInBackground);
 
 			// Allocate storage for texture bindings
 			GLuint numTextureBindings = s->GetNumTextureBindings();
@@ -100,14 +100,16 @@ namespace Graphics {
 			if (m_tessFailed || !m_shader || !m_shader->HasTessellation())
 				return false;
 
-			// the program with the tessellation stages, compiled now if it isn't yet
+			// the program with the tessellation stages, built in the background if it isn't yet: drawn without them
+			// until it's ready (since 2026-11-09; until then the game stood still the 3 to 4 s it took)
 			MaterialDescriptor desc = GetDescriptor();
 			desc.tessellated = true;
 			if (desc.lighting)
 				desc.dirLights = m_renderer->GetNumLights();
-			Program *p = m_shader->GetProgramForDesc(desc);
+			Program *p = m_shader->GetProgramForDesc(desc, true);
 			if (!p || !p->Loaded()) {
-				m_tessFailed = true;
+				if (!p || !p->Pending())
+					m_tessFailed = true;
 				return false;
 			}
 
@@ -132,10 +134,14 @@ namespace Graphics {
 				desc.tessellated = true;
 				if (desc.lighting)
 					desc.dirLights = m_renderer->GetNumLights();
-				Program *p = m_shader->GetProgramForDesc(desc);
+				Program *p = m_shader->GetProgramForDesc(desc, true);
 				if (p && p->Loaded())
 					return p;
 			}
+
+			// (one being built in the background, finished once the driver is done with it)
+			if (m_activeVariant && m_activeVariant->Pending())
+				m_activeVariant->Poll();
 
 			MaterialDescriptor desc = GetDescriptor();
 			bool variantChanged = false;
@@ -150,7 +156,7 @@ namespace Graphics {
 			}
 
 			if (variantChanged) {
-				Program *p = m_shader->GetProgramForDesc(desc);
+				Program *p = m_shader->GetProgramForDesc(desc, m_compileInBackground);
 				if (p->Loaded())
 					m_activeVariant = p;
 			}

@@ -277,8 +277,13 @@ namespace Graphics {
 			BARRIER_ALL = 0xffffffffu
 		};
 		virtual void AddComputeBarrier(uint32_t barriers) {}
-		// whether the material's shader compiled and linked, for the debug window's tests
+		// whether the material's shader compiled and linked (false while it's still being built in the background)
 		virtual bool MaterialCompiled(Material *m) { return true; }
+		// waits for the material's shader if it's being built in the background; whether it compiled and linked
+		virtual bool WaitForMaterial(Material *m) { return MaterialCompiled(m); }
+		// Materials made while this is on have their shaders built by the driver's own threads while the game goes
+		// on, where it can: they aren't drawn until they're ready (MaterialCompiled, WaitForMaterial).
+		virtual void SetBackgroundCompile(bool on) {}
 		// reads a single-channel float texture's first level back (bytes: what out holds), waiting for what compute
 		// wrote to it; for the debug window's checks only (it stalls). False if it can't.
 		virtual bool ReadTexture(Texture *texture, float *out, size_t bytes) { return false; }

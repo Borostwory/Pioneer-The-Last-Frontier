@@ -87,7 +87,8 @@ namespace Graphics {
 
 			void Reload();
 
-			Program *GetProgramForDesc(const MaterialDescriptor &desc);
+			// background: a program not made yet is built in the background where the driver can (Program::Pending)
+			Program *GetProgramForDesc(const MaterialDescriptor &desc, bool background = false);
 			uint32_t GetNumVariants() const { return m_variants.size(); }
 
 			TextureBindingData GetTextureBindingInfo(size_t name) const;
@@ -112,7 +113,7 @@ namespace Graphics {
 			friend class Program;
 
 			std::string GetProgramDefines(const MaterialDescriptor &desc);
-			Program *LoadProgram(const MaterialDescriptor &desc);
+			Program *LoadProgram(const MaterialDescriptor &desc, bool background);
 
 			size_t AddTextureBinding(const std::string &name, const std::string &bindName, TextureType type, uint32_t binding,
 				bool image = false, GLenum imageFormat = 0, GLenum imageAccess = 0);

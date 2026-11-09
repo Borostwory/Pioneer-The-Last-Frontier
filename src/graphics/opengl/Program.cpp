@@ -89,7 +89,7 @@ namespace Graphics {
 		//       ShaderProgram (vertex)
 		//       ShaderProgram (fragment)
 		struct ShaderProgram {
-			// reads the source; Compile() makes the shader, which a program from the binary cache doesn't need
+			// reads the source; StartCompile() makes the shader, which a program from the binary cache doesn't need
 			ShaderProgram(GLenum type, const std::string &filename, const std::string &defines) :
 				m_type(type),
 				m_filename(filename),
@@ -138,10 +138,10 @@ namespace Graphics {
 			// the source with the included files in it
 			const std::string &GetCode() const { return m_code; }
 
-			void Compile()
+			// hands the shader to the driver to compile; CheckCompiled() for how it went
+			void StartCompile()
 			{
 				const GLenum type = m_type;
-				const std::string &filename = m_filename;
 
 				// Store the modified text with the included files (if any)
 				const StringRange code(m_code.c_str(), m_code.size());
@@ -186,11 +186,12 @@ namespace Graphics {
 					throw ShaderCompileException();
 
 				Compile(shader);
+			}
 
-				if (!check_glsl_errors(filename.c_str(), shader)) {
-					glDeleteShader(shader);
-					shader = 0;
-				}
+			// whether it compiled, with the errors logged if not (waits for the driver if it's still at it)
+			bool CheckCompiled() const
+			{
+				return shader && check_glsl_errors(m_filename.c_str(), shader);
 			}
 
 			~ShaderProgram()
@@ -352,14 +353,48 @@ namespace Graphics {
 		// Program Setup and Creation
 		//
 
-		Program::Program(Shader *shader, const ProgramDef &def) :
+		// A program being built: its stages, and what's needed to finish it (FinishBuild). Since 2026-11-09 the
+		// ground's are built in the background where the driver can (Renderer::SetBackgroundCompile): each took 3 to 4
+		// s after a change to its shaders, with the game standing still all that time.
+		struct Program::Build {
+			std::vector<std::unique_ptr<ShaderProgram>> stages;
+			std::string name;
+			bool useBinaryCache = false;
+			std::string binaryPath;
+			uint64_t binarySourceHash = 0;
+			std::chrono::steady_clock::time_point start, lastPoll;
+			// (for the log)
+			bool background = false;
+			bool waited = false;
+		};
+
+		static bool s_backgroundSupported = false;
+
+		void Program::SetBackgroundSupported(const bool on)
+		{
+			s_backgroundSupported = on;
+		}
+
+		bool Program::BackgroundSupported()
+		{
+			return s_backgroundSupported;
+		}
+
+		Program::Program(Shader *shader, const ProgramDef &def, const bool background) :
 			m_shader(shader),
 			m_program(0),
 			success(false)
 		{
-			m_program = LoadShaders(def);
-			if (success)
+			m_program = LoadShaders(def, m_pending);
+			if (m_program && !m_pending) {
+				// (from the binary cache)
+				success = true;
 				InitUniforms(shader);
+			} else if (m_pending) {
+				m_pending->background = background && s_backgroundSupported;
+				if (!m_pending->background)
+					Poll(true);
+			}
 		}
 
 		Program::~Program()
@@ -370,16 +405,54 @@ namespace Graphics {
 
 		void Program::Reload(Shader *shader, const ProgramDef &def)
 		{
-			GLuint newProg = LoadShaders(def);
+			std::unique_ptr<Build> build;
+			GLuint newProg = LoadShaders(def, build);
+			if (newProg && build && !FinishBuild(newProg, *build)) {
+				glDeleteProgram(newProg);
+				newProg = 0;
+			}
 			if (newProg) {
-				glDeleteProgram(m_program);
+				if (m_program)
+					glDeleteProgram(m_program);
 				m_program = newProg;
+				m_pending.reset();
+				success = true;
 				InitUniforms(shader);
 			}
 		}
 
-		//load, compile and link
-		GLuint Program::LoadShaders(const ProgramDef &def)
+		bool Program::Poll(const bool wait)
+		{
+			if (!m_pending)
+				return success;
+			if (!wait) {
+				// (asked at most every few milliseconds: the stones' version is asked for by every patch that
+				// would be drawn with it)
+				const auto now = std::chrono::steady_clock::now();
+				if (now - m_pending->lastPoll < std::chrono::milliseconds(4))
+					return false;
+				m_pending->lastPoll = now;
+				GLint done = GL_FALSE;
+				glGetProgramiv(m_program, GL_COMPLETION_STATUS_ARB, &done);
+				if (done == GL_FALSE)
+					return false;
+			}
+			std::unique_ptr<Build> build = std::move(m_pending);
+			build->waited = wait;
+			success = FinishBuild(m_program, *build);
+			if (success) {
+				InitUniforms(m_shader);
+			} else {
+				glDeleteProgram(m_program);
+				m_program = 0;
+			}
+			return success;
+		}
+
+		// Loads the source, then the program from the binary cache (returned without a build), or hands the stages
+		// to the driver to compile and link (returned with the build, for FinishBuild once the driver is done); 0 if
+		// it can't be made.
+		GLuint Program::LoadShaders(const ProgramDef &def, std::unique_ptr<Build> &build)
 		{
 			PROFILE_SCOPED()
 
@@ -413,20 +486,14 @@ namespace Graphics {
 				const GLuint cached = LoadBinary(binaryPath, binarySourceHash);
 				if (cached) {
 					Log::Info("Program {} loaded from the binary cache in {:.1f} ms", def.name, millisecondsSoFar());
-					success = true;
 					return cached;
 				}
 			}
 
-			//create and compile shaders
-			for (std::unique_ptr<ShaderProgram> &stage : stages) {
-				stage->Compile();
-				if (!stage->shader) {
-					Log::Warning("Error loading GLSL shaders for program {}\n", def.name);
-					success = false;
-					return 0;
-				}
-			}
+			// every stage handed to the driver before any is checked, so that where it builds on its own threads
+			// they're compiled side by side, and linked without the game waiting
+			for (std::unique_ptr<ShaderProgram> &stage : stages)
+				stage->StartCompile();
 
 			//create program, attach shaders and link
 			GLuint program = glCreateProgram();
@@ -454,25 +521,45 @@ namespace Graphics {
 				glProgramParameteri(program, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
 
 			glLinkProgram(program);
-			success = check_glsl_errors(def.name.c_str(), program);
 
-			if (!success) {
-				glDeleteProgram(program);
-				return 0;
-			}
-
-			Log::Info("Program {} compiled in {:.1f} ms", def.name, millisecondsSoFar());
-
-			if (useBinaryCache)
-				SaveBinary(binaryPath, binarySourceHash, program);
-
-			//shaders may now be deleted by Shader destructor
+			build.reset(new Build());
+			build->stages = std::move(stages);
+			build->name = def.name;
+			build->useBinaryCache = useBinaryCache;
+			build->binaryPath = binaryPath;
+			build->binarySourceHash = binarySourceHash;
+			build->start = startTime;
 			return program;
 		}
 
-		void Program::InitUniforms(Shader *shader)
+		// Once the driver is done (or waiting for it): whether the stages compiled and the program linked, with the
+		// errors logged if not, and the program saved to the binary cache if so. (The stages' shaders go with the
+		// build; the program keeps what it needs of them.)
+		bool Program::FinishBuild(const GLuint program, Build &build)
 		{
-			glUseProgram(m_program);
+			bool compiled = true;
+			for (std::unique_ptr<ShaderProgram> &stage : build.stages)
+				compiled = stage->CheckCompiled() && compiled;
+			if (!compiled) {
+				Log::Warning("Error loading GLSL shaders for program {}\n", build.name);
+				return false;
+			}
+			if (!check_glsl_errors(build.name.c_str(), program))
+				return false;
+
+			const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - build.start).count();
+			Log::Info("Program {} compiled in {:.1f} ms{}", build.name, ms,
+				build.background ? (build.waited ? " (in the background, then waited for)" : " (in the background)") : "");
+
+			if (build.useBinaryCache)
+				SaveBinary(build.binaryPath, build.binarySourceHash, program);
+			return true;
+		}
+
+		void Program::InitUniforms(const Shader *shader)
+		{
+			// (glProgramUniform, which needs no program in use: one finished in the background during a frame mustn't
+			// change the program in use under the render state cache, as glUseProgram here did)
 
 			// Bind texture sampler locations to texture units
 			for (auto &texInfo : shader->GetTextureBindings()) {
@@ -480,7 +567,7 @@ namespace Graphics {
 				if (location == GL_INVALID_INDEX)
 					continue;
 
-				glUniform1i(location, texInfo.binding);
+				glProgramUniform1i(m_program, location, texInfo.binding);
 			}
 
 			// Bind uniform buffer blocks to buffer binding points
@@ -498,8 +585,6 @@ namespace Graphics {
 				GLuint location = glGetUniformLocation(m_program, shader->GetString(conInfo.name).c_str());
 				m_constants[conInfo.index] = location;
 			}
-
-			glUseProgram(0);
 		}
 
 	} // namespace OGL

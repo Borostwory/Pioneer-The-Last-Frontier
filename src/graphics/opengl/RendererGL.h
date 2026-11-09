@@ -98,6 +98,8 @@ namespace Graphics {
 		void DispatchCompute(Material *m, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) final;
 		void AddComputeBarrier(uint32_t barriers) final;
 		bool MaterialCompiled(Material *m) final;
+		bool WaitForMaterial(Material *m) final;
+		void SetBackgroundCompile(bool on) final { m_backgroundCompile = on; }
 		bool ReadTexture(Texture *texture, float *out, size_t bytes) final;
 		void BeginGpuTimer(const char *name) final;
 		void EndGpuTimer() final;
@@ -157,6 +159,8 @@ namespace Graphics {
 
 		Uint32 m_numLights;
 		Uint32 m_numDirLights;
+		// SetBackgroundCompile
+		bool m_backgroundCompile = false;
 		float m_minZNear;
 		float m_maxZFar;
 		bool m_useCompressedTextures;

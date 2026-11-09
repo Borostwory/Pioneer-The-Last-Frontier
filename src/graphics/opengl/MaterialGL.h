@@ -68,6 +68,8 @@ namespace Graphics {
 			// tessellated program failed (so it isn't compiled again and again)
 			bool m_tessellated = false;
 			bool m_tessFailed = false;
+			// its programs built in the background (Renderer::SetBackgroundCompile when it was made)
+			bool m_compileInBackground = false;
 			size_t m_plainRenderStateHash = 0;
 			size_t m_tessRenderStateHash = 0;
 			RendererOGL *m_renderer;

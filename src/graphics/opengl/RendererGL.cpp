@@ -244,6 +244,25 @@ namespace Graphics {
 		}
 		Log::Info("OpenGL {}.{}: {}, {}", glMajor, glMinor, glstr_to_str(glGetString(GL_VERSION)), glstr_to_str(glGetString(GL_RENDERER)));
 
+		// shader programs built by the driver's own threads where asked (SetBackgroundCompile), as many as it likes
+		{
+			bool background = false;
+			if (GLEW_ARB_parallel_shader_compile && glMaxShaderCompilerThreadsARB) {
+				glMaxShaderCompilerThreadsARB(0xFFFFFFFFu);
+				background = true;
+			} else if (SDL_GL_ExtensionSupported("GL_KHR_parallel_shader_compile")) {
+				typedef void(GLAPIENTRY * MaxThreadsFn)(GLuint);
+				MaxThreadsFn maxThreads = reinterpret_cast<MaxThreadsFn>(SDL_GL_GetProcAddress("glMaxShaderCompilerThreadsKHR"));
+				if (maxThreads) {
+					maxThreads(0xFFFFFFFFu);
+					background = true;
+				}
+			}
+			glGetError();
+			OGL::Program::SetBackgroundSupported(background);
+			Log::Info("Shader programs built in the background: {}", background ? "yes" : "no (the driver can't)");
+		}
+
 		if (!glewIsSupported("GL_EXT_texture_compression_s3tc")) {
 			if (glewIsSupported("GL_ARB_texture_compression")) {
 				GLint intv[4];
@@ -1074,6 +1093,12 @@ namespace Graphics {
 		return program && program->Loaded();
 	}
 
+	bool RendererOGL::WaitForMaterial(Material *m)
+	{
+		OGL::Program *program = m ? static_cast<OGL::Material *>(m)->EvaluateVariant() : nullptr;
+		return program && program->Poll(true);
+	}
+
 	void RendererOGL::AddComputeBarrier(const uint32_t barriers)
 	{
 		GLbitfield bits = 0;
@@ -1289,6 +1314,7 @@ namespace Graphics {
 
 		mat->m_renderer = this;
 		mat->m_descriptor = desc;
+		mat->m_compileInBackground = m_backgroundCompile;
 		mat->m_renderStateHash = m_renderStateCache->InternRenderState(stateDescriptor);
 		mat->m_vertexState = vao;
 		mat->m_vertexFormatHash = hash;

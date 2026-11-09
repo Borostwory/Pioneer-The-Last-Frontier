@@ -125,14 +125,17 @@ Shader::~Shader()
 	}
 }
 
-Program *Shader::GetProgramForDesc(const MaterialDescriptor &desc)
+Program *Shader::GetProgramForDesc(const MaterialDescriptor &desc, const bool background)
 {
 	for (auto &pair : m_variants)
-		if (pair.first == desc)
+		if (pair.first == desc) {
+			pair.second->Poll();
 			return pair.second;
+		}
 
-	Program *program = LoadProgram(desc);
-	if (program->Loaded())
+	// (one being built is kept too, so it isn't started again; it stays if it then fails, so it isn't retried)
+	Program *program = LoadProgram(desc, background);
+	if (program->Loaded() || program->Pending())
 		m_variants.push_back({ desc, program });
 
 	return program;
@@ -156,13 +159,13 @@ void Shader::Reload()
 	}
 }
 
-Program *Shader::LoadProgram(const MaterialDescriptor &desc)
+Program *Shader::LoadProgram(const MaterialDescriptor &desc, const bool background)
 {
 	ProgramDef def = m_programDef;
 	def.defines = GetProgramDefines(desc);
 	def.tessellated = desc.tessellated;
 
-	return new Program(this, def);
+	return new Program(this, def, background);
 }
 
 std::string Shader::GetProgramDefines(const MaterialDescriptor &desc)

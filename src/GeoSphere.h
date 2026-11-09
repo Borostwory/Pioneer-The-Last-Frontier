@@ -221,6 +221,8 @@ private:
 	DrawnPatches m_drawnPatches;
 	double m_pixelAngle = 0.0;
 	int m_tessellatedThisFrame = 0;
+	// Render: the ground's version with the stones started building (SetUpMaterials starts the plain one)
+	bool m_stonesVersionStarted = false;
 	// P4d: the stones' height at a point of the drawn mesh (planet radii), from what the mesh holds there, in metres
 	double StoneLiftAt(const vector3d &point, const vector3d &normal, const float slots[16], float seaHeight) const;
 	// P4d's check, in Render: reads last frame's answer from the graphics card and asks again

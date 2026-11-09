@@ -1191,6 +1191,21 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	if (!m_surfaceMaterial)
 		SetUpMaterials();
 
+	// The ground's program is built by the driver in the background (SetUpMaterials): building it took 3 to 4 s
+	// after every change to its shaders, the game standing still all that time (2026-11-09). Within a radius of the
+	// ground it's waited for, as there'd be nothing to stand on; further out the ground isn't drawn until it's ready
+	// (its air still is), so a planet seen for the first time shows up a few seconds late. Near, the version with the
+	// stones is started alongside, and the ground drawn without them until it's ready (Material::SetTessellated).
+	const bool nearGround = campos.Length() < 2.0;
+	if (nearGround && !m_stonesVersionStarted && (StonesActive() || TessellationEnabled())) {
+		m_stonesVersionStarted = true;
+		m_surfaceMaterial->SetTessellated(true);
+		m_surfaceMaterial->SetTessellated(false);
+	}
+	bool groundReady = renderer->MaterialCompiled(m_surfaceMaterial.Get());
+	if (!groundReady && nearGround)
+		groundReady = renderer->WaitForMaterial(m_surfaceMaterial.Get());
+
 	//Update material parameters
 	SetMaterialParameters(trans, radius, shadows, m_atmosphereParameters);
 	// P4a: how finely the tessellation control shader cuts each edge (x: pixels per radian, y: the edge on screen to
@@ -1301,6 +1316,10 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 			m_atmosphereMaterial);
 		renderer->EndGpuTimer();
 	}
+
+	// (the air is drawn; the ground once its program is ready, above)
+	if (!groundReady)
+		return;
 
 	Color ambient;
 	Color &emission = m_surfaceMaterial->emissive;
@@ -1458,6 +1477,8 @@ void GeoSphere::SetUpMaterials()
 		Graphics::RenderStateDesc rsd;
 		surfDesc.quality |= Graphics::HAS_ECLIPSES;
 		const int scattering = Pi::config->Int("RealisticScattering");
+		// built in the background, and waited for in Render only close to the ground
+		Pi::renderer->SetBackgroundCompile(true);
 		switch (scattering) {
 		case 1:
 			/* fallthrough */
@@ -1468,6 +1489,8 @@ void GeoSphere::SetUpMaterials()
 			m_surfaceMaterial.Reset(Pi::renderer->CreateMaterial("geosphere_terrain", surfDesc, rsd, vtxFormat));
 			break;
 		}
+		Pi::renderer->SetBackgroundCompile(false);
+		m_stonesVersionStarted = false;
 
 		m_texHi.Reset(Graphics::TextureBuilder::Model("textures/high.dds").GetOrCreateTexture(Pi::renderer, "model"));
 		m_texLo.Reset(Graphics::TextureBuilder::Model("textures/low.dds").GetOrCreateTexture(Pi::renderer, "model"));
