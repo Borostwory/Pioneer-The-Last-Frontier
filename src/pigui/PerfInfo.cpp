@@ -1028,8 +1028,9 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 			Pi::config->SetFloat("RoverDustAmount", amount);
 		if (ImGui::IsItemDeactivatedAfterEdit())
 			Pi::config->Save();
-		ImGui::TextColored(dim, "The same puffs as before, moved and drawn on the graphics card (GPU time: \"dust\"), up to 4096 at once.");
+		ImGui::TextColored(dim, "The same puffs as before, moved and drawn on the graphics card (GPU time: \"dust\"), up to 16384 at once.");
 		ImGui::TextColored(dim, "x1 throws up as many as before; more is cheap now. Switching it takes effect for new puffs.");
+		ImGui::TextColored(dim, "Ships near the ground: dust off dusty ground, little off rock and plants, frost off ice, spray off water.");
 	}
 
 	// P8: the sky from a table

@@ -502,7 +502,7 @@ void SfxManager::Cleanup()
 // moves them all each frame, and one instanced draw shows them. Their positions are taken from an anchor near the rover,
 // moved along when it has gone far, so single precision holds centimetres. Only one frame's dust at a time: the rover's.
 namespace {
-	constexpr int GPU_DUST_SIDE = 64;
+	constexpr int GPU_DUST_SIDE = 128;
 	constexpr int GPU_DUST_COUNT = GPU_DUST_SIDE * GPU_DUST_SIDE;
 	constexpr int GPU_DUST_STATES = 6;
 	// the anchor moves to the newest puff when it's this far off (m)

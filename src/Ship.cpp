@@ -14,6 +14,7 @@
 #include "NavLights.h"
 #include "Pi.h"
 #include "Planet.h"
+#include "GeoSphere.h"
 #include "galaxy/SystemBody.h"
 #include "Player.h" // <-- Here only for 1 occurrence of "Pi::player" in Ship::Explode
 #include "Sensors.h"
@@ -1792,9 +1793,23 @@ void Ship::SpawnGroundDust(float timeStep, const Planet *planet, double density,
 	// as far as it goes in this long (s)
 	constexpr double VACUUM_STREAK = 0.2;
 
+	// P7 of the OpenGL 4.6 plan, step 2: what the ground under the ship is made of, where the mesh there says (near
+	// the camera): dusty ground gives the most dust, bare rock and plants little, ice and snow frost, water spray.
+	// Elsewhere the body's dustiness alone, as before. Shares of the puffs, of each kind.
 	const SystemBody *sb = planet->GetSystemBody();
 	const double dustiness = sb ? sb->CalcSurfaceDustiness() : 0.0;
-	if (dustiness <= 0.0 || groundRadius <= 0.0) {
+	double dustShare = dustiness, frostShare = 0.0, sprayShare = 0.0;
+	{
+		GeoSphere::GroundMix ground;
+		const GeoSphere *sphere = dynamic_cast<const GeoSphere *>(planet->GetBaseSphere());
+		if (sphere && sphere->GetGroundMix(GetPosition().NormalizedSafe(), ground)) {
+			dustShare = std::max(dustiness, 0.3) * (ground.dust + 0.2 * ground.rock + 0.3 * ground.plants);
+			frostShare = ground.ice;
+			sprayShare = ground.water;
+		}
+	}
+	const double kinds = dustShare + frostShare + sprayShare;
+	if (kinds <= 0.0 || groundRadius <= 0.0) {
 		m_groundDustAccum = 0.0;
 		return;
 	}
@@ -1833,7 +1848,7 @@ void Ship::SpawnGroundDust(float timeStep, const Planet *planet, double density,
 	const vector3d centre = up * groundRadius;
 
 	// (time accelerated: no more than the stream of a tenth of a second)
-	m_groundDustAccum += mix(VACUUM_PUFFS, AIR_PUFFS) * strength * dustiness * std::min(double(timeStep), 0.1);
+	m_groundDustAccum += mix(VACUUM_PUFFS, AIR_PUFFS) * strength * std::min(kinds, 1.5) * std::min(double(timeStep), 0.1);
 	for (; m_groundDustAccum >= 1.0; m_groundDustAccum -= 1.0) {
 		// from a ring under the ship, out along the ground
 		const double angle = Pi::rng.Double(0.0, 2.0 * M_PI);
@@ -1855,8 +1870,22 @@ void Ship::SpawnGroundDust(float timeStep, const Planet *planet, double density,
 		tint.r = Uint8(Clamp(tint.r * shade, 0.0, 255.0));
 		tint.g = Uint8(Clamp(tint.g * shade, 0.0, 255.0));
 		tint.b = Uint8(Clamp(tint.b * shade, 0.0, 255.0));
-		SfxManager::AddDust(GetFrame(), at, thrown, startSize, endSize, life, tint,
-			float(mix(0.0, 1.2)), wind, float(g * (1.0 - 0.97 * air)), groundRadius, float(VACUUM_STREAK * (1.0 - air)));
+		const double kind = Pi::rng.Double(0.0, kinds);
+		if (kind < dustShare) {
+			SfxManager::AddDust(GetFrame(), at, thrown, startSize, endSize, life, tint,
+				float(mix(0.0, 1.2)), wind, float(g * (1.0 - 0.97 * air)), groundRadius, float(VACUUM_STREAK * (1.0 - air)));
+		} else if (kind < dustShare + frostShare) {
+			// frost: without air, glittering ice flung out as the dust is; in air, vapour, rising slowly as it thins
+			const Color frost(Uint8(225 * shade > 255 ? 255 : 225 * shade), 235, 250, Uint8(mix(170.0, 120.0)));
+			SfxManager::AddDust(GetFrame(), at, thrown, startSize, float(endSize * 0.8), float(life * mix(0.5, 0.4)), frost,
+				float(mix(0.0, 1.5)), wind, float(mix(g, -0.3)), groundRadius, float(VACUUM_STREAK * (1.0 - air)));
+		} else {
+			// spray: thrown up higher off the water, falling back soon, small and white
+			const vector3d sprayed = thrown + up * (0.5 * blast + 2.0);
+			const Color spray(235, 240, 245, Uint8(mix(150.0, 200.0)));
+			SfxManager::AddDust(GetFrame(), at, sprayed, float(startSize * 0.6), float(endSize * 0.5), float(Pi::rng.Double(1.2, 2.5)), spray,
+				float(mix(0.0, 0.8)), wind, float(g * mix(1.0, 0.8)), groundRadius, float(VACUUM_STREAK * (1.0 - air)));
+		}
 	}
 }
 

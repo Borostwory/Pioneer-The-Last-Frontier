@@ -584,6 +584,54 @@ void GeoSphere::SetStoneFlats(Graphics::Material *material, const matrix4x4d &tr
 	}
 }
 
+bool GeoSphere::GetGroundMix(const vector3d &dir, GroundMix &mix) const
+{
+	mix = GroundMix();
+	if (!m_terrain)
+		return false;
+	GeoPatch::DrawnSurface surface;
+	double radius = 0.0;
+	bool found = false;
+	for (int i = 0; i < NUM_PATCHES && !found; i++)
+		found = m_patches[i] && m_patches[i]->GetDrawnRadius(dir, radius, &surface);
+	if (!found || !surface.found)
+		return false;
+	if ((m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) && StoneAltitude(surface.seaHeight) < 0.5f) {
+		mix.water = 1.0f;
+		return true;
+	}
+	const TerrainMaterialTable &table = m_terrain->GetMaterialTable();
+	float total = 0.0f;
+	for (int s = 0; s < table.SlotCount() && s < 16; s++) {
+		const float w = surface.slots[s];
+		switch (table.SlotLayer(s)) {
+		case TerrainMaterialTable::SAND:
+		case TerrainMaterialTable::REGOLITH:
+		case TerrainMaterialTable::DUST:
+		case TerrainMaterialTable::ASH:
+		case TerrainMaterialTable::SOIL:
+		case TerrainMaterialTable::SALT:
+		case TerrainMaterialTable::CRACKED_MUD: mix.dust += w; break;
+		case TerrainMaterialTable::SNOW:
+		case TerrainMaterialTable::ICE:
+		case TerrainMaterialTable::DIRTY_ICE: mix.ice += w; break;
+		case TerrainMaterialTable::GRASS:
+		case TerrainMaterialTable::FOREST:
+		case TerrainMaterialTable::FOREST_FAR:
+		case TerrainMaterialTable::TUNDRA: mix.plants += w; break;
+		default: mix.rock += w; break;
+		}
+		total += w;
+	}
+	if (total <= 1e-3f)
+		return false;
+	mix.dust /= total;
+	mix.rock /= total;
+	mix.ice /= total;
+	mix.plants /= total;
+	return true;
+}
+
 bool GeoSphere::SkyTableEnabled()
 {
 	return Pi::config->Int("SkyTable", 1) != 0;

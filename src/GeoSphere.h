@@ -154,6 +154,16 @@ public:
 	// P8: whether the sky reads its light from a table worked out once a frame, with the camera in the air (config
 	// SkyTable; only with RealisticScattering=2)
 	static bool SkyTableEnabled();
+	// P7: what the drawn ground along dir is made of, as shares adding up to 1, for what ships blow off it (Ship::
+	// SpawnGroundDust); false where the mesh there holds no materials (coarse, far from the camera)
+	struct GroundMix {
+		float dust = 0.0f; // sand, regolith, dust, ash, soil, salt, cracked mud
+		float rock = 0.0f; // rock, gravel, basalt, lava and its flows, metal
+		float ice = 0.0f; // snow, ice, dirty ice
+		float plants = 0.0f; // grass, forest, tundra
+		float water = 0.0f; // the sea (all of it, where the ground is under it)
+	};
+	bool GetGroundMix(const vector3d &dir, GroundMix &mix) const;
 	// how tall on screen (pixels) the tallest stone must stand for the stones to be raised at all; they fade out from it
 	// to half of it, and nothing is cut there (config TerrainStonesFadePixels; MaterialNear.w, terrain-stone-aim.glsl)
 	static double StonesFadePixels();
