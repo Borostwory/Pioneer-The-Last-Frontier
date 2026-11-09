@@ -38,6 +38,11 @@ namespace TerrainStones {
 		float pixelsPerRadian = 1.0f, aimPixels = 1.0f; // TessParams.xy
 		float fullPixels = 8.0f; // TessParams.w: the stones' height on screen (pixels) below which the cuts thin out
 		float fadePixels = 2.0f; // MaterialNear.w: the stones' height on screen (pixels) from which they fade out
+		// the circles kept free of stones (StoneFlat0..5): planet-fixed centres in metres, radii in metres
+		static constexpr int MAX_FLATS = 6;
+		int flatCount = 0;
+		vector3d flatCentre[MAX_FLATS];
+		double flatRadius[MAX_FLATS] = {};
 	};
 
 	// a point of the drawn ground, as the evaluation shaders get it

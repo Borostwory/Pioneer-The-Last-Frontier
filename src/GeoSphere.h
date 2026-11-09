@@ -151,6 +151,9 @@ public:
 	// how tall on screen (pixels) the tallest stone must stand for the ground to be cut at the full aim; below, the cuts
 	// thin out with it (config TerrainStonesFullPixels; TessParams.w, terrain-stone-aim.glsl)
 	static double StonesFullPixels();
+	// P8: whether the sky reads its light from a table worked out once a frame, with the camera in the air (config
+	// SkyTable; only with RealisticScattering=2)
+	static bool SkyTableEnabled();
 	// how tall on screen (pixels) the tallest stone must stand for the stones to be raised at all; they fade out from it
 	// to half of it, and nothing is cut there (config TerrainStonesFadePixels; MaterialNear.w, terrain-stone-aim.glsl)
 	static double StonesFadePixels();
@@ -199,6 +202,17 @@ private:
 	double StoneLiftAt(const vector3d &point, const vector3d &normal, const float slots[16], float seaHeight) const;
 	// P4d's check, in Render: reads last frame's answer from the graphics card and asks again
 	void RunStoneProbe(Graphics::Renderer *renderer, const matrix4x4d &trans, const vector3d &campos, PlanetClouds::CloudDataBlock &cloudData);
+	// P4: the circles kept free of stones near the camera (planet-fixed, metres): the cities and the landed ships
+	struct StoneFlat {
+		vector3d centre;
+		double radius;
+	};
+	std::vector<StoneFlat> m_stoneFlats;
+	void UpdateStoneFlats(const vector3d &campos);
+	// sets them on a material, in view space (trans: planet radii to view)
+	void SetStoneFlats(Graphics::Material *material, const matrix4x4d &trans) const;
+	// P8: the sky's table round the camera (sky-table.glsl), filled by m_skyTableMaterial
+	RefCountedPtr<Graphics::Texture> m_skyTable;
 	RefCountedPtr<Graphics::Material> m_probeMaterial;
 	RefCountedPtr<Graphics::Texture> m_probeImage;
 	bool m_probePending = false;

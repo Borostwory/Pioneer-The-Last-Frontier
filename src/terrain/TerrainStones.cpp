@@ -43,6 +43,7 @@ namespace {
 	constexpr float MATERIAL_BEACH_FULL = 2.0f;
 	constexpr float MATERIAL_BLEND_DEPTH = 0.2f;
 	constexpr float MATERIAL_ICE_LEAST = 0.4f;
+	constexpr float STONE_FLAT_MARGIN = 10.0f;
 	// terrain-stone-aim.glsl
 	const vector2f MATERIAL_TURNS[8] = { { 1.0f, 0.0f }, { 0.6f, 0.8f }, { 0.0f, 1.0f }, { -0.8f, 0.6f }, { -1.0f, 0.0f },
 		{ -0.6f, -0.8f }, { 0.0f, -1.0f }, { 0.8f, -0.6f } };
@@ -425,6 +426,11 @@ namespace TerrainStones {
 		float near = 1.0f - SmoothStep(P.nearRange, 2.0f * P.nearRange, distance);
 		const float fadePixels = std::max(P.fadePixels, 0.1f);
 		near *= SmoothStep(0.5f * fadePixels, fadePixels, StonePixels(P, distance));
+		for (int i = 0; i < std::min(P.flatCount, int(Params::MAX_FLATS)); i++) {
+			const float r = float(P.flatRadius[i]);
+			if (r > 0.0f)
+				near *= SmoothStep(r, r + STONE_FLAT_MARGIN, vector3f(pt.position - P.flatCentre[i]).Length());
+		}
 		if (pt.hasWater)
 			near *= SmoothStep(0.5f, 2.0f, pt.altitude);
 		if (near <= 0.0f)

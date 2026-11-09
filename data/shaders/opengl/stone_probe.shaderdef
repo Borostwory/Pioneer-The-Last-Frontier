@@ -29,5 +29,11 @@ PushConstant vec4 ProbeSlots1 binding=15
 PushConstant vec4 ProbeSlots2 binding=16
 PushConstant vec4 ProbeSlots3 binding=17
 PushConstant vec4 ProbeGround binding=18
+PushConstant vec4 StoneFlat0 binding=19
+PushConstant vec4 StoneFlat1 binding=20
+PushConstant vec4 StoneFlat2 binding=21
+PushConstant vec4 StoneFlat3 binding=22
+PushConstant vec4 StoneFlat4 binding=23
+PushConstant vec4 StoneFlat5 binding=24
 
 Compute "stone_probe.comp"

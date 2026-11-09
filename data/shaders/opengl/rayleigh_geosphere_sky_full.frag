@@ -10,6 +10,13 @@ uniform int NumShadows;
 uniform sampler2D densityLUT;
 uniform sampler2D scatterLUT;
 
+// P8 of the OpenGL 4.6 plan: with the camera in the air, the sky's light from the table worked out this frame
+// (sky_table.comp; GeoSphere::Render). x: 1 to read it
+uniform vec4 SkyTable;
+uniform sampler2D skyTable;
+
+#include "sky-table.glsl"
+
 in vec4 varyingEyepos;
 in vec4 vertexColor;
 
@@ -18,44 +25,21 @@ out vec4 frag_color;
 void main(void)
 {
 	vec3 eyenorm = normalize(varyingEyepos.xyz);
-	vec3 specularHighlight = vec3(0.0);
 
-    vec2 atmosDist  = raySphereIntersect(geosphereCenter, eyenorm, geosphereAtmosTopRad);
-	// Invalid ray, skip shading this pixel
-	// (can improve performance when spatially coherent)
-	if (atmosDist.x == 0.0 && atmosDist.y == 0.0) {
-		frag_color = vec4(0.0);
-		return;
+	vec3 specularHighlight;
+	if (SkyTable.x > 0.5) {
+		specularHighlight = textureLod(skyTable, skyTableUV(eyenorm), 0.0).rgb;
+	} else {
+		vec4 sky = skyLightAlong(eyenorm);
+		// Invalid ray, skip shading this pixel
+		// (can improve performance when spatially coherent)
+		if (sky.a == 0.0) {
+			frag_color = vec4(0.0);
+			return;
+		}
+		specularHighlight = sky.rgb;
 	}
-
-	// a&b scaled so length of 1.0 means planet surface.
-	vec3 a = atmosDist.x * eyenorm - geosphereCenter;
-	vec3 b = atmosDist.y * eyenorm - geosphereCenter;
-
-	float AU = 149598000000.0;
-
-#if (NUM_LIGHTS > 0)
-	// coordinates, in planet radius
-	vec4 planet = vec4(geosphereCenter, geosphereRadius);
-	vec4 atmosphere = vec4(geosphereCenter, geosphereAtmosTopRad);
-
-	for (int i=0; i<NUM_LIGHTS; ++i) {
-		vec3 lightDir = normalize(vec3(uLight[i].position));
-
-		float uneclipsed = clamp(calcUneclipsedSky(eclipse, NumShadows, a, b, lightDir), 0.0, 1.0);
-
-		vec3 lightPosAU = uLight[i].position.xyz / AU;
-		float intensity = 1.f / dot(lightPosAU, lightPosAU); // magic to avoid calculating length and then squaring it
-		// bodies without Earth's values: the gentler falloff their ground and haze get far from the
-		// sun (rayleigh_geosphere_terrain.vert), so Titan's glow isn't left at 1% of Earth's
-		if (!atmosEarthValues())
-			intensity = inversesqrt(max(length(lightPosAU), 1e-3));
-
-		specularHighlight += calculateAtmosphereColor(planet, atmosphere, toLinear(uLight[i].diffuse), lightDir, vec3(0.0), eyenorm, uneclipsed, densityLUT, scatterLUT) * intensity;
-	}
-#endif
 
 	vec4 color = vec4(specularHighlight.rgb, 1.0) * 20;
-
 	frag_color = toSRGB(1 - exp(-color));
 }

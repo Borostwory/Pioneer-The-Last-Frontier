@@ -27,6 +27,15 @@ uniform vec4 MaterialNear;
 // each material's own height; z: 1 if they shade the ground from the main light (P4e); w: the tallest of this body's
 // materials' stones, as a share of the tile (how finely the ground is cut at a distance, terrain-stone-aim.glsl)
 uniform vec4 MaterialStones;
+// P4: the ground kept free of stones in circles: the cities (their streets, lots and pads) and landed ships
+// (GeoSphere::UpdateStoneFlats). xyz: the centre in view space, w: the radius in metres (0: none); the stones come back
+// over STONE_FLAT_MARGIN beyond it
+uniform vec4 StoneFlat0;
+uniform vec4 StoneFlat1;
+uniform vec4 StoneFlat2;
+uniform vec4 StoneFlat3;
+uniform vec4 StoneFlat4;
+uniform vec4 StoneFlat5;
 // as in the tessellation control shaders: x pixels per radian of the view, y the edge on screen they aim for (pixels);
 // for how far apart the cut points are, which the stones are smoothed to
 uniform vec4 TessParams;

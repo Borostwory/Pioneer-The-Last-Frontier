@@ -1,0 +1,29 @@
+// Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+// Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+// P8 of the OpenGL 4.6 plan: the sky's light for a grid of directions round the camera, worked out once a frame with
+// the camera in the air, for rayleigh_geosphere_sky_full.frag to read (sky-table.glsl)
+
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(binding = 0, rgba16f) uniform writeonly image2D skyTableOut;
+
+#include "attributes.glsl"
+#include "lib.glsl"
+#include "basesphere_uniforms.glsl"
+#include "rayleigh-lib.glsl"
+
+uniform int NumShadows;
+uniform sampler2D densityLUT;
+uniform sampler2D scatterLUT;
+
+#include "sky-table.glsl"
+
+void main(void)
+{
+	ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 size = imageSize(skyTableOut);
+	if (p.x >= size.x || p.y >= size.y)
+		return;
+	vec2 uv = (vec2(p) + 0.5) / vec2(size);
+	imageStore(skyTableOut, p, skyLightAlong(skyTableDirection(uv)));
+}

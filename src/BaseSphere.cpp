@@ -178,6 +178,13 @@ void BaseSphere::SetMaterialParameters(const matrix4x4d &trans, const float radi
 	m_surfaceMaterial->SetTexture("densityLUT"_hash, m_densityTexture.Get());
 	m_surfaceMaterial->SetTexture("scatterLUT"_hash, m_scatterTexture.Get());
 
+	if (m_skyTableMaterial.Valid() && ap.atmosDensity > 0.0) {
+		m_skyTableMaterial->SetBufferDynamic(s_baseSphereData, &matData);
+		m_skyTableMaterial->SetPushConstant(s_numShadows, int(shadows.size()));
+		m_skyTableMaterial->SetTexture("densityLUT"_hash, m_densityTexture.Get());
+		m_skyTableMaterial->SetTexture("scatterLUT"_hash, m_scatterTexture.Get());
+	}
+
 	if (m_atmosphereMaterial.Valid() && ap.atmosDensity > 0.0) {
 		m_atmosphereMaterial->SetBufferDynamic(s_baseSphereData, &matData);
 		m_atmosphereMaterial->SetPushConstant(s_numShadows, int(shadows.size()));

@@ -688,6 +688,20 @@ float materialStoneDepth(int m)
 // how finely the ground is cut for the stones at a distance
 #include "terrain-stone-aim.glsl"
 
+// how far beyond a circle kept free of stones they are back in full (metres)
+#define STONE_FLAT_MARGIN 10.0
+
+float terrainStoneFlatOne(vec3 p, vec4 circle)
+{
+	return circle.w <= 0.0 ? 1.0 : smoothstep(circle.w, circle.w + STONE_FLAT_MARGIN, length(p - circle.xyz));
+}
+
+// 0 inside the circles kept free of stones (cities, landed ships), 1 well clear of them; p: view space
+float terrainStoneFlat(vec3 p)
+{
+	return terrainStoneFlatOne(p, StoneFlat0) * terrainStoneFlatOne(p, StoneFlat1) * terrainStoneFlatOne(p, StoneFlat2) * terrainStoneFlatOne(p, StoneFlat3) * terrainStoneFlatOne(p, StoneFlat4) * terrainStoneFlatOne(p, StoneFlat5);
+}
+
 // The stone heights (terrainStoneHeights) at tile coordinates uv, smoothed to lod (in the heights' own pixels). Read at a
 // lod given, not from the screen, so the main processor can work out the same (TerrainStones::Sample).
 float stoneRead(int layer, vec2 uv, float lod)
@@ -766,6 +780,8 @@ bool terrainStonePick(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 eyepos, vec3 normal
 	float near = 1.0 - smoothstep(MaterialNear.y, 2.0 * MaterialNear.y, length(eyepos));
 	// (and where even the tallest would stand too small on screen, they fade out: nothing is cut there)
 	near *= smoothstep(0.5 * STONE_FADE_PIXELS, STONE_FADE_PIXELS, terrainStonePixels(length(eyepos)));
+	// (none in the cities or under landed ships)
+	near *= terrainStoneFlat(eyepos);
 	if (hasWater)
 		near *= smoothstep(0.5, 2.0, altitude);
 	if (near <= 0.0)

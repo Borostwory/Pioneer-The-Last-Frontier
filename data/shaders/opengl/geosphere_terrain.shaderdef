@@ -55,6 +55,12 @@ PushConstant vec4 TessParams binding=17
 PushConstant vec4 TessScreen binding=18
 PushConstant vec4 MaterialNear binding=19
 PushConstant vec4 MaterialStones binding=20
+PushConstant vec4 StoneFlat0 binding=21
+PushConstant vec4 StoneFlat1 binding=22
+PushConstant vec4 StoneFlat2 binding=23
+PushConstant vec4 StoneFlat3 binding=24
+PushConstant vec4 StoneFlat4 binding=25
+PushConstant vec4 StoneFlat5 binding=26
 
 Vertex "geosphere_terrain.vert"
 Fragment "geosphere_terrain.frag"

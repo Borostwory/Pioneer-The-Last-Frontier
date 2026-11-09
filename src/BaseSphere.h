@@ -72,6 +72,9 @@ protected:
 
 	RefCountedPtr<Graphics::Material> m_surfaceMaterial;
 	RefCountedPtr<Graphics::Material> m_atmosphereMaterial;
+	// P8 of the OpenGL 4.6 plan: the compute pass that fills the sky's table round the camera (sky_table.comp), given
+	// the sky's own data in SetMaterialParameters; only where the sky can read it (GeoSphere)
+	RefCountedPtr<Graphics::Material> m_skyTableMaterial;
 
 	// atmosphere geometry
 	static std::unique_ptr<Graphics::Drawables::Sphere3D> m_atmos; // always created with the same parameters so can be shared by all atmospheres

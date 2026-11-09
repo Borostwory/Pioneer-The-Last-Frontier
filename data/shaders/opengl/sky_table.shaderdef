@@ -1,0 +1,17 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# P8 of the OpenGL 4.6 plan: the sky's light round the camera, once a frame, for rayleigh_geosphere_sky_full to read
+Shader sky_table
+
+Texture sampler2D densityLUT
+Texture sampler2D scatterLUT
+Image image2D skyTableOut binding=0 format=rgba16f access=write
+
+Buffer LightData binding=0
+Buffer DrawData binding=1
+Buffer BaseSphereData binding=2
+
+PushConstant int NumShadows binding=0
+
+Compute "sky_table.comp"

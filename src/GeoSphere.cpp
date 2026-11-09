@@ -17,6 +17,8 @@
 #include "Pi.h"
 #include "PlanetClouds.h"
 #include "Space.h"
+#include "Ship.h"
+#include "Frame.h"
 #include "SpaceStation.h"
 #include "Star.h"
 #include "TerrainSurfaceTiles.h"
@@ -508,12 +510,18 @@ double GeoSphere::StoneLiftAt(const vector3d &point, const vector3d &normal, con
 	std::copy(slots, slots + 16, pt.slots);
 	pt.hasWater = (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) != 0;
 	pt.altitude = pt.hasWater ? StoneAltitude(seaHeight) : 1.0e4f;
-	return TerrainStones::Lift(StoneParams(m_terrain.Get(), m_pixelAngle), pt);
+	TerrainStones::Params params = StoneParams(m_terrain.Get(), m_pixelAngle);
+	params.flatCount = std::min(int(m_stoneFlats.size()), int(TerrainStones::Params::MAX_FLATS));
+	for (int i = 0; i < params.flatCount; i++) {
+		params.flatCentre[i] = m_stoneFlats[i].centre;
+		params.flatRadius[i] = m_stoneFlats[i].radius;
+	}
+	return TerrainStones::Lift(params, pt);
 }
 
 double GeoSphere::StonesFadePixels()
 {
-	return std::clamp(double(Pi::config->Float("TerrainStonesFadePixels", 2.0f)), 0.5, 16.0);
+	return std::clamp(double(Pi::config->Float("TerrainStonesFadePixels", 4.0f)), 0.5, 16.0);
 }
 
 double GeoSphere::StonePixelsAt(double metres) const
@@ -527,7 +535,58 @@ double GeoSphere::StonePixelsAt(double metres) const
 
 double GeoSphere::StonesFullPixels()
 {
-	return std::clamp(double(Pi::config->Float("TerrainStonesFullPixels", 8.0f)), 1.0, 32.0);
+	return std::clamp(double(Pi::config->Float("TerrainStonesFullPixels", 16.0f)), 1.0, 32.0);
+}
+
+void GeoSphere::UpdateStoneFlats(const vector3d &campos)
+{
+	m_stoneFlats.clear();
+	if (!StonesActive())
+		return;
+	const double radius = GetSystemBody()->GetRadius();
+	const vector3d camera = campos * radius;
+	std::vector<StoneFlat> all;
+	// the cities, as far out as their glow from afar reaches (their streets, lots, pads and gardens)
+	for (const GlowCity &city : m_glowCities)
+		all.push_back({ city.pos, city.radius });
+	// the ships landed on this body (docked ones are on the cities' pads)
+	if (Pi::game && Pi::game->GetSpace()) {
+		for (const Body *body : Pi::game->GetSpace()->GetBodies()) {
+			if (!body->IsType(ObjectType::SHIP) || !static_cast<const Ship *>(body)->IsLanded())
+				continue;
+			const Frame *frame = Frame::GetFrame(body->GetFrame());
+			if (!frame || !frame->IsRotFrame() || !frame->GetBody() || frame->GetBody()->GetSystemBody() != GetSystemBody())
+				continue;
+			all.push_back({ body->GetPosition(), body->GetPhysRadius() });
+		}
+	}
+	// the nearest to the camera that the stones could reach
+	const double reach = StonesReach() + 10.0;
+	std::sort(all.begin(), all.end(), [&](const StoneFlat &a, const StoneFlat &b) {
+		return (a.centre - camera).Length() - a.radius < (b.centre - camera).Length() - b.radius;
+	});
+	for (const StoneFlat &flat : all) {
+		if (int(m_stoneFlats.size()) >= TerrainStones::Params::MAX_FLATS || (flat.centre - camera).Length() - flat.radius > reach)
+			break;
+		m_stoneFlats.push_back(flat);
+	}
+}
+
+void GeoSphere::SetStoneFlats(Graphics::Material *material, const matrix4x4d &trans) const
+{
+	static const size_t names[TerrainStones::Params::MAX_FLATS] = { "StoneFlat0"_hash, "StoneFlat1"_hash, "StoneFlat2"_hash, "StoneFlat3"_hash, "StoneFlat4"_hash, "StoneFlat5"_hash };
+	const double radius = GetSystemBody()->GetRadius();
+	for (int i = 0; i < TerrainStones::Params::MAX_FLATS; i++) {
+		if (i < int(m_stoneFlats.size()))
+			material->SetPushConstant(names[i], vector3f(trans * (m_stoneFlats[i].centre / radius)), float(m_stoneFlats[i].radius));
+		else
+			material->SetPushConstant(names[i], vector3f(0.0f), 0.0f);
+	}
+}
+
+bool GeoSphere::SkyTableEnabled()
+{
+	return Pi::config->Int("SkyTable", 1) != 0;
 }
 
 bool GeoSphere::StonesContactEnabled()
@@ -608,6 +667,7 @@ void GeoSphere::RunStoneProbe(Graphics::Renderer *renderer, const matrix4x4d &tr
 	const bool water = (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) != 0;
 	m->SetPushConstant("ProbeGround"_hash, vector3f(water ? StoneAltitude(surface.seaHeight) : 1.0e4f, water ? 1.0f : 0.0f, 0.0f), 0.0f);
 	m->SetTexture("terrainStoneHeights"_hash, TerrainStones::GetTexture(renderer));
+	SetStoneFlats(m, trans);
 	PlanetClouds::SetMaterialCloudData(m, cloudData, m_cloudHeightMap.get());
 	renderer->DispatchCompute(m, 1, 1, 1);
 	renderer->AddComputeBarrier(Graphics::Renderer::BARRIER_ALL);
@@ -664,22 +724,22 @@ double GeoSphere::TessellationPixels()
 
 bool GeoSphere::TextureFixedEnabled()
 {
-	return Pi::config->Int("TerrainTextureFixed", 0) != 0;
+	return Pi::config->Int("TerrainTextureFixed", 1) != 0;
 }
 
 double GeoSphere::TextureFixedLevel()
 {
-	return std::clamp(double(Pi::config->Float("TerrainTextureFixedLevel", 2.0f)), 0.0, 8.0);
+	return std::clamp(double(Pi::config->Float("TerrainTextureFixedLevel", 3.0f)), 0.0, 8.0);
 }
 
 double GeoSphere::TextureFixedRange()
 {
-	return std::clamp(double(Pi::config->Float("TerrainTextureFixedRange", 30.0f)), 2.0, 500.0);
+	return std::clamp(double(Pi::config->Float("TerrainTextureFixedRange", 50.0f)), 2.0, 500.0);
 }
 
 bool GeoSphere::StonesEnabled()
 {
-	return Pi::config->Int("TerrainStones", 0) != 0;
+	return Pi::config->Int("TerrainStones", 1) != 0;
 }
 
 double GeoSphere::StonesHeight()
@@ -924,6 +984,9 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	Graphics::CityGlowDataBlock cityGlow{};
 	if (GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
 		SetCityGlowData(campos, cityGlow);
+	// P4: no stones in the cities or under landed ships
+	UpdateStoneFlats(campos);
+	SetStoneFlats(m_surfaceMaterial.Get(), trans);
 
 	if (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) {
 		// The water waves (terrain-water.glsl) are a tileable texture in three
@@ -986,6 +1049,18 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	}
 
 	if (m_atmosphereMaterial.Valid() && m_atmosphereParameters.atmosDensity > 0.0) {
+		// P8: with the camera in the air, the sky's light for a grid of directions round it, worked out once this
+		// frame with the sky's own sums, for the sky to read instead of working it out at every pixel (from outside the
+		// air, its edge round the planet is too sharp for the grid, and the sky works as before)
+		const bool skyTable = m_skyTableMaterial && SkyTableEnabled() && campos.Length() < m_atmosphereParameters.atmosRadius;
+		if (skyTable) {
+			renderer->BeginGpuTimer("sky table");
+			renderer->DispatchCompute(m_skyTableMaterial.Get(), 384 / 8, 256 / 8, 1);
+			renderer->EndGpuTimer();
+			renderer->AddComputeBarrier(Graphics::Renderer::BARRIER_TEXTURE_FETCH);
+		}
+		m_atmosphereMaterial->SetPushConstant("SkyTable"_hash, vector3f(skyTable ? 1.0f : 0.0f, 0.0f, 0.0f), 0.0f);
+
 		// make atmosphere sphere slightly bigger than required so
 		// that the edges of the pixel shader atmosphere jizz doesn't
 		// show ugly polygonal angles
@@ -1236,9 +1311,17 @@ void GeoSphere::CreateAtmosphereMaterial()
 	case 1:
 		m_atmosphereMaterial.Reset(Pi::renderer->CreateMaterial("rayleigh_geosphere_sky_fast", skyDesc, rsd, atmosVtxFmt));
 		break;
-	case 2:
+	case 2: {
 		m_atmosphereMaterial.Reset(Pi::renderer->CreateMaterial("rayleigh_geosphere_sky_full", skyDesc, rsd, atmosVtxFmt));
+		// P8: its table round the camera (as large as sky-table.glsl's SKY_TABLE_WIDTH and _HEIGHT), and the compute
+		// pass that fills it, with the sky's own lights and eclipses
+		const Graphics::TextureDescriptor tableDesc(Graphics::TEXTURE_RGBA16F, vector3f(384.0f, 256.0f, 0.0f), Graphics::LINEAR_REPEAT, false, false, false, 0, Graphics::TEXTURE_2D);
+		m_skyTable.Reset(Pi::renderer->CreateTexture(tableDesc));
+		m_skyTableMaterial.Reset(Pi::renderer->CreateMaterial("sky_table", skyDesc, Graphics::RenderStateDesc(), Graphics::VertexFormatDesc()));
+		m_skyTableMaterial->SetTexture("skyTableOut"_hash, m_skyTable.Get());
+		m_atmosphereMaterial->SetTexture("skyTable"_hash, m_skyTable.Get());
 		break;
+	}
 	default:
 		m_atmosphereMaterial.Reset(Pi::renderer->CreateMaterial("geosphere_sky", skyDesc, rsd, atmosVtxFmt));
 		break;

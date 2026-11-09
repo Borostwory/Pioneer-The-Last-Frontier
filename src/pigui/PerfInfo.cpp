@@ -1012,6 +1012,20 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 		ImGui::TextColored(dim, "distance as the stones do. Landed ships stay on the flat ground. The first switch-on loads the heights.");
 	}
 
+	// P8: the sky from a table
+	ImGui::Spacing();
+	ImGui::SeparatorText("P8: the sky's light from a table, worked out once a frame");
+	{
+		bool skyTable = GeoSphere::SkyTableEnabled();
+		if (ImGui::Checkbox("Sky from a table (with the camera in the air)##openglPlan", &skyTable)) {
+			Pi::config->SetInt("SkyTable", skyTable ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("sky from a table: ") + (skyTable ? "on" : "off"));
+		}
+		ImGui::TextColored(dim, "Should look the same. GPU time: \"atmosphere\" (the sky) and \"sky table\" (filling the table) in the log.");
+		ImGui::TextColored(dim, "Only with the realistic scattering setting at its highest; from outside the air the sky works as before.");
+	}
+
 	// P6: compute fills an image every frame while ticked, and the tessellation stages compile and link
 	ImGui::Spacing();
 	ImGui::SeparatorText("P6: compute and tessellation, tested");
