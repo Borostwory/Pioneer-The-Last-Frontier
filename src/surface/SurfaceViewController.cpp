@@ -203,6 +203,12 @@ void SurfaceViewController::Activated()
 	m_interactRequested = false;
 	m_interactTap = false;
 	m_onMouseWheelCon = Pi::input->onMouseWheel.connect(sigc::mem_fun(this, &SurfaceViewController::OnMouseWheel));
+	// Off the ship, the ship is always seen from outside. The cockpit view hides it from drawing
+	// (ShipViewController) and shows it again when deactivated; but a game saved off the ship comes back
+	// with the saved camera set while the world view isn't shown yet, so that never happened and the ship
+	// stayed undrawn (2026-11-09).
+	if (Pi::player)
+		Pi::player->SetFlag(Body::FLAG_DRAW_EXCLUDE, false);
 }
 
 void SurfaceViewController::Deactivated()
