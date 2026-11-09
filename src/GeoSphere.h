@@ -154,6 +154,15 @@ public:
 	// P8: whether the sky reads its light from a table worked out once a frame, with the camera in the air (config
 	// SkyTable; only with RealisticScattering=2)
 	static bool SkyTableEnabled();
+	// the cheaper photo textures (terrain-materials.glsl, TextureLod, TextureTurnTable), each switched in the debug
+	// window: simply far off (TerrainTextureSimpleFar) from a distance (TerrainTextureSimpleFrom, m); one size at a time
+	// (TerrainTextureOneScale), blending over a share of the way between sizes (TerrainTextureScaleBand); the turns'
+	// hashes from a table (TerrainTurnTable)
+	static bool TextureSimpleFar();
+	static double TextureSimpleFrom();
+	static bool TextureOneScale();
+	static double TextureScaleBand();
+	static bool TurnTable();
 	// the debug window's ground cost breakdown: parts of the ground's drawing left out (GROUND_SKIP in
 	// terrain-surface.glsl), not saved
 	static int GetGroundSkip();
@@ -261,6 +270,7 @@ private:
 	struct MaterialSlotDataBlock {
 		float colour[16][4];
 		float traits[16][4];
+		float cellHashes[13][4]; // salts 0 and 1, 5 x 5 cells each (materialCellHashTable)
 	};
 	MaterialSlotDataBlock m_materialSlotData = {};
 	void FillMaterialSlotData();

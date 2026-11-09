@@ -766,6 +766,11 @@ void GeoSphere::FillMaterialSlotData()
 		m_materialSlotData.traits[s][2] = 0.0f;
 		m_materialSlotData.traits[s][3] = 0.0f;
 	}
+	// the turns' cell hashes (materialCellHashTable): salt, then y, then x
+	for (int i = 0; i < 52; i++) {
+		const int salt = i / 25, cell = i % 25;
+		m_materialSlotData.cellHashes[i / 4][i % 4] = i < 50 ? TerrainStones::CellHash(float(cell % 5), float(cell / 5), uint32_t(salt)) : 0.0f;
+	}
 }
 
 int GeoSphere::GetGroundSkip()
@@ -776,6 +781,31 @@ int GeoSphere::GetGroundSkip()
 void GeoSphere::SetGroundSkip(int mask)
 {
 	s_groundSkip = mask;
+}
+
+bool GeoSphere::TextureSimpleFar()
+{
+	return Pi::config->Int("TerrainTextureSimpleFar", 0) != 0;
+}
+
+double GeoSphere::TextureSimpleFrom()
+{
+	return std::clamp(double(Pi::config->Float("TerrainTextureSimpleFrom", 1500.0f)), 100.0, 20000.0);
+}
+
+bool GeoSphere::TextureOneScale()
+{
+	return Pi::config->Int("TerrainTextureOneScale", 0) != 0;
+}
+
+double GeoSphere::TextureScaleBand()
+{
+	return std::clamp(double(Pi::config->Float("TerrainTextureScaleBand", 0.3f)), 0.02, 1.0);
+}
+
+bool GeoSphere::TurnTable()
+{
+	return Pi::config->Int("TerrainTurnTable", 1) != 0;
 }
 
 bool GeoSphere::SkyTableEnabled()
@@ -1175,6 +1205,9 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	m_surfaceMaterial->SetPushConstant("GroundSkip"_hash, s_groundSkip);
 	// each slot's material, worked out once (FillMaterialSlotData); a buffer set each frame
 	m_surfaceMaterial->SetBufferDynamic("MaterialSlotData"_hash, &m_materialSlotData);
+	// the cheaper photo textures, as switched
+	m_surfaceMaterial->SetPushConstant("TextureLod"_hash, vector3f(TextureSimpleFar() ? 1.0f : 0.0f, float(TextureSimpleFrom()), TextureOneScale() ? 1.0f : 0.0f), float(TextureScaleBand()));
+	m_surfaceMaterial->SetPushConstant("TextureTurnTable"_hash, TurnTable() ? 1.0f : 0.0f);
 	// P4c: the stones raised near the camera (terrain-materials.glsl, terrainStones)
 	m_surfaceMaterial->SetPushConstant("MaterialStones"_hash, vector3f(StonesActive() ? 1.0f : 0.0f, float(StonesHeight()), StoneShadowsEnabled() ? 1.0f : 0.0f), DeepestStone(m_terrain.Get()));
 	// and the viewport, for the edges' length on screen (terrain-tess-edges.glsl)

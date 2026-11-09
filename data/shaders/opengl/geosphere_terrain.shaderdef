@@ -63,6 +63,8 @@ PushConstant vec4 StoneFlat3 binding=24
 PushConstant vec4 StoneFlat4 binding=25
 PushConstant vec4 StoneFlat5 binding=26
 PushConstant int GroundSkip binding=27
+PushConstant vec4 TextureLod binding=28
+PushConstant float TextureTurnTable binding=29
 
 Vertex "geosphere_terrain.vert"
 Fragment "geosphere_terrain.frag"

@@ -65,6 +65,9 @@ namespace TerrainStones {
 	// (materialStoneDepth() in terrain-materials.glsl)
 	float Depth(int layer);
 
+	// materialCellHash() of terrain-materials.glsl: a cell's hash, 0..1, for the turns of the textures
+	float CellHash(float cx, float cy, uint32_t salt);
+
 	// whether the heights loaded (they are read the first time they're needed)
 	bool Loaded();
 } // namespace TerrainStones

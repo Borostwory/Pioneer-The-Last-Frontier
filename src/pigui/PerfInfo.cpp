@@ -1035,6 +1035,53 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 		ImGui::TextColored(dim, "For measuring only, not saved. Stand still, give each about 5 seconds; the log notes each switch.");
 	}
 
+	// the cheaper photo textures
+	ImGui::Spacing();
+	ImGui::SeparatorText("Cheaper photo textures (compare the look and \"terrain\" in the log)");
+	{
+		bool simpleFar = GeoSphere::TextureSimpleFar();
+		if (ImGui::Checkbox("Simple textures far off##openglPlan", &simpleFar)) {
+			Pi::config->SetInt("TerrainTextureSimpleFar", simpleFar ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("textures: simple far off ") + (simpleFar ? "on" : "off"));
+		}
+		ImGui::SameLine();
+		float from = float(GeoSphere::TextureSimpleFrom());
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		if (ImGui::SliderFloat("from##openglPlanSimpleFrom", &from, 100.0f, 20000.0f, "%.0f m", ImGuiSliderFlags_Logarithmic))
+			Pi::config->SetFloat("TerrainTextureSimpleFrom", from);
+		if (ImGui::IsItemDeactivatedAfterEdit()) {
+			Pi::config->Save();
+			FrontierLog::Note("textures: simple from " + std::to_string(int(from)) + " m");
+		}
+		ImGui::TextColored(dim, "Beyond that (fading in over half as far again): one read of the main material, no coarse copy, no second.");
+
+		bool oneScale = GeoSphere::TextureOneScale();
+		if (ImGui::Checkbox("One texture size at a time##openglPlan", &oneScale)) {
+			Pi::config->SetInt("TerrainTextureOneScale", oneScale ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("textures: one size at a time ") + (oneScale ? "on" : "off"));
+		}
+		ImGui::SameLine();
+		float band = float(GeoSphere::TextureScaleBand());
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		if (ImGui::SliderFloat("blend##openglPlanScaleBand", &band, 0.02f, 1.0f, "%.2f"))
+			Pi::config->SetFloat("TerrainTextureScaleBand", band);
+		if (ImGui::IsItemDeactivatedAfterEdit()) {
+			Pi::config->Save();
+			FrontierLog::Note("textures: size blend " + std::to_string(band));
+		}
+		ImGui::TextColored(dim, "Between two texture sizes, both are read only in this share of the way (1: everywhere, as before).");
+
+		bool turnTable = GeoSphere::TurnTable();
+		if (ImGui::Checkbox("Texture turns from a table##openglPlan", &turnTable)) {
+			Pi::config->SetInt("TerrainTurnTable", turnTable ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("textures: turns from a table ") + (turnTable ? "on" : "off"));
+		}
+		ImGui::TextColored(dim, "Worlds with turned textures (Mars, the Moon): the same turns, looked up instead of worked out.");
+	}
+
 	// P7: the rover's dust on the graphics card
 	ImGui::Spacing();
 	ImGui::SeparatorText("P7: the rover's dust on the graphics card");

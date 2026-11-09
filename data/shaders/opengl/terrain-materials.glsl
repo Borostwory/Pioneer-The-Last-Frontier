@@ -92,10 +92,20 @@ uniform vec4 PatchTile;
 // at every pixel (the colour shift alone cost 0.74 ms on New Hope on 2026-11-09). Colour: rgb materialColour(), a
 // materialMeanRoughness(); traits: x materialRoughness(), y materialBumpStrength(). An unused slot: 0.7 and 1.0, as
 // the functions' callers took for no material.
+// cellHashes: materialCellHash() of the 5 x 5 cells (x across, y down) of salts 0 and 1, four to a vector, for the
+// turns' field (materialRegionNoiseTable) to look up instead of working out
 layout(std140) uniform MaterialSlotData {
 	vec4 materialSlotColour[MATERIAL_SLOTS];
 	vec4 materialSlotTraits[MATERIAL_SLOTS];
+	vec4 materialCellHashes[13];
 };
+
+// Cheaper photo textures, each switched in the debug window (GeoSphere: TerrainTextureSimpleFar, TerrainTextureOneScale,
+// TerrainTurnTable). TextureLod x: 1 to read them simply far off, y: from how far (m), full by half as far again;
+// z: 1 for one texture size at a time, w: the share of the way between two sizes over which they blend (1: all of it,
+// as before). TextureTurnTable: 1 to look the turns' cell hashes up in the table instead of working them out.
+uniform vec4 TextureLod;
+uniform float TextureTurnTable;
 
 // (as scripts/make_terrain_materials.py makes them)
 #define MATERIAL_TEXTURE_SIZE 4096.0
@@ -450,6 +460,25 @@ float materialRegionNoise(vec2 p, uint salt)
 	return mix(mix(h.x, h.y, t.x), mix(h.z, h.w, t.x), t.y);
 }
 
+// as materialRegionNoise(), the cells' hashes looked up (the same values: GeoSphere::FillMaterialSlotData works them
+// out with TerrainStones::CellHash); c is already in 0..4
+float materialCellHashTable(vec2 c, uint salt)
+{
+	int i = int(salt) * 25 + int(c.y) * 5 + int(c.x);
+	return materialCellHashes[i >> 2][i & 3];
+}
+
+float materialRegionNoiseTable(vec2 p, uint salt)
+{
+	vec2 c = floor(p), t = p - c;
+	t = t * t * (3.0 - 2.0 * t);
+	vec2 next = mod(c + 1.0, 5.0);
+	c = mod(c, 5.0);
+	vec4 h = vec4(materialCellHashTable(c, salt), materialCellHashTable(vec2(next.x, c.y), salt),
+		materialCellHashTable(vec2(c.x, next.y), salt), materialCellHashTable(next, salt));
+	return mix(mix(h.x, h.y, t.x), mix(h.z, h.w, t.x), t.y);
+}
+
 // One read of the photo textures, as textureGrad(); for the ground cost breakdown (GROUND_SKIP 12), without the
 // sharper filtering at grazing angles: one level of detail for the larger of the two footprints
 vec4 materialRead(vec3 uvLayer, vec2 dx, vec2 dy)
@@ -473,7 +502,9 @@ const vec2 MATERIAL_TURNS[8] = vec2[8](vec2(1.0, 0.0), vec2(0.6, 0.8), vec2(0.0,
 vec4 materialVariedRead(int layer, vec2 uv, vec2 dx, vec2 dy, vec2 uvPatch, vec2 uvFar, int turnStep, float blend)
 {
 	float count = float(8 / turnStep);
-	float field = count * fract(materialRegionNoise(uvPatch, 0u) + 3.0 * materialRegionNoise(uvFar, 1u));
+	float field = TextureTurnTable > 0.5 ?
+		count * fract(materialRegionNoiseTable(uvPatch, 0u) + 3.0 * materialRegionNoiseTable(uvFar, 1u)) :
+		count * fract(materialRegionNoise(uvPatch, 0u) + 3.0 * materialRegionNoise(uvFar, 1u));
 	float index = floor(field);
 	vec2 a = MATERIAL_TURNS[int(index) * turnStep], b = MATERIAL_TURNS[int(mod(index + 1.0, count)) * turnStep];
 	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * (index + 1.0));
@@ -524,29 +555,38 @@ float materialLavaPatches(MaterialMapping m)
 
 // emission (x), detail (y, mean 1), height (z) and roughness (w) of one material at a tile
 // level, blended between the two power-of-two sizes around it
+// one texture between the two power-of-two sizes around its level k + f (0 <= f < 1), as far between them as f; with
+// one size at a time (TextureLod.z), they blend only over the middle share TextureLod.w of the way, and only the one is
+// read either side of it
+vec4 materialTwoSizes(int layer, MaterialMapping m, float k, float f)
+{
+	if (TextureLod.z > 0.5)
+		f = smoothstep(0.5 - 0.5 * TextureLod.w, 0.5 + 0.5 * TextureLod.w, f);
+	if (f <= 0.0)
+		return materialTileSample(layer, m, k);
+	if (f >= 1.0)
+		return materialTileSample(layer, m, k + 1.0);
+	return mix(materialTileSample(layer, m, k), materialTileSample(layer, m, k + 1.0), f);
+}
+
 vec4 materialSample(int layer, MaterialMapping m, float level)
 {
 	level = clamp(level, 0.0, MATERIAL_MAX_LEVEL - 1.0);
 	float k = floor(level);
-	vec4 r = materialTileSample(layer, m, k);
 	// (level is often a whole number, as MATERIAL_FIXED_MAX_LEVEL holds it at one over most of the screen: then the next
 	// size would count for nothing, so it isn't read)
-	if (level > k)
-		r = mix(r, materialTileSample(layer, m, k + 1.0), level - k);
+	vec4 r = materialTwoSizes(layer, m, k, level - k);
 	// forest: its floor on foot, its canopy from the air
 	if (layer == MATERIAL_FOREST) {
 		float canopy = smoothstep(MATERIAL_FOREST_NEAR_LEVEL, MATERIAL_FOREST_FAR_LEVEL, m.level);
 		if (canopy > 0.0)
-			r = mix(r, mix(materialTileSample(MATERIAL_FOREST_FAR, m, k), materialTileSample(MATERIAL_FOREST_FAR, m, k + 1.0), level - k), canopy);
+			r = mix(r, materialTwoSizes(MATERIAL_FOREST_FAR, m, k, level - k), canopy);
 	}
 	// (on old ice, the snow photo at the same sizes, read only there)
 	float oldIce = layer == MATERIAL_ICE && MaterialLook.y > 0.5 ? MATERIAL_OLD_ICE_SNOW * (1.0 - clamp(MaterialLook.x / MATERIAL_OLD_ICE_UNTIL, 0.0, 1.0)) : 0.0;
 	vec4 snow = vec4(0.0, 0.5, 0.5, materialMeanRoughness(MATERIAL_SNOW));
-	if (oldIce > 0.0) {
-		snow = materialTileSample(MATERIAL_SNOW, m, k);
-		if (level > k)
-			snow = mix(snow, materialTileSample(MATERIAL_SNOW, m, k + 1.0), level - k);
-	}
+	if (oldIce > 0.0)
+		snow = materialTwoSizes(MATERIAL_SNOW, m, k, level - k);
 	r.y *= 2.0;
 	// the ice photo has its cracks built in: as strong as this body's are, but never gone, or an old ice moon's ground
 	// is flat and plain up close
@@ -666,15 +706,25 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 	// The second material only where it shows: over a tenth of the land here (below that it hardly ever comes through
 	// the blend along the bumps), and with the first one's coarse size. Its two reads cost 1.2 ms at Cydonia on
 	// 2026-11-09; this saved 0.48 ms and you saw no difference.
+	// Far off, simply (TextureLod.xy): the first material's fine size alone, at the one size nearest, for both
+	// materials (their colours still each their own); fading in from TextureLod.y to half as far again
+	float simple = TextureLod.x > 0.5 ? smoothstep(TextureLod.y, 1.5 * TextureLod.y, distMetres) : 0.0;
 	vec4 c1 = vec4(1.0);
-	if (l1 >= 0) {
-		vec4 f1 = GROUND_SKIP(15) ? vec4(0.0, 0.5, 0.5, 0.7) : materialSample(l1, mapping, mapping.level);
-		c1 = GROUND_SKIP(10) ? vec4(1.0) : materialSample(l1, mapping, coarse);
-		d1 = vec4(f1.x, f1.y * c1.y, f1.z, f1.w);
+	if (simple < 1.0) {
+		if (l1 >= 0) {
+			vec4 f1 = GROUND_SKIP(15) ? vec4(0.0, 0.5, 0.5, 0.7) : materialSample(l1, mapping, mapping.level);
+			c1 = GROUND_SKIP(10) ? vec4(1.0) : materialSample(l1, mapping, coarse);
+			d1 = vec4(f1.x, f1.y * c1.y, f1.z, f1.w);
+		}
+		if (w2 > 0.1 && !GROUND_SKIP(11)) {
+			vec4 f2 = materialSample(l2, mapping, mapping.level);
+			d2 = vec4(f2.x, f2.y * c1.y, f2.z, f2.w);
+		}
 	}
-	if (w2 > 0.1 && !GROUND_SKIP(11)) {
-		vec4 f2 = materialSample(l2, mapping, mapping.level);
-		d2 = vec4(f2.x, f2.y * c1.y, f2.z, f2.w);
+	if (simple > 0.0 && l1 >= 0) {
+		vec4 s1 = materialSample(l1, mapping, floor(mapping.level + 0.5));
+		d1 = mix(d1, s1, simple);
+		d2 = mix(d2, s1, simple);
 	}
 
 	// blend the two along their bumps: the higher one shows through first

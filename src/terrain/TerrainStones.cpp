@@ -197,7 +197,7 @@ namespace {
 	inline float Fract(float x) { return x - std::floor(x); }
 	inline float Mod(float x, float y) { return x - y * std::floor(x / y); }
 
-	float CellHash(float cx, float cy, uint32_t salt)
+	float CellHashOf(float cx, float cy, uint32_t salt)
 	{
 		uint32_t x = uint32_t(int32_t(cx)), y = uint32_t(int32_t(cy)), z = salt;
 		x = x * 1664525u + 1013904223u;
@@ -222,7 +222,7 @@ namespace {
 		const float nx = Mod(cx + 1.0f, 5.0f), ny = Mod(cy + 1.0f, 5.0f);
 		cx = Mod(cx, 5.0f);
 		cy = Mod(cy, 5.0f);
-		const float h0 = CellHash(cx, cy, salt), h1 = CellHash(nx, cy, salt), h2 = CellHash(cx, ny, salt), h3 = CellHash(nx, ny, salt);
+		const float h0 = CellHashOf(cx, cy, salt), h1 = CellHashOf(nx, cy, salt), h2 = CellHashOf(cx, ny, salt), h3 = CellHashOf(nx, ny, salt);
 		return Mix(Mix(h0, h1, tx), Mix(h2, h3, tx), ty);
 	}
 
@@ -390,6 +390,11 @@ namespace {
 } // namespace
 
 namespace TerrainStones {
+	float CellHash(float cx, float cy, uint32_t salt)
+	{
+		return CellHashOf(cx, cy, salt);
+	}
+
 	float Depth(int layer)
 	{
 		return StoneDepth(layer);
