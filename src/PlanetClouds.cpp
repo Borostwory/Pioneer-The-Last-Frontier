@@ -212,6 +212,11 @@ namespace {
 	static const int WEATHER_MAP_W = 1024;
 	static const int WEATHER_MAP_H = 512;
 	static const double WEATHER_LAYER_PERIOD[3] = { 32768.0, 32768.0, 65536.0 };
+	// P9 of the OpenGL 4.6 plan: a map is baked in this many strips, at most this many a frame, so arriving at a planet
+	// (six maps at once: 12 ms on the graphics card in one frame) doesn't stall a frame. Until a map is whole, the clouds
+	// work its flow out themselves (cloudWeatherCached), as they do without maps.
+	static const int WEATHER_STRIPS = 4;
+	static const int WEATHER_STRIPS_PER_FRAME = 2;
 
 	struct WeatherMaps {
 		std::unique_ptr<Graphics::RenderTarget> xy; // RG32F atlas, 2 x 3 maps with 1-texel wrap padding
@@ -220,6 +225,8 @@ namespace {
 		const SystemBody *body = nullptr;
 		float system[3] = { 0.0f, 0.0f, 0.0f };
 		double held[3][2]; // cloud cycle in each layer's slot, -1: none
+		double baking[3][2]; // cloud cycle being baked into each slot, -1: none
+		int strips[3][2]; // its strips baked so far
 	};
 	static std::unique_ptr<WeatherMaps> s_weather;
 	static bool s_weatherUnsupported = false; // float render targets missing: always compute
@@ -582,15 +589,16 @@ namespace {
 		pass.histH = std::min(int(std::ceil(pass.height / pass.divisor)), pass.maxHistH);
 	}
 
-	// bakes the weather map of layer li for cloud cycle cyc into its slot
-	void BakeWeatherMap(Graphics::Renderer *r, const PassResources &pass, WeatherMaps &w, PassEntry &e, int li, int slot, double cyc)
+	// bakes strip `strip` (of WEATHER_STRIPS, bottom up) of the weather map of layer li for cloud cycle cyc into its slot
+	void BakeWeatherMap(Graphics::Renderer *r, const PassResources &pass, WeatherMaps &w, PassEntry &e, int li, int slot, double cyc, int strip)
 	{
+		const int rows = WEATHER_MAP_H / WEATHER_STRIPS;
 		CloudPassBlock bake {};
 		SetVec4(bake.march, slot * (WEATHER_MAP_W + 2), li * WEATHER_MAP_H, 0.0, 0.0);
 		for (int comp = 0; comp < 2; comp++) {
 			SetVec4(bake.frame, li, cyc, 0.0, comp);
 			r->SetRenderTarget(comp == 0 ? w.xy.get() : w.z.get());
-			r->SetViewport({ slot * (WEATHER_MAP_W + 2), li * WEATHER_MAP_H, WEATHER_MAP_W + 2, WEATHER_MAP_H });
+			r->SetViewport({ slot * (WEATHER_MAP_W + 2), li * WEATHER_MAP_H + strip * rows, WEATHER_MAP_W + 2, rows });
 			w.bakeMaterial->SetBufferDynamic(s_cloudPassDataName, &bake);
 			w.bakeMaterial->SetBufferDynamic(s_cloudDataName, &e.cloudData);
 			r->DrawBuffer(pass.triangle.get(), w.bakeMaterial.Get());
@@ -634,21 +642,41 @@ namespace {
 		if (w.body != e.body || !std::equal(w.system, w.system + 3, d.tuneSystem)) {
 			w.body = e.body;
 			std::copy(d.tuneSystem, d.tuneSystem + 3, w.system);
-			for (auto &layer : w.held)
-				layer[0] = layer[1] = -1.0;
+			for (int li = 0; li < 3; li++) {
+				for (int slot = 0; slot < 2; slot++) {
+					w.held[li][slot] = -1.0;
+					w.baking[li][slot] = -1.0;
+					w.strips[li][slot] = 0;
+				}
+			}
 		}
 
 		// the cycles of phase A and B, computed like cloudPhases from the
-		// same (float) cloud time, so they match the shader exactly
+		// same (float) cloud time, so they match the shader exactly. A map
+		// that's wanted is baked a few strips a frame; its slot holds nothing
+		// meanwhile, so the clouds don't read half a map
+		int budget = WEATHER_STRIPS_PER_FRAME;
 		for (int li = 0; li < 3; li++) {
 			const double period = WEATHER_LAYER_PERIOD[li];
 			const double base = double(d.time[1]) * (1048576.0 / period);
 			for (int k = 0; k < 2; k++) {
 				const double cyc = base + std::floor(double(d.time[0]) / period + 0.5 * k);
 				const int slot = int(std::fmod(cyc, 2.0));
-				if (w.held[li][slot] != cyc) {
-					BakeWeatherMap(r, pass, w, e, li, slot, cyc);
+				if (w.held[li][slot] == cyc)
+					continue;
+				if (w.baking[li][slot] != cyc) {
+					w.baking[li][slot] = cyc;
+					w.strips[li][slot] = 0;
+					w.held[li][slot] = -1.0;
+				}
+				while (budget > 0 && w.strips[li][slot] < WEATHER_STRIPS) {
+					BakeWeatherMap(r, pass, w, e, li, slot, cyc, w.strips[li][slot]);
+					w.strips[li][slot]++;
+					budget--;
+				}
+				if (w.strips[li][slot] == WEATHER_STRIPS) {
 					w.held[li][slot] = cyc;
+					w.baking[li][slot] = -1.0;
 				}
 			}
 		}
