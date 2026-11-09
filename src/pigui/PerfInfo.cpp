@@ -1012,6 +1012,28 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 		ImGui::TextColored(dim, "distance as the stones do. Landed ships stay on the flat ground. The first switch-on loads the heights.");
 	}
 
+	// what the ground's drawing costs, part by part
+	ImGui::Spacing();
+	ImGui::SeparatorText("The ground's cost, part by part (leave parts out, read \"terrain\" in the log)");
+	{
+		static const char *const parts[16] = { "photo textures", "relief below the mesh", "surface tiles", "city streets and lights",
+			"water", "sun shadows", "ships' lamps and tracks", "materials' shine", "air light per corner",
+			"texture turns", "coarse texture size", "second material", "grazing-angle filtering",
+			"slope and shore weights", "colour shift", "fine texture read" };
+		int mask = GeoSphere::GetGroundSkip();
+		for (int i = 0; i < 16; i++) {
+			bool skip = (mask & (1 << i)) != 0;
+			if (i % 4)
+				ImGui::SameLine();
+			if (ImGui::Checkbox((std::string("leave out ") + parts[i] + "##groundSkip").c_str(), &skip)) {
+				mask = skip ? (mask | (1 << i)) : (mask & ~(1 << i));
+				GeoSphere::SetGroundSkip(mask);
+				FrontierLog::Note(std::string("ground cost: ") + parts[i] + (skip ? " left out" : " back in"));
+			}
+		}
+		ImGui::TextColored(dim, "For measuring only, not saved. Stand still, give each about 5 seconds; the log notes each switch.");
+	}
+
 	// P7: the rover's dust on the graphics card
 	ImGui::Spacing();
 	ImGui::SeparatorText("P7: the rover's dust on the graphics card");

@@ -47,6 +47,9 @@ out vec3 waterSkyLight;
 
 // y: 1 on the physical generator's bodies
 uniform vec4 MaterialLook;
+// the debug window's ground cost breakdown (GROUND_SKIP in terrain-surface.glsl); bit 8: the air's light along the view
+// and the sky on the water, worked out at each corner
+uniform int GroundSkip;
 
 void main(void)
 {
@@ -143,7 +146,7 @@ void main(void)
 #ifdef ATMOSPHERE
 		// the sky colour, as the sky shader computes it (x20 exposure there),
 		// with fewer samples: it varies slowly along the ray
-		if (nearWater) {
+		if (nearWater && (GroundSkip & 256) == 0) {
 			_iSamples = 4;
 			waterSkyLight += 20.0 * calculateIncidentLight(L, skyDir, skyStart, lightColor, uneclipsed, densityLUT, scatterLUT);
 			_iSamples = 16;
@@ -160,7 +163,9 @@ void main(void)
 		// some light is again lost in atmosphere
 
 		vec2 opticalDistance = vec2(0);
-		vec3 inscattering = calculateRayInscattering(opticalDistance, P, -eyenorm, dist * geosphereInvRadius, L, lightColor.xyz, densityLUT, scatterLUT);
+		vec3 inscattering = vec3(0.0);
+		if ((GroundSkip & 256) == 0)
+			inscattering = calculateRayInscattering(opticalDistance, P, -eyenorm, dist * geosphereInvRadius, L, lightColor.xyz, densityLUT, scatterLUT);
 
 		// Apply the optical transmittance of the terrain -> view vector to our accumulated light
 		vec3 viewLoss = pow(calcTransmittance(opticalDistance), vec3(airShare()));

@@ -81,6 +81,21 @@ uniform vec4 PatchTile;
 #define MATERIAL_SLOT_GROUPS 4
 // slots this body uses; the rest are empty
 #define MATERIAL_USED_SLOTS int(MaterialLook.w)
+// (Every loop over the slots runs to MATERIAL_SLOTS, a number fixed when the shader is compiled, and stops at the used
+// ones; and no slot is read by a number only known while running. Then the compiler can unroll the loops and keep the
+// weights in registers. A loop up to MATERIAL_USED_SLOTS, or w[rockSlot], makes it keep the weight arrays in memory
+// instead, which is slow: the photo textures cost 2.6 ms of New Hope's 4.9 on 2026-11-09, but their texture reads
+// little of that.)
+
+// Each slot's material, as the functions below give it, worked out once for the body on the main processor
+// (GeoSphere::FillMaterialSlotData, which must change with them), so the ground reads them instead of working them out
+// at every pixel (the colour shift alone cost 0.74 ms on New Hope on 2026-11-09). Colour: rgb materialColour(), a
+// materialMeanRoughness(); traits: x materialRoughness(), y materialBumpStrength(). An unused slot: 0.7 and 1.0, as
+// the functions' callers took for no material.
+layout(std140) uniform MaterialSlotData {
+	vec4 materialSlotColour[MATERIAL_SLOTS];
+	vec4 materialSlotTraits[MATERIAL_SLOTS];
+};
 
 // (as scripts/make_terrain_materials.py makes them)
 #define MATERIAL_TEXTURE_SIZE 4096.0
@@ -250,12 +265,15 @@ float materialSlotWeight(vec4 slots[MATERIAL_SLOT_GROUPS], int slot)
 float materialVertexRoughness(vec4 slots[MATERIAL_SLOT_GROUPS])
 {
 	float r = 0.0, total = 0.0;
-	for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
+	int usedSlots = MATERIAL_USED_SLOTS;
+	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		if (i >= usedSlots)
+			break;
 		int layer = materialSlotLayer(i);
 		if (layer < 0)
 			continue;
 		float w = materialSlotWeight(slots, i);
-		r += w * materialMeanRoughness(layer);
+		r += w * materialSlotColour[i].a;
 		total += w;
 	}
 	return total > 1e-3 ? r / total : 0.7;
@@ -270,24 +288,33 @@ void terrainSlotWeights(vec4 slots[MATERIAL_SLOT_GROUPS], float slope, float alt
 	int rockSlot = int(MaterialSpecial.x), beachSlot = int(MaterialSpecial.y);
 	int snowSlot = int(MaterialSpecial.z), lavaSlot = int(MaterialSpecial.w);
 
+	int usedSlots = MATERIAL_USED_SLOTS;
+
 	float steep = smoothstep(MATERIAL_ROCK_SLOPE_START, MATERIAL_ROCK_SLOPE_FULL, slope);
 	if (rockSlot >= 0 && steep > 0.0) {
 		float moved = 0.0;
-		for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
+		for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+			if (i >= usedSlots)
+				break;
 			if (i == rockSlot || i == lavaSlot)
 				continue;
 			float k = (i == snowSlot) ? 0.7 * steep : steep;
 			moved += k * w[i];
 			w[i] *= 1.0 - k;
 		}
-		w[rockSlot] += moved;
+		for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+			if (i == rockSlot)
+				w[i] += moved;
+		}
 	}
 
 	if (hasWater && beachSlot >= 0) {
 		float beach = smoothstep(MATERIAL_BEACH_TOP, MATERIAL_BEACH_FULL, altitude) * (1.0 - steep);
 		if (beach > 0.0) {
 			float moved = 0.0;
-			for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
+			for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+				if (i >= usedSlots)
+					break;
 				int layer = materialSlotLayer(i);
 				// (lava's crust and ash stay black down to the water)
 				if (i == beachSlot || i == rockSlot || i == snowSlot || i == lavaSlot || layer == MATERIAL_ASH || layer == MATERIAL_LAVA_FLOW)
@@ -295,7 +322,10 @@ void terrainSlotWeights(vec4 slots[MATERIAL_SLOT_GROUPS], float slope, float alt
 				moved += beach * w[i];
 				w[i] *= 1.0 - beach;
 			}
-			w[beachSlot] += moved;
+			for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+				if (i == beachSlot)
+					w[i] += moved;
+			}
 		}
 	}
 }
@@ -309,7 +339,10 @@ vec4 terrainPatternWeights(vec4 slots[MATERIAL_SLOT_GROUPS], out float rock, out
 	rock = 0.0;
 	ice = 0.0;
 	lava = 0.0;
-	for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
+	int usedSlots = MATERIAL_USED_SLOTS;
+	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		if (i >= usedSlots)
+			break;
 		float w = materialSlotWeight(slots, i);
 		int m = materialSlotLayer(i);
 		if (m == MATERIAL_SAND || m == MATERIAL_SALT || m == MATERIAL_ASH || m == MATERIAL_DUST)
@@ -417,6 +450,15 @@ float materialRegionNoise(vec2 p, uint salt)
 	return mix(mix(h.x, h.y, t.x), mix(h.z, h.w, t.x), t.y);
 }
 
+// One read of the photo textures, as textureGrad(); for the ground cost breakdown (GROUND_SKIP 12), without the
+// sharper filtering at grazing angles: one level of detail for the larger of the two footprints
+vec4 materialRead(vec3 uvLayer, vec2 dx, vec2 dy)
+{
+	if (GROUND_SKIP(12))
+		return textureLod(terrainMaterials, uvLayer, log2(max(max(length(dx), length(dy)) * MATERIAL_TEXTURE_SIZE, 1e-6)));
+	return textureGrad(terrainMaterials, uvLayer, dx, dy);
+}
+
 // The turns of the tile. These are the ones that take a step of 5 tiles to a whole number of them (the 3, 4, 5 triangle),
 // so turning doesn't show where the origin wraps.
 const vec2 MATERIAL_TURNS[8] = vec2[8](vec2(1.0, 0.0), vec2(0.6, 0.8), vec2(0.0, 1.0), vec2(-0.8, 0.6), vec2(-1.0, 0.0), vec2(-0.6, -0.8), vec2(0.0, -1.0), vec2(0.8, -0.6));
@@ -435,9 +477,9 @@ vec4 materialVariedRead(int layer, vec2 uv, vec2 dx, vec2 dy, vec2 uvPatch, vec2
 	float index = floor(field);
 	vec2 a = MATERIAL_TURNS[int(index) * turnStep], b = MATERIAL_TURNS[int(mod(index + 1.0, count)) * turnStep];
 	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * (index + 1.0));
-	vec4 ra = textureGrad(terrainMaterials, vec3(vec2(a.x * uv.x - a.y * uv.y, a.y * uv.x + a.x * uv.y) + offsetA, float(layer)),
+	vec4 ra = materialRead(vec3(vec2(a.x * uv.x - a.y * uv.y, a.y * uv.x + a.x * uv.y) + offsetA, float(layer)),
 		vec2(a.x * dx.x - a.y * dx.y, a.y * dx.x + a.x * dx.y), vec2(a.x * dy.x - a.y * dy.y, a.y * dy.x + a.x * dy.y)).rgab;
-	vec4 rb = textureGrad(terrainMaterials, vec3(vec2(b.x * uv.x - b.y * uv.y, b.y * uv.x + b.x * uv.y) + offsetB, float(layer)),
+	vec4 rb = materialRead(vec3(vec2(b.x * uv.x - b.y * uv.y, b.y * uv.x + b.x * uv.y) + offsetB, float(layer)),
 		vec2(b.x * dx.x - b.y * dx.y, b.y * dx.x + b.x * dx.y), vec2(b.x * dy.x - b.y * dy.y, b.y * dy.x + b.x * dy.y)).rgab;
 	return mix(ra, rb, smoothstep(0.5 - blend, 0.5 + blend, field - index + 0.8 * (rb.z - ra.z)));
 }
@@ -449,8 +491,8 @@ vec4 materialTileSample(int layer, MaterialMapping m, float level)
 	vec3 q = materialTileCoord(m, level);
 	vec3 qx = m.relDx / tile, qy = m.relDy / tile;
 	// (detail fixed in space: as set for this texture; everywhere else straight)
-	vec3 rotation = materialRotation(layer);
-	if (MaterialLook.y > 0.5 && rotation.x > 0.5) {
+	vec3 rotation = MaterialLook.y > 0.5 ? materialRotation(layer) : vec3(0.0);
+	if (MaterialLook.y > 0.5 && rotation.x > 0.5 && !GROUND_SKIP(9)) {
 		// a patch of 2^y tiles, in the coordinates of that size, so it goes on across their wrap; half a tile is twice
 		// these, which still does
 		vec3 qPatch = rotation.y < -0.5 ? q * 2.0 : (rotation.y < 0.5 ? q : materialTileCoord(m, min(level + rotation.y, MATERIAL_MAX_LEVEL)));
@@ -461,10 +503,10 @@ vec4 materialTileSample(int layer, MaterialMapping m, float level)
 			varied += m.plane.y * materialVariedRead(layer, materialPlaneUV(q, m.axes.y), materialPlaneUV(qx, m.axes.y), materialPlaneUV(qy, m.axes.y), materialPlaneUV(qPatch, m.axes.y), materialPlaneUV(qFar, m.axes.y), turnStep, rotation.z);
 		return varied;
 	}
-	vec4 r = m.plane.x * textureGrad(terrainMaterials, vec3(materialPlaneUV(q, m.axes.x), float(layer)),
+	vec4 r = m.plane.x * materialRead(vec3(materialPlaneUV(q, m.axes.x), float(layer)),
 		materialPlaneUV(qx, m.axes.x), materialPlaneUV(qy, m.axes.x)).rgab;
 	if (m.plane.y > 0.0)
-		r += m.plane.y * textureGrad(terrainMaterials, vec3(materialPlaneUV(q, m.axes.y), float(layer)),
+		r += m.plane.y * materialRead(vec3(materialPlaneUV(q, m.axes.y), float(layer)),
 			materialPlaneUV(qx, m.axes.y), materialPlaneUV(qy, m.axes.y)).rgab;
 	return r;
 }
@@ -545,7 +587,11 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 	bump = vec2(0.5, 0.0);
 	roughness = materialVertexRoughness(slots);
 	int lavaSlot = int(MaterialSpecial.w);
-	float lavaWeight = lavaSlot < 0 ? 0.0 : materialSlotWeight(slots, lavaSlot);
+	float lavaWeight = 0.0;
+	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		if (i == lavaSlot)
+			lavaWeight = materialSlotWeight(slots, i);
+	}
 	float farGlow = lavaWeight * MATERIAL_LAVA_MEAN_EMISSION;
 
 	float contrast = 1.0 - smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, distMetres);
@@ -557,50 +603,74 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 	// this pixel's slope and altitude
 	float w0[MATERIAL_SLOTS];
 	float w[MATERIAL_SLOTS];
-	terrainSlotWeights(slots, 0.0, MATERIAL_BEACH_TOP, hasWater, w0);
-	terrainSlotWeights(slots, slope, altitude, hasWater, w);
+	if (GROUND_SKIP(13)) {
+		// (the breakdown: the vertex's weights as they are, without the slope and shore)
+		for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+			w0[i] = materialSlotWeight(slots, i);
+			w[i] = w0[i];
+		}
+	} else {
+		// (as the vertex has them: terrainSlotWeights() with no slope and at the beaches' top changes nothing, so a copy)
+		for (int i = 0; i < MATERIAL_SLOTS; ++i)
+			w0[i] = materialSlotWeight(slots, i);
+		terrainSlotWeights(slots, slope, altitude, hasWater, w);
+	}
 	int usedSlots = MATERIAL_USED_SLOTS;
 	int rockSlot = int(MaterialSpecial.x);
 	float crest = 0.6 * smoothstep(0.7, 0.9, landform);
 	if (rockSlot >= 0 && crest > 0.0) {
 		float moved = 0.0;
-		for (int i = 0; i < usedSlots; ++i) {
+		for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+			if (i >= usedSlots)
+				break;
 			if (i == rockSlot || i == int(MaterialSpecial.w))
 				continue;
 			moved += crest * w[i];
 			w[i] *= 1.0 - crest;
 		}
-		w[rockSlot] += moved;
+		for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+			if (i == rockSlot)
+				w[i] += moved;
+		}
 	}
 
-	// the two strongest slots
+	// the two strongest slots (their weights kept as they're found, not read by their number after)
 	int m1 = 0, m2 = 1;
-	for (int i = 1; i < usedSlots; ++i) {
-		if (w[i] > w[m1]) {
+	float v1 = w[0], v2 = w[1];
+	for (int i = 1; i < MATERIAL_SLOTS; ++i) {
+		if (i >= usedSlots)
+			break;
+		if (w[i] > v1) {
 			m2 = m1;
+			v2 = v1;
 			m1 = i;
-		} else if (i != m1 && w[i] > w[m2]) {
+			v1 = w[i];
+		} else if (i != m1 && w[i] > v2) {
 			m2 = i;
+			v2 = w[i];
 		}
 	}
 	float landWeight = 0.0;
-	for (int i = 0; i < usedSlots; ++i)
+	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		if (i >= usedSlots)
+			break;
 		landWeight += w[i];
+	}
 	if (landWeight < 1e-3)
 		return vec4(1.0, 1.0, 1.0, farGlow);
 
 	int l1 = materialSlotLayer(m1), l2 = materialSlotLayer(m2);
-	float w1 = w[m1], w2 = l2 >= 0 ? w[m2] : 0.0;
-	vec4 d1 = vec4(0.0, 1.0, 0.5, materialMeanRoughness(l1)), d2 = vec4(0.0, 1.0, 0.5, materialMeanRoughness(l2));
+	float w1 = v1, w2 = l2 >= 0 ? v2 : 0.0;
+	vec4 d1 = vec4(0.0, 1.0, 0.5, materialSlotColour[m1].a), d2 = vec4(0.0, 1.0, 0.5, materialSlotColour[m2].a);
 	float coarse = mapping.level + MATERIAL_COARSE_LEVELS;
 	if (l1 >= 0) {
-		vec4 f1 = materialSample(l1, mapping, mapping.level);
-		vec4 c1 = materialSample(l1, mapping, coarse);
+		vec4 f1 = GROUND_SKIP(15) ? vec4(0.0, 0.5, 0.5, 0.7) : materialSample(l1, mapping, mapping.level);
+		vec4 c1 = GROUND_SKIP(10) ? vec4(1.0) : materialSample(l1, mapping, coarse);
 		d1 = vec4(f1.x, f1.y * c1.y, f1.z, f1.w);
 	}
-	if (w2 > 0.01) {
+	if (w2 > 0.01 && !GROUND_SKIP(11)) {
 		vec4 f2 = materialSample(l2, mapping, mapping.level);
-		vec4 c2 = materialSample(l2, mapping, coarse);
+		vec4 c2 = GROUND_SKIP(10) ? vec4(1.0) : materialSample(l2, mapping, coarse);
 		d2 = vec4(f2.x, f2.y * c2.y, f2.z, f2.w);
 	}
 
@@ -619,17 +689,20 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 	vec3 shifted = albedo;
 	// (and the roughness of the land not in the two strongest, at their means)
 	float restRoughness = 0.0;
-	for (int i = 0; i < usedSlots; ++i) {
+	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		if (i >= usedSlots || GROUND_SKIP(14))
+			break;
 		int layer = materialSlotLayer(i);
-		if (layer < 0)
+		float wi = (i == m1) ? n1 : (i == m2) ? n2 : w[i];
+		// (a slot with no weight here, before or after, adds nothing)
+		if (layer < 0 || (wi == 0.0 && w0[i] == 0.0))
 			continue;
 		if (i != m1 && i != m2)
-			restRoughness += w[i] * materialMeanRoughness(layer);
-		float wi = (i == m1) ? n1 : (i == m2) ? n2 : w[i];
+			restRoughness += w[i] * materialSlotColour[i].a;
 		// (with detail fixed in space, the vertex colours are the materials' own; these
 		// generic colours would turn floors tan and the walls of dark moons white)
 		if (MaterialLook.y < 0.5)
-			shifted += contrast * (wi - w0[i]) * materialColour(layer);
+			shifted += contrast * (wi - w0[i]) * materialSlotColour[i].rgb;
 		// up close, lava is a dark crust (the colour fractals paint it in
 		// its glow colour) and only its cracks glow
 		if (layer == MATERIAL_LAVA)
@@ -642,7 +715,7 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 
 	// the bumps, the rest of the land flat
 	bump.x = (n1 * d1.z + n2 * d2.z + 0.5 * (landWeight - total)) / landWeight;
-	float bumps = (n1 * (l1 >= 0 ? materialBumpStrength(l1) : 1.0) + n2 * (l2 >= 0 ? materialBumpStrength(l2) : 1.0) + (landWeight - total)) / landWeight;
+	float bumps = (n1 * materialSlotTraits[m1].y + n2 * materialSlotTraits[m2].y + (landWeight - total)) / landWeight;
 	bump.y = contrast * MATERIAL_BUMP_HEIGHT * exp2(mapping.level) * bumps;
 	detail = 1.0 + (detail - 1.0) * contrast;
 
@@ -791,23 +864,32 @@ bool terrainStonePick(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 eyepos, vec3 normal
 	terrainSlotWeights(slots, 1.0 - dot(normal, up), altitude, hasWater, w);
 	int usedSlots = MATERIAL_USED_SLOTS;
 	int m1 = 0, m2 = 1;
-	for (int i = 1; i < usedSlots; ++i) {
-		if (w[i] > w[m1]) {
+	float v1 = w[0], v2 = w[1];
+	for (int i = 1; i < MATERIAL_SLOTS; ++i) {
+		if (i >= usedSlots)
+			break;
+		if (w[i] > v1) {
 			m2 = m1;
+			v2 = v1;
 			m1 = i;
-		} else if (i != m1 && w[i] > w[m2]) {
+			v1 = w[i];
+		} else if (i != m1 && w[i] > v2) {
 			m2 = i;
+			v2 = w[i];
 		}
 	}
 	float landWeight = 0.0;
-	for (int i = 0; i < usedSlots; ++i)
+	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		if (i >= usedSlots)
+			break;
 		landWeight += w[i];
+	}
 	p.l1 = materialSlotLayer(m1);
 	p.l2 = usedSlots > 1 ? materialSlotLayer(m2) : -1;
 	if (landWeight < 1e-3 || p.l1 < 0)
 		return false;
-	p.w1 = w[m1];
-	p.w2 = p.l2 >= 0 ? w[m2] : 0.0;
+	p.w1 = v1;
+	p.w2 = p.l2 >= 0 ? v2 : 0.0;
 	p.total = p.w1 + p.w2;
 	float scale = near * MaterialStones.y * exp2(MaterialNear.x) / landWeight;
 	p.k1 = scale * materialStoneDepth(p.l1);
@@ -982,10 +1064,13 @@ vec3 reliefTileSlope(MaterialMapping m, float level)
 vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots[MATERIAL_SLOT_GROUPS], float distMetres, vec4 tile, float baseScale)
 {
 	float roughness = 0.0;
-	for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
-		int layer = materialSlotLayer(i);
-		if (layer >= 0)
-			roughness += materialSlotWeight(slots, i) * materialRoughness(layer);
+	int usedSlots = MATERIAL_USED_SLOTS;
+	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		if (i >= usedSlots)
+			break;
+		float w = materialSlotWeight(slots, i);
+		if (w > 0.0)
+			roughness += w * materialSlotTraits[i].x;
 	}
 	roughness *= mix(1.0, RELIEF_FAR_STRENGTH, smoothstep(RELIEF_NEAR_DIST, RELIEF_FAR_DIST, distMetres));
 	if (roughness < 0.005)
@@ -1035,7 +1120,10 @@ vec3 terrainReliefNormal(vec3 normal, vec3 up, MaterialMapping m, vec4 slots[MAT
 vec4 materialLightWeights(vec4 slots[MATERIAL_SLOT_GROUPS])
 {
 	vec4 look = vec4(0.0);
-	for (int i = 0; i < MATERIAL_USED_SLOTS; ++i) {
+	int usedSlots = MATERIAL_USED_SLOTS;
+	for (int i = 0; i < MATERIAL_SLOTS; ++i) {
+		if (i >= usedSlots)
+			break;
 		int m = materialSlotLayer(i);
 		float w = materialSlotWeight(slots, i);
 		if (m == MATERIAL_ICE)

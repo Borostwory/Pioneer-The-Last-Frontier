@@ -154,6 +154,10 @@ public:
 	// P8: whether the sky reads its light from a table worked out once a frame, with the camera in the air (config
 	// SkyTable; only with RealisticScattering=2)
 	static bool SkyTableEnabled();
+	// the debug window's ground cost breakdown: parts of the ground's drawing left out (GROUND_SKIP in
+	// terrain-surface.glsl), not saved
+	static int GetGroundSkip();
+	static void SetGroundSkip(int mask);
 	// P7: what the drawn ground along dir is made of, as shares adding up to 1, for what ships blow off it (Ship::
 	// SpawnGroundDust); false where the mesh there holds no materials (coarse, far from the camera)
 	struct GroundMix {
@@ -252,6 +256,14 @@ private:
 	std::unique_ptr<PlanetClouds::CloudHeightMap> m_cloudHeightMap;
 
 	void SetFarLook();
+	// each material slot's colour, roughness, relief roughness and bump strength, for the ground to read
+	// (MaterialSlotData in terrain-materials.glsl), worked out once for the body in SetUpMaterials
+	struct MaterialSlotDataBlock {
+		float colour[16][4];
+		float traits[16][4];
+	};
+	MaterialSlotDataBlock m_materialSlotData = {};
+	void FillMaterialSlotData();
 	// the patch surface tiles (TerrainSurfaceTiles) of the visible patches
 	void SetSurfaceTiles(double pixelAngle);
 

@@ -632,6 +632,152 @@ bool GeoSphere::GetGroundMix(const vector3d &dir, GroundMix &mix) const
 	return true;
 }
 
+static int s_groundSkip = 0;
+
+// The functions of terrain-materials.glsl that MaterialSlotData stands in for, in the same single precision:
+// materialHsv(), materialColour(), materialMeanRoughness(), materialRoughness(), materialBumpStrength()
+namespace {
+	using Layer = TerrainMaterialTable::Layer;
+
+	vector3f MaterialHsv(float h, float s, float v)
+	{
+		auto channel = [h](float offset) {
+			const float x = h * 6.0f + offset;
+			const float m = x - 6.0f * std::floor(x / 6.0f);
+			return std::min(std::max(std::abs(m - 3.0f) - 1.0f, 0.0f), 1.0f);
+		};
+		const vector3f rgb(channel(0.0f), channel(4.0f), channel(2.0f));
+		return vector3f(1.0f + (rgb.x - 1.0f) * s, 1.0f + (rgb.y - 1.0f) * s, 1.0f + (rgb.z - 1.0f) * s) * v;
+	}
+
+	vector3f MaterialColour(int m, float vegHue, float sandHue)
+	{
+		switch (m) {
+		case TerrainMaterialTable::ROCK: return vector3f(0.36f, 0.34f, 0.32f);
+		case TerrainMaterialTable::GRAVEL: return vector3f(0.42f, 0.40f, 0.37f);
+		case TerrainMaterialTable::SAND: return MaterialHsv(sandHue, 0.42f, 0.72f);
+		case TerrainMaterialTable::SOIL: return MaterialHsv(sandHue, 0.40f, 0.42f);
+		case TerrainMaterialTable::GRASS: return MaterialHsv(vegHue, 0.55f, 0.38f);
+		case TerrainMaterialTable::FOREST: return MaterialHsv(vegHue, 0.60f, 0.20f);
+		case TerrainMaterialTable::SNOW: return vector3f(0.90f, 0.92f, 0.95f);
+		case TerrainMaterialTable::ICE: return vector3f(0.82f, 0.88f, 0.94f);
+		case TerrainMaterialTable::BASALT: return vector3f(0.12f, 0.11f, 0.11f);
+		case TerrainMaterialTable::LAVA: return vector3f(0.15f, 0.06f, 0.04f);
+		case TerrainMaterialTable::ASH: return vector3f(0.18f, 0.17f, 0.16f);
+		case TerrainMaterialTable::REGOLITH: return vector3f(0.45f, 0.44f, 0.42f);
+		case TerrainMaterialTable::TUNDRA: return MaterialHsv(vegHue, 0.30f, 0.36f);
+		case TerrainMaterialTable::DIRTY_ICE: return vector3f(0.33f, 0.31f, 0.28f);
+		case TerrainMaterialTable::LAVA_FLOW: return vector3f(0.09f, 0.07f, 0.07f);
+		case TerrainMaterialTable::CRACKED_MUD: return vector3f(0.55f, 0.46f, 0.35f);
+		case TerrainMaterialTable::DUST: return MaterialHsv(sandHue, 0.35f, 0.55f);
+		case TerrainMaterialTable::METAL: return vector3f(0.42f, 0.40f, 0.37f);
+		default: return vector3f(0.85f, 0.83f, 0.78f);
+		}
+	}
+
+	float MaterialMeanRoughness(int m, float iceCracks, bool fixedDetail)
+	{
+		switch (m) {
+		case TerrainMaterialTable::ROCK: return 0.693f;
+		case TerrainMaterialTable::GRAVEL: return 0.541f;
+		case TerrainMaterialTable::SAND: return 0.652f;
+		case TerrainMaterialTable::SOIL: return 0.675f;
+		case TerrainMaterialTable::GRASS: return 0.263f;
+		case TerrainMaterialTable::FOREST:
+		case TerrainMaterialTable::FOREST_FAR: return 0.612f;
+		case TerrainMaterialTable::SNOW: return 0.707f;
+		case TerrainMaterialTable::ICE: {
+			const float old = fixedDetail ? 0.6f * (1.0f - std::min(std::max(iceCracks / 0.5f, 0.0f), 1.0f)) : 0.0f;
+			return 0.140f + (0.707f - 0.140f) * old;
+		}
+		case TerrainMaterialTable::BASALT: return 0.689f;
+		case TerrainMaterialTable::LAVA: return 0.418f;
+		case TerrainMaterialTable::ASH:
+		case TerrainMaterialTable::DUST: return 0.967f;
+		case TerrainMaterialTable::REGOLITH: return 0.593f;
+		case TerrainMaterialTable::SALT: return 0.598f;
+		case TerrainMaterialTable::TUNDRA: return 0.609f;
+		case TerrainMaterialTable::DIRTY_ICE: return 0.937f;
+		case TerrainMaterialTable::LAVA_FLOW: return 0.414f;
+		case TerrainMaterialTable::CRACKED_MUD: return 0.756f;
+		case TerrainMaterialTable::METAL: return 0.456f;
+		default: return 0.7f;
+		}
+	}
+
+	float MaterialReliefRoughness(int m, float iceCracks)
+	{
+		switch (m) {
+		case TerrainMaterialTable::ROCK: return 0.17f;
+		case TerrainMaterialTable::BASALT: return 0.12f;
+		case TerrainMaterialTable::GRAVEL: return 0.11f;
+		case TerrainMaterialTable::DIRTY_ICE: return 0.10f;
+		case TerrainMaterialTable::FOREST: return 0.09f;
+		case TerrainMaterialTable::SOIL:
+		case TerrainMaterialTable::CRACKED_MUD: return 0.07f;
+		case TerrainMaterialTable::REGOLITH:
+		case TerrainMaterialTable::GRASS:
+		case TerrainMaterialTable::TUNDRA: return 0.06f;
+		case TerrainMaterialTable::ASH:
+		case TerrainMaterialTable::LAVA_FLOW:
+		case TerrainMaterialTable::METAL: return 0.05f;
+		case TerrainMaterialTable::SAND:
+		case TerrainMaterialTable::SNOW: return 0.04f;
+		case TerrainMaterialTable::SALT: return 0.025f;
+		case TerrainMaterialTable::ICE: {
+			const float t = std::min(std::max(iceCracks / 0.5f, 0.0f), 1.0f);
+			return 0.08f + (0.02f - 0.08f) * t;
+		}
+		default: return 0.02f;
+		}
+	}
+
+	float MaterialBumpStrength(int m)
+	{
+		switch (m) {
+		case TerrainMaterialTable::DUST: return 0.25f;
+		case TerrainMaterialTable::LAVA:
+		case TerrainMaterialTable::ICE: return 0.35f;
+		case TerrainMaterialTable::SNOW:
+		case TerrainMaterialTable::ASH: return 0.5f;
+		case TerrainMaterialTable::SAND: return 0.25f;
+		case TerrainMaterialTable::LAVA_FLOW: return 0.6f;
+		default: return 1.0f;
+		}
+	}
+} // namespace
+
+void GeoSphere::FillMaterialSlotData()
+{
+	const TerrainMaterialTable &table = m_terrain->GetMaterialTable();
+	const SurfaceProfile &profile = m_terrain->GetSurfaceProfile();
+	const float vegHue = float(profile.vegetationHue / 360.0), sandHue = float(profile.SandHue() / 360.0);
+	const float iceCracks = float(m_terrain->GetIceCrackStrength());
+	const bool fixedDetail = m_terrain->HasFixedDetail();
+	for (int s = 0; s < 16; s++) {
+		const int layer = s < table.SlotCount() ? int(table.SlotLayer(s)) : -1;
+		const vector3f colour = layer >= 0 ? MaterialColour(layer, vegHue, sandHue) : vector3f(0.0f);
+		m_materialSlotData.colour[s][0] = colour.x;
+		m_materialSlotData.colour[s][1] = colour.y;
+		m_materialSlotData.colour[s][2] = colour.z;
+		m_materialSlotData.colour[s][3] = layer >= 0 ? MaterialMeanRoughness(layer, iceCracks, fixedDetail) : 0.7f;
+		m_materialSlotData.traits[s][0] = layer >= 0 ? MaterialReliefRoughness(layer, iceCracks) : 0.0f;
+		m_materialSlotData.traits[s][1] = layer >= 0 ? MaterialBumpStrength(layer) : 1.0f;
+		m_materialSlotData.traits[s][2] = 0.0f;
+		m_materialSlotData.traits[s][3] = 0.0f;
+	}
+}
+
+int GeoSphere::GetGroundSkip()
+{
+	return s_groundSkip;
+}
+
+void GeoSphere::SetGroundSkip(int mask)
+{
+	s_groundSkip = mask;
+}
+
 bool GeoSphere::SkyTableEnabled()
 {
 	return Pi::config->Int("SkyTable", 1) != 0;
@@ -1025,6 +1171,10 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	// P4d: the stones read their own copy of the textures' heights (TerrainStones), loaded the first time they're on
 	if (StonesActive())
 		m_surfaceMaterial->SetTexture("terrainStoneHeights"_hash, TerrainStones::GetTexture(renderer));
+	// the debug window's ground cost breakdown
+	m_surfaceMaterial->SetPushConstant("GroundSkip"_hash, s_groundSkip);
+	// each slot's material, worked out once (FillMaterialSlotData); a buffer set each frame
+	m_surfaceMaterial->SetBufferDynamic("MaterialSlotData"_hash, &m_materialSlotData);
 	// P4c: the stones raised near the camera (terrain-materials.glsl, terrainStones)
 	m_surfaceMaterial->SetPushConstant("MaterialStones"_hash, vector3f(StonesActive() ? 1.0f : 0.0f, float(StonesHeight()), StoneShadowsEnabled() ? 1.0f : 0.0f), DeepestStone(m_terrain.Get()));
 	// and the viewport, for the edges' length on screen (terrain-tess-edges.glsl)
@@ -1334,6 +1484,7 @@ void GeoSphere::SetUpMaterials()
 		const SurfaceProfile &profile = m_terrain->GetSurfaceProfile();
 		m_surfaceMaterial->SetPushConstant("SurfaceMaterial"_hash,
 			vector3f(float(profile.vegetationHue / 360.0), float(profile.SandHue() / 360.0), float(profile.vegetationCover)), 0.0f);
+		FillMaterialSlotData();
 	}
 
 	CreateAtmosphereMaterial();

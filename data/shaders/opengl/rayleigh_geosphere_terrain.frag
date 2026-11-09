@@ -90,7 +90,7 @@ void main(void)
 	// the patch's surface tile where it has one. They are the surface the
 	// relief and the bumps are added to below; baseScale: its detail as a
 	// fraction of the vertex spacing, where the relief starts
-	float surfaceWeight = terrainTileWeight();
+	float surfaceWeight = GROUND_SKIP(2) ? 0.0 : terrainTileWeight();
 	vec3 albedo = albedoColor.rgb;
 	vec3 baseNormal = normalize(varyingNormal);
 	float baseScale = 1.0;
@@ -118,8 +118,12 @@ void main(void)
 	float surfaceRoughness;
 	vec4 materialSlots[MATERIAL_SLOT_GROUPS] = vec4[MATERIAL_SLOT_GROUPS](materialWeights0, materialWeights1, materialWeights2, materialWeights3);
 	vec4 lightWeights = materialLightWeights(materialSlots);
-	vec4 surfaceMaterial = terrainMaterialDetail(materialSlots, albedo, mapping,
-		dist, baseNormal, surfaceUp, altitude, hasWater, tile.w, bump, surfaceRoughness);
+	vec4 surfaceMaterial = vec4(1.0, 1.0, 1.0, 0.0);
+	bump = vec2(0.5, 0.0);
+	surfaceRoughness = 0.7;
+	if (!GROUND_SKIP(0))
+		surfaceMaterial = terrainMaterialDetail(materialSlots, albedo, mapping,
+			dist, baseNormal, surfaceUp, altitude, hasWater, tile.w, bump, surfaceRoughness);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	// (the patterns stand in for detail the baked surface has)
 	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - surfaceWeight) * (1.0 - MaterialLook.y);
@@ -133,10 +137,12 @@ void main(void)
 	// terrain's colour, and the gardens under its domes with their own
 	// grass, moss and soil in place of the terrain's materials
 	// (city-ground.glsl)
-	vec3 cityPaving;
-	float pavingSmoothing;
-	vec4 garden;
-	float paved = cityGroundAt(varyingEyepos, albedo, cityPaving, pavingSmoothing, garden);
+	vec3 cityPaving = vec3(0.0);
+	float pavingSmoothing = 0.0;
+	vec4 garden = vec4(1.0, 0.0, 0.0, 0.0);
+	float paved = 0.0;
+	if (!GROUND_SKIP(3))
+		paved = cityGroundAt(varyingEyepos, albedo, cityPaving, pavingSmoothing, garden);
 	albedo = mix(albedo, cityPaving, paved);
 	if (garden.w > 0.0) {
 		vec2 gardenBump;
@@ -156,7 +162,7 @@ void main(void)
 
 #if (NUM_LIGHTS > 0)
 	// lit per pixel, with the relief between the mesh and the pixel
-	vec3 N = terrainReliefNormal(baseNormal, surfaceUp, mapping, materialSlots, dist, tile, baseScale);
+	vec3 N = GROUND_SKIP(1) ? baseNormal : terrainReliefNormal(baseNormal, surfaceUp, mapping, materialSlots, dist, tile, baseScale);
 	// and the bumps of the material textures, and the raised stones' slope (P4c), but for the smooth paving
 	N = terrainBumpNormal(N, materialDx, materialDy, bump);
 #ifdef TESSELLATED
@@ -166,9 +172,10 @@ void main(void)
 	N = terrainFarRelief(N, surfaceUp, dist);
 	// the tracks of the rover's wheels and the walker's boots in soft ground
 	// (surface-tracks.glsl)
-	albedo *= surfaceTracksAt(varyingEyepos, surfaceUp, baseNormal, paved, N);
+	if (!GROUND_SKIP(6))
+		albedo *= surfaceTracksAt(varyingEyepos, surfaceUp, baseNormal, paved, N);
 	// shadows of ships, stations and buildings from the main star
-	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
+	float sunLit = GROUND_SKIP(5) ? 1.0 : sceneShadow(varyingEyepos, normalize(varyingNormal));
 #ifdef TESSELLATED
 	// and of the raised stones (P4e)
 	sunLit *= stoneLit;
@@ -181,8 +188,10 @@ void main(void)
 		vec3 sunDir = normalize(uLight[i].position.xyz);
 		vec3 lightIn = lightAtSurface[i] * (i == 0 ? sunLit : 1.0);
 		light += lightIn * max(dot(N, sunDir), 0.0);
-		materialGlint += lightIn * materialGloss(lightWeights, surfaceRoughness, N, viewDir, sunDir, dist);
-		backscatter = max(backscatter, materialBackscatter(lightWeights, viewDir, sunDir));
+		if (!GROUND_SKIP(7)) {
+			materialGlint += lightIn * materialGloss(lightWeights, surfaceRoughness, N, viewDir, sunDir, dist);
+			backscatter = max(backscatter, materialBackscatter(lightWeights, viewDir, sunDir));
+		}
 	}
 	vec3 land = albedo * detailMul.rgb * light * backscatter * materialShadowTint(lightWeights, light) * terrainOcclusion(N, surfaceUp, tile) + materialGlint;
 #ifdef TERRAIN_WITH_LAVA
@@ -201,19 +210,21 @@ void main(void)
 	// night lights of the nearest city (after the brightening for dim stars,
 	// which is not theirs), on paved ground (CITY_GROUND_ALBEDO_*)
 	vec3 citySpecular = vec3(0.0);
-	vec3 cityLight = cityLightAt(varyingEyepos, N, 0.0, citySpecular);
+	vec3 cityLight = GROUND_SKIP(3) ? vec3(0.0) : cityLightAt(varyingEyepos, N, 0.0, citySpecular);
 	vec3 cityLand = clamp(albedo * detailMul.rgb, vec3(CITY_GROUND_ALBEDO_MIN), vec3(CITY_GROUND_ALBEDO_MAX)) * cityLight;
 	// and of the cities seen from afar, where the starlight on level ground is dim
 	vec3 daylight = vec3(0.0);
 	for (int i = 0; i < NUM_LIGHTS; ++i)
 		daylight += lightAtSurface[i] * max(dot(surfaceUp, normalize(uLight[i].position.xyz)), 0.0);
-	cityLand += cityGlowAt(surfaceUp, geosphereRadius, max(length(materialDx), length(materialDy)), dot(daylight, vec3(0.3, 0.59, 0.11)));
+	if (!GROUND_SKIP(3))
+		cityLand += cityGlowAt(surfaceUp, geosphereRadius, max(length(materialDx), length(materialDy)), dot(daylight, vec3(0.3, 0.59, 0.11)));
 	land += cityLand * viewTransmittance;
 	frag_color = vec4(land, 0.0);
 
 	// the lamps of nearby ships, on the ground's own colours
 	vec3 shipSpecular = vec3(0.0);
-	shipLight = shipLightAt(varyingEyepos, N, 0.0, shipSpecular);
+	if (!GROUND_SKIP(6))
+		shipLight = shipLightAt(varyingEyepos, N, 0.0, shipSpecular);
 	shipLand = albedo * detailMul.rgb * shipLight * viewTransmittance;
 #else
 	frag_color = detailMul * vertexColor;
@@ -221,7 +232,7 @@ void main(void)
 
 #if defined(TERRAIN_WITH_WATER) && (NUM_LIGHTS > 0)
 	// water: sky reflection, sun glint and the water body, per pixel
-	float waterMask = terrainWaterMask(seaHeight);
+	float waterMask = GROUND_SKIP(4) ? 0.0 : terrainWaterMask(seaHeight);
 	if (waterMask > 0.0) {
 		vec3 up = surfaceUp;
 		vec3 V = -normalize(varyingEyepos);
@@ -274,6 +285,7 @@ void main(void)
 
 	frag_color = toSRGB(1 - exp(-frag_color));
 #if (NUM_LIGHTS > 0)
-	frag_color.rgb *= sceneShadowTint(varyingEyepos, normalize(varyingNormal));
+	if (!GROUND_SKIP(5))
+		frag_color.rgb *= sceneShadowTint(varyingEyepos, normalize(varyingNormal));
 #endif
 }

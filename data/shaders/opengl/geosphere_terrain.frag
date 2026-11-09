@@ -78,7 +78,7 @@ void main(void)
 	// the patch's surface tile where it has one. They are the surface the
 	// relief and the bumps are added to below; baseScale: its detail as a
 	// fraction of the vertex spacing, where the relief starts
-	float surfaceWeight = terrainTileWeight();
+	float surfaceWeight = GROUND_SKIP(2) ? 0.0 : terrainTileWeight();
 	vec4 albedo = vertexColor;
 	float baseScale = 1.0;
 #ifdef TERRAIN_WITH_WATER
@@ -118,8 +118,12 @@ void main(void)
 	float surfaceRoughness;
 	vec4 materialSlots[MATERIAL_SLOT_GROUPS] = vec4[MATERIAL_SLOT_GROUPS](materialWeights0, materialWeights1, materialWeights2, materialWeights3);
 	vec4 lightWeights = materialLightWeights(materialSlots);
-	vec4 surfaceMaterial = terrainMaterialDetail(materialSlots, albedo.rgb, mapping,
-		dist, tnorm, surfaceUp, altitude, hasWater, tile.w, bump, surfaceRoughness);
+	vec4 surfaceMaterial = vec4(1.0, 1.0, 1.0, 0.0);
+	bump = vec2(0.5, 0.0);
+	surfaceRoughness = 0.7;
+	if (!GROUND_SKIP(0))
+		surfaceMaterial = terrainMaterialDetail(materialSlots, albedo.rgb, mapping,
+			dist, tnorm, surfaceUp, altitude, hasWater, tile.w, bump, surfaceRoughness);
 	vec4 detailMul = vec4(surfaceMaterial.rgb, 1.0);
 	// (the patterns stand in for detail the baked surface has)
 	float patternWeight = smoothstep(MATERIAL_NEAR_DIST, MATERIAL_FAR_DIST, dist) * (1.0 - surfaceWeight) * (1.0 - MaterialLook.y);
@@ -133,10 +137,12 @@ void main(void)
 	// terrain's colour, and the gardens under its domes with their own
 	// grass, moss and soil in place of the terrain's materials
 	// (city-ground.glsl)
-	vec3 cityPaving;
-	float pavingSmoothing;
-	vec4 garden;
-	float paved = cityGroundAt(varyingEyepos, albedo.rgb, cityPaving, pavingSmoothing, garden);
+	vec3 cityPaving = vec3(0.0);
+	float pavingSmoothing = 0.0;
+	vec4 garden = vec4(1.0, 0.0, 0.0, 0.0);
+	float paved = 0.0;
+	if (!GROUND_SKIP(3))
+		paved = cityGroundAt(varyingEyepos, albedo.rgb, cityPaving, pavingSmoothing, garden);
 	albedo.rgb = mix(albedo.rgb, cityPaving, paved);
 	if (garden.w > 0.0) {
 		vec2 gardenBump;
@@ -151,7 +157,8 @@ void main(void)
 
 	// the relief between the mesh and the pixel
 	vec3 meshNormal = tnorm;
-	tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialSlots, dist, tile, baseScale);
+	if (!GROUND_SKIP(1))
+		tnorm = terrainReliefNormal(tnorm, surfaceUp, mapping, materialSlots, dist, tile, baseScale);
 	// and the bumps of the material textures, and the raised stones' slope (P4c), but for the smooth paving
 	tnorm = terrainBumpNormal(tnorm, materialDx, materialDy, bump);
 #ifdef TESSELLATED
@@ -161,11 +168,12 @@ void main(void)
 	tnorm = terrainFarRelief(tnorm, surfaceUp, dist);
 	// the tracks of the rover's wheels and the walker's boots in soft ground
 	// (surface-tracks.glsl)
-	albedo.rgb *= surfaceTracksAt(varyingEyepos, surfaceUp, meshNormal, paved, tnorm);
+	if (!GROUND_SKIP(6))
+		albedo.rgb *= surfaceTracksAt(varyingEyepos, surfaceUp, meshNormal, paved, tnorm);
 
 #ifdef TERRAIN_WITH_WATER
 	// water: sun glint per light here, the rest after the light loop
-	float waterMask = terrainWaterMask(seaHeight);
+	float waterMask = GROUND_SKIP(4) ? 0.0 : terrainWaterMask(seaHeight);
 	vec3 dpdx = dFdx(varyingEyepos), dpdy = dFdy(varyingEyepos);
 	WaterSurface ws;
 	if (waterMask > 0.0)
@@ -178,7 +186,7 @@ void main(void)
 	vec3 materialGlint = vec3(0.0);
 	float backscatter = 1.0;
 	// shadows of ships, stations and buildings from the main star
-	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
+	float sunLit = GROUND_SKIP(5) ? 1.0 : sceneShadow(varyingEyepos, normalize(varyingNormal));
 #ifdef TESSELLATED
 	// and of the raised stones (P4e)
 	sunLit *= stoneLit;
@@ -193,8 +201,10 @@ void main(void)
 		uneclipsed *= cloudShadowTerrain(clouds, eyeposScaled - geosphereCenter, L, max(dist * CLOUD_SHADOW_PIXEL_ANGLE, 1.0));
 #endif
 		CalcPlanetDiffuse(diff, uLight[i].diffuse, L, tnorm, uneclipsed);
-		materialGlint += uLight[i].diffuse.rgb * uneclipsed * materialGloss(lightWeights, surfaceRoughness, tnorm, -eyenorm, L, dist);
-		backscatter = max(backscatter, materialBackscatter(lightWeights, -eyenorm, L));
+		if (!GROUND_SKIP(7)) {
+			materialGlint += uLight[i].diffuse.rgb * uneclipsed * materialGloss(lightWeights, surfaceRoughness, tnorm, -eyenorm, L, dist);
+			backscatter = max(backscatter, materialBackscatter(lightWeights, -eyenorm, L));
+		}
 
 #ifdef TERRAIN_WITH_WATER
 		if (waterMask > 0.0)

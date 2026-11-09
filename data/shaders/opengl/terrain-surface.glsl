@@ -23,6 +23,14 @@ uniform vec4 MaterialLook;
 // P4b of the OpenGL 4.6 plan: the ground textures at one size near the camera (materialMapping). x: that size's level
 // (tiles of 2^x metres), y: metres out to which it holds, fading to the size by distance over as far again; z: 1 on
 uniform vec4 MaterialNear;
+// The debug window's ground cost breakdown (OpenGL 4.6 Plan tab): each bit leaves one part of the ground's drawing out,
+// so its cost shows in the terrain's GPU time. 0: the photo textures, 1: the relief below the mesh, 2: the surface
+// tiles, 3: the city's streets and lights, 4: the water, 5: the sun shadows, 6: the ships' lamps and the tracks,
+// 7: the materials' shine, 8: the air's light per corner (rayleigh_geosphere_terrain.vert); within the photo textures,
+// 9: their turns, 10: their 8 times coarser size, 11: the second material, 12: their sharper filtering at grazing angles,
+// 13: the weights' slope and shore, 14: the colour shift, 15: the first material's fine read
+uniform int GroundSkip;
+#define GROUND_SKIP(n) ((GroundSkip & (1 << (n))) != 0)
 // P4c: the stones raised near the camera (terrainStones() in terrain-materials.glsl). x: 1 on, y: how high, times
 // each material's own height; z: 1 if they shade the ground from the main light (P4e); w: the tallest of this body's
 // materials' stones, as a share of the tile (how finely the ground is cut at a distance, terrain-stone-aim.glsl)

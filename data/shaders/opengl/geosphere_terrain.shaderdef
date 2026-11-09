@@ -33,6 +33,7 @@ Buffer ShadowData binding=4
 Buffer CityGroundData binding=7
 Buffer ShipLightData binding=8
 Buffer SurfaceTrackData binding=9
+Buffer MaterialSlotData binding=10
 
 PushConstant int NumShadows binding=0
 PushConstant float PatchDetailFrequency binding=1
@@ -61,6 +62,7 @@ PushConstant vec4 StoneFlat2 binding=23
 PushConstant vec4 StoneFlat3 binding=24
 PushConstant vec4 StoneFlat4 binding=25
 PushConstant vec4 StoneFlat5 binding=26
+PushConstant int GroundSkip binding=27
 
 Vertex "geosphere_terrain.vert"
 Fragment "geosphere_terrain.frag"
