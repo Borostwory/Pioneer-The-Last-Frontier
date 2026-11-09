@@ -663,15 +663,18 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 	float w1 = v1, w2 = l2 >= 0 ? v2 : 0.0;
 	vec4 d1 = vec4(0.0, 1.0, 0.5, materialSlotColour[m1].a), d2 = vec4(0.0, 1.0, 0.5, materialSlotColour[m2].a);
 	float coarse = mapping.level + MATERIAL_COARSE_LEVELS;
+	// The second material only where it shows: over a tenth of the land here (below that it hardly ever comes through
+	// the blend along the bumps), and with the first one's coarse size. Its two reads cost 1.2 ms at Cydonia on
+	// 2026-11-09; this saved 0.48 ms and you saw no difference.
+	vec4 c1 = vec4(1.0);
 	if (l1 >= 0) {
 		vec4 f1 = GROUND_SKIP(15) ? vec4(0.0, 0.5, 0.5, 0.7) : materialSample(l1, mapping, mapping.level);
-		vec4 c1 = GROUND_SKIP(10) ? vec4(1.0) : materialSample(l1, mapping, coarse);
+		c1 = GROUND_SKIP(10) ? vec4(1.0) : materialSample(l1, mapping, coarse);
 		d1 = vec4(f1.x, f1.y * c1.y, f1.z, f1.w);
 	}
-	if (w2 > 0.01 && !GROUND_SKIP(11)) {
+	if (w2 > 0.1 && !GROUND_SKIP(11)) {
 		vec4 f2 = materialSample(l2, mapping, mapping.level);
-		vec4 c2 = GROUND_SKIP(10) ? vec4(1.0) : materialSample(l2, mapping, coarse);
-		d2 = vec4(f2.x, f2.y * c2.y, f2.z, f2.w);
+		d2 = vec4(f2.x, f2.y * c1.y, f2.z, f2.w);
 	}
 
 	// blend the two along their bumps: the higher one shows through first

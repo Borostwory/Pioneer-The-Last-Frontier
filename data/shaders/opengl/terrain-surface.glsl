@@ -28,7 +28,8 @@ uniform vec4 MaterialNear;
 // tiles, 3: the city's streets and lights, 4: the water, 5: the sun shadows, 6: the ships' lamps and the tracks,
 // 7: the materials' shine, 8: the air's light per corner (rayleigh_geosphere_terrain.vert); within the photo textures,
 // 9: their turns, 10: their 8 times coarser size, 11: the second material, 12: their sharper filtering at grazing angles,
-// 13: the weights' slope and shore, 14: the colour shift, 15: the first material's fine read
+// 13: the weights' slope and shore, 14: the colour shift, 15: the first material's fine read; within the city,
+// 16: the roads, 17: the lots, 18: the gardens, 19: the city's lights
 uniform int GroundSkip;
 #define GROUND_SKIP(n) ((GroundSkip & (1 << (n))) != 0)
 // P4c: the stones raised near the camera (terrainStones() in terrain-materials.glsl). x: 1 on, y: how high, times

@@ -1016,12 +1016,13 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 	ImGui::Spacing();
 	ImGui::SeparatorText("The ground's cost, part by part (leave parts out, read \"terrain\" in the log)");
 	{
-		static const char *const parts[16] = { "photo textures", "relief below the mesh", "surface tiles", "city streets and lights",
+		static const char *const parts[20] = { "photo textures", "relief below the mesh", "surface tiles", "city streets and lights",
 			"water", "sun shadows", "ships' lamps and tracks", "materials' shine", "air light per corner",
 			"texture turns", "coarse texture size", "second material", "grazing-angle filtering",
-			"slope and shore weights", "colour shift", "fine texture read" };
+			"slope and shore weights", "colour shift", "fine texture read",
+			"city roads", "city lots", "city gardens", "city lights" };
 		int mask = GeoSphere::GetGroundSkip();
-		for (int i = 0; i < 16; i++) {
+		for (int i = 0; i < 20; i++) {
 			bool skip = (mask & (1 << i)) != 0;
 			if (i % 4)
 				ImGui::SameLine();

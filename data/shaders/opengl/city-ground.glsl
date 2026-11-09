@@ -26,6 +26,11 @@ layout(std140) uniform CityGroundData {
 uniform sampler2D cityRoads;
 uniform sampler2D cityLots;
 
+// (the ground's cost breakdown, terrain-surface.glsl; none in the shaders without it)
+#ifndef GROUND_SKIP
+#define GROUND_SKIP(n) false
+#endif
+
 // The road texture (CityLayout::PackRoads) holds, row by row:
 // - per lookup cell, two to a texel: its first index and number of segments
 // - the segment indices, four to a texel
@@ -326,10 +331,14 @@ float groundRoad(vec2 p, float px, out vec3 surface)
 	if (count == 0)
 		return 0.0;
 
-	// the road whose surface the pixel is deepest in (or nearest to)
+	// the road whose surface the pixel is deepest in (or nearest to), and how far the nearest other road's surface is
+	// (junctions and crossings), in one pass over the cell's pieces (until 2026-11-09 two, each piece read twice: the
+	// city's roads cost 0.37 ms at Cydonia). The same: each value the nearest other is ever given is no nearer than the
+	// best so far, and when the best moves to another road the old best is the nearest of all the others.
 	float bestSd = 1e9, lat = 0.0, along = 0.0, rhalf = 1.0, walk = 0.0;
 	int type = 0;
 	float line = -1.0;
+	float otherSd = 1e9;
 	for (int k = 0; k < GROUND_CELL_MAX; k++) {
 		if (k >= count)
 			break;
@@ -342,35 +351,24 @@ float groundRoad(vec2 p, float px, out vec3 surface)
 		float t = clamp(dot(p - a.xy, dir), 0.0, L);
 		vec2 rel = p - (a.xy + dir * t);
 		float sd = length(rel) - 0.5 * b.x;
+		float segLine = floor(b.z / 4.0);
+		bool otherRoad = abs(segLine - line) >= 0.5;
 		if (sd < bestSd) {
+			if (otherRoad)
+				otherSd = min(otherSd, bestSd);
 			bestSd = sd;
 			lat = dot(rel, vec2(-dir.y, dir.x));
 			along = b.w + t;
 			rhalf = 0.5 * b.x;
 			walk = b.y;
 			type = int(mod(b.z, 4.0) + 0.5);
-			line = floor(b.z / 4.0);
+			line = segLine;
+		} else if (otherRoad) {
+			otherSd = min(otherSd, sd);
 		}
 	}
 	if (bestSd > walk + px)
 		return 0.0;
-
-	// how far the nearest other road's surface is: junctions and crossings
-	float otherSd = 1e9;
-	for (int k = 0; k < GROUND_CELL_MAX; k++) {
-		if (k >= count)
-			break;
-		int s = segBase + 2 * int(groundValue(first + k));
-		vec4 b = groundTexel(s + 1);
-		if (abs(floor(b.z / 4.0) - line) < 0.5)
-			continue;
-		vec4 a = groundTexel(s);
-		vec2 ab = a.zw - a.xy;
-		float L = max(length(ab), 1e-3);
-		vec2 dir = ab / L;
-		float t = clamp(dot(p - a.xy, dir), 0.0, L);
-		otherSd = min(otherSd, length(p - (a.xy + dir * t)) - 0.5 * b.x);
-	}
 
 	float n = groundHash(floor(p / 2.0) + 3.0);
 	float surfaceCover;
@@ -443,14 +441,19 @@ float cityGroundAt(vec3 viewPos, vec3 soil, out vec3 colour, out float smoothing
 	// the gardens under the domes, the lots' paving over them (dusted with
 	// the soil round it, the gardens' own under the domes), and the roads
 	vec3 materials;
-	float cover = groundGarden(pos, px, soil, colour, materials);
+	float cover = 0.0;
+	materials = vec3(1.0, 0.0, 0.0);
+	if (!GROUND_SKIP(18))
+		cover = groundGarden(pos, px, soil, colour, materials);
 	float gardenCover = cover;
 	vec3 lotColour;
-	float lot = groundLot(p, px, mix(soil, GROUND_LOAM, cover), lotColour);
+	lotColour = vec3(0.0);
+	float lot = GROUND_SKIP(17) ? 0.0 : groundLot(p, px, mix(soil, GROUND_LOAM, cover), lotColour);
 	colour = groundOver(colour, cover, lotColour, lot);
 	smoothing = lot * GROUND_LOT_SMOOTHING;
 	vec3 roadColour;
-	float road = groundRoad(p, px, roadColour);
+	roadColour = vec3(0.0);
+	float road = GROUND_SKIP(16) ? 0.0 : groundRoad(p, px, roadColour);
 	colour = groundOver(colour, cover, roadColour, road);
 	smoothing = mix(smoothing, 1.0, road);
 

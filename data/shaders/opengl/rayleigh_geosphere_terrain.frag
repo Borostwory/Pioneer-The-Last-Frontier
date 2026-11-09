@@ -210,7 +210,7 @@ void main(void)
 	// night lights of the nearest city (after the brightening for dim stars,
 	// which is not theirs), on paved ground (CITY_GROUND_ALBEDO_*)
 	vec3 citySpecular = vec3(0.0);
-	vec3 cityLight = GROUND_SKIP(3) ? vec3(0.0) : cityLightAt(varyingEyepos, N, 0.0, citySpecular);
+	vec3 cityLight = GROUND_SKIP(3) || GROUND_SKIP(19) ? vec3(0.0) : cityLightAt(varyingEyepos, N, 0.0, citySpecular);
 	vec3 cityLand = clamp(albedo * detailMul.rgb, vec3(CITY_GROUND_ALBEDO_MIN), vec3(CITY_GROUND_ALBEDO_MAX)) * cityLight;
 	// and of the cities seen from afar, where the starlight on level ground is dim
 	vec3 daylight = vec3(0.0);
