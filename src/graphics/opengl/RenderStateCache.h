@@ -46,6 +46,8 @@ namespace Graphics {
 
 		private:
 			friend class Graphics::RendererOGL;
+			// (a material's tessellated render state: Material::SetTessellated)
+			friend class Material;
 			RenderStateCache() = default;
 
 			struct VtxFormatCache {

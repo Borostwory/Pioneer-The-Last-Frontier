@@ -26,7 +26,8 @@ namespace Graphics {
 		instanced(false),
 		textures(0),
 		dirLights(0),
-		quality(0)
+		quality(0),
+		tessellated(false)
 	{
 	}
 
@@ -45,7 +46,8 @@ namespace Graphics {
 			a.instanced == b.instanced &&
 			a.textures == b.textures &&
 			a.dirLights == b.dirLights &&
-			a.quality == b.quality);
+			a.quality == b.quality &&
+			a.tessellated == b.tessellated);
 	}
 
 } // namespace Graphics

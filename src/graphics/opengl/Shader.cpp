@@ -149,6 +149,7 @@ void Shader::Reload()
 	for (auto &variant : m_variants) {
 		ProgramDef def = m_programDef;
 		def.defines = GetProgramDefines(variant.first);
+		def.tessellated = variant.first.tessellated;
 		variant.second->Reload(this, def);
 	}
 }
@@ -157,6 +158,7 @@ Program *Shader::LoadProgram(const MaterialDescriptor &desc)
 {
 	ProgramDef def = m_programDef;
 	def.defines = GetProgramDefines(desc);
+	def.tessellated = desc.tessellated;
 
 	return new Program(this, def);
 }
@@ -177,6 +179,10 @@ std::string Shader::GetProgramDefines(const MaterialDescriptor &desc)
 		ss << "#define TERRAIN_WITH_WATER\n";
 	if (desc.effect == EFFECT_BILLBOARD_ATLAS)
 		ss << "#define USE_SPRITE_ATLAS\n";
+
+	// (also keeps the tessellated variant's binary cache file apart from the other's)
+	if (desc.tessellated)
+		ss << "#define TESSELLATED\n";
 
 	if (desc.textures > 0)
 		ss << "#define TEXTURE0\n";

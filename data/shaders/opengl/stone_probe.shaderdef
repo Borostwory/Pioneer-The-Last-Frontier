@@ -1,0 +1,33 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# P4d of the OpenGL 4.6 plan: the stones' height at one point, worked out by the same code the terrain's tessellation
+# evaluation shaders use, so the debug window can set it beside the main processor's (GeoSphere::ProbeStones)
+Shader stone_probe
+
+Buffer CloudData binding=3
+
+Texture sampler2DArray terrainStoneHeights
+Image image2D probeOut binding=0 format=r32f access=write
+
+PushConstant vec4 MaterialOrigin binding=0
+PushConstant vec4 MaterialOriginCoarse binding=1
+PushConstant vec4 MaterialSlots0 binding=2
+PushConstant vec4 MaterialSlots1 binding=3
+PushConstant vec4 MaterialSlots2 binding=4
+PushConstant vec4 MaterialSlots3 binding=5
+PushConstant vec4 MaterialSpecial binding=6
+PushConstant vec4 MaterialLook binding=7
+PushConstant vec4 MaterialNear binding=8
+PushConstant vec4 MaterialStones binding=9
+PushConstant vec4 TessParams binding=10
+PushConstant vec4 ProbeEye binding=11
+PushConstant vec4 ProbeUp binding=12
+PushConstant vec4 ProbeNormal binding=13
+PushConstant vec4 ProbeSlots0 binding=14
+PushConstant vec4 ProbeSlots1 binding=15
+PushConstant vec4 ProbeSlots2 binding=16
+PushConstant vec4 ProbeSlots3 binding=17
+PushConstant vec4 ProbeGround binding=18
+
+Compute "stone_probe.comp"

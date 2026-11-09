@@ -38,6 +38,7 @@ namespace Graphics {
 				m_vertexFormatHash(0) {}
 
 			bool IsProgramLoaded() const final;
+			bool SetTessellated(bool on) final;
 			virtual void SetShader(Shader *p);
 			virtual const Shader *GetShader() const { return m_shader; }
 
@@ -63,6 +64,12 @@ namespace Graphics {
 
 			Shader *m_shader;
 			Program *m_activeVariant;
+			// SetTessellated: on, the render state without patches to go back to, the one with them, and whether the
+			// tessellated program failed (so it isn't compiled again and again)
+			bool m_tessellated = false;
+			bool m_tessFailed = false;
+			size_t m_plainRenderStateHash = 0;
+			size_t m_tessRenderStateHash = 0;
 			RendererOGL *m_renderer;
 			GLuint m_vertexState; // vertex array object corresponding to the material's vertex format
 			size_t m_vertexFormatHash;

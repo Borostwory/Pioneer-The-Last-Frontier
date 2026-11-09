@@ -396,9 +396,9 @@ namespace Graphics {
 				stages.emplace_back(new ShaderProgram(GL_COMPUTE_SHADER, def.computeShader, def.defines));
 			} else {
 				stages.emplace_back(new ShaderProgram(GL_VERTEX_SHADER, def.vertexShader, def.defines));
-				if (!def.tessControlShader.empty())
+				if (def.tessellated && !def.tessControlShader.empty())
 					stages.emplace_back(new ShaderProgram(GL_TESS_CONTROL_SHADER, def.tessControlShader, def.defines));
-				if (!def.tessEvalShader.empty())
+				if (def.tessellated && !def.tessEvalShader.empty())
 					stages.emplace_back(new ShaderProgram(GL_TESS_EVALUATION_SHADER, def.tessEvalShader, def.defines));
 				stages.emplace_back(new ShaderProgram(GL_FRAGMENT_SHADER, def.fragmentShader, def.defines));
 			}

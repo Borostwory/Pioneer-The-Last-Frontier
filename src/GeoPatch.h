@@ -127,9 +127,20 @@ public:
 	// on the triangle under it of the patch drawn there (its children once
 	// it has split, else its own mesh). False if dir is off this patch or the
 	// patch has no heights yet.
-	bool GetDrawnRadius(const vector3d &dir, double &radius) const;
+	// surface: if given, what the mesh holds there, blended over the triangle as the graphics card blends it (P4d of
+	// the OpenGL 4.6 plan, for the stones)
+	struct DrawnSurface {
+		vector3d normal; // planet-fixed, unit length
+		float slots[16] = {}; // material slot weights, 0..1
+		float seaHeight = 0.0f; // the vertex colour's alpha as the shaders take it, 2 * alpha - 1 (EncodeAltitude)
+		bool found = false; // the patch still had its normals and weights (else the above are flat ground, no material)
+	};
+	bool GetDrawnRadius(const vector3d &dir, double &radius, DrawnSurface *surface = nullptr) const;
 	// distance between vertices on the unit sphere
 	double GetVertexSpacing() const;
+	// fine enough to stand on (GetDrawnRadius): coarser, the camera is far off, and where a ship rests mustn't depend
+	// on where it's seen from
+	bool FineEnoughToStandOn() const;
 	// level in the quadtree, 0 for the six faces
 	int GetDepth() const { return m_depth; }
 

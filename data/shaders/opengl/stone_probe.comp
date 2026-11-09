@@ -1,0 +1,37 @@
+// Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+// Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+// P4d of the OpenGL 4.6 plan: the stones' height at one point (terrainStones() in terrain-materials.glsl), for the
+// debug window to set beside the main processor's (GeoSphere::ProbeStones)
+
+layout(local_size_x = 1) in;
+layout(binding = 0, r32f) uniform writeonly image2D probeOut;
+
+#include "attributes.glsl"
+#include "lib.glsl"
+#include "basesphere_uniforms.glsl"
+#include "cloud-config.glsl"
+#include "cloud-uniforms.glsl"
+#include "cloud-noise.glsl"
+#include "terrain-surface.glsl"
+#include "terrain-materials.glsl"
+
+// the point on the flat ground, its straight up and the mesh's normal there (view space); the mesh's slot weights there;
+// x: its altitude above sea level (metres), y: 1 if the body has water
+uniform vec4 ProbeEye;
+uniform vec4 ProbeUp;
+uniform vec4 ProbeNormal;
+uniform vec4 ProbeSlots0;
+uniform vec4 ProbeSlots1;
+uniform vec4 ProbeSlots2;
+uniform vec4 ProbeSlots3;
+uniform vec4 ProbeGround;
+
+void main(void)
+{
+	vec4 slots[MATERIAL_SLOT_GROUPS] = vec4[MATERIAL_SLOT_GROUPS](ProbeSlots0, ProbeSlots1, ProbeSlots2, ProbeSlots3);
+	float lift, lit;
+	vec3 slope;
+	terrainStones(slots, ProbeEye.xyz, normalize(ProbeNormal.xyz), normalize(ProbeUp.xyz), ProbeGround.x, ProbeGround.y > 0.5, lift, slope, lit);
+	imageStore(probeOut, ivec2(0, 0), vec4(lift, 0.0, 0.0, 1.0));
+}

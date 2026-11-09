@@ -23,21 +23,13 @@ uniform vec4 WaterOrigin;
 // xyz: drift of the three layers in tiles, modulo 5
 uniform vec4 WaterDrift;
 
-// altitude encoding, see EncodeAltitude() in GeoPatchJobs.cpp
-#define WATER_ALTITUDE_RANGE 8000.0
+// (the altitude encoding, WATER_ALTITUDE_RANGE and terrainAltitude(), are in terrain-surface.glsl)
 
 #define WATER_LARGEST_TILE 2048.0
 // slope variance (both axes) of one layer's four octaves of waves, and of the
 // ripples below the smallest layer; 0.04 in all, a light breeze
 #define WATER_LAYER_VARIANCE 0.0125
 #define WATER_RIPPLE_VARIANCE 0.003
-
-// signed altitude above sea level in metres, from the encoded vertex alpha
-// (as interpolated: s = 2 * alpha - 1)
-float terrainAltitude(float s)
-{
-	return sign(s) * s * s * WATER_ALTITUDE_RANGE;
-}
 
 // 0 on land, 1 on water, anti-aliased across the coastline
 float terrainWaterMask(float s)

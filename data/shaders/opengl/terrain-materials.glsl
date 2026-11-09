@@ -29,6 +29,10 @@
 // Needs: cloud-uniforms.glsl (planet axes), terrain-surface.glsl.
 
 uniform sampler2DArray terrainMaterials;
+// the same textures' height alone, uncompressed, from their 1024-pixel size down (TerrainStones in the C++), which the
+// stones read (P4d), so the main processor can read exactly the same
+uniform sampler2DArray terrainStoneHeights;
+#define STONE_HEIGHTS_SIZE 1024.0
 // xyz: camera position in planet-fixed axes in units of five 256 m tiles,
 // fractional part; and the same in five 128 km tiles (GeoSphere::Render, in
 // double precision)
@@ -332,6 +336,19 @@ struct MaterialMapping {
 	float level;			// log2 of the fine tile size in metres
 };
 
+// the cube face under a point, and the next one near the face edges; upPlanet: straight up, planet-fixed
+void materialPlanes(inout MaterialMapping m, vec3 upPlanet)
+{
+	vec3 a = abs(upPlanet);
+	int first = (a.x > a.y && a.x > a.z) ? 0 : (a.y > a.z ? 1 : 2);
+	vec3 rest = a;
+	rest[first] = -1.0;
+	int second = (rest.x > rest.y && rest.x > rest.z) ? 0 : (rest.y > rest.z ? 1 : 2);
+	float edge = smoothstep(0.85, 1.0, a[second] / a[first]);
+	m.axes = ivec2(first, second);
+	m.plane = vec2(1.0 - 0.5 * edge, 0.5 * edge);
+}
+
 MaterialMapping materialMapping(vec3 eyepos, vec3 dpdx, vec3 dpdy, vec3 up)
 {
 	mat3 toPlanet = transpose(mat3(cloudAxisX.xyz, cloudAxisY.xyz, cloudAxisZ.xyz));
@@ -340,20 +357,18 @@ MaterialMapping materialMapping(vec3 eyepos, vec3 dpdx, vec3 dpdy, vec3 up)
 	m.relDx = toPlanet * dpdx;
 	m.relDy = toPlanet * dpdy;
 
-	// the cube face under the pixel, and the next one near the face edges
-	vec3 a = abs(toPlanet * up);
-	int first = (a.x > a.y && a.x > a.z) ? 0 : (a.y > a.z ? 1 : 2);
-	vec3 rest = a;
-	rest[first] = -1.0;
-	int second = (rest.x > rest.y && rest.x > rest.z) ? 0 : (rest.y > rest.z ? 1 : 2);
-	float edge = smoothstep(0.85, 1.0, a[second] / a[first]);
-	m.axes = ivec2(first, second);
-	m.plane = vec2(1.0 - 0.5 * edge, 0.5 * edge);
+	materialPlanes(m, toPlanet * up);
 
 	// tile size from the pixel footprint (geometric mean, so grazing views do
 	// not blow the tiles up)
 	float footprint = sqrt(length(m.relDx) * length(m.relDy));
 	m.level = log2(max(footprint * MATERIAL_TEXTURE_SIZE * MATERIAL_FINE_PIXELS_PER_TEXEL, 1.0));
+	// P4b: near the camera, one size fixed on the ground, so what the textures show (gravel, stones, cracks) keeps its
+	// size as the camera moves; beyond, back to the size by distance, never smaller than the near one
+	if (MaterialNear.z > 0.5) {
+		float far = smoothstep(MaterialNear.y, 2.0 * MaterialNear.y, length(m.rel));
+		m.level = mix(MaterialNear.x, max(MaterialNear.x, m.level), far);
+	}
 	if (MaterialLook.y > 0.5)
 		m.level = min(m.level, MATERIAL_FIXED_MAX_LEVEL);
 	return m;
@@ -374,15 +389,31 @@ vec3 materialTileCoord(MaterialMapping m, float level)
 	return m.rel / exp2(level) + origin * 5.0;
 }
 
+// A cell's hash, 0..1, in whole numbers: the main processor gets exactly the same (TerrainStones.cpp), which a sin() hash
+// doesn't give, the graphics card working sin() out less exactly (P4d of the OpenGL 4.6 plan, 2026-11-09)
+float materialCellHash(vec2 c, uint salt)
+{
+	uvec3 v = uvec3(uint(int(c.x)), uint(int(c.y)), salt);
+	v = v * 1664525u + 1013904223u;
+	v.x += v.y * v.z;
+	v.y += v.z * v.x;
+	v.z += v.x * v.y;
+	v ^= v >> 16u;
+	v.x += v.y * v.z;
+	v.y += v.z * v.x;
+	v.z += v.x * v.y;
+	return float(v.x >> 8u) * (1.0 / 16777216.0);
+}
+
 // smooth noise 0..1 repeating every 5 cells, so it goes on across the origin's wrap
-float materialRegionNoise(vec2 p, float salt)
+float materialRegionNoise(vec2 p, uint salt)
 {
 	vec2 c = floor(p), t = p - c;
 	t = t * t * (3.0 - 2.0 * t);
 	vec2 next = mod(c + 1.0, 5.0);
 	c = mod(c, 5.0);
-	vec4 h = fract(sin(vec4(dot(c, vec2(12.9898, 78.233)), dot(vec2(next.x, c.y), vec2(12.9898, 78.233)),
-		dot(vec2(c.x, next.y), vec2(12.9898, 78.233)), dot(next, vec2(12.9898, 78.233))) + salt) * 43758.5453);
+	vec4 h = vec4(materialCellHash(c, salt), materialCellHash(vec2(next.x, c.y), salt),
+		materialCellHash(vec2(c.x, next.y), salt), materialCellHash(next, salt));
 	return mix(mix(h.x, h.y, t.x), mix(h.z, h.w, t.x), t.y);
 }
 
@@ -400,7 +431,7 @@ const vec2 MATERIAL_TURNS[8] = vec2[8](vec2(1.0, 0.0), vec2(0.6, 0.8), vec2(0.0,
 vec4 materialVariedRead(int layer, vec2 uv, vec2 dx, vec2 dy, vec2 uvPatch, vec2 uvFar, int turnStep, float blend)
 {
 	float count = float(8 / turnStep);
-	float field = count * fract(materialRegionNoise(uvPatch, 0.0) + 3.0 * materialRegionNoise(uvFar, 5.7));
+	float field = count * fract(materialRegionNoise(uvPatch, 0u) + 3.0 * materialRegionNoise(uvFar, 1u));
 	float index = floor(field);
 	vec2 a = MATERIAL_TURNS[int(index) * turnStep], b = MATERIAL_TURNS[int(mod(index + 1.0, count)) * turnStep];
 	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * (index + 1.0));
@@ -631,6 +662,239 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 	return vec4(colourMul * detail, glow);
 }
 
+// ---------------------------------------------------------------- stones
+
+// P4c of docs/implementation_plans/opengl46-tessellation-compute_plan.md: the ground near the camera raised by the
+// textures' own height, so stones and lumps stand up out of it.
+
+// how high each material's texture raises the ground: its height channel's full range (0..1), as a share of the tile
+// it covers. Stones and boulders the most, fine-grained ground hardly at all
+float materialStoneDepth(int m)
+{
+	if (m == MATERIAL_ROCK) return 0.10;
+	if (m == MATERIAL_BASALT || m == MATERIAL_LAVA_FLOW) return 0.08;
+	if (m == MATERIAL_GRAVEL) return 0.05;
+	if (m == MATERIAL_DIRTY_ICE || m == MATERIAL_LAVA) return 0.04;
+	if (m == MATERIAL_REGOLITH) return 0.03;
+	if (m == MATERIAL_SOIL || m == MATERIAL_CRACKED_MUD || m == MATERIAL_TUNDRA || m == MATERIAL_FOREST) return 0.025;
+	if (m == MATERIAL_ICE || m == MATERIAL_SNOW || m == MATERIAL_ASH || m == MATERIAL_GRASS) return 0.015;
+	if (m == MATERIAL_SAND || m == MATERIAL_DUST || m == MATERIAL_SALT) return 0.008;
+	return 0.0; // metal
+}
+
+// steps toward the sun when looking for stones that shade a point
+#define STONE_SHADOW_STEPS 8
+
+// how finely the ground is cut for the stones at a distance
+#include "terrain-stone-aim.glsl"
+
+// The stone heights (terrainStoneHeights) at tile coordinates uv, smoothed to lod (in the heights' own pixels). Read at a
+// lod given, not from the screen, so the main processor can work out the same (TerrainStones::Sample).
+float stoneRead(int layer, vec2 uv, float lod)
+{
+	return textureLod(terrainStoneHeights, vec3(uv, float(layer)), lod).r;
+}
+
+// as materialVariedRead(), the heights alone
+float stoneVariedRead(int layer, vec2 uv, vec2 uvPatch, vec2 uvFar, int turnStep, float blend, float lod)
+{
+	float count = float(8 / turnStep);
+	float field = count * fract(materialRegionNoise(uvPatch, 0u) + 3.0 * materialRegionNoise(uvFar, 1u));
+	float index = floor(field);
+	vec2 a = MATERIAL_TURNS[int(index) * turnStep], b = MATERIAL_TURNS[int(mod(index + 1.0, count)) * turnStep];
+	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * (index + 1.0));
+	float ra = stoneRead(layer, vec2(a.x * uv.x - a.y * uv.y, a.y * uv.x + a.x * uv.y) + offsetA, lod);
+	float rb = stoneRead(layer, vec2(b.x * uv.x - b.y * uv.y, b.y * uv.x + b.x * uv.y) + offsetB, lod);
+	return mix(ra, rb, smoothstep(0.5 - blend, 0.5 + blend, field - index + 0.8 * (rb - ra)));
+}
+
+// as materialTileSample(), the heights alone, smoothed to spacing (metres)
+float stoneTileHeight(int layer, MaterialMapping m, float level, float spacing)
+{
+	float tile = exp2(level);
+	vec3 q = materialTileCoord(m, level);
+	float lod = max(log2(max(spacing / tile * STONE_HEIGHTS_SIZE, 1e-6)), 0.0);
+	vec3 rotation = materialRotation(layer);
+	if (MaterialLook.y > 0.5 && rotation.x > 0.5) {
+		vec3 qPatch = rotation.y < -0.5 ? q * 2.0 : (rotation.y < 0.5 ? q : materialTileCoord(m, min(level + rotation.y, MATERIAL_MAX_LEVEL)));
+		vec3 qFar = materialTileCoord(m, min(level + max(rotation.y, 0.0) + 5.0, MATERIAL_MAX_LEVEL));
+		int turnStep = rotation.x < 1.5 ? 2 : 1;
+		float h = m.plane.x * stoneVariedRead(layer, materialPlaneUV(q, m.axes.x), materialPlaneUV(qPatch, m.axes.x), materialPlaneUV(qFar, m.axes.x), turnStep, rotation.z, lod);
+		if (m.plane.y > 0.0)
+			h += m.plane.y * stoneVariedRead(layer, materialPlaneUV(q, m.axes.y), materialPlaneUV(qPatch, m.axes.y), materialPlaneUV(qFar, m.axes.y), turnStep, rotation.z, lod);
+		return h;
+	}
+	float h = m.plane.x * stoneRead(layer, materialPlaneUV(q, m.axes.x), lod);
+	if (m.plane.y > 0.0)
+		h += m.plane.y * stoneRead(layer, materialPlaneUV(q, m.axes.y), lod);
+	return h;
+}
+
+// as materialSample(), the heights alone: blended between the two power-of-two sizes around the level, and the ice's
+// as strong as its cracks
+float stoneSample(int layer, MaterialMapping m, float level, float spacing)
+{
+	level = clamp(level, 0.0, MATERIAL_MAX_LEVEL - 1.0);
+	float k = floor(level);
+	float h = stoneTileHeight(layer, m, k, spacing);
+	if (level > k)
+		h = mix(h, stoneTileHeight(layer, m, k + 1.0, spacing), level - k);
+	if (layer == MATERIAL_ICE)
+		h = 0.5 + (h - 0.5) * max(MaterialLook.x, MATERIAL_ICE_LEAST);
+	return h;
+}
+
+// The two materials whose stones stand at a point, and how much of each (as terrainMaterialDetail() picks them), kept
+// for reading the height there and around it
+struct StonePick {
+	int l1, l2;		 // their texture layers (l2 -1: none)
+	float w1, w2;	 // their weights
+	float k1, k2;	 // their stone heights, times the land's share and metres: height = k1 * h1 + k2 * h2, after the blend
+	float total;	 // w1 + w2
+};
+
+// the pick at a point; false where nothing is raised. eyepos: the point on the flat ground, view space; normal (of the
+// mesh), up: view space, unit length; scale: metres the full height of a texture stands at here, fading out with the
+// one size, over the shore and on water
+bool terrainStonePick(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 eyepos, vec3 normal, vec3 up, float altitude, bool hasWater, out StonePick p)
+{
+	p.l1 = -1;
+	p.l2 = -1;
+	p.w1 = p.w2 = p.k1 = p.k2 = p.total = 0.0;
+	if (MaterialStones.x < 0.5 || MaterialNear.z < 0.5)
+		return false;
+	float near = 1.0 - smoothstep(MaterialNear.y, 2.0 * MaterialNear.y, length(eyepos));
+	// (and where even the tallest would stand too small on screen, they fade out: nothing is cut there)
+	near *= smoothstep(0.5 * STONE_FADE_PIXELS, STONE_FADE_PIXELS, terrainStonePixels(length(eyepos)));
+	if (hasWater)
+		near *= smoothstep(0.5, 2.0, altitude);
+	if (near <= 0.0)
+		return false;
+
+	float w[MATERIAL_SLOTS];
+	terrainSlotWeights(slots, 1.0 - dot(normal, up), altitude, hasWater, w);
+	int usedSlots = MATERIAL_USED_SLOTS;
+	int m1 = 0, m2 = 1;
+	for (int i = 1; i < usedSlots; ++i) {
+		if (w[i] > w[m1]) {
+			m2 = m1;
+			m1 = i;
+		} else if (i != m1 && w[i] > w[m2]) {
+			m2 = i;
+		}
+	}
+	float landWeight = 0.0;
+	for (int i = 0; i < usedSlots; ++i)
+		landWeight += w[i];
+	p.l1 = materialSlotLayer(m1);
+	p.l2 = usedSlots > 1 ? materialSlotLayer(m2) : -1;
+	if (landWeight < 1e-3 || p.l1 < 0)
+		return false;
+	p.w1 = w[m1];
+	p.w2 = p.l2 >= 0 ? w[m2] : 0.0;
+	p.total = p.w1 + p.w2;
+	float scale = near * MaterialStones.y * exp2(MaterialNear.x) / landWeight;
+	p.k1 = scale * materialStoneDepth(p.l1);
+	p.k2 = p.l2 >= 0 ? scale * materialStoneDepth(p.l2) : 0.0;
+	return p.k1 > 0.0 || p.k2 > 0.0;
+}
+
+// how far the ground stands up, in metres, where the mapping m is (terrainStoneMapping()): the textures' height at the
+// one size held near the camera (MaterialNear.x), smoothed to spacing (metres), the two materials blended along their
+// bumps as the colours are
+float terrainStoneAt(StonePick p, MaterialMapping m, float spacing)
+{
+	float h1 = stoneSample(p.l1, m, m.level, spacing), h2 = 0.5;
+	if (p.w2 > 0.01)
+		h2 = stoneSample(p.l2, m, m.level, spacing);
+	float s1 = p.w1 / max(p.total, 1e-6) + h1;
+	float s2 = p.w2 / max(p.total, 1e-6) + h2;
+	float top = max(s1, s2) - MATERIAL_BLEND_DEPTH;
+	float b1 = max(s1 - top, 0.0), b2 = max(s2 - top, 0.0);
+	float n1 = p.total * b1 / (b1 + b2), n2 = p.total * b2 / (b1 + b2);
+	return n1 * h1 * p.k1 + n2 * h2 * p.k2;
+}
+
+// A point's mapping, as materialMapping() makes a pixel's (no screen derivatives: the stones are read at a lod worked
+// out from the spacing). Move m.rel (planet-fixed metres) to read elsewhere.
+MaterialMapping terrainStoneMapping(vec3 eyepos, vec3 up, mat3 toPlanet)
+{
+	MaterialMapping m;
+	m.rel = toPlanet * eyepos;
+	materialPlanes(m, toPlanet * up);
+	m.relDx = vec3(0.0);
+	m.relDy = vec3(0.0);
+	m.level = MaterialNear.x;
+	return m;
+}
+
+// The stones at a point of the ground near the camera (P4c, P4e of docs/implementation_plans/
+// opengl46-tessellation-compute_plan.md), for the tessellation evaluation shaders, so the work is done once per cut
+// point, not per pixel:
+// - lift: how far the point is raised, in metres (only up, so the ground never sinks below the flat ground that casts
+//   the shadow maps), smoothed to how far apart the cut points are there, so the shape doesn't shimmer;
+// - slope: the raised shape's slope (view space, along the ground), for the light: the pixel shader tilts its normal by
+//   it;
+// - lit: how much of the main light gets past the stones around (1 all, 0 none), from a few steps toward it over the
+//   same heights (MaterialStones.z on).
+// eyepos: the point on the flat ground, view space; normal (of the mesh), up: view space, unit length
+void terrainStones(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 eyepos, vec3 normal, vec3 up, float altitude, bool hasWater,
+	out float lift, out vec3 slope, out float lit)
+{
+	lift = 0.0;
+	slope = vec3(0.0);
+	lit = 1.0;
+	StonePick p;
+	if (!terrainStonePick(slots, eyepos, normal, up, altitude, hasWater, p))
+		return;
+	mat3 toPlanet = transpose(mat3(cloudAxisX.xyz, cloudAxisY.xyz, cloudAxisZ.xyz));
+	// (the cut points' spacing there: the edge on screen aimed for, at this distance)
+	float spacing = max(length(eyepos) * terrainStoneAim(length(eyepos)) / max(TessParams.x, 1.0), 1e-3);
+	MaterialMapping m = terrainStoneMapping(eyepos, up, toPlanet);
+	lift = terrainStoneAt(p, m, spacing);
+
+	// the slope, from the heights half a spacing away along two directions on the ground
+	vec3 t1 = normalize(cross(up, abs(up.x) < 0.9 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0)));
+	vec3 t2 = cross(up, t1);
+	float e = 0.5 * spacing;
+	MaterialMapping mx = m, my = m;
+	mx.rel += toPlanet * (t1 * e);
+	my.rel += toPlanet * (t2 * e);
+	slope = ((terrainStoneAt(p, mx, spacing) - lift) * t1 + (terrainStoneAt(p, my, spacing) - lift) * t2) / e;
+
+#if (NUM_LIGHTS > 0)
+	// the shade: toward the main light along the ground, the line to it rising as the light stands; anything standing
+	// above that line shades the point. Out as far as the highest stone here could reach the line, at most half a
+	// tile; the steps closer together near the point, where the small stones are
+	// (only where the stones stand a pixel or more on screen, fading in up to three: smaller, their shade can't be seen)
+	float shadePixels = terrainStonePixels(length(eyepos));
+	if (MaterialStones.z > 0.5 && shadePixels > 1.0) {
+		vec3 L = normalize(uLight[0].position.xyz);
+		float sunUp = dot(L, up);
+		vec3 along = L - up * sunUp;
+		float alongLen = length(along);
+		if (sunUp > 0.0 && alongLen > 1e-4) {
+			vec3 toward = toPlanet * (along / alongLen);
+			float rise = sunUp / alongLen;
+			float highest = max(p.k1, p.k2) * p.total;
+			float reach = min((highest - lift) / rise, 0.5 * exp2(m.level));
+			if (reach > e) {
+				float soft = 0.1 * highest + 1e-3;
+				float shade = 0.0;
+				for (int i = 1; i <= STONE_SHADOW_STEPS; ++i) {
+					float f = float(i) / float(STONE_SHADOW_STEPS);
+					float s = reach * f * f;
+					MaterialMapping ms = m;
+					ms.rel += toward * s;
+					shade = max(shade, clamp((terrainStoneAt(p, ms, spacing) - lift - s * rise) / soft, 0.0, 1.0));
+				}
+				lit = 1.0 - shade * smoothstep(1.0, 3.0, shadePixels);
+			}
+		}
+	}
+#endif
+}
+
 // ---------------------------------------------------------------- relief
 
 // Relief shading: slopes of the terrain detail between the mesh and the
@@ -822,11 +1086,12 @@ float materialGlowOverWater(float waterMask, float altitude)
 
 // ---------------------------------------------------------------- bump lighting
 
+#ifdef FRAGMENT_SHADER
 // The normal with the material textures' bumps (bump from
 // terrainMaterialDetail()), from the screen-space derivatives of their
 // height (surface gradient bump mapping): nearly free, the heights are
 // already sampled. Call it outside branches. normal: view space; dpdx,
-// dpdy: screen derivatives of the view-space position.
+// dpdy: screen derivatives of the view-space position, on the flat ground.
 vec3 terrainBumpNormal(vec3 normal, vec3 dpdx, vec3 dpdy, vec2 bump)
 {
 	// derivatives of the height alone: the tile size changes with distance
@@ -839,3 +1104,4 @@ vec3 terrainBumpNormal(vec3 normal, vec3 dpdx, vec3 dpdy, vec2 bump)
 	vec3 grad = sign(det) * (dh.x * r1 + dh.y * r2);
 	return normalize(abs(det) * normal - grad);
 }
+#endif

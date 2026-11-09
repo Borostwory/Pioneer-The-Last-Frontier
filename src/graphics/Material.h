@@ -74,6 +74,8 @@ namespace Graphics {
 		Sint32 textures;  //texture count
 		Uint32 dirLights; //set by RendererOGL if lighting == true
 		Uint32 quality;	  // see: Graphics::MaterialQuality
+		// with the shaderdef's tessellation stages (TessControl, TessEval), drawn as patches (Material::SetTessellated)
+		bool tessellated;
 
 		friend bool operator==(const MaterialDescriptor &a, const MaterialDescriptor &b);
 	};
@@ -160,6 +162,11 @@ namespace Graphics {
 		const MaterialDescriptor &GetDescriptor() const { return m_descriptor; }
 
 		virtual bool IsProgramLoaded() const = 0;
+
+		// Draws from now on with the shaderdef's tessellation stages, as patches of 3 vertices, or without them again.
+		// False if the material can't: no tessellation stages, or they didn't compile. Takes effect for each draw as
+		// it's recorded, so it can change from one draw to the next (GeoPatch: only patches near the camera).
+		virtual bool SetTessellated(bool on) { return !on; }
 
 		virtual bool SetTexture(size_t hash, Texture *tex) = 0;
 

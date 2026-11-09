@@ -29,6 +29,7 @@ class SSingleSplitResult;
 
 namespace PlanetClouds {
 	class CloudHeightMap;
+	struct CloudDataBlock;
 }
 
 #define NUM_PATCHES 6
@@ -121,8 +122,56 @@ public:
 		double finestSpacing = 0.0; // metres between the vertices of the deepest
 		int nearestDepth = 0; // depth of the one nearest the camera
 		double nearestSpacing = 0.0; // metres between its vertices
+		int tessellated = 0; // how many were drawn tessellated (P4a)
 	};
 	const DrawnPatches &GetDrawnPatches() const { return m_drawnPatches; }
+
+	// P4a of the OpenGL 4.6 plan: the ground near the camera tessellated, its triangles cut finer on the graphics card
+	// (no new shape yet). Switched in the debug window (config TerrainTessellation); the triangle edge on screen it aims
+	// for, in pixels (TerrainTessellationPixels).
+	static bool TessellationEnabled();
+	static double TessellationPixels();
+	// P4b: the ground textures at one size near the camera (config TerrainTextureFixed), tiles of 2^level metres
+	// (TerrainTextureFixedLevel), out to this many metres (TerrainTextureFixedRange)
+	static bool TextureFixedEnabled();
+	static double TextureFixedLevel();
+	static double TextureFixedRange();
+	// P4c: the stones raised near the camera (config TerrainStones), within the textures' one size, so only with it;
+	// how high, times each material's own height (TerrainStonesHeight)
+	static bool StonesEnabled();
+	static double StonesHeight();
+	// P4e: whether the stones shade the ground from the sun (config TerrainStoneShadows)
+	static bool StoneShadowsEnabled();
+	// whether stones are raised at all now, and how far out they go (metres): every patch that near is tessellated, and
+	// with them on, only those
+	static bool StonesActive() { return StonesEnabled() && TextureFixedEnabled(); }
+	static double StonesReach() { return 2.0 * TextureFixedRange(); }
+	// P4d: whether feet and wheels stand on the stones (config TerrainStonesContact): GetDrawnRadius adds them, as drawn
+	static bool StonesContactEnabled();
+	// how tall on screen (pixels) the tallest stone must stand for the ground to be cut at the full aim; below, the cuts
+	// thin out with it (config TerrainStonesFullPixels; TessParams.w, terrain-stone-aim.glsl)
+	static double StonesFullPixels();
+	// how tall on screen (pixels) the tallest stone must stand for the stones to be raised at all; they fade out from it
+	// to half of it, and nothing is cut there (config TerrainStonesFadePixels; MaterialNear.w, terrain-stone-aim.glsl)
+	static double StonesFadePixels();
+	// how many pixels tall the tallest stone of this body could stand on screen at a distance (metres), as
+	// terrainStonePixels() works it out
+	double StonePixelsAt(double metres) const;
+	// P4d's check: the stones' height under the camera, worked out by the main processor and by the graphics card
+	struct StoneProbe {
+		bool valid = false; // both are in
+		double cpu = 0.0, gpu = 0.0; // metres
+		int layer1 = -1, layer2 = -1; // the two materials there (texture layers)
+		double distance = 0.0; // from the camera, metres
+		bool meshData = false; // the patch there still had its normals and material weights
+	};
+	// while on, the body drawn nearest works the check out each frame
+	static void SetStoneProbe(bool on);
+	static const StoneProbe &GetStoneProbe();
+	// radians per pixel of the view the patches are being drawn for (GeoPatch decides which to tessellate)
+	double GetPixelAngle() const { return m_pixelAngle; }
+	// counts a patch drawn tessellated, for GetDrawnPatches
+	void CountTessellated() { m_tessellatedThisFrame++; }
 	// weights of the detail tile styles: rolling, ridged, dunes, craters (TerrainTiles)
 	const float *GetTileStyle() const { return m_tileStyle; }
 	// a patch that wants to split; the nearest ones are submitted at the end of the update
@@ -144,6 +193,15 @@ private:
 	// GetDrawnPatches, from m_visiblePatches before it is cleared
 	void NoteDrawnPatches();
 	DrawnPatches m_drawnPatches;
+	double m_pixelAngle = 0.0;
+	int m_tessellatedThisFrame = 0;
+	// P4d: the stones' height at a point of the drawn mesh (planet radii), from what the mesh holds there, in metres
+	double StoneLiftAt(const vector3d &point, const vector3d &normal, const float slots[16], float seaHeight) const;
+	// P4d's check, in Render: reads last frame's answer from the graphics card and asks again
+	void RunStoneProbe(Graphics::Renderer *renderer, const matrix4x4d &trans, const vector3d &campos, PlanetClouds::CloudDataBlock &cloudData);
+	RefCountedPtr<Graphics::Material> m_probeMaterial;
+	RefCountedPtr<Graphics::Texture> m_probeImage;
+	bool m_probePending = false;
 
 	// patches that want to split this update, with their distance to the camera
 	std::vector<std::pair<double, GeoPatch *>> mQuadSplitCandidates;

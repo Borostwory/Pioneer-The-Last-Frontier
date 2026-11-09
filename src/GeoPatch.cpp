@@ -341,10 +341,14 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 		// use the new vertex buffer and the shared index buffer
 		m_patchVBOData->m_patchMesh.reset(renderer->CreateMeshObject(vbd, vtxBuffer, m_ctx->GetIndexBuffer()));
 
-		// Don't need this anymore so throw it away
+		// Don't need this anymore so throw it away; but for the patches fine enough to stand on, whose normals and
+		// material weights the stones under feet and wheels are worked out from (GetDrawnRadius, P4d of the OpenGL 4.6
+		// plan; only the few deepest ones near the camera)
 		//m_patchVBOData->m_heights.reset();
-		m_patchVBOData->m_normals.reset();
-		m_patchVBOData->m_colors.reset();
+		if (!FineEnoughToStandOn()) {
+			m_patchVBOData->m_normals.reset();
+			m_patchVBOData->m_colors.reset();
+		}
 
 #if DEBUG_PATCHES
 #ifdef DEBUG_BOUNDING_SPHERES
@@ -432,7 +436,26 @@ void GeoPatch::RenderImmediate(Graphics::Renderer *renderer, const vector3d &cam
 			surfaceWeight = surface->SlotFade(m_surfaceSlot);
 		m_geosphere->GetSurfaceMaterial()->SetPushConstant("PatchSurface"_hash,
 			surface ? surface->SlotUV(m_surfaceSlot) : vector3f(0.0f), surfaceWeight);
+
+		// P4a: tessellated where its triangles are large enough on screen to be cut (at its nearest point), else as
+		// before. The control shader cuts each edge by its own length and distance, so neighbours agree, and an edge
+		// smaller than the aim on screen isn't cut: a patch that isn't tessellated meets one that is cleanly.
+		// P4c: with the stones raised, every patch they reach, so none meets the ground they lift flat, and only those:
+		// further out nothing changes shape, so cutting it would cost for nothing (nor where even the tallest stone
+		// would stand too small on screen and they have faded out). (nearest is in planet radii; until 2026-11-09 it was
+		// held against the reach in metres, so every patch in view was tessellated.)
+		bool tessellate = false;
+		const double nearest = std::max((m_clipCentroid - campos).Length() - m_clipRadius, 1e-9);
+		if (GeoSphere::StonesActive()) {
+			const double nearestMetres = nearest * m_geosphere->GetSystemBody()->GetRadius();
+			tessellate = nearestMetres < GeoSphere::StonesReach() && m_geosphere->StonePixelsAt(nearestMetres) >= 0.5 * GeoSphere::StonesFadePixels();
+		}
+		else if (GeoSphere::TessellationEnabled())
+			tessellate = GetVertexSpacing() / (nearest * m_geosphere->GetPixelAngle()) > GeoSphere::TessellationPixels();
+		if (m_geosphere->GetSurfaceMaterial()->SetTessellated(tessellate) && tessellate)
+			m_geosphere->CountTessellated();
 		renderer->DrawMesh(m_patchVBOData->m_patchMesh.get(), m_geosphere->GetSurfaceMaterial().Get());
+		m_geosphere->GetSurfaceMaterial()->SetTessellated(false);
 
 #if DEBUG_CENTROIDS
 		renderer->SetTransform(matrix4x4f(modelView * matrix4x4d::Translation(m_clipCentroid - campos) * matrix4x4d::ScaleMatrix(0.2 / pow(2.0f, m_depth))));
@@ -469,12 +492,17 @@ void GeoPatch::RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d
 	}
 }
 
+bool GeoPatch::FineEnoughToStandOn() const
+{
+	return GetVertexSpacing() * m_geosphere->GetSystemBody()->GetRadius() <= 2.0 * m_geosphere->GetLegacyDeepestSpacing();
+}
+
 double GeoPatch::GetVertexSpacing() const
 {
 	return m_edgeLength * m_ctx->GetFrac();
 }
 
-bool GeoPatch::GetDrawnRadius(const vector3d &dir, double &radius) const
+bool GeoPatch::GetDrawnRadius(const vector3d &dir, double &radius, DrawnSurface *surface) const
 {
 	const vector3d &v0 = m_corners->m_v0;
 	const vector3d &v1 = m_corners->m_v1;
@@ -492,10 +520,10 @@ bool GeoPatch::GetDrawnRadius(const vector3d &dir, double &radius) const
 	// and v3 at (0, 0), (1, 0), (1, 1), (0, 1)), else whichever has it
 	if (m_kids[0]) {
 		const int kid = x < 0.5 ? (y < 0.5 ? 0 : 3) : (y < 0.5 ? 1 : 2);
-		if (m_kids[kid]->GetDrawnRadius(dir, radius))
+		if (m_kids[kid]->GetDrawnRadius(dir, radius, surface))
 			return true;
 		for (int i = 0; i < NUM_KIDS; i++) {
-			if (i != kid && m_kids[i]->GetDrawnRadius(dir, radius))
+			if (i != kid && m_kids[i]->GetDrawnRadius(dir, radius, surface))
 				return true;
 		}
 	}
@@ -503,7 +531,7 @@ bool GeoPatch::GetDrawnRadius(const vector3d &dir, double &radius) const
 		return false;
 	// Too coarse to stand on: the camera is far off, and where a ship rests mustn't depend on where it's seen from. The
 	// exact height stands in.
-	if (GetVertexSpacing() * m_geosphere->GetSystemBody()->GetRadius() > 2.0 * m_geosphere->GetLegacyDeepestSpacing())
+	if (!FineEnoughToStandOn())
 		return false;
 
 	// the mesh as UpdateVBOs builds it: the inner vertices at frac steps of
@@ -524,20 +552,53 @@ bool GeoPatch::GetDrawnRadius(const vector3d &dir, double &radius) const
 	// a cell's two triangles share its diagonal from (i + 1, j) to
 	// (i, j + 1) (GeoPatchContext's indices, offset by the skirt)
 	vector3d a, b, c;
+	int ia, ib, ic; // their vertices' indices
 	if (fx + fy <= 1.0) {
 		a = vertex(i, j);
 		b = vertex(i + 1, j);
 		c = vertex(i, j + 1);
+		ia = j * n + i;
+		ib = j * n + i + 1;
+		ic = (j + 1) * n + i;
 	} else {
 		a = vertex(i + 1, j);
 		b = vertex(i + 1, j + 1);
 		c = vertex(i, j + 1);
+		ia = j * n + i + 1;
+		ib = (j + 1) * n + i + 1;
+		ic = (j + 1) * n + i;
 	}
 	const vector3d normal = (b - a).Cross(c - a);
 	const double along = normal.Dot(dir);
 	if (along == 0.0)
 		return false;
 	radius = normal.Dot(a) / along;
+
+	if (surface) {
+		// the point's share of each corner (barycentric, on the triangle itself), and the corners' normals (normalised,
+		// as the vertex buffer has them), weights and altitude blended by it, as the evaluation shaders blend them
+		const vector3d point = dir * radius;
+		const double area = normal.Dot(normal);
+		const double wa = area > 0.0 ? (b - point).Cross(c - point).Dot(normal) / area : 1.0 / 3.0;
+		const double wb = area > 0.0 ? (c - point).Cross(a - point).Dot(normal) / area : 1.0 / 3.0;
+		const double wc = 1.0 - wa - wb;
+		const vector3f *normals = m_patchVBOData->m_normals.get();
+		const GeoVertexSurface *colours = m_patchVBOData->m_colors.get();
+		if (normals) {
+			const vector3d blended = vector3d(normals[ia].Normalized()) * wa + vector3d(normals[ib].Normalized()) * wb +
+				vector3d(normals[ic].Normalized()) * wc;
+			surface->normal = blended.Length() > 0.0 ? blended.Normalized() : point.Normalized();
+		} else {
+			surface->normal = point.Normalized();
+		}
+		surface->found = normals && colours;
+		if (colours) {
+			for (int s = 0; s < 16 && s < TerrainMaterialTable::SLOT_COUNT; s++)
+				surface->slots[s] = float(wa * colours[ia].materials[s] + wb * colours[ib].materials[s] + wc * colours[ic].materials[s]) / 255.0f;
+			const double alpha = (wa * colours[ia].col.a + wb * colours[ib].col.a + wc * colours[ic].col.a) / 255.0;
+			surface->seaHeight = float(alpha * 2.0 - 1.0);
+		}
+	}
 	return true;
 }
 

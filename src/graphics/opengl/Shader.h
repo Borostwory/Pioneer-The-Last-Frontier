@@ -62,6 +62,9 @@ namespace Graphics {
 			std::string tessEvalShader;
 			std::string computeShader;
 			std::string defines;
+			// with the tessellation stages (MaterialDescriptor::tessellated); without, a shaderdef's tessellation
+			// stages are left out
+			bool tessellated = false;
 		};
 
 		class Program;
@@ -101,6 +104,9 @@ namespace Graphics {
 			const std::vector<BufferBindingData> &GetBufferBindings() const { return m_bufferBindingInfo; }
 
 			const std::string &GetString(size_t name) const { return m_nameMap.at(name); }
+
+			// whether the shaderdef has both tessellation stages (TessControl, TessEval)
+			bool HasTessellation() const { return !m_programDef.tessControlShader.empty() && !m_programDef.tessEvalShader.empty(); }
 
 		protected:
 			friend class Program;

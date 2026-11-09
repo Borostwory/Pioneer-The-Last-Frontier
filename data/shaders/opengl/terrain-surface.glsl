@@ -20,6 +20,26 @@ uniform vec4 SurfaceMaterial;
 // x: strength of the ice's cracks 0..1; y: 1 if the body's detail is fixed in space,
 // so what is sized by the view stays out; w: how many material slots the body uses
 uniform vec4 MaterialLook;
+// P4b of the OpenGL 4.6 plan: the ground textures at one size near the camera (materialMapping). x: that size's level
+// (tiles of 2^x metres), y: metres out to which it holds, fading to the size by distance over as far again; z: 1 on
+uniform vec4 MaterialNear;
+// P4c: the stones raised near the camera (terrainStones() in terrain-materials.glsl). x: 1 on, y: how high, times
+// each material's own height; z: 1 if they shade the ground from the main light (P4e); w: the tallest of this body's
+// materials' stones, as a share of the tile (how finely the ground is cut at a distance, terrain-stone-aim.glsl)
+uniform vec4 MaterialStones;
+// as in the tessellation control shaders: x pixels per radian of the view, y the edge on screen they aim for (pixels);
+// for how far apart the cut points are, which the stones are smoothed to
+uniform vec4 TessParams;
+
+// altitude encoding, see EncodeAltitude() in GeoPatchJobs.cpp
+#define WATER_ALTITUDE_RANGE 8000.0
+
+// signed altitude above sea level in metres, from the encoded vertex alpha
+// (as interpolated: s = 2 * alpha - 1)
+float terrainAltitude(float s)
+{
+	return sign(s) * s * s * WATER_ALTITUDE_RANGE;
+}
 
 // pattern cell size as a fraction of the view distance
 #define SURFACE_CELL_PER_DIST 0.012

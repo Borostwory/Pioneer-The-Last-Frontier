@@ -1059,6 +1059,15 @@ namespace Graphics {
 		m_drawCommandList->AddDispatchComputeCmd(material, groupsX, groupsY, groupsZ);
 	}
 
+	bool RendererOGL::ReadTexture(Texture *texture, float *out, size_t bytes)
+	{
+		if (!texture || !out)
+			return false;
+		glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+		glGetTextureImage(GLuint(texture->GetTextureID()), 0, GL_RED, GL_FLOAT, GLsizei(bytes), out);
+		return glGetError() == GL_NO_ERROR;
+	}
+
 	bool RendererOGL::MaterialCompiled(Material *m)
 	{
 		OGL::Program *program = m ? static_cast<OGL::Material *>(m)->EvaluateVariant() : nullptr;

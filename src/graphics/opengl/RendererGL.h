@@ -98,6 +98,7 @@ namespace Graphics {
 		void DispatchCompute(Material *m, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) final;
 		void AddComputeBarrier(uint32_t barriers) final;
 		bool MaterialCompiled(Material *m) final;
+		bool ReadTexture(Texture *texture, float *out, size_t bytes) final;
 		void BeginGpuTimer(const char *name) final;
 		void EndGpuTimer() final;
 		const std::vector<GpuTiming> &GetGpuTimings() const final { return m_gpuTimings; }

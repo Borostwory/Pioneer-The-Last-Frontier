@@ -464,7 +464,29 @@ namespace Graphics {
 			const size_t Layers = dataSize.z;
 			assert(Layers == data.size());
 
-			if (!IsCompressed(format)) {
+			if (!IsCompressed(format) && numMips > 1) {
+				// Uncompressed, with its own mip levels, one after another in each layer's data (TerrainStones, P4d of the
+				// OpenGL 4.6 plan, whose levels must be exactly the main processor's, not the driver's own): each level
+				// made and filled, rows packed tight (the smallest are narrower than 4 bytes), and all of them sampled.
+				const size_t texel = UploadTexelBytes(format);
+				UploadTimer timer(UPLOAD_TEXTURE_WRITE, Layers * size_t(dataSize.x) * size_t(dataSize.y) * texel * 4 / 3);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+				size_t width = size_t(dataSize.x), height = size_t(dataSize.y), offset = 0;
+				for (unsigned int level = 0; level < numMips; ++level) {
+					glTexImage3D(GL_TEXTURE_2D_ARRAY, level, GLInternalFormat(format), GLsizei(width), GLsizei(height), GLsizei(Layers), 0,
+						GLImageFormat(format), GLImageType(format), nullptr);
+					for (size_t i = 0; i < Layers; i++)
+						glTexSubImage3D(GL_TEXTURE_2D_ARRAY, level, 0, 0, GLint(i), GLsizei(width), GLsizei(height), 1,
+							GLImageFormat(format), GLImageType(format), static_cast<const unsigned char *>(data[i]) + offset);
+					offset += width * height * texel;
+					width = std::max<size_t>(width / 2, 1);
+					height = std::max<size_t>(height / 2, 1);
+				}
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+				glTexParameteri(m_target, GL_TEXTURE_BASE_LEVEL, 0);
+				glTexParameteri(m_target, GL_TEXTURE_MAX_LEVEL, GLint(numMips - 1));
+				RendererOGL::CheckErrors();
+			} else if (!IsCompressed(format)) {
 				UploadTimer timer(UPLOAD_TEXTURE_WRITE, Layers * size_t(dataSize.x) * size_t(dataSize.y) * UploadTexelBytes(format));
 				for (size_t i = 0; i < Layers; i++) {
 					glTexSubImage3D(

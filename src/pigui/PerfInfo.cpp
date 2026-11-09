@@ -875,6 +875,143 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 		}
 	}
 
+	// P4a: the ground near the camera tessellated
+	ImGui::Spacing();
+	ImGui::SeparatorText("P4a: the ground near the camera tessellated (no new shape yet)");
+	{
+		bool tessellation = GeoSphere::TessellationEnabled();
+		if (ImGui::Checkbox("Tessellate the ground near the camera##openglPlan", &tessellation)) {
+			Pi::config->SetInt("TerrainTessellation", tessellation ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("terrain tessellation: ") + (tessellation ? "on" : "off"));
+		}
+		float pixels = float(GeoSphere::TessellationPixels());
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		if (ImGui::SliderFloat("triangle edge on screen##openglPlan", &pixels, 2.0f, 64.0f, "%.0f px"))
+			Pi::config->SetFloat("TerrainTessellationPixels", pixels);
+		if (ImGui::IsItemDeactivatedAfterEdit())
+			Pi::config->Save();
+		if (sphere)
+			ImGui::Text("Patches drawn tessellated: %d of %d", sphere->GetDrawnPatches().tessellated, sphere->GetDrawnPatches().count);
+		ImGui::TextColored(dim, "Should look the same. The wireframe view (Terrain and GPU) shows the finer triangles; GPU time: \"terrain\".");
+	}
+
+	// P4b: the ground textures at one size near the camera
+	ImGui::Spacing();
+	ImGui::SeparatorText("P4b: the ground textures at one size near the camera");
+	{
+		bool fixed = GeoSphere::TextureFixedEnabled();
+		if (ImGui::Checkbox("One texture size near the camera##openglPlan", &fixed)) {
+			Pi::config->SetInt("TerrainTextureFixed", fixed ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("ground textures at one size near the camera: ") + (fixed ? "on" : "off"));
+		}
+		float level = float(GeoSphere::TextureFixedLevel());
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		if (ImGui::SliderFloat("size##openglPlanTexLevel", &level, 0.0f, 8.0f, "level %.1f"))
+			Pi::config->SetFloat("TerrainTextureFixedLevel", level);
+		if (ImGui::IsItemDeactivatedAfterEdit())
+			Pi::config->Save();
+		ImGui::SameLine();
+		ImGui::Text("(each texture covers %.1f m)", std::pow(2.0, double(level)));
+		float range = float(GeoSphere::TextureFixedRange());
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		if (ImGui::SliderFloat("out to##openglPlanTexRange", &range, 2.0f, 500.0f, "%.0f m", ImGuiSliderFlags_Logarithmic))
+			Pi::config->SetFloat("TerrainTextureFixedRange", range);
+		if (ImGui::IsItemDeactivatedAfterEdit())
+			Pi::config->Save();
+		ImGui::TextColored(dim, "Within that distance the textures keep one size as you move; beyond it they grow with the distance as before.");
+	}
+
+	// P4c: the stones raised near the camera
+	ImGui::Spacing();
+	ImGui::SeparatorText("P4c: the stones raised near the camera");
+	{
+		bool stones = GeoSphere::StonesEnabled();
+		if (ImGui::Checkbox("Raise the stones##openglPlan", &stones)) {
+			Pi::config->SetInt("TerrainStones", stones ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("stones raised near the camera: ") + (stones ? "on" : "off"));
+		}
+		float height = float(GeoSphere::StonesHeight());
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		if (ImGui::SliderFloat("height##openglPlanStones", &height, 0.0f, 4.0f, "x %.2f"))
+			Pi::config->SetFloat("TerrainStonesHeight", height);
+		if (ImGui::IsItemDeactivatedAfterEdit())
+			Pi::config->Save();
+		// (as materialStoneDepth() in terrain-materials.glsl)
+		const double tile = std::pow(2.0, GeoSphere::TextureFixedLevel()) * GeoSphere::StonesHeight() * 100.0;
+		ImGui::Text("Highest: rock %.0f cm, gravel %.0f cm, regolith %.0f cm, sand %.1f cm", 0.10 * tile, 0.05 * tile, 0.03 * tile, 0.008 * tile);
+		float fullPixels = float(GeoSphere::StonesFullPixels());
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		if (ImGui::SliderFloat("full detail down to##openglPlanStonesFull", &fullPixels, 1.0f, 32.0f, "%.0f px", ImGuiSliderFlags_Logarithmic))
+			Pi::config->SetFloat("TerrainStonesFullPixels", fullPixels);
+		if (ImGui::IsItemDeactivatedAfterEdit())
+			Pi::config->Save();
+		ImGui::SameLine();
+		ImGui::TextDisabled("(?)");
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Where the tallest stone would stand shorter than this on screen, the ground is cut more coarsely,\nin step with the stones. Higher: thins out sooner, faster, distant stones blockier. Lower: the reverse.");
+		float fadePixels = float(GeoSphere::StonesFadePixels());
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		if (ImGui::SliderFloat("fade out below##openglPlanStonesFade", &fadePixels, 0.5f, 16.0f, "%.1f px", ImGuiSliderFlags_Logarithmic))
+			Pi::config->SetFloat("TerrainStonesFadePixels", fadePixels);
+		if (ImGui::IsItemDeactivatedAfterEdit())
+			Pi::config->Save();
+		ImGui::SameLine();
+		ImGui::TextDisabled("(?)");
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("Where the tallest stone would stand shorter than this on screen, the stones fade out, gone at half of it;\nthat ground isn't tessellated at all. Higher: faster, the stones end nearer. Lower: the reverse.");
+		bool shadows = GeoSphere::StoneShadowsEnabled();
+		if (ImGui::Checkbox("The stones shade the ground from the sun (P4e)##openglPlan", &shadows)) {
+			Pi::config->SetInt("TerrainStoneShadows", shadows ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("stone shadows: ") + (shadows ? "on" : "off"));
+		}
+		if (!GeoSphere::TextureFixedEnabled())
+			ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.3f, 1.0f), "Needs \"One texture size near the camera\" (P4b) on: the stones are that size's texture.");
+		ImGui::TextColored(dim, "Raised within P4b's \"out to\", gone by twice that. With the stones on, only that ground is tessellated,");
+		ImGui::TextColored(dim, "whatever the P4a box says (its pixel slider still sets how fine). A whole-number size reads each texture");
+		ImGui::TextColored(dim, "once, a size in between twice.");
+	}
+
+	// P4d: feet and wheels on the stones
+	ImGui::Spacing();
+	ImGui::SeparatorText("P4d: feet and wheels on the stones");
+	{
+		bool contact = GeoSphere::StonesContactEnabled();
+		if (ImGui::Checkbox("Feet and wheels stand on the stones##openglPlan", &contact)) {
+			Pi::config->SetInt("TerrainStonesContact", contact ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("feet and wheels on the stones: ") + (contact ? "on" : "off"));
+		}
+		static bool s_probe = false;
+		if (ImGui::Checkbox("Check: the height under the camera, worked out on both sides##openglPlan", &s_probe))
+			GeoSphere::SetStoneProbe(s_probe);
+		if (s_probe) {
+			const GeoSphere::StoneProbe &probe = GeoSphere::GetStoneProbe();
+			if (!GeoSphere::StonesActive())
+				ImGui::TextColored(dim, "The stones are off.");
+			else if (!probe.valid)
+				ImGui::TextColored(dim, "Waiting for the graphics card's answer (or no drawn ground under the camera).");
+			else {
+				const double diff = std::abs(probe.cpu - probe.gpu) * 1000.0;
+				ImGui::Text("Main processor %.2f cm, graphics card %.2f cm: they differ by %.3f mm", probe.cpu * 100.0, probe.gpu * 100.0, diff);
+				ImGui::SameLine();
+				ImGui::TextColored(diff < 1.0 ? ImVec4(0.4f, 0.9f, 0.4f, 1.0f) : ImVec4(1.0f, 0.4f, 0.3f, 1.0f), diff < 1.0 ? "(agree)" : "(DISAGREE)");
+				ImGui::Text("%.1f m from the camera; texture layers %d and %d", probe.distance, probe.layer1, probe.layer2);
+				if (!probe.meshData)
+					ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.3f, 1.0f), "The mesh there had no material weights: the main processor raises nothing (a bug).");
+			}
+			if (ImGui::Button("Note it in the log##openglPlanProbe") && probe.valid)
+				FrontierLog::Note("stones under the camera: main processor " + std::to_string(probe.cpu * 100.0) + " cm, graphics card " +
+					std::to_string(probe.gpu * 100.0) + " cm, " + std::to_string(probe.distance) + " m away, layers " +
+					std::to_string(probe.layer1) + " and " + std::to_string(probe.layer2));
+		}
+		ImGui::TextColored(dim, "The walker's feet and the rover's wheels stand on the stones as drawn, so they fade with the camera's");
+		ImGui::TextColored(dim, "distance as the stones do. Landed ships stay on the flat ground. The first switch-on loads the heights.");
+	}
+
 	// P6: compute fills an image every frame while ticked, and the tessellation stages compile and link
 	ImGui::Spacing();
 	ImGui::SeparatorText("P6: compute and tessellation, tested");
@@ -892,7 +1029,9 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 			Graphics::RenderStateDesc patches;
 			patches.primitiveType = Graphics::PATCHES;
 			patches.patchVertices = 3;
-			s_tessMaterial.Reset(Pi::renderer->CreateMaterial("tess_test", Graphics::MaterialDescriptor(), patches,
+			Graphics::MaterialDescriptor tessDesc;
+			tessDesc.tessellated = true;
+			s_tessMaterial.Reset(Pi::renderer->CreateMaterial("tess_test", tessDesc, patches,
 				Graphics::VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION)));
 			s_tessLinked = Pi::renderer->MaterialCompiled(s_tessMaterial.Get());
 			FrontierLog::Note(std::string("P6 tests: the compute program ") + (s_computeLinked ? "compiled and linked" : "FAILED") +

@@ -21,6 +21,7 @@
 #include "Star.h"
 #include "TerrainSurfaceTiles.h"
 #include "TerrainTiles.h"
+#include "terrain/TerrainStones.h"
 #include "RefCounted.h"
 #include "surface/Excursion.h"
 #include "galaxy/AtmosphereParameters.h"
@@ -436,11 +437,199 @@ void GeoSphere::BuildFirstPatches()
 
 bool GeoSphere::GetDrawnRadius(const vector3d &p, double &radius) const
 {
+	// P4d: with the stones on, standing on them as they're drawn
+	const bool stones = StonesActive() && StonesContactEnabled() && m_hasTempCampos && m_terrain;
+	GeoPatch::DrawnSurface surface;
 	for (int i = 0; i < NUM_PATCHES; i++) {
-		if (m_patches[i] && m_patches[i]->GetDrawnRadius(p, radius))
+		if (m_patches[i] && m_patches[i]->GetDrawnRadius(p, radius, stones ? &surface : nullptr)) {
+			if (stones)
+				radius += StoneLiftAt(p * radius, surface.normal, surface.slots, surface.seaHeight) / GetSystemBody()->GetRadius();
 			return true;
+		}
 	}
 	return false;
+}
+
+namespace {
+	// the tallest of the body's materials' stones, as a share of the tile (MaterialStones.w)
+	float DeepestStone(const Terrain *terrain)
+	{
+		const TerrainMaterialTable &table = terrain->GetMaterialTable();
+		float deepest = 0.0f;
+		for (int s = 0; s < table.SlotCount(); s++)
+			deepest = std::max(deepest, TerrainStones::Depth(int(table.SlotLayer(s))));
+		return deepest;
+	}
+
+	// the stones' constants, as the terrain material gets them
+	TerrainStones::Params StoneParams(const Terrain *terrain, double pixelAngle)
+	{
+		TerrainStones::Params p;
+		const TerrainMaterialTable &table = terrain->GetMaterialTable();
+		for (int s = 0; s < 16; s++)
+			p.slotLayer[s] = s < table.SlotCount() ? float(table.SlotLayer(s)) : -1.0f;
+		p.usedSlots = table.SlotCount();
+		p.rockSlot = table.RockSlot();
+		p.beachSlot = table.BeachSlot();
+		p.snowSlot = table.SlotOf(TerrainMaterialTable::SNOW);
+		p.lavaSlot = table.LavaSlot();
+		p.iceCracks = float(terrain->GetIceCrackStrength());
+		p.fixedDetail = terrain->HasFixedDetail();
+		p.nearLevel = float(GeoSphere::TextureFixedLevel());
+		p.nearRange = float(GeoSphere::TextureFixedRange());
+		p.nearOn = GeoSphere::TextureFixedEnabled();
+		p.stonesOn = GeoSphere::StonesActive();
+		p.stonesHeight = float(GeoSphere::StonesHeight());
+		p.deepest = DeepestStone(terrain);
+		p.pixelsPerRadian = float(1.0 / std::max(pixelAngle, 1e-9));
+		p.aimPixels = float(GeoSphere::TessellationPixels());
+		p.fullPixels = float(GeoSphere::StonesFullPixels());
+		p.fadePixels = float(GeoSphere::StonesFadePixels());
+		return p;
+	}
+
+	// the shaders' terrainAltitude()
+	float StoneAltitude(float s)
+	{
+		return (s > 0.0f ? 1.0f : (s < 0.0f ? -1.0f : 0.0f)) * s * s * 8000.0f;
+	}
+
+	GeoSphere::StoneProbe s_stoneProbe;
+	bool s_stoneProbeOn = false;
+} // namespace
+
+double GeoSphere::StoneLiftAt(const vector3d &point, const vector3d &normal, const float slots[16], float seaHeight) const
+{
+	const double radius = GetSystemBody()->GetRadius();
+	TerrainStones::Point pt;
+	pt.position = point * radius;
+	pt.camera = m_tempCampos * radius;
+	pt.normal = normal;
+	std::copy(slots, slots + 16, pt.slots);
+	pt.hasWater = (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) != 0;
+	pt.altitude = pt.hasWater ? StoneAltitude(seaHeight) : 1.0e4f;
+	return TerrainStones::Lift(StoneParams(m_terrain.Get(), m_pixelAngle), pt);
+}
+
+double GeoSphere::StonesFadePixels()
+{
+	return std::clamp(double(Pi::config->Float("TerrainStonesFadePixels", 2.0f)), 0.5, 16.0);
+}
+
+double GeoSphere::StonePixelsAt(double metres) const
+{
+	const double range = TextureFixedRange();
+	const double t = std::clamp((metres - range) / range, 0.0, 1.0);
+	const double fade = 1.0 - t * t * (3.0 - 2.0 * t);
+	const double tallest = DeepestStone(m_terrain.Get()) * StonesHeight() * std::exp2(TextureFixedLevel()) * fade;
+	return tallest / (std::max(metres, 1e-3) * std::max(m_pixelAngle, 1e-9));
+}
+
+double GeoSphere::StonesFullPixels()
+{
+	return std::clamp(double(Pi::config->Float("TerrainStonesFullPixels", 8.0f)), 1.0, 32.0);
+}
+
+bool GeoSphere::StonesContactEnabled()
+{
+	return Pi::config->Int("TerrainStonesContact", 1) != 0;
+}
+
+void GeoSphere::SetStoneProbe(bool on)
+{
+	s_stoneProbeOn = on;
+	if (!on)
+		s_stoneProbe = StoneProbe();
+}
+
+const GeoSphere::StoneProbe &GeoSphere::GetStoneProbe()
+{
+	return s_stoneProbe;
+}
+
+void GeoSphere::RunStoneProbe(Graphics::Renderer *renderer, const matrix4x4d &trans, const vector3d &campos, PlanetClouds::CloudDataBlock &cloudData)
+{
+	// (only a body with fine ground under the camera finds any: the one you're on)
+	if (!s_stoneProbeOn || !StonesActive())
+		return;
+
+	// last frame's answer from the graphics card (its commands have run by now)
+	if (m_probePending && m_probeImage) {
+		float gpu = 0.0f;
+		if (renderer->ReadTexture(m_probeImage.Get(), &gpu, sizeof(gpu))) {
+			s_stoneProbe.gpu = gpu;
+			s_stoneProbe.valid = true;
+		}
+		m_probePending = false;
+	}
+
+	// the drawn ground under the camera
+	const vector3d dir = campos.Normalized();
+	GeoPatch::DrawnSurface surface;
+	double ground = 0.0;
+	bool found = false;
+	for (int i = 0; i < NUM_PATCHES && !found; i++)
+		found = m_patches[i] && m_patches[i]->GetDrawnRadius(dir, ground, &surface);
+	if (!found)
+		return;
+	const vector3d point = dir * ground;
+	const double radius = GetSystemBody()->GetRadius();
+	const double cpu = StoneLiftAt(point, surface.normal, surface.slots, surface.seaHeight);
+
+	if (!m_probeMaterial) {
+		const Graphics::TextureDescriptor desc(Graphics::TEXTURE_R32F, vector3f(1.0f, 1.0f, 0.0f), Graphics::NEAREST_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
+		m_probeImage.Reset(renderer->CreateTexture(desc));
+		m_probeMaterial.Reset(renderer->CreateMaterial("stone_probe", Graphics::MaterialDescriptor(), Graphics::RenderStateDesc(), Graphics::VertexFormatDesc()));
+		m_probeMaterial->SetTexture("probeOut"_hash, m_probeImage.Get());
+	}
+	Graphics::Material *m = m_probeMaterial.Get();
+	const TerrainMaterialTable &table = m_terrain->GetMaterialTable();
+	auto layer = [&](int slot) { return slot < table.SlotCount() ? float(table.SlotLayer(slot)) : -1.0f; };
+	m->SetPushConstant("MaterialSlots0"_hash, vector3f(layer(0), layer(1), layer(2)), layer(3));
+	m->SetPushConstant("MaterialSlots1"_hash, vector3f(layer(4), layer(5), layer(6)), layer(7));
+	m->SetPushConstant("MaterialSlots2"_hash, vector3f(layer(8), layer(9), layer(10)), layer(11));
+	m->SetPushConstant("MaterialSlots3"_hash, vector3f(layer(12), layer(13), layer(14)), layer(15));
+	m->SetPushConstant("MaterialSpecial"_hash, vector3f(float(table.RockSlot()), float(table.BeachSlot()), float(table.SlotOf(TerrainMaterialTable::SNOW))), float(table.LavaSlot()));
+	m->SetPushConstant("MaterialLook"_hash, vector3f(m_terrain->GetIceCrackStrength(), m_terrain->HasFixedDetail() ? 1.0f : 0.0f, 0.0f), float(table.SlotCount()));
+	m->SetPushConstant("MaterialNear"_hash, vector3f(float(TextureFixedLevel()), float(TextureFixedRange()), TextureFixedEnabled() ? 1.0f : 0.0f), float(StonesFadePixels()));
+	m->SetPushConstant("MaterialStones"_hash, vector3f(1.0f, float(StonesHeight()), 0.0f), DeepestStone(m_terrain.Get()));
+	m->SetPushConstant("TessParams"_hash, vector3f(float(1.0 / std::max(m_pixelAngle, 1e-9)), float(TessellationPixels()), 64.0f), float(StonesFullPixels()));
+	const vector3d camMetres = campos * radius;
+	m->SetPushConstant("MaterialOrigin"_hash, FractionalPart(camMetres / (5.0 * 256.0)), 0.0f);
+	m->SetPushConstant("MaterialOriginCoarse"_hash, FractionalPart(camMetres / (5.0 * 131072.0)), 0.0f);
+	// the point, its up and the mesh's normal in view space, as the evaluation shaders have them
+	m->SetPushConstant("ProbeEye"_hash, vector3f(trans * point), 0.0f);
+	m->SetPushConstant("ProbeUp"_hash, vector3f(trans.ApplyRotationOnly(dir).Normalized()), 0.0f);
+	m->SetPushConstant("ProbeNormal"_hash, vector3f(trans.ApplyRotationOnly(surface.normal).Normalized()), 0.0f);
+	m->SetPushConstant("ProbeSlots0"_hash, vector3f(surface.slots[0], surface.slots[1], surface.slots[2]), surface.slots[3]);
+	m->SetPushConstant("ProbeSlots1"_hash, vector3f(surface.slots[4], surface.slots[5], surface.slots[6]), surface.slots[7]);
+	m->SetPushConstant("ProbeSlots2"_hash, vector3f(surface.slots[8], surface.slots[9], surface.slots[10]), surface.slots[11]);
+	m->SetPushConstant("ProbeSlots3"_hash, vector3f(surface.slots[12], surface.slots[13], surface.slots[14]), surface.slots[15]);
+	const bool water = (m_terrain->GetSurfaceEffects() & Terrain::EFFECT_WATER) != 0;
+	m->SetPushConstant("ProbeGround"_hash, vector3f(water ? StoneAltitude(surface.seaHeight) : 1.0e4f, water ? 1.0f : 0.0f, 0.0f), 0.0f);
+	m->SetTexture("terrainStoneHeights"_hash, TerrainStones::GetTexture(renderer));
+	PlanetClouds::SetMaterialCloudData(m, cloudData, m_cloudHeightMap.get());
+	renderer->DispatchCompute(m, 1, 1, 1);
+	renderer->AddComputeBarrier(Graphics::Renderer::BARRIER_ALL);
+	m_probePending = true;
+
+	// (the main processor's answer and what it's of, kept for when the card's comes in)
+	s_stoneProbe.cpu = cpu;
+	s_stoneProbe.distance = (point - campos).Length() * radius;
+	s_stoneProbe.meshData = surface.found;
+	float w[16];
+	std::copy(surface.slots, surface.slots + 16, w);
+	int m1 = 0, m2 = 1;
+	for (int i = 1; i < table.SlotCount(); ++i) {
+		if (w[i] > w[m1]) {
+			m2 = m1;
+			m1 = i;
+		} else if (i != m1 && w[i] > w[m2]) {
+			m2 = i;
+		}
+	}
+	s_stoneProbe.layer1 = table.SlotCount() > 0 ? int(table.SlotLayer(m1)) : -1;
+	s_stoneProbe.layer2 = table.SlotCount() > 1 ? int(table.SlotLayer(m2)) : -1;
 }
 
 double GeoSphere::GetDeepestVertexSpacing() const
@@ -463,9 +652,50 @@ void GeoSphere::SetUpTileStyle()
 	m_terrain->GetLandformStyle(m_tileStyle);
 }
 
+bool GeoSphere::TessellationEnabled()
+{
+	return Pi::config->Int("TerrainTessellation", 0) != 0;
+}
+
+double GeoSphere::TessellationPixels()
+{
+	return std::clamp(double(Pi::config->Float("TerrainTessellationPixels", 20.0f)), 2.0, 64.0);
+}
+
+bool GeoSphere::TextureFixedEnabled()
+{
+	return Pi::config->Int("TerrainTextureFixed", 0) != 0;
+}
+
+double GeoSphere::TextureFixedLevel()
+{
+	return std::clamp(double(Pi::config->Float("TerrainTextureFixedLevel", 2.0f)), 0.0, 8.0);
+}
+
+double GeoSphere::TextureFixedRange()
+{
+	return std::clamp(double(Pi::config->Float("TerrainTextureFixedRange", 30.0f)), 2.0, 500.0);
+}
+
+bool GeoSphere::StonesEnabled()
+{
+	return Pi::config->Int("TerrainStones", 0) != 0;
+}
+
+double GeoSphere::StonesHeight()
+{
+	return std::clamp(double(Pi::config->Float("TerrainStonesHeight", 1.0f)), 0.0, 4.0);
+}
+
+bool GeoSphere::StoneShadowsEnabled()
+{
+	return Pi::config->Int("TerrainStoneShadows", 1) != 0;
+}
+
 void GeoSphere::NoteDrawnPatches()
 {
 	DrawnPatches d;
+	d.tessellated = m_tessellatedThisFrame;
 	const double radius = GetSystemBody()->GetRadius();
 	double nearest = 1e300;
 	for (const std::pair<double, GeoPatch *> &p : m_visiblePatches) {
@@ -665,6 +895,8 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	matrix4x4d proj = matrix4x4d(renderer->GetProjection());
 	// radians per pixel, from the projection and the viewport height
 	const double pixelAngle = 2.0 / (std::max(proj[5], 1e-6) * std::max(renderer->GetViewport().h, 1));
+	m_pixelAngle = pixelAngle;
+	m_tessellatedThisFrame = 0;
 	Graphics::Frustum frustum(modv, proj);
 	m_tempFrustum = frustum;
 
@@ -677,6 +909,18 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 
 	//Update material parameters
 	SetMaterialParameters(trans, radius, shadows, m_atmosphereParameters);
+	// P4a: how finely the tessellation control shader cuts each edge (x: pixels per radian, y: the edge on screen to
+	// aim for in pixels, z: the most cuts per edge)
+	m_surfaceMaterial->SetPushConstant("TessParams"_hash, vector3f(float(1.0 / std::max(pixelAngle, 1e-9)), float(TessellationPixels()), 64.0f), float(StonesFullPixels()));
+	// P4b: the ground textures at one size near the camera (terrain-materials.glsl, materialMapping)
+	m_surfaceMaterial->SetPushConstant("MaterialNear"_hash, vector3f(float(TextureFixedLevel()), float(TextureFixedRange()), TextureFixedEnabled() ? 1.0f : 0.0f), float(StonesFadePixels()));
+	// P4d: the stones read their own copy of the textures' heights (TerrainStones), loaded the first time they're on
+	if (StonesActive())
+		m_surfaceMaterial->SetTexture("terrainStoneHeights"_hash, TerrainStones::GetTexture(renderer));
+	// P4c: the stones raised near the camera (terrain-materials.glsl, terrainStones)
+	m_surfaceMaterial->SetPushConstant("MaterialStones"_hash, vector3f(StonesActive() ? 1.0f : 0.0f, float(StonesHeight()), StoneShadowsEnabled() ? 1.0f : 0.0f), DeepestStone(m_terrain.Get()));
+	// and the viewport, for the edges' length on screen (terrain-tess-edges.glsl)
+	m_surfaceMaterial->SetPushConstant("TessScreen"_hash, vector3f(0.5f * float(renderer->GetViewport().w), 0.5f * float(renderer->GetViewport().h), 0.0f), 0.0f);
 	Graphics::CityGlowDataBlock cityGlow{};
 	if (GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
 		SetCityGlowData(campos, cityGlow);
@@ -735,6 +979,8 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		PlanetClouds::CloudDataBlock cloudData;
 		PlanetClouds::FillCloudData(cloudData, GetSystemBody(), trans, GetMaxFeatureHeight(), m_cloudHeightMap.get());
 		PlanetClouds::SetMaterialCloudData(m_surfaceMaterial.Get(), cloudData, m_cloudHeightMap.get());
+		// P4d's check, which needs the planet's axes from the cloud data
+		RunStoneProbe(renderer, trans, campos, cloudData);
 		PlanetClouds::QueueCloudPass(GetSystemBody(), cloudData, vector3f(trans * vector3d(0.0)) / radius,
 			m_atmosphereParameters.atmosCol.ToColor4f(), m_cloudHeightMap.get(), cityGlow);
 	}

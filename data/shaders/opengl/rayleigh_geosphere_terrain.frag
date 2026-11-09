@@ -27,6 +27,13 @@ in vec4 materialWeights0;
 in vec4 materialWeights1;
 in vec4 materialWeights2;
 in vec4 materialWeights3;
+#ifdef TESSELLATED
+// how far the evaluation shader raised the ground here, the raised shape's slope, and how much main light gets past
+// the stones around (terrainStones(), P4c, P4e)
+in float stoneLift;
+in vec3 stoneSlope;
+in float stoneLit;
+#endif
 
 out vec4 frag_color;
 
@@ -69,8 +76,15 @@ void main(void)
 
 	// land materials (photo texture detail, slope rock, beaches) near the
 	// camera, procedural surface patterns further out
-	vec3 materialDx = dFdx(varyingEyepos), materialDy = dFdy(varyingEyepos);
 	vec3 surfaceUp = normalize(varyingEyepos * geosphereInvRadius - geosphereCenter);
+	// (on the flat ground under the raised stones, as the evaluation shader read them: so the textures stay on the
+	// stones, and the stones' light comes from their slopes)
+#ifdef TESSELLATED
+	vec3 groundPos = varyingEyepos - surfaceUp * stoneLift;
+#else
+	vec3 groundPos = varyingEyepos;
+#endif
+	vec3 materialDx = dFdx(groundPos), materialDy = dFdy(groundPos);
 
 	// colour, altitude and normal baked from the terrain (terrain-far.glsl):
 	// the patch's surface tile where it has one. They are the surface the
@@ -98,7 +112,7 @@ void main(void)
 #else
 	float altitude = 1.0e4;
 #endif
-	MaterialMapping mapping = materialMapping(varyingEyepos, materialDx, materialDy, surfaceUp);
+	MaterialMapping mapping = materialMapping(groundPos, materialDx, materialDy, surfaceUp);
 	vec4 tile = terrainTileSample(texCoord0);
 	vec2 bump;
 	float surfaceRoughness;
@@ -143,8 +157,11 @@ void main(void)
 #if (NUM_LIGHTS > 0)
 	// lit per pixel, with the relief between the mesh and the pixel
 	vec3 N = terrainReliefNormal(baseNormal, surfaceUp, mapping, materialSlots, dist, tile, baseScale);
-	// and the bumps of the material textures, but for the smooth paving
+	// and the bumps of the material textures, and the raised stones' slope (P4c), but for the smooth paving
 	N = terrainBumpNormal(N, materialDx, materialDy, bump);
+#ifdef TESSELLATED
+	N = normalize(N - (stoneSlope - surfaceUp * dot(stoneSlope, surfaceUp)));
+#endif
 	N = normalize(mix(N, baseNormal, pavingSmoothing));
 	N = terrainFarRelief(N, surfaceUp, dist);
 	// the tracks of the rover's wheels and the walker's boots in soft ground
@@ -152,6 +169,10 @@ void main(void)
 	albedo *= surfaceTracksAt(varyingEyepos, surfaceUp, baseNormal, paved, N);
 	// shadows of ships, stations and buildings from the main star
 	float sunLit = sceneShadow(varyingEyepos, normalize(varyingNormal));
+#ifdef TESSELLATED
+	// and of the raised stones (P4e)
+	sunLit *= stoneLit;
+#endif
 	vec3 light = vec3(0.0);
 	vec3 materialGlint = vec3(0.0);
 	float backscatter = 1.0;

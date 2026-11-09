@@ -3,6 +3,7 @@
 
 #include "MaterialGL.h"
 #include "Program.h"
+#include "RenderStateCache.h"
 #include "RendererGL.h"
 #include "Shader.h"
 
@@ -87,8 +88,55 @@ namespace Graphics {
 			m_surfaceTrackBinding = s->GetBufferBindingInfo(s_surfaceTrackDataName).binding;
 		}
 
+		bool Material::SetTessellated(const bool on)
+		{
+			if (on == m_tessellated)
+				return true;
+			if (!on) {
+				m_tessellated = false;
+				m_renderStateHash = m_plainRenderStateHash;
+				return true;
+			}
+			if (m_tessFailed || !m_shader || !m_shader->HasTessellation())
+				return false;
+
+			// the program with the tessellation stages, compiled now if it isn't yet
+			MaterialDescriptor desc = GetDescriptor();
+			desc.tessellated = true;
+			if (desc.lighting)
+				desc.dirLights = m_renderer->GetNumLights();
+			Program *p = m_shader->GetProgramForDesc(desc);
+			if (!p || !p->Loaded()) {
+				m_tessFailed = true;
+				return false;
+			}
+
+			// the same render state, drawing patches of 3 vertices
+			OGL::RenderStateCache *cache = m_renderer->GetStateCache();
+			if (!m_tessRenderStateHash) {
+				RenderStateDesc state = cache->GetRenderState(m_renderStateHash);
+				state.primitiveType = PATCHES;
+				state.patchVertices = 3;
+				m_tessRenderStateHash = cache->InternRenderState(state);
+			}
+			m_plainRenderStateHash = m_renderStateHash;
+			m_renderStateHash = m_tessRenderStateHash;
+			m_tessellated = true;
+			return true;
+		}
+
 		Program *Material::EvaluateVariant()
 		{
+			if (m_tessellated) {
+				MaterialDescriptor desc = GetDescriptor();
+				desc.tessellated = true;
+				if (desc.lighting)
+					desc.dirLights = m_renderer->GetNumLights();
+				Program *p = m_shader->GetProgramForDesc(desc);
+				if (p && p->Loaded())
+					return p;
+			}
+
 			MaterialDescriptor desc = GetDescriptor();
 			bool variantChanged = false;
 			uint32_t numLights = m_renderer->GetNumLights();

@@ -279,6 +279,9 @@ namespace Graphics {
 		virtual void AddComputeBarrier(uint32_t barriers) {}
 		// whether the material's shader compiled and linked, for the debug window's tests
 		virtual bool MaterialCompiled(Material *m) { return true; }
+		// reads a single-channel float texture's first level back (bytes: what out holds), waiting for what compute
+		// wrote to it; for the debug window's checks only (it stalls). False if it can't.
+		virtual bool ReadTexture(Texture *texture, float *out, size_t bytes) { return false; }
 
 		virtual void BeginGpuTimer(const char *name) {}
 		virtual void EndGpuTimer() {}
