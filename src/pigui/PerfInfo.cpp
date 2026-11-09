@@ -6,10 +6,13 @@
 #include "Frame.h"
 #include "Game.h"
 #include "GameConfig.h"
+#include "GeoPatch.h"
+#include "GeoPatchContext.h"
 #include "GeoPatchJobs.h"
 #include "GeoSphere.h"
 #include "Input.h"
 #include "LuaPiGui.h"
+#include "Planet.h"
 #include "Pi.h"
 #include "Player.h"
 #include "SectorView.h"
@@ -23,7 +26,9 @@
 #include "terrain/Terrain.h"
 #include "terrain/TerrainNoise.h"
 #include "core/Log.h"
+#include "graphics/Material.h"
 #include "graphics/Renderer.h"
+#include "graphics/VertexBuffer.h"
 #include "graphics/Stats.h"
 #include "graphics/Texture.h"
 #include "lua/Lua.h"
@@ -712,11 +717,212 @@ void PiGui::PerfInfo::DrawFrontierTab()
 			DrawGeology();
 			EndDebugTab();
 		}
+		if (BeginDebugTab(s_rendererIcon, "OpenGL 4.6 Plan")) {
+			DrawOpenGLPlan();
+			EndDebugTab();
+		}
 
 		PiGui::RunHandler(Pi::GetFrameTime(), "frontier-debug-tabs");
 
 		ImGui::EndTabBar();
 	}
+}
+
+// The OpenGL 4.6 plan (docs/implementation_plans/opengl46-tessellation-compute_plan.md): what the driver has for it,
+// the measurements of P0 live, and the mesh where the ship is. Later phases put their switches and readouts here.
+void PiGui::PerfInfo::DrawOpenGLPlan()
+{
+	const ImVec4 yes(0.4f, 0.9f, 0.4f, 1.0f), no(1.0f, 0.45f, 0.35f, 1.0f), dim(0.7f, 0.7f, 0.7f, 1.0f);
+
+	ImGui::SeparatorText("Context");
+	const Graphics::Renderer::ContextInfo &info = Pi::renderer->GetContextInfo();
+	ImGui::Text("The game asks for: %s", info.requested.c_str());
+	ImGui::Text("The driver gave: OpenGL %d.%d, GLSL %s", info.major, info.minor, info.shading.c_str());
+	ImGui::TextColored(dim, "%s | %s | %s", info.version.c_str(), info.vendor.c_str(), info.device.c_str());
+	if (!info.features.empty() && ImGui::BeginTable("glFeatures", 3, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg)) {
+		ImGui::TableSetupColumn("Driver");
+		ImGui::TableSetupColumn("Feature");
+		ImGui::TableSetupColumn("Phase");
+		ImGui::TableHeadersRow();
+		for (const Graphics::Renderer::ContextInfo::Feature &f : info.features) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::TextColored(f.present ? yes : no, f.present ? "yes" : "no");
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(f.name.c_str());
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted(f.phase.c_str());
+		}
+		ImGui::EndTable();
+	}
+
+	// P0.1: counted while this shows, with or without the log
+	ImGui::Spacing();
+	ImGui::SeparatorText("P0: what goes to the graphics driver (per frame, over the last second)");
+	FrontierLog::WantUploadCounts();
+	const FrontierLog::UploadSecond &up = FrontierLog::GetUploadSecond();
+	if (up.frames == 0) {
+		ImGui::TextColored(dim, "counting...");
+	} else {
+		const double frames = double(up.frames);
+		double totalMs = 0.0;
+		if (ImGui::BeginTable("glUploads", 4, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_RowBg)) {
+			ImGui::TableSetupColumn("Kind");
+			ImGui::TableSetupColumn("Calls");
+			ImGui::TableSetupColumn("MB");
+			ImGui::TableSetupColumn("ms");
+			ImGui::TableHeadersRow();
+			for (int i = 0; i < Graphics::UPLOAD_KINDS; i++) {
+				const Graphics::UploadCount &k = up.kinds[i];
+				totalMs += double(k.nanos) / 1e6 / frames;
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::TextUnformatted(Graphics::UploadKindName(Graphics::UploadKind(i)));
+				ImGui::TableNextColumn();
+				ImGui::Text("%.1f", double(k.calls) / frames);
+				ImGui::TableNextColumn();
+				ImGui::Text("%.2f", double(k.bytes) / 1048576.0 / frames);
+				ImGui::TableNextColumn();
+				ImGui::Text("%.3f", double(k.nanos) / 1e6 / frames);
+			}
+			ImGui::EndTable();
+		}
+		ImGui::Text("In all %.2f ms a frame, the longest frame %.2f ms, over %d frames", totalMs, up.longestMs, up.frames);
+		ImGui::Text("Patch meshes: %.1f a frame in %.2f ms (packing the vertices and their own buffer calls)", double(up.patchMeshes) / frames, up.patchMeshMs / frames);
+		ImGui::TextColored(dim, "CPU time in the calls. A driver that defers its work moves it to swap instead.");
+	}
+
+	// P0.2 and P0.3, since the reset here
+	ImGui::Spacing();
+	ImGui::SeparatorText("P0: patch jobs and surface tile bakes (thread time)");
+	static GeoPatchGenStats s_patchBase;
+	static TerrainSurfaceTiles::BakeStats s_bakeBase;
+	const GeoPatchGenStats patches = GetGeoPatchGenStats();
+	const TerrainSurfaceTiles::BakeStats bakes = TerrainSurfaceTiles::GetBakeStats();
+	// (the Terrain and GPU tab's reset takes the patch totals below the base)
+	if (patches.patches < s_patchBase.patches)
+		s_patchBase = GeoPatchGenStats();
+	const uint64_t patchCount = patches.patches - s_patchBase.patches;
+	if (patchCount > 0) {
+		const double perPatch = 1e6 * double(patchCount);
+		const double total = double(patches.microseconds - s_patchBase.microseconds) / 1000.0 / double(patchCount);
+		const double heights = double(patches.heightsNanos - s_patchBase.heightsNanos) / perPatch;
+		const double slopes = double(patches.slopesNanos - s_patchBase.slopesNanos) / perPatch;
+		const double normals = double(patches.normalsNanos - s_patchBase.normalsNanos) / perPatch;
+		const double surface = double(patches.surfaceNanos - s_patchBase.surfaceNanos) / perPatch;
+		ImGui::Text("%llu patches at %.2f ms each: heights %.2f, colour slopes %.2f, normals %.2f, colours and materials %.2f, other %.2f",
+			(unsigned long long)patchCount, total, heights, slopes, normals, surface, std::max(total - heights - slopes - normals - surface, 0.0));
+	} else {
+		ImGui::TextColored(dim, "no patches made since the reset");
+	}
+	const uint64_t bakeCount = bakes.bakes - s_bakeBase.bakes;
+	if (bakeCount > 0) {
+		const double perBake = 1e6 * double(bakeCount);
+		ImGui::Text("%llu surface tile bakes at %.2f ms each: heights %.2f, colour slopes %.2f, texels %.2f", (unsigned long long)bakeCount,
+			double(bakes.nanos - s_bakeBase.nanos) / perBake, double(bakes.heightsNanos - s_bakeBase.heightsNanos) / perBake,
+			double(bakes.slopesNanos - s_bakeBase.slopesNanos) / perBake, double(bakes.texelsNanos - s_bakeBase.texelsNanos) / perBake);
+	} else {
+		ImGui::TextColored(dim, "no surface tiles baked since the reset");
+	}
+	if (ImGui::Button("Reset##openglPlan")) {
+		s_patchBase = patches;
+		s_bakeBase = bakes;
+	}
+
+	// what section 1 of the plan says about the mesh, against what is drawn
+	ImGui::Spacing();
+	ImGui::SeparatorText("The mesh where the ship is");
+	const Frame *frame = Pi::player && Pi::game ? Frame::GetFrame(Pi::player->GetFrame()) : nullptr;
+	const Body *body = frame ? frame->GetBody() : nullptr;
+	const GeoSphere *sphere = body && body->IsType(ObjectType::PLANET) ? dynamic_cast<const GeoSphere *>(static_cast<const Planet *>(body)->GetBaseSphere()) : nullptr;
+	if (!sphere) {
+		ImGui::TextColored(dim, "not at a body with ground");
+	} else {
+		// the rule of GeoSphere::CalculateMaxPatchDepth (P1)
+		ImGui::Text("%s: deepest level %d: twice level %d (where triangles would be about 100 m), at most %d",
+			body->GetLabel().c_str(), sphere->GetMaxDepth(), sphere->GetMeantDepth(), GEOPATCH_MAX_DEPTH);
+		ImGui::Text("Vertices there up to %.1f m apart (the middle of a cube face; about 0.8 times that near its corners); %d more levels near the player now",
+			sphere->GetDeepestVertexSpacing(), sphere->GetExtraDepth());
+		const GeoSphere::DrawnPatches &drawn = sphere->GetDrawnPatches();
+		ImGui::Text("Drawn: %d patches; the deepest at level %d (%.1f m between vertices), the nearest at level %d (%.1f m)",
+			drawn.count, drawn.deepest, drawn.finestSpacing, drawn.nearestDepth, drawn.nearestSpacing);
+	}
+
+	// P3: the landforms as real shape, being tried. The patches are made again after a change.
+	ImGui::Spacing();
+	ImGui::SeparatorText("P3: the landforms as real shape (being tried)");
+	{
+		static bool s_shape = Terrain::GetLandformShape() > 0.0;
+		static float s_top = Terrain::GetLandformShape() > 0.0 ? float(Terrain::GetLandformShape()) : 500.0f;
+		ImGui::Checkbox("Landforms in the ground's shape##openglPlan", &s_shape);
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		ImGui::SliderFloat("largest as shape##openglPlan", &s_top, 10.0f, 40000.0f, "%.0f m", ImGuiSliderFlags_Logarithmic);
+		const double wanted = s_shape ? double(s_top) : 0.0;
+		const bool changed = std::abs(wanted - Terrain::GetLandformShape()) > 0.5;
+		if (ImGui::Button(changed ? "Apply (makes the ground again)##openglPlan" : "Applied##openglPlan") && changed) {
+			Terrain::SetLandformShape(wanted);
+			Pi::config->SetFloat("TerrainLandformShape", float(wanted));
+			Pi::config->Save();
+			FrontierLog::Note(wanted > 0.0 ? "landforms as real shape, up to " + std::to_string(int(wanted)) + " m" : "landforms as real shape: off");
+			Pi::OnChangeDetailLevel();
+		}
+		ImGui::TextColored(dim, "On: the GPU detail tiles are off, so the landforms aren't drawn twice; the crest and hollow materials they");
+		ImGui::TextColored(dim, "steered are gone until P3 step 2. Ground that moves can bury or lift a landed ship: take off first.");
+		if (sphere) {
+			const TerrainLandforms::Params &lp = sphere->GetTerrain()->GetLandformParams();
+			ImGui::Text("Here: %d octaves, %.1f m to %.0f m; styles rolling %.2f, ridged %.2f, dunes %.2f, craters %.2f",
+				lp.count, lp.finestWave, lp.finestWave * std::pow(2.0, double(lp.count - 1)), lp.style[0], lp.style[1], lp.style[2], lp.style[3]);
+		}
+	}
+
+	// P6: compute fills an image every frame while ticked, and the tessellation stages compile and link
+	ImGui::Spacing();
+	ImGui::SeparatorText("P6: compute and tessellation, tested");
+	{
+		static bool s_computeTest = false;
+		static RefCountedPtr<Graphics::Texture> s_testImage;
+		static RefCountedPtr<Graphics::Material> s_computeMaterial, s_tessMaterial;
+		static bool s_tessLinked = false, s_computeLinked = false;
+		if (ImGui::Checkbox("Run the compute test every frame##openglPlan", &s_computeTest) && s_computeTest && !s_testImage) {
+			const Graphics::TextureDescriptor desc(Graphics::TEXTURE_RGBA16F, vector3f(256.0f, 256.0f, 0.0f), Graphics::LINEAR_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
+			s_testImage.Reset(Pi::renderer->CreateTexture(desc));
+			s_computeMaterial.Reset(Pi::renderer->CreateMaterial("compute_test", Graphics::MaterialDescriptor(), Graphics::RenderStateDesc(), Graphics::VertexFormatDesc()));
+			s_computeMaterial->SetTexture("outImage"_hash, s_testImage.Get());
+			s_computeLinked = Pi::renderer->MaterialCompiled(s_computeMaterial.Get());
+			Graphics::RenderStateDesc patches;
+			patches.primitiveType = Graphics::PATCHES;
+			patches.patchVertices = 3;
+			s_tessMaterial.Reset(Pi::renderer->CreateMaterial("tess_test", Graphics::MaterialDescriptor(), patches,
+				Graphics::VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION)));
+			s_tessLinked = Pi::renderer->MaterialCompiled(s_tessMaterial.Get());
+			FrontierLog::Note(std::string("P6 tests: the compute program ") + (s_computeLinked ? "compiled and linked" : "FAILED") +
+				", the tessellation program (four stages) " + (s_tessLinked ? "compiled and linked" : "FAILED"));
+		}
+		if (s_computeTest && s_computeMaterial) {
+			s_computeMaterial->SetPushConstant("Time"_hash, float(ImGui::GetTime()));
+			Pi::renderer->BeginGpuTimer("compute test");
+			Pi::renderer->DispatchCompute(s_computeMaterial.Get(), 256 / 8, 256 / 8, 1);
+			Pi::renderer->EndGpuTimer();
+			Pi::renderer->AddComputeBarrier(Graphics::Renderer::BARRIER_TEXTURE_FETCH | Graphics::Renderer::BARRIER_IMAGE_ACCESS);
+		}
+		if (s_testImage) {
+			ImGui::Text("Compute program: %s; tessellation program: %s", s_computeLinked ? "linked" : "FAILED", s_tessLinked ? "linked" : "FAILED");
+			ImGui::Image(ImTextureID(s_testImage.Get()), { 128, 128 });
+			ImGui::TextColored(dim, "Moving rings: compute ran. Its GPU time is \"compute test\" in the log's gpu ms.");
+		}
+	}
+
+	// P0.4 and the height profile
+	ImGui::Spacing();
+	ImGui::SeparatorText("To the log");
+	if (!FrontierLog::Enabled())
+		ImGui::TextColored(no, "The log is off, so these write nothing: tick 'Write frontier_log.txt' above.");
+	if (ImGui::Button("Landform Cost on the CPU##openglPlan"))
+		FrontierLog::LandformCost();
+	ImGui::SameLine();
+	if (ImGui::Button("Height Profile Around the Ship##openglPlan"))
+		FrontierLog::HeightProfile();
+	ImGui::TextColored(dim, "Landform Cost: the GPU tiles' landforms timed on the CPU (P0.4), and how fine the heights' detail goes (Q3).");
 }
 
 void PiGui::PerfInfo::DrawFrontierTerrain()
@@ -818,6 +1024,9 @@ void PiGui::PerfInfo::DrawFrontierTerrain()
 	// the sharpest steps in the ground around the ship, in the log; takes a moment
 	if (ImGui::Button("Height Profile Around the Ship (to the log)"))
 		FrontierLog::HeightProfile();
+	// what the GPU detail tiles' landforms would cost on the CPU, and how fine the heights go; takes a moment
+	if (ImGui::Button("Landform Cost on the CPU (to the log)"))
+		FrontierLog::LandformCost();
 
 	const GeoPatchGenStats stats = GetGeoPatchGenStats();
 	const double totalMs = double(stats.microseconds) / 1000.0;

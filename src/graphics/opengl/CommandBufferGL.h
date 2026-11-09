@@ -84,6 +84,18 @@ namespace Graphics {
 				GLuint query;
 			};
 
+			// runs a compute program (Renderer::DispatchCompute)
+			struct DispatchComputeCmd {
+				Program *program = nullptr;
+				char *drawData = nullptr;
+				uint32_t groups[3] = { 1, 1, 1 };
+			};
+
+			// makes what was written by compute visible to what comes after (Renderer::AddComputeBarrier)
+			struct BarrierCmd {
+				GLbitfield barriers;
+			};
+
 			// development asserts to ensure sizes are kept reasonable.
 			// if you need to go beyond these sizes, add a new command instead.
 			static_assert(sizeof(DrawMeshCmd) <= 64);
@@ -107,9 +119,11 @@ namespace Graphics {
 				bool resolveMSAA = false, bool blitDepthBuffer = false, bool linearFilter = true);
 
 			void AddGpuTimerCmd(GLuint query);
+			void AddDispatchComputeCmd(Graphics::Material *mat, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ);
+			void AddBarrierCmd(GLbitfield barriers);
 
 		protected:
-			using Cmd = std::variant<DrawMeshCmd, DrawBuffersCmd, RenderPassCmd, BlitRenderTargetCmd, GpuTimerCmd>;
+			using Cmd = std::variant<DrawMeshCmd, DrawBuffersCmd, RenderPassCmd, BlitRenderTargetCmd, GpuTimerCmd, DispatchComputeCmd, BarrierCmd>;
 			const std::vector<Cmd> &GetDrawCmds() const { return m_drawCmds; }
 
 			bool IsEmpty() const { return m_drawCmds.empty(); }
@@ -136,6 +150,8 @@ namespace Graphics {
 			void ExecuteRenderPassCmd(const RenderPassCmd &);
 			void ExecuteBlitRenderTargetCmd(const BlitRenderTargetCmd &);
 			void ExecuteGpuTimerCmd(const GpuTimerCmd &);
+			void ExecuteDispatchComputeCmd(const DispatchComputeCmd &);
+			void ExecuteBarrierCmd(const BarrierCmd &);
 
 			static BufferBinding<UniformBuffer> *getBufferBindings(const Shader *shader, char *data);
 			static TextureGL **getTextureBindings(const Shader *shader, char *data);

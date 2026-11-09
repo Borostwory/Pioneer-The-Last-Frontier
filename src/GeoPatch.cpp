@@ -5,6 +5,7 @@
 
 #include "Aabb.h"
 
+#include "FrontierLog.h"
 #include "GeoPatchContext.h"
 #include "GeoPatchJobs.h"
 #include "GeoSphere.h"
@@ -172,6 +173,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 	if (m_needUpdateVBOs) {
 		assert(renderer);
 		m_needUpdateVBOs = false;
+		FrontierLog::PatchMesh logMesh;
 
 		//create buffer and upload data
 		auto vbd = GeoPatchContext::GetVertexFormat();
@@ -501,7 +503,7 @@ bool GeoPatch::GetDrawnRadius(const vector3d &dir, double &radius) const
 		return false;
 	// Too coarse to stand on: the camera is far off, and where a ship rests mustn't depend on where it's seen from. The
 	// exact height stands in.
-	if (GetVertexSpacing() * m_geosphere->GetSystemBody()->GetRadius() > 2.0 * m_geosphere->GetDeepestVertexSpacing())
+	if (GetVertexSpacing() * m_geosphere->GetSystemBody()->GetRadius() > 2.0 * m_geosphere->GetLegacyDeepestSpacing())
 		return false;
 
 	// the mesh as UpdateVBOs builds it: the inner vertices at frac steps of

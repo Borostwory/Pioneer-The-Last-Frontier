@@ -89,6 +89,17 @@ public:
 	// visible patches still waiting for a bake to start, for the log
 	int GetWaitingCount() const;
 
+	// the bakes finished so far, their thread time in nanoseconds, and of that the heights, the slopes the colours see
+	// (ColourSlopeNormals) and the texels (colours and normals, BakeSurfaceTexels); for the log
+	struct BakeStats {
+		uint64_t bakes = 0;
+		uint64_t nanos = 0;
+		uint64_t heightsNanos = 0;
+		uint64_t slopesNanos = 0;
+		uint64_t texelsNanos = 0;
+	};
+	static BakeStats GetBakeStats();
+
 	~TerrainSurfaceTiles();
 
 	// filled by a job, see TerrainSurfaceTiles.cpp
@@ -122,6 +133,12 @@ private:
 	std::vector<Pending> m_pending;
 	int m_waiting = 0;
 	std::chrono::steady_clock::time_point m_waitingSeen;
+	// a fill: from when patches start wanting tiles until none wait and none are baking, as when arriving at a body
+	// or stopping in orbit; written to the log when it ends (FrontierLog)
+	bool m_filling = false;
+	std::chrono::steady_clock::time_point m_fillStart, m_lastUpload;
+	int m_fillUploads = 0;
+	BakeStats m_fillBakes; // GetBakeStats() at its start
 };
 
 #endif // _TERRAINSURFACETILES_H

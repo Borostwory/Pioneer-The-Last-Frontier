@@ -80,7 +80,7 @@ void main(void)
 	float tRep = min(viewZ * length(dirV) / a, 1e6);
 	CloudPlanet cp = cloudDerive();
 	for (int li = 0; li < 3; li++) {
-		if (cp.L[li].active < 0.5) continue;
+		if (cp.L[li].inUse < 0.5) continue;
 		vec2 h = cloudSphereHit(camPos, eyenorm, 1.0 + 0.5 * (cp.L[li].base + cp.L[li].top) / a);
 		if (h.y > 0.0)
 			tRep = min(tRep, h.x > 0.0 ? h.x : h.y);

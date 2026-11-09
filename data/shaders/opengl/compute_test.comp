@@ -1,0 +1,17 @@
+// Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+// Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+// P6 of the OpenGL 4.6 plan: fills the image with rings that move with Time, to show compute runs
+layout(local_size_x = 8, local_size_y = 8) in;
+layout(binding = 0, rgba16f) uniform writeonly image2D outImage;
+uniform float Time;
+
+void main(void)
+{
+	ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+	ivec2 size = imageSize(outImage);
+	if (p.x >= size.x || p.y >= size.y)
+		return;
+	vec2 uv = (vec2(p) + 0.5) / vec2(size);
+	float rings = 0.5 + 0.5 * sin(30.0 * length(uv - 0.5) - 3.0 * Time);
+	imageStore(outImage, p, vec4(uv, rings, 1.0));
+}

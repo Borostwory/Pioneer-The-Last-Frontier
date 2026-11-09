@@ -704,7 +704,7 @@ CloudResult cloudMarchView(CloudPlanet cp, vec3 camPos, vec3 rayDir, float tMax,
 	int n = 0;
 	float topAll = 0.0;
 	for (int li = 0; li < 3; li++) {
-		if (cp.L[li].active < 0.5) continue;
+		if (cp.L[li].inUse < 0.5) continue;
 		float d = cp.L[li].top - cp.L[li].base;
 		topAll = max(topAll, cp.L[li].top + CLOUD_TOP_RELIEF * d);
 		float rIn = 1.0 + max(cp.L[li].base - CLOUD_BASE_RELIEF * d, CLOUD_FLOOR_M) / cp.a;
@@ -978,7 +978,7 @@ float cloudShadowTerrain(CloudPlanet cp, vec3 pos, vec3 L, float fp)
 	float T = 1.0;
 	vec3 sunPf = cloudToPf(L);
 	for (int li = 0; li < 3; li++) {
-		if (cp.L[li].active < 0.5) continue;
+		if (cp.L[li].inUse < 0.5) continue;
 		CloudLayer ly = cp.L[li];
 		float altMid = cloudSlabAlt(ly, li);
 		vec2 hit = cloudSphereHit(pos, L, 1.0 + altMid / cp.a);
@@ -1042,7 +1042,7 @@ vec4 cloudDebugColor(CloudPlanet cp, vec3 pfDir)
 	if (cp.enabled < 0.5) return vec4(0.0, 0.0, 0.0, 0.8);
 	vec3 c = vec3(0.0);
 	for (int li = 0; li < 3; li++) {
-		if (cp.L[li].active < 0.5) continue;
+		if (cp.L[li].inUse < 0.5) continue;
 		CloudPhase ph = cloudPhases(cp.L[li].period, float(li));
 		vec3 cv = cloudCoverage(cp, li, cloudAdvect(cp, li, pfDir, lat, ph.tA), pfDir, lat, ph.offA, ph.cycA, sunPf, 20000.0, 5.0);
 		c[li] = cv.x * cv.z;
@@ -1060,7 +1060,7 @@ vec4 cloudDebugColor(CloudPlanet cp, vec3 pfDir)
 	if (cp.enabled < 0.5) return vec4(0.0, 0.0, 0.0, 0.9);
 	float tau = 0.0;
 	for (int li = 0; li < 3; li++) {
-		if (cp.L[li].active < 0.5) continue;
+		if (cp.L[li].inUse < 0.5) continue;
 		CloudLayer ly = cp.L[li];
 		CloudPhase ph = cloudPhases(ly.period, float(li));
 		vec3 dn = cloudDensity(cp, li, ph, pfDir, cloudSlabAlt(ly, li), lat, 0.0, 1.0, 0.0, false, sunPf, 20000.0);
@@ -1068,7 +1068,7 @@ vec4 cloudDebugColor(CloudPlanet cp, vec3 pfDir)
 	}
 	return vec4(cloudHeat(tau / 40.0), 0.9);
 #elif (CLOUD_DEBUG == 5)
-	if (cp.enabled < 0.5 || cp.L[0].active < 0.5) return vec4(0.0, 0.0, 0.0, 0.8);
+	if (cp.enabled < 0.5 || cp.L[0].inUse < 0.5) return vec4(0.0, 0.0, 0.0, 0.8);
 	CloudPhase ph = cloudPhases(cp.L[0].period, 0.0);
 	vec3 dn = cloudDensity(cp, 0, ph, pfDir, cp.L[0].base + 0.25 * (cp.L[0].top - cp.L[0].base), lat, 0.0, 1.0, 0.0, false, sunPf, 20000.0);
 	if (dn.x <= 0.0) return vec4(0.0, 0.0, 0.0, 0.8);
@@ -1082,7 +1082,7 @@ vec4 cloudDebugColor(CloudPlanet cp, vec3 pfDir)
 	float hT = cloudTerrainHeight(cp, pfDir);
 	vec3 c = vec3(clamp(hT / 9000.0, 0.0, 1.0)) * 0.5;
 	for (int li = 0; li < 3; li++) {
-		if (cp.L[li].active > 0.5 && hT + CLOUD_FLOOR_M > cp.L[li].base - CLOUD_BASE_RELIEF * (cp.L[li].top - cp.L[li].base))
+		if (cp.L[li].inUse > 0.5 && hT + CLOUD_FLOOR_M > cp.L[li].base - CLOUD_BASE_RELIEF * (cp.L[li].top - cp.L[li].base))
 			c = vec3(1.0, 0.0, 0.0);
 	}
 	return vec4(c, 0.85);

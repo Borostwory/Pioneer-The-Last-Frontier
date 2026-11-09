@@ -41,7 +41,7 @@ void main(void)
 	// Streak effect from phi (and time). ReentryTime < 0 means game is paused, so don't draw the streaks
 	float time_hash = hash11(ReentryTime);
 	float wob = sin(phi * 22.0 * wind_speed + time_hash * 2.0 * PI) * sin(phi * 5.34 * wind_speed - time_hash * 3.7 * PI + 13);
-	float spike = pow(wob * 0.5 + 0.5, 80) * 0.1;
+	float spike = pow(wob * 0.5 + 0.5, 80.0) * 0.1;
 	if (ReentryTime < 0) spike = 0;
 
 	// Combine two elements to get final color. Both depend on wind speed.
@@ -57,8 +57,8 @@ void main(void)
 
 	intensity = min(intensity, wind_speed);
 
-	float color_intensity = max(0, (intensity - 0.3) * 3.0);
-	float alpha_intensity = clamp((intensity - 0.1) * 3.0, 0, 0.95);
+	float color_intensity = max(0.0, (intensity - 0.3) * 3.0);
+	float alpha_intensity = clamp((intensity - 0.1) * 3.0, 0.0, 0.95);
 
 	vec3 start_col = vec3(0.3, 0.4, 1.0);
 	vec3 end_col = vec3(0.5, 0.25, 0.5);

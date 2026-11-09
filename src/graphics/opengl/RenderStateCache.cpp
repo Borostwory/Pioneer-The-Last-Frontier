@@ -108,6 +108,10 @@ void RenderStateCache::ApplyRenderState(const RenderStateDesc &rsd)
 			glDisable(GL_SCISSOR_TEST);
 	}
 
+	// (only patches use it, and it stays set until changed)
+	if (rsd.primitiveType == PATCHES && (rsd.patchVertices != m_activeRenderState.patchVertices || m_activeRenderState.primitiveType != PATCHES || !m_activeRenderStateHash))
+		glPatchParameteri(GL_PATCH_VERTICES, GLint(rsd.patchVertices));
+
 	m_activeRenderState = rsd;
 }
 
@@ -117,16 +121,17 @@ static size_t HashRenderStateDesc(const RenderStateDesc &desc)
 	// it (most likely) has padding bytes, and those bytes are uninitialized,
 	// thereby arbitrarily affecting the hash output.
 	// (We used to do this and valgrind complained).
-	uint32_t words[6] = {
+	uint32_t words[7] = {
 		desc.blendMode,
 		desc.cullMode,
 		desc.primitiveType,
 		desc.depthTest,
 		desc.depthWrite,
-		desc.scissorTest
+		desc.scissorTest,
+		desc.patchVertices
 	};
 	uint32_t a = 0, b = 0;
-	lookup3_hashword2(words, 6, &a, &b);
+	lookup3_hashword2(words, 7, &a, &b);
 	return size_t(a) | (size_t(b) << 32);
 }
 

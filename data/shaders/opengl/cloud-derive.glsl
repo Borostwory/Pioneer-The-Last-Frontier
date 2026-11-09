@@ -24,7 +24,7 @@
 #define CLOUD_GENUS_CIRRUS 2.0
 
 struct CloudLayer {
-	float active;      // 0/1
+	float inUse;      // 0/1
 	float base;        // nominal base altitude [m above sea level]
 	float top;         // nominal top altitude [m]
 	float coverage;    // global coverage 0..1
@@ -118,7 +118,7 @@ float cloudLatFactorRaw(CloudPlanet cp, float alat, float layer)
 
 void cloudSetLayer(inout CloudLayer l, float base, float top, float coverage, float sigmaScale, float featureSize, float period)
 {
-	l.active = (coverage > 0.001 && top > base) ? 1.0 : 0.0;
+	l.inUse = (coverage > 0.001 && top > base) ? 1.0 : 0.0;
 	l.base = base;
 	l.top = top;
 	l.coverage = min(coverage, 1.0);
@@ -160,7 +160,7 @@ CloudPlanet cloudDerive()
 	cp.spinSign = 1.0;
 	cp.tidalLock = 0.0;
 	for (int i = 0; i < 3; i++) {
-		cp.L[i].active = 0.0;
+		cp.L[i].inUse = 0.0;
 		cp.L[i].base = 0.0;
 		cp.L[i].top = 0.0;
 		cp.L[i].coverage = 0.0;

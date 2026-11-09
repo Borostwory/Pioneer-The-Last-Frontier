@@ -211,7 +211,7 @@ void TerrainTiles::Update(Graphics::Renderer *r, GeoSphere *sphere, const std::v
 int TerrainTiles::BandIndex(const GeoSphere *sphere, const GeoPatch *patch, const double footprint)
 {
 	const double spacing = patch->GetVertexSpacing() * sphere->GetSystemBody()->GetRadius();
-	const double ladderBase = sphere->GetDeepestVertexSpacing() * 0.5;
+	const double ladderBase = sphere->GetLegacyDeepestSpacing() * 0.5;
 	const double largest = std::max(2.0 * spacing, LANDFORM_PIXELS * footprint);
 	return int(std::round(std::log2(std::max(largest / ladderBase, 1.0))));
 }
@@ -228,7 +228,7 @@ void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patc
 
 	// the band's octaves (BandIndex()), and the craters' above it up to their
 	// largest size, the same for every tile
-	const double ladderBase = sphere->GetDeepestVertexSpacing() * 0.5;
+	const double ladderBase = sphere->GetLegacyDeepestSpacing() * 0.5;
 	const int finest = band - (BAND_OCTAVES - 1);
 	const double finestWave = ladderBase * std::pow(2.0, double(finest));
 	const float *style = sphere->GetTileStyle();

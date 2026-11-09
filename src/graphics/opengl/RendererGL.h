@@ -42,6 +42,7 @@ namespace Graphics {
 		RendererType GetRendererType() const final { return RENDERER_OPENGL_3x; }
 
 		void WriteRendererInfo(std::ostream &out) const final;
+		const ContextInfo &GetContextInfo() const final;
 
 		void CheckRenderErrors(const char *func = nullptr, const int line = -1) const final { CheckErrors(func, line); }
 		static void CheckErrors(const char *func = nullptr, const int line = -1);
@@ -94,6 +95,9 @@ namespace Graphics {
 
 		bool FlushCommandBuffers() final;
 
+		void DispatchCompute(Material *m, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) final;
+		void AddComputeBarrier(uint32_t barriers) final;
+		bool MaterialCompiled(Material *m) final;
 		void BeginGpuTimer(const char *name) final;
 		void EndGpuTimer() final;
 		const std::vector<GpuTiming> &GetGpuTimings() const final { return m_gpuTimings; }
@@ -196,6 +200,8 @@ namespace Graphics {
 		std::vector<GLuint> m_gpuQueryPool;
 		std::vector<GpuTiming> m_gpuTimings;
 		int m_gpuTimersSupported = -1; // unknown until first use
+		mutable ContextInfo m_contextInfo; // filled on first use
+		mutable bool m_contextInfoRead = false;
 		bool GpuTimersSupported();
 		GLuint AllocGpuQuery();
 		void ResolveGpuTimers();

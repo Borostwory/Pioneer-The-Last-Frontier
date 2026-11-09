@@ -14,14 +14,15 @@ namespace Graphics {
 			primitiveType(PrimitiveType::TRIANGLES),
 			depthTest(true),
 			depthWrite(true),
-			scissorTest(false)
+			scissorTest(false),
+			patchVertices(3)
 		{
 		}
 
 		bool operator!=(const RenderStateDesc &rhs) const { return !(*this == rhs); }
 		bool operator==(const RenderStateDesc &rhs) const
 		{
-			return blendMode == rhs.blendMode && cullMode == rhs.cullMode && primitiveType == rhs.primitiveType && depthTest == rhs.depthTest && depthWrite == rhs.depthWrite && scissorTest == rhs.scissorTest;
+			return blendMode == rhs.blendMode && cullMode == rhs.cullMode && primitiveType == rhs.primitiveType && depthTest == rhs.depthTest && depthWrite == rhs.depthWrite && scissorTest == rhs.scissorTest && patchVertices == rhs.patchVertices;
 		}
 
 		BlendMode blendMode;
@@ -30,6 +31,8 @@ namespace Graphics {
 		bool depthTest;
 		bool depthWrite;
 		bool scissorTest;
+		// vertices to a patch, with primitiveType PATCHES (tessellation)
+		uint32_t patchVertices;
 	};
 
 } // namespace Graphics

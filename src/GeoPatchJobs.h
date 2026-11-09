@@ -68,6 +68,12 @@ struct GeoPatchGenStats {
 	uint64_t jobs = 0;
 	uint64_t patches = 0;
 	uint64_t microseconds = 0;
+	// of that, in nanoseconds: the heights (with the border), the slopes the colours see (ColourSlopeNormals), the
+	// vertex normals, and the colours and materials (Terrain::GetSurface); the rest is placing the points and the result
+	uint64_t heightsNanos = 0;
+	uint64_t slopesNanos = 0;
+	uint64_t normalsNanos = 0;
+	uint64_t surfaceNanos = 0;
 };
 GeoPatchGenStats GetGeoPatchGenStats();
 void ResetGeoPatchGenStats();

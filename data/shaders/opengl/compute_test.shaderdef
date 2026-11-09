@@ -1,0 +1,12 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# P6 of the OpenGL 4.6 plan: a compute shader that fills an image, to show compute runs (OpenGL 4.6 Plan tab)
+Shader compute_test
+
+Buffer DrawData binding=1
+
+Image image2D outImage binding=0 format=rgba16f access=write
+PushConstant float Time binding=0
+
+Compute "compute_test.comp"

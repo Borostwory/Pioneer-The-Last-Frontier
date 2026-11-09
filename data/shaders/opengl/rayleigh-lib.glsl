@@ -425,7 +425,7 @@ vec3 calcTransmittance(const in vec2 opticalDepth)
 vec3 calculateRayTransmittance(const in vec3 rayStart, const in vec3 rayDir, const in sampler2D scatterLUT)
 {
 	// Compute the height of the sampled point in the atmosphere in 0..1
-	float height_scaled = clamp((length(rayStart) - 1) / (geosphereAtmosTopRad - 1), 0, 1);
+	float height_scaled = clamp((length(rayStart) - 1.0) / (geosphereAtmosTopRad - 1.0), 0.0, 1.0);
 
 	// To compute the density of the atmosphere along the ray, we need to know
 	// the angle of the ray relative to vertical.
@@ -494,7 +494,7 @@ vec3 calculateRayInscattering(inout vec2 opticalDepth, const in vec3 rayStart, c
 		vec3 color2 = color1 * calcTransmittance(opticalDepth);
 
 		opticalDepth += deltaDensity;
-		color += step(0, intersect.y) * color2;
+		color += step(0.0, intersect.y) * color2;
 	}
 
 	return color;

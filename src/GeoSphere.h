@@ -102,11 +102,27 @@ public:
 
 	void Reset() override;
 
+	// the deepest level of the patches (CalculateMaxPatchDepth), and the level that triangles of about 100 m would need
 	inline Sint32 GetMaxDepth() const { return m_maxDepth; }
+	Sint32 GetMeantDepth() const;
 	// how many levels deeper patches go near the player, now: on foot or in the rover, on physical terrain
 	inline Sint32 GetExtraDepth() const { return m_extraDepth; }
-	// vertex spacing of the deepest patches, in metres
+	// metres between the vertices of the deepest patches, where they are farthest apart: in the middle of a cube face
+	// (about 0.8 times that near its corners)
 	double GetDeepestVertexSpacing() const;
+	// The old reckoning of that spacing, about half of it (0.46 on most settings). The GPU detail tiles' octave
+	// ladder, the relief shading's finest size and the rule for which patches are fine enough to stand on were tuned
+	// to it, so they keep it until they are tuned again.
+	double GetLegacyDeepestSpacing() const;
+	// the patches it drew when last drawn, for the debug window
+	struct DrawnPatches {
+		int count = 0;
+		int deepest = 0; // depth of the deepest
+		double finestSpacing = 0.0; // metres between the vertices of the deepest
+		int nearestDepth = 0; // depth of the one nearest the camera
+		double nearestSpacing = 0.0; // metres between its vertices
+	};
+	const DrawnPatches &GetDrawnPatches() const { return m_drawnPatches; }
 	// weights of the detail tile styles: rolling, ridged, dunes, craters (TerrainTiles)
 	const float *GetTileStyle() const { return m_tileStyle; }
 	// a patch that wants to split; the nearest ones are submitted at the end of the update
@@ -125,6 +141,9 @@ private:
 	// depth-only material for the patches in the sun shadow maps, created on first use
 	RefCountedPtr<Graphics::Material> m_shadowMaterial;
 	std::vector<std::pair<double, GeoPatch *>> m_visiblePatches;
+	// GetDrawnPatches, from m_visiblePatches before it is cleared
+	void NoteDrawnPatches();
+	DrawnPatches m_drawnPatches;
 
 	// patches that want to split this update, with their distance to the camera
 	std::vector<std::pair<double, GeoPatch *>> mQuadSplitCandidates;

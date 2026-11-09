@@ -4,6 +4,8 @@
 #ifndef _FRONTIERLOG_H
 #define _FRONTIERLOG_H
 
+#include "graphics/UploadStats.h"
+
 #include <string>
 
 // A running record of the game for working on The Last Frontier, in frontier_log.txt in the
@@ -51,6 +53,32 @@ namespace FrontierLog {
 		long long m_start;
 	};
 
+	// adds the time it lives to this frame's patch meshes: their vertices packed and handed to the graphics driver
+	// (GeoPatch::UpdateVBOs). Main thread only.
+	class PatchMesh {
+	public:
+		PatchMesh();
+		~PatchMesh();
+		PatchMesh(const PatchMesh &) = delete;
+		PatchMesh &operator=(const PatchMesh &) = delete;
+
+	private:
+		long long m_start;
+	};
+
+	// What went to the graphics driver over the last whole second (Graphics::UploadStats), for the debug window:
+	// sums over its frames. Counted while the log is written, or for a moment after WantUploadCounts.
+	struct UploadSecond {
+		int frames = 0;
+		double longestMs = 0.0; // the frame with the most
+		Graphics::UploadCount kinds[Graphics::UPLOAD_KINDS];
+		int patchMeshes = 0;
+		double patchMeshMs = 0.0; // packing their vertices and their own buffer calls
+	};
+	const UploadSecond &GetUploadSecond();
+	// keeps the counting on for the next few frames without the log (the debug window, while it shows them)
+	void WantUploadCounts();
+
 	// at the end of each frame's update
 	void EndFrame(double physicsMs, double guiMs);
 	// around what comes between one frame's update and the next one's
@@ -63,6 +91,11 @@ namespace FrontierLog {
 	// walks out from the ship in all directions, and writes the sharpest step in the ground along each, and which
 	// layer of the height it's in (Terrain::GetHeightLayers)
 	void HeightProfile();
+	// What the GPU detail tiles' landforms would cost in the CPU heights (TerrainTilesCPU, option A of Q2 in
+	// docs/implementation_plans/opengl46-tessellation-compute_plan.md): time per point around the ship, against the
+	// heights' own, at full detail and at the detail of meshes and tiles of several spacings. And how fine the heights'
+	// detail goes today (Q3): their second differences at scales from 25 cm up. Takes a moment.
+	void LandformCost();
 
 	bool Enabled();
 	void SetEnabled(bool enabled);

@@ -27,7 +27,7 @@ float log10(float v)
 // Calculate the combined XY line coverage values for the given pixel with the defined grid setting
 float calc_grid_coverage(vec2 uv, vec2 line_width, float cell_size)
 {
-	vec2 cover = 1 - abs(clamp(mod(uv + line_width * 0.5, cell_size) / line_width, 0, 1) * 2 - 1);
+	vec2 cover = 1.0 - abs(clamp(mod(uv + line_width * 0.5, cell_size) / line_width, 0.0, 1.0) * 2.0 - 1.0);
 	return max(cover.x, cover.y);
 }
 
@@ -40,11 +40,11 @@ void main(void)
 	vec3 grid_dir = grid_info.xyz;
 	float cell_size = grid_info.w;
 
-	float lod_level = max(0, log10(length(dudv) / cell_size) + 1);
+	float lod_level = max(0.0, log10(length(dudv) / cell_size) + 1.0);
 	float lod_transition = fract(lod_level);
 
 	// Calculate the grid cell size at the minimum visible LOD level and the next larger
-	float lod0_cell_size = cell_size * pow(10, floor(lod_level));
+	float lod0_cell_size = cell_size * pow(10.0, floor(lod_level));
 	float lod1_cell_size = lod0_cell_size * 10;
 	float lod2_cell_size = lod1_cell_size * 10;
 
@@ -60,15 +60,15 @@ void main(void)
 
 	// Smoothly fade out the very edges of the grid
 	vec2 grid_edge = abs(v_uv0 / grid_size);
-	color.a *= 1.0 - pow(max(grid_edge.x, grid_edge.y), 16);
+	color.a *= 1.0 - pow(max(grid_edge.x, grid_edge.y), 16.0);
 
 	// Make the grid transparent at grazing angles
 	vec3 viewdir = normalize(v_eyepos);
-	color.a *= 1.0 - pow(1.0 - abs(dot(viewdir, grid_dir)), 8);
+	color.a *= 1.0 - pow(1.0 - abs(dot(viewdir, grid_dir)), 8.0);
 
 	// Add some subtle depth-fade to further reduce moire effect
 	float viewdist = length(v_eyepos);
-	color.a *= viewdist < 10 ? min(1.0, pow(viewdist, 4)) : min(1.0, max(grid_size.x, grid_size.y) / viewdist);
+	color.a *= viewdist < 10.0 ? min(1.0, pow(viewdist, 4.0)) : min(1.0, max(grid_size.x, grid_size.y) / viewdist);
 
 	frag_color = color;
 }

@@ -1,0 +1,9 @@
+// Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+// Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+// P6 of the OpenGL 4.6 plan: the tessellation test's colour
+out vec4 frag_color;
+
+void main(void)
+{
+	frag_color = vec4(1.0);
+}

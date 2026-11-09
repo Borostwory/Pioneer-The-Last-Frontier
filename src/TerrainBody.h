@@ -48,6 +48,8 @@ public:
 	// the ground under it (Terrain::ProtectSite)
 	void ProtectTerrainSite(const SystemBody *starport, const vector3d &pos);
 	const Terrain *GetTerrain() const;
+	// what draws it (a GeoSphere for rocky bodies), for the frontier log
+	const BaseSphere *GetBaseSphere() const { return m_baseSphere.get(); }
 	// changes whenever the surface mesh drawn does
 	uint32_t GetMeshVersion() const;
 	// any sea, lake or river within radiusMetres of pos

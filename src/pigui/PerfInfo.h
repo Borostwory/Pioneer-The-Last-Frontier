@@ -71,6 +71,7 @@ namespace PiGui {
 		void DrawFrontierTab();
 		void DrawFrontierTerrain();
 		void DrawGeology();
+		void DrawOpenGLPlan();
 		void DrawStatList(const Perf::Stats::FrameInfo &fi);
 
 		void DrawCounter(CounterInfo &counter, const char *label, float min, float max, float height, bool drawStats = false);

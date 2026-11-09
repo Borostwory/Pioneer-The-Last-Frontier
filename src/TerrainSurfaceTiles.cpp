@@ -3,6 +3,7 @@
 
 #include "TerrainSurfaceTiles.h"
 
+#include "FrontierLog.h"
 #include "GameConfig.h"
 #include "GeoPatch.h"
 #include "GeoPatchJobs.h"
@@ -18,9 +19,25 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstdio>
 #include <thread>
 
 namespace {
+	// GetBakeStats
+	std::atomic<uint64_t> s_bakes(0), s_bakeNanos(0), s_heightsNanos(0), s_slopesNanos(0), s_texelsNanos(0);
+	// a fill of fewer tiles than this isn't written to the log: tiles keep coming in a few at a time as the camera moves
+	constexpr int FILL_LOG_TILES = 50;
+
+	inline long long NowNanos()
+	{
+		return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+	}
+
+	inline void AddNanos(std::atomic<uint64_t> &to, const long long nanos)
+	{
+		to.fetch_add(uint64_t(std::max(nanos, 0LL)), std::memory_order_relaxed);
+	}
+
 	// largest normal offset stored, must match FAR_NORMAL_RANGE in terrain-far.glsl: 1 holds slopes up to vertical (at
 	// 0.5, slopes past about 30 degrees were flattened, and steep crater walls lost their shading on the surface tiles)
 	constexpr double NORMAL_RANGE = 1.0;
@@ -110,6 +127,7 @@ namespace {
 		void OnRun() override
 		{
 			PROFILE_SCOPED()
+			const long long start = NowNanos();
 			TerrainSurfaceTiles::Bake &b = *m_bake;
 			// the slot's texels (the tile and its border), and one more row of
 			// heights around them for the normals
@@ -129,15 +147,24 @@ namespace {
 
 			// band limited to the texel size, as the patches to their vertex spacing
 			TerrainNoise::ScopedBandLimit bandLimit(0.5 / b.texelSpacing);
+			const long long heightsStart = NowNanos();
 			b.terrain->GetHeights(dirs.data(), heights.data(), dirs.size());
+			const long long slopesStart = NowNanos();
 			// the slope the colours see (COLOUR_SLOPE_SCALE), where the tile is
 			// finer than that
 			std::vector<vector3d> colourNormals;
 			const bool fixedSlope = ColourSlopeNormals(b.terrain.Get(), dirs.data(), grid, 1, grid - 1, 1, grid - 1, colourNormals);
+			const long long texelsStart = NowNanos();
 			b.colour.resize(size_t(out) * out * 4);
 			b.normal.resize(size_t(out) * out);
 			BakeSurfaceTexels(b.terrain.Get(), dirs.data(), heights.data(), grid, 1, grid - 1, 1, grid - 1,
 				fixedSlope ? colourNormals.data() : nullptr, out, b.colour.data(), b.normal.data(), size_t(out));
+			const long long end = NowNanos();
+			AddNanos(s_heightsNanos, slopesStart - heightsStart);
+			AddNanos(s_slopesNanos, texelsStart - slopesStart);
+			AddNanos(s_texelsNanos, end - texelsStart);
+			AddNanos(s_bakeNanos, end - start);
+			s_bakes.fetch_add(1, std::memory_order_relaxed);
 			b.done.store(true, std::memory_order_release);
 		}
 
@@ -238,6 +265,17 @@ int TerrainSurfaceTiles::GetWaitingCount() const
 	return std::chrono::steady_clock::now() - m_waitingSeen < std::chrono::milliseconds(100) ? m_waiting : 0;
 }
 
+TerrainSurfaceTiles::BakeStats TerrainSurfaceTiles::GetBakeStats()
+{
+	BakeStats stats;
+	stats.bakes = s_bakes;
+	stats.nanos = s_bakeNanos;
+	stats.heightsNanos = s_heightsNanos;
+	stats.slopesNanos = s_slopesNanos;
+	stats.texelsNanos = s_texelsNanos;
+	return stats;
+}
+
 int TerrainSurfaceTiles::Allocate(GeoPatch *patch)
 {
 	if (m_free.empty()) {
@@ -289,9 +327,12 @@ void TerrainSurfaceTiles::UploadFinished()
 		m_normal->Update(it->bake->normal.data(), pos, size, Graphics::TEXTURE_RGB10_A2);
 		m_ready[slot] = true;
 		m_uploaded[slot] = std::chrono::steady_clock::now();
+		m_lastUpload = m_uploaded[slot];
 		it = m_pending.erase(it);
 		uploads++;
 	}
+	if (m_filling)
+		m_fillUploads += uploads;
 }
 
 void TerrainSurfaceTiles::Update(GeoSphere *sphere, const std::vector<std::pair<double, GeoPatch *>> &visible, const double pixelAngle)
@@ -317,6 +358,29 @@ void TerrainSurfaceTiles::Update(GeoSphere *sphere, const std::vector<std::pair<
 	if (!wanted.empty()) {
 		m_waiting = int(wanted.size());
 		m_waitingSeen = now;
+		if (!m_filling) {
+			m_filling = true;
+			m_fillStart = now;
+			m_fillUploads = 0;
+			m_fillBakes = GetBakeStats();
+		}
+	} else if (m_filling && m_pending.empty() && GetWaitingCount() == 0) {
+		// over: from the first tile wanted to the last uploaded
+		m_filling = false;
+		if (m_fillUploads >= FILL_LOG_TILES) {
+			const BakeStats stats = GetBakeStats();
+			const uint64_t bakes = stats.bakes - m_fillBakes.bakes;
+			const double perBake = bakes ? double(stats.nanos - m_fillBakes.nanos) / double(bakes) / 1e6 : 0.0;
+			const double bakeNanos = double(std::max<uint64_t>(stats.nanos - m_fillBakes.nanos, 1));
+			const double seconds = std::chrono::duration<double>(std::max(m_waitingSeen, m_lastUpload) - m_fillStart).count();
+			char line[320];
+			std::snprintf(line, sizeof(line), "surface tiles filled: %d tiles in %.2f s, %llu bakes at %.1f ms of thread time (heights %.0f%%, colour slopes %.0f%%, texels %.0f%%), %d texels across",
+				m_fillUploads, seconds, (unsigned long long)bakes, perBake,
+				100.0 * double(stats.heightsNanos - m_fillBakes.heightsNanos) / bakeNanos,
+				100.0 * double(stats.slopesNanos - m_fillBakes.slopesNanos) / bakeNanos,
+				100.0 * double(stats.texelsNanos - m_fillBakes.texelsNanos) / bakeNanos, m_tileSize);
+			FrontierLog::Note(line);
+		}
 	}
 
 	// nearest first

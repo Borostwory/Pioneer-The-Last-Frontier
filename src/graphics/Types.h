@@ -96,6 +96,7 @@ namespace Graphics {
 		TRIANGLES,		//GL_TRIANGLES,
 		TRIANGLE_STRIP,	//GL_TRIANGLE_STRIP,
 		TRIANGLE_FAN,	//GL_TRIANGLE_FAN
+		PATCHES = 14,	//GL_PATCHES: for a tessellation shader, RenderStateDesc::patchVertices to a patch
 	};
 	// clang-format on
 

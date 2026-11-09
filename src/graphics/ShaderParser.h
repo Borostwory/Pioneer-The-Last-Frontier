@@ -11,11 +11,22 @@ namespace Graphics {
 
 	namespace ShaderParser {
 
+		// how a compute (or other) shader uses an image: read, written, or both
+		enum ImageAccess {
+			IMAGE_READ,
+			IMAGE_WRITE,
+			IMAGE_READ_WRITE
+		};
+
 		struct TextureInfo {
 			Graphics::TextureType type;
 			std::string bindName;
 			std::string name;
 			uint32_t binding;
+			// an image (Image in the shaderdef) instead of a sampled texture: its format and access
+			bool image = false;
+			Graphics::TextureFormat imageFormat = Graphics::TEXTURE_NONE;
+			ImageAccess imageAccess = IMAGE_WRITE;
 		};
 
 		struct BufferInfo {
@@ -33,6 +44,11 @@ namespace Graphics {
 			std::string name;
 			std::string vertexPath;
 			std::string fragmentPath;
+			// tessellation (TessControl, TessEval) and compute (Compute) stages, empty if none; a shader with a
+			// Compute stage has no other
+			std::string tessControlPath;
+			std::string tessEvalPath;
+			std::string computePath;
 
 			std::vector<TextureInfo> textureBindings;
 			std::vector<BufferInfo> bufferBindings;
@@ -52,6 +68,7 @@ namespace Graphics {
 
 		private:
 			Result parseTexture(Parser *parser);
+			Result parseImage(Parser *parser);
 			Result parseBuffer(Parser *parser);
 			Result parsePushConstant(Parser *parser);
 

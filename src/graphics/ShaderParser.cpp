@@ -54,8 +54,23 @@ Config::Parser::Result ParserContext::operator()(Parser *parser, const Token &to
 		return Result::Parsed;
 	}
 
+	// tessellation and compute stages (OpenGL 4)
+	if (tok.isKeyword("TessControl") || tok.isKeyword("TessEval") || tok.isKeyword("Compute")) {
+		Token path;
+		if (!parser->Acquire(Token::String, &path))
+			return Result::DidNotMatch;
+
+		std::string &stage = tok.isKeyword("TessControl") ? m_shaderData->tessControlPath :
+			(tok.isKeyword("TessEval") ? m_shaderData->tessEvalPath : m_shaderData->computePath);
+		stage = path.contents();
+		return Result::Parsed;
+	}
+
+	if (tok.isKeyword("Image"))
+		return parseImage(parser);
+
 	// If we get an identifier we don't know what to do with, complain about it and skip the line.
-	Log::Warning("{} Expected one of 'Shader', 'Texture', 'Buffer', 'PushConstant', 'Fragment', 'Vertex'; got '{}'\n",
+	Log::Warning("{} Expected one of 'Shader', 'Texture', 'Image', 'Buffer', 'PushConstant', 'Fragment', 'Vertex', 'TessControl', 'TessEval', 'Compute'; got '{}'\n",
 		parser->MakeLineInfo(), tok.range);
 	return Result::DidNotMatch;
 }
@@ -118,6 +133,89 @@ Config::Parser::Result ParserContext::parseTexture(Parser *parser)
 	m_shaderData->textureBindings.emplace_back(std::move(texInfo));
 	return Result::Parsed;
 
+}
+
+// Image image2D <bindName> [name=<name>] [binding=<n>] format=<rgba8|rgba16f|rgba32f|r32f> [access=<read|write|readwrite>]
+// An image a shader reads or writes texel by texel, as compute does. It takes a texture unit's binding like a texture,
+// and the material's SetTexture sets it.
+Config::Parser::Result ParserContext::parseImage(Parser *parser)
+{
+	Token type, bindName;
+	if (!parser->Acquire(Token::Identifier, &type) || !parser->Acquire(Token::Identifier, &bindName))
+		return Result::ParseFailure;
+
+	TextureInfo texInfo {};
+	texInfo.image = true;
+	if (type.isKeyword("image2D")) {
+		texInfo.type = Graphics::TextureType::TEXTURE_2D;
+	} else if (type.isKeyword("image2DArray")) {
+		texInfo.type = Graphics::TextureType::TEXTURE_2D_ARRAY;
+	} else {
+		Log::Warning("{} Expected one of 'image2D, image2DArray', got '{}'\n", parser->MakeLineInfo(), type.range);
+		return Result::ParseFailure;
+	}
+
+	texInfo.bindName = bindName.toString();
+	texInfo.binding = UINT32_MAX;
+
+	while (parser->IsLineRemaining()) {
+		Token attrib, value;
+		if (!parser->Acquire(Token::Identifier, &attrib) || !parser->Symbol('='))
+			return Result::ParseFailure;
+
+		if (attrib.isKeyword("binding")) {
+			if (!parser->Acquire(Token::Number, &value))
+				return Result::ParseFailure;
+			texInfo.binding = value.value;
+			m_nextTextureBinding = texInfo.binding + 1;
+			continue;
+		}
+
+		if (!parser->Acquire(Token::Identifier, &value))
+			return Result::ParseFailure;
+
+		if (attrib.isKeyword("name")) {
+			texInfo.name = value.toString();
+		} else if (attrib.isKeyword("format")) {
+			if (value.isKeyword("rgba8"))
+				texInfo.imageFormat = Graphics::TEXTURE_RGBA_8888;
+			else if (value.isKeyword("rgba16f"))
+				texInfo.imageFormat = Graphics::TEXTURE_RGBA16F;
+			else if (value.isKeyword("rgba32f"))
+				texInfo.imageFormat = Graphics::TEXTURE_RGBA32F;
+			else if (value.isKeyword("r32f"))
+				texInfo.imageFormat = Graphics::TEXTURE_R32F;
+			else {
+				Log::Warning("{} Expected one of 'rgba8, rgba16f, rgba32f, r32f', got '{}'\n", parser->MakeLineInfo(), value.range);
+				return Result::ParseFailure;
+			}
+		} else if (attrib.isKeyword("access")) {
+			if (value.isKeyword("read"))
+				texInfo.imageAccess = IMAGE_READ;
+			else if (value.isKeyword("write"))
+				texInfo.imageAccess = IMAGE_WRITE;
+			else if (value.isKeyword("readwrite"))
+				texInfo.imageAccess = IMAGE_READ_WRITE;
+			else {
+				Log::Warning("{} Expected one of 'read, write, readwrite', got '{}'\n", parser->MakeLineInfo(), value.range);
+				return Result::ParseFailure;
+			}
+		} else {
+			Log::Warning("{} Unexpected attribute {} in image binding.", parser->MakeLineInfo(), attrib.range);
+			return Result::ParseFailure;
+		}
+	}
+
+	if (texInfo.imageFormat == Graphics::TEXTURE_NONE) {
+		Log::Warning("{} An image needs a format.", parser->MakeLineInfo());
+		return Result::ParseFailure;
+	}
+
+	if (texInfo.binding == UINT32_MAX)
+		texInfo.binding = m_nextTextureBinding++;
+
+	m_shaderData->textureBindings.emplace_back(std::move(texInfo));
+	return Result::Parsed;
 }
 
 Config::Parser::Result ParserContext::parseBuffer(Parser *parser)

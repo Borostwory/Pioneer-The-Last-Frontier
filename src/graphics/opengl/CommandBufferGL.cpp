@@ -186,6 +186,43 @@ void CommandList::ExecuteGpuTimerCmd(const GpuTimerCmd &cmd)
 	glQueryCounter(cmd.query, GL_TIMESTAMP);
 }
 
+void CommandList::AddDispatchComputeCmd(Graphics::Material *material, const uint32_t groupsX, const uint32_t groupsY, const uint32_t groupsZ)
+{
+	assert(!m_executing && "Attempt to append to a command list while it's being executed!");
+	OGL::Material *mat = static_cast<OGL::Material *>(material);
+
+	DispatchComputeCmd cmd {};
+	cmd.program = mat->EvaluateVariant();
+	cmd.drawData = SetupMaterialData(mat);
+	cmd.groups[0] = groupsX;
+	cmd.groups[1] = groupsY;
+	cmd.groups[2] = groupsZ;
+
+	m_drawCmds.emplace_back(std::move(cmd));
+}
+
+void CommandList::AddBarrierCmd(const GLbitfield barriers)
+{
+	assert(!m_executing && "Attempt to append to a command list while it's being executed!");
+	m_drawCmds.emplace_back(BarrierCmd { barriers });
+}
+
+void CommandList::ExecuteDispatchComputeCmd(const DispatchComputeCmd &cmd)
+{
+	// (a program that didn't compile is left out, as a draw with it would be)
+	if (!cmd.program || !cmd.program->Loaded())
+		return;
+	ApplyDrawData(cmd.program, cmd.drawData);
+	CHECKERRORS();
+	glDispatchCompute(cmd.groups[0], cmd.groups[1], cmd.groups[2]);
+	CHECKERRORS();
+}
+
+void CommandList::ExecuteBarrierCmd(const BarrierCmd &cmd)
+{
+	glMemoryBarrier(cmd.barriers);
+}
+
 void CommandList::Reset()
 {
 	assert(!m_executing && "Attempt to reset a command list while it's being executed!");
@@ -279,8 +316,15 @@ void CommandList::ApplyDrawData(Program *program, char *drawData) const
 		state->SetBufferBinding(info.binding, buffers[info.index]);
 
 	TextureGL **textures = getTextureBindings(shader, drawData);
-	for (auto &info : shader->GetTextureBindings())
-		state->SetTexture(info.binding, textures[info.index]);
+	for (auto &info : shader->GetTextureBindings()) {
+		if (info.image) {
+			// an image takes its own unit, not the texture's (and not the state cache's)
+			TextureGL *tex = textures[info.index];
+			glBindImageTexture(info.binding, tex ? tex->GetTextureID() : 0, 0, GL_TRUE, 0, info.imageAccess, info.imageFormat);
+		} else {
+			state->SetTexture(info.binding, textures[info.index]);
+		}
+	}
 
 	for (auto &info : shader->GetPushConstantBindings()) {
 		GLuint location = program->GetConstantLocation(info.index);

@@ -445,61 +445,75 @@ bool GeoSphere::GetDrawnRadius(const vector3d &p, double &radius) const
 
 double GeoSphere::GetDeepestVertexSpacing() const
 {
-	// as CalculateMaxPatchDepth() works it out
+	// a face of the cube spans a quarter turn across its middle, halved at each level, split into the context's
+	// vertex gaps (GeoPatch::GetVertexSpacing)
+	return m_sbody->GetRadius() * 0.5 * M_PI / std::pow(2.0, double(m_maxDepth)) * GeoPatchContext::GetFrac();
+}
+
+double GeoSphere::GetLegacyDeepestSpacing() const
+{
 	const double circumference = 2.0 * M_PI * m_sbody->GetRadius();
 	return circumference / double(s_patchContext->GetEdgeLen() * 8) / std::pow(2.0, double(m_maxDepth));
 }
 
-// Detail tile styles from the height fractal: craters on airless and
-// cratered bodies, dunes on dune terrains, ridges on mountains and rugged
-// terrain, rolling eroded hills elsewhere.
+// Detail tile styles: the terrain's own, or from the height fractal (Terrain::GetLandformStyle, which the landforms in
+// the heights use too)
 void GeoSphere::SetUpTileStyle()
 {
-	float style[4];
-	if (m_terrain->GetTileStyle(style)) {
-		for (int i = 0; i < 4; i++)
-			m_tileStyle[i] = style[i];
-		return;
-	}
-	const std::string name = m_terrain->GetHeightFractalName();
-	auto has = [&](const char *s) { return name.find(s) != std::string::npos; };
-	float rolling = 1.0f, ridged = 0.0f, dunes = 0.0f, craters = 0.0f;
-	if (has("Dunes")) {
-		rolling = 0.4f;
-		dunes = 0.8f;
-	} else if (has("Mountains") || has("Rugged") || has("Ridged") || has("Barren") || has("Mapped")) {
-		rolling = 0.5f;
-		ridged = 0.6f;
-	}
-	const bool airless = GetSystemBody()->GetVolatileGas() < 0.05;
-	if (has("Crater") || has("Asteroid") || airless) {
-		craters = 1.0f;
-		rolling *= 0.4f;
-		ridged *= 0.4f;
-		dunes = 0.0f;
-	}
-	m_tileStyle[0] = rolling;
-	m_tileStyle[1] = ridged;
-	m_tileStyle[2] = dunes;
-	m_tileStyle[3] = craters;
+	m_terrain->GetLandformStyle(m_tileStyle);
 }
 
-void GeoSphere::CalculateMaxPatchDepth()
+void GeoSphere::NoteDrawnPatches()
+{
+	DrawnPatches d;
+	const double radius = GetSystemBody()->GetRadius();
+	double nearest = 1e300;
+	for (const std::pair<double, GeoPatch *> &p : m_visiblePatches) {
+		const int depth = p.second->GetDepth();
+		if (depth > d.deepest || d.count == 0) {
+			d.deepest = depth;
+			d.finestSpacing = p.second->GetVertexSpacing() * radius;
+		}
+		if (p.first < nearest) {
+			nearest = p.first;
+			d.nearestDepth = depth;
+			d.nearestSpacing = p.second->GetVertexSpacing() * radius;
+		}
+		d.count++;
+	}
+	m_drawnPatches = d;
+}
+
+Sint32 GeoSphere::GetMeantDepth() const
 {
 	const double circumference = 2.0 * M_PI * m_sbody->GetRadius();
 	// calculate length of each edge segment (quad) times 4 due to that being the number around the sphere (1 per side, 4 sides for Root).
 	double edgeMetres = circumference / double(s_patchContext->GetEdgeLen() * 8);
 	// find out what depth we reach the desired resolution
-	while (edgeMetres > gs_targetPatchTriLength && m_maxDepth < GEOPATCH_MAX_DEPTH) {
+	Sint32 depth = 0;
+	while (edgeMetres > gs_targetPatchTriLength && depth < GEOPATCH_MAX_DEPTH) {
 		edgeMetres *= 0.5;
-		++m_maxDepth;
+		++depth;
 	}
+	return depth;
+}
+
+// The deepest level: twice the level meant for triangles of about 100 m, at most GEOPATCH_MAX_DEPTH. Until 2026-11-08
+// the level was worked out twice without starting again from 0, which came to the same (and to four times the level,
+// at most the cap, after a change of the planet detail setting, on the bodies below it); the ground's look was built on
+// it (vertices 2-12 m apart near the ground on most bodies, 4.4 m on Mars), so it stays, now on purpose (P1 and Q5 in
+// docs/implementation_plans/opengl46-tessellation-compute_plan.md). Bigger bodies stop at the cap, so their ground is
+// coarser; only the smallest moons are far coarser (Phobos about 30 m).
+void GeoSphere::CalculateMaxPatchDepth()
+{
+	m_maxDepth = std::min(2 * GetMeantDepth(), Sint32(GEOPATCH_MAX_DEPTH));
 }
 
 void GeoSphere::Update()
 {
 	// On foot or in the rover the ground near the player gets finer, down to about 25 m between vertices at most, in a
-	// small radius (GeoPatch::LODUpdate). Heights are at full detail on these levels already.
+	// small radius (GeoPatch::LODUpdate). Heights are at full detail on these levels already. Only the smallest moons
+	// have deepest patches coarser than that.
 	m_extraDepth = 0;
 	if (m_terrain->HasFixedDetail() && Pi::game && Pi::game->GetExcursion() && Pi::game->GetExcursion()->IsOffShip()) {
 		for (double spacing = GetDeepestVertexSpacing(); spacing > 25.0 && m_extraDepth < 3; spacing *= 0.5)
@@ -702,9 +716,9 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		// patch widths, so a patch at distance d is d/K to d/2K wide (about
 		// d / 1.4K), split into the context's vertex gaps.
 		// The deepest patches stop it from getting finer near the ground
-		// (as CalculateMaxPatchDepth() works it out).
+		// (the old reckoning of their spacing, which the relief was tuned to: GetLegacyDeepestSpacing).
 		const double vertexGaps = double(s_patchContext->GetEdgeLen() - 3); // edge length includes the skirt
-		const double deepestSpacing = 2.0 * M_PI * GetSystemBody()->GetRadius() / double(s_patchContext->GetEdgeLen() * 8) / std::pow(2.0, double(m_maxDepth));
+		const double deepestSpacing = GetLegacyDeepestSpacing();
 		const double spacingPerMetre = 1.0 / (1.41 * GetLodDistance() * vertexGaps);
 		m_surfaceMaterial->SetPushConstant("ReliefScale"_hash,
 			vector3f(float(spacingPerMetre), float(deepestSpacing / double(1 << m_extraDepth)), 0.0f), 0.0f);
@@ -793,15 +807,17 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		}
 
 		// must clear this after each render otherwise it just accumulates every patch ever drawn!
+		NoteDrawnPatches();
 		m_visiblePatches.clear();
 	} else {
 		// gather the visible patches, bake the detail tiles they need, draw them
 		for (int i = 0; i < NUM_PATCHES; i++) {
 			m_patches[i]->GatherRenderablePatches(m_visiblePatches, renderer, campos, frustum);
 		}
-		// config TerrainDetailTiles (Terrain Debug window): 0 frees the atlas
+		// config TerrainDetailTiles (Terrain Debug window): 0 frees the atlas. Also while the landforms are real
+		// shape (Terrain::SetLandformShape), so they aren't drawn twice.
 		TerrainTiles *tiles = nullptr;
-		if (Pi::config->Int("TerrainDetailTiles", 1) == 0)
+		if (Pi::config->Int("TerrainDetailTiles", 1) == 0 || Terrain::GetLandformShape() > 0.0)
 			TerrainTiles::Destroy();
 		else if (GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
 			tiles = TerrainTiles::Get(renderer);
@@ -820,6 +836,7 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		for (std::pair<double, GeoPatch *> &pPatch : m_visiblePatches) {
 			pPatch.second->RenderImmediate(renderer, campos, modelView);
 		}
+		NoteDrawnPatches();
 		m_visiblePatches.clear();
 	}
 

@@ -52,15 +52,37 @@ namespace Graphics {
 
 	const char *gl_framebuffer_error_to_string(GLuint st);
 
+	// the OpenGL version the game needs (CreateWindowAndContext, RendererOGL::RendererOGL)
+	static constexpr int REQUIRED_GL_MAJOR = 4;
+	static constexpr int REQUIRED_GL_MINOR = 6;
+
+	// When the driver can't give the required version: what it can give, from a context of its own choosing, for the
+	// message to the player (the card, and its OpenGL version)
+	static std::string DescribeAvailableGL(SDL_Window *window)
+	{
+		SDL_GL_ResetAttributes();
+		SDL_GLContext context = SDL_GL_CreateContext(window);
+		if (!context)
+			return "no OpenGL context at all (" + std::string(SDL_GetError()) + ")";
+		const auto text = [](const GLenum name) {
+			const GLubyte *s = glGetString(name);
+			return s ? std::string(reinterpret_cast<const char *>(s)) : std::string("unknown");
+		};
+		const std::string description = text(GL_RENDERER) + " (" + text(GL_VENDOR) + "), OpenGL " + text(GL_VERSION);
+		SDL_GL_DeleteContext(context);
+		return description;
+	}
+
 	static bool CreateWindowAndContext(const char *name, const Graphics::Settings &vs, SDL_Window *&window, SDL_GLContext &context)
 	{
 		PROFILE_SCOPED()
 		Uint32 winFlags = 0;
 
 		winFlags |= SDL_WINDOW_OPENGL;
-		// We'd like a context that implements OpenGL 3.2 to allow creation of multisampled textures
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+		// OpenGL 4.6 is required (Q1 and P5 of docs/implementation_plans/opengl46-tessellation-compute_plan.md): the
+		// tessellation of the ground's small relief needs it, and compute after it
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, REQUIRED_GL_MAJOR);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, REQUIRED_GL_MINOR);
 		// Request core profile as we're uninterested in old fixed-function API
 		// also cannot initialise 3.x context on OSX with anything but CORE profile
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -108,8 +130,14 @@ namespace Graphics {
 
 		context = SDL_GL_CreateContext(window);
 		if (!context) {
+			const std::string available = DescribeAvailableGL(window);
 			SDL_DestroyWindow(window);
 			window = nullptr;
+			Error(
+				"The Last Frontier needs OpenGL %d.%d, which this graphics card or driver doesn't offer.\n\n"
+				"This computer has: %s\n\n"
+				"Please update the graphics driver. If it is up to date, the card is too old for the game.",
+				REQUIRED_GL_MAJOR, REQUIRED_GL_MINOR, available.c_str());
 			return false;
 		}
 
@@ -202,11 +230,19 @@ namespace Graphics {
 		if (vs.enableDebugMessages)
 			GLDebug::Enable();
 
-		if (!glewIsSupported("GL_VERSION_3_2")) {
+		// (GLEW knows no 4.6, so the version comes from the driver itself)
+		GLint glMajor = 0, glMinor = 0;
+		glGetIntegerv(GL_MAJOR_VERSION, &glMajor);
+		glGetIntegerv(GL_MINOR_VERSION, &glMinor);
+		if (glMajor < REQUIRED_GL_MAJOR || (glMajor == REQUIRED_GL_MAJOR && glMinor < REQUIRED_GL_MINOR)) {
 			Error(
-				"Pioneer can not run on your graphics card as it does not appear to support OpenGL 3.2\n"
-				"Please check to see if your GPU driver vendor has an updated driver - or that drivers are installed correctly.");
+				"The Last Frontier needs OpenGL %d.%d, but the graphics driver gave %d.%d.\n\n"
+				"This computer has: %s (%s), OpenGL %s\n\n"
+				"Please update the graphics driver. If it is up to date, the card is too old for the game.",
+				REQUIRED_GL_MAJOR, REQUIRED_GL_MINOR, glMajor, glMinor,
+				glstr_to_str(glGetString(GL_RENDERER)), glstr_to_str(glGetString(GL_VENDOR)), glstr_to_str(glGetString(GL_VERSION)));
 		}
+		Log::Info("OpenGL {}.{}: {}, {}", glMajor, glMinor, glstr_to_str(glGetString(GL_VERSION)), glstr_to_str(glGetString(GL_RENDERER)));
 
 		if (!glewIsSupported("GL_EXT_texture_compression_s3tc")) {
 			if (glewIsSupported("GL_ARB_texture_compression")) {
@@ -319,8 +355,8 @@ namespace Graphics {
 
 	const char *RendererOGL::GetName() const
 	{
-		// since 15/10/2020 we've been requiring OpenGL 3.2
-		return "OpenGL 3.2, with extensions, renderer";
+		// OpenGL 3.2 from 15/10/2020; The Last Frontier requires 4.6 since 2026-11-09
+		return "OpenGL 4.6 renderer";
 	}
 
 	static const char *gl_error_to_string(GLenum err)
@@ -391,6 +427,52 @@ namespace Graphics {
 				err = glGetError();
 			}
 		}
+	}
+
+	const Renderer::ContextInfo &RendererOGL::GetContextInfo() const
+	{
+		if (m_contextInfoRead)
+			return m_contextInfo;
+		m_contextInfoRead = true;
+		ContextInfo &info = m_contextInfo;
+		// as CreateWindowAndContext and s_glslVersion (Program.cpp) ask for them
+		info.requested = "OpenGL 4.6 core, shaders #version 460 core";
+		const auto text = [](const GLenum name) {
+			const GLubyte *s = glGetString(name);
+			return s ? std::string(reinterpret_cast<const char *>(s)) : std::string("?");
+		};
+		info.version = text(GL_VERSION);
+		info.shading = text(GL_SHADING_LANGUAGE_VERSION);
+		info.vendor = text(GL_VENDOR);
+		info.device = text(GL_RENDERER);
+		glGetIntegerv(GL_MAJOR_VERSION, &info.major);
+		glGetIntegerv(GL_MINOR_VERSION, &info.minor);
+
+		// the driver's own list, as GLEW doesn't know them all (nor 4.6)
+		std::vector<std::string> extensions;
+		GLint count = 0;
+		glGetIntegerv(GL_NUM_EXTENSIONS, &count);
+		for (GLint i = 0; i < count; i++) {
+			if (const GLubyte *e = glGetStringi(GL_EXTENSIONS, GLuint(i)))
+				extensions.emplace_back(reinterpret_cast<const char *>(e));
+		}
+		const auto has = [&](const char *extension, const int major, const int minor) {
+			if (info.major > major || (info.major == major && info.minor >= minor))
+				return true;
+			return extension && std::find(extensions.begin(), extensions.end(), extension) != extensions.end();
+		};
+		info.features = {
+			{ "OpenGL 4.6 (required)", "P5", has(nullptr, 4, 6) },
+			{ "tessellation shaders (GL_ARB_tessellation_shader)", "P2, P4", has("GL_ARB_tessellation_shader", 4, 0) },
+			{ "compute shaders (GL_ARB_compute_shader)", "P2", has("GL_ARB_compute_shader", 4, 3) },
+			{ "storage buffers (GL_ARB_shader_storage_buffer_object)", "P2", has("GL_ARB_shader_storage_buffer_object", 4, 3) },
+			{ "image load and store (GL_ARB_shader_image_load_store)", "P2", has("GL_ARB_shader_image_load_store", 4, 2) },
+			{ "indirect drawing (GL_ARB_multi_draw_indirect)", "P2, P7", has("GL_ARB_multi_draw_indirect", 4, 3) },
+			{ "draw counts from the GPU (GL_ARB_indirect_parameters)", "P7", has("GL_ARB_indirect_parameters", 4, 6) },
+			{ "persistent mapped buffers (GL_ARB_buffer_storage)", "P3", has("GL_ARB_buffer_storage", 4, 4) },
+		};
+		CHECKERRORS();
+		return info;
 	}
 
 	void RendererOGL::WriteRendererInfo(std::ostream &out) const
@@ -972,6 +1054,32 @@ namespace Graphics {
 		m_drawCommandList->AddDrawBuffersCmd(vtxBuffers, idx, material, numElements, instanceCount);
 	}
 
+	void RendererOGL::DispatchCompute(Material *material, const uint32_t groupsX, const uint32_t groupsY, const uint32_t groupsZ)
+	{
+		m_drawCommandList->AddDispatchComputeCmd(material, groupsX, groupsY, groupsZ);
+	}
+
+	bool RendererOGL::MaterialCompiled(Material *m)
+	{
+		OGL::Program *program = m ? static_cast<OGL::Material *>(m)->EvaluateVariant() : nullptr;
+		return program && program->Loaded();
+	}
+
+	void RendererOGL::AddComputeBarrier(const uint32_t barriers)
+	{
+		GLbitfield bits = 0;
+		if (barriers == BARRIER_ALL) {
+			bits = GL_ALL_BARRIER_BITS;
+		} else {
+			if (barriers & BARRIER_TEXTURE_FETCH)
+				bits |= GL_TEXTURE_FETCH_BARRIER_BIT;
+			if (barriers & BARRIER_IMAGE_ACCESS)
+				bits |= GL_SHADER_IMAGE_ACCESS_BARRIER_BIT;
+		}
+		if (bits)
+			m_drawCommandList->AddBarrierCmd(bits);
+	}
+
 	bool RendererOGL::FlushCommandBuffers()
 	{
 		PROFILE_SCOPED()
@@ -1004,6 +1112,10 @@ namespace Graphics {
 				m_drawCommandList->ExecuteBlitRenderTargetCmd(*blitRenderTargetCmd);
 			else if (auto *timerCmd = std::get_if<OGL::CommandList::GpuTimerCmd>(&cmd))
 				m_drawCommandList->ExecuteGpuTimerCmd(*timerCmd);
+			else if (auto *computeCmd = std::get_if<OGL::CommandList::DispatchComputeCmd>(&cmd))
+				m_drawCommandList->ExecuteDispatchComputeCmd(*computeCmd);
+			else if (auto *barrierCmd = std::get_if<OGL::CommandList::BarrierCmd>(&cmd))
+				m_drawCommandList->ExecuteBarrierCmd(*barrierCmd);
 		}
 
 		// we don't manually reset the active vertex array after each drawcall for performance,
@@ -1124,6 +1236,10 @@ namespace Graphics {
 			stats.AddToStatCount(Stats::STAT_NUM_TRIS, count - 2);
 			return;
 		case TRIANGLES:
+			stats.AddToStatCount(Stats::STAT_NUM_TRIS, count / 3);
+			return;
+		case PATCHES:
+			// (before tessellation: the patches, as if triangles)
 			stats.AddToStatCount(Stats::STAT_NUM_TRIS, count / 3);
 			return;
 		}

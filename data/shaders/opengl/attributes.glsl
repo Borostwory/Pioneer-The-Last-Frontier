@@ -1,7 +1,7 @@
 // Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
-#extension GL_ARB_explicit_attrib_location : enable
+// (attribute locations are core since OpenGL 3.3: the extension GL_ARB_explicit_attrib_location isn't needed)
 
 //Light uniform parameters
 struct Light {

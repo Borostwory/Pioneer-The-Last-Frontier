@@ -32,7 +32,7 @@ float calc_cell_lod(float cell_size, float lod_level)
 // Calculate the combined XY line coverage values for the given pixel with the defined grid setting
 float calc_grid_coverage(vec2 uv, vec2 line_width, float cell_size)
 {
-	vec2 cover = 1 - abs(clamp(mod(uv + line_width * 0.5, cell_size) / line_width, 0, 1) * 2 - 1);
+	vec2 cover = 1.0 - abs(clamp(mod(uv + line_width * 0.5, cell_size) / line_width, 0.0, 1.0) * 2.0 - 1.0);
 	return max(cover.x, cover.y);
 }
 
@@ -51,7 +51,7 @@ void main(void)
 	// Each primary cell covers an area of 10 degrees and subdivides from there
 	float cell_size = 1.0 / 18.0;
 
-	float lod_level = min(1, log10(length(dudv) * line_spacing / cell_size) + 1);
+	float lod_level = min(1.0, log10(length(dudv) * line_spacing / cell_size) + 1.0);
 	float lod_transition = fract(lod_level);
 
 	// Calculate the grid cell size at the minimum visible LOD level and the next larger
@@ -71,7 +71,7 @@ void main(void)
 
 	// Make the grid transparent at grazing angles
 	vec3 viewdir = normalize(v_eyepos);
-	color.a *= 1.0 - pow(1.0 - abs(dot(viewdir, v_normal)), 8);
+	color.a *= 1.0 - pow(1.0 - abs(dot(viewdir, v_normal)), 8.0);
 
 	// Make the rear half of the grid sphere less visible
 	color.a *= clamp(dot(viewdir, -v_normal) + 1.0, 0.2, 1.0);

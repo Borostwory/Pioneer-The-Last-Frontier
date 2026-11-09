@@ -6,6 +6,7 @@
 
 #include "FracDef.h"
 #include "SurfaceProfile.h"
+#include "TerrainLandforms.h"
 #include "TerrainMaterials.h"
 #include "../Random.h"
 #include "../RefCounted.h"
@@ -66,8 +67,9 @@ public:
 
 	// Heights (unit-sphere units above the radius) at points on the unit
 	// sphere: the height fractal, with river valleys cut in on bodies with
-	// erosion (TerrainErosion) and the ground levelled under surface
-	// starports. Collision and the terrain patches use this.
+	// erosion (TerrainErosion), the landforms when they are switched on as
+	// shape (AddLandforms), and the ground levelled under surface starports.
+	// Collision and the terrain patches use this.
 	void GetHeights(const vector3d *vP, double *heightsOut, const size_t count) const;
 	// The height fractal alone, without erosion or levelling.
 	virtual void GetBaseHeights(const vector3d *vP, double *heightsOut, const size_t count) const = 0;
@@ -96,6 +98,16 @@ public:
 	// The landforms of the GPU detail tiles (rolling, ridged, dunes, craters).
 	// False: go by the height fractal's name, as classic bodies do.
 	virtual bool GetTileStyle(float[4]) const { return false; }
+	// GetTileStyle, or else the style by the height fractal's name: craters on airless and cratered bodies, dunes on
+	// dune terrains, ridges on mountains and rugged terrain, rolling eroded hills elsewhere
+	void GetLandformStyle(float style[4]) const;
+	// The landforms as real shape (P3 of docs/implementation_plans/opengl46-tessellation-compute_plan.md): their
+	// settings for this body, from the body alone, never from the planet detail setting (TerrainLandforms)
+	const TerrainLandforms::Params &GetLandformParams() const;
+	// Being tried: the landforms in the heights, of every size up to this many metres (0: off, as before). From the
+	// config (TerrainLandformShape) and the debug window; the patches must be made again after a change.
+	static void SetLandformShape(double topMetres);
+	static double GetLandformShape();
 	// The largest craters the tiles may draw, in metres; 0: by the planet's size.
 	virtual double GetTileCraterTop() const { return 0.0; }
 	// metres: the tile's landforms, of every size up to this and fixed in space, instead of only those near the patch's
@@ -303,6 +315,11 @@ protected:
 	void AddStarportSites(const SystemBody *body);
 	void SetFlatSite(const SystemBody *starport, const vector3d &p);
 	void LevelSites(const vector3d *vP, double *heightsOut, const size_t count) const;
+	// adds the landforms to the heights, while they are switched on (SetLandformShape)
+	void AddLandforms(const vector3d *vP, double *heightsOut, const size_t count) const;
+	bool m_airless = false;
+	mutable std::once_flag m_landformOnce;
+	mutable TerrainLandforms::Params m_landformParams;
 
 	// the palette materials of the Earth-like colour fractals (EarthLike, TFGood, TFPoor)
 	void AddPaletteMaterials();

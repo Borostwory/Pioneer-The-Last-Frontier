@@ -130,6 +130,8 @@ public:
 	bool GetDrawnRadius(const vector3d &dir, double &radius) const;
 	// distance between vertices on the unit sphere
 	double GetVertexSpacing() const;
+	// level in the quadtree, 0 for the six faces
+	int GetDepth() const { return m_depth; }
 
 	// draws the patches drawn this frame that touch lightBox into the current
 	// sun shadow map, see GeoSphere::RenderShadowCaster

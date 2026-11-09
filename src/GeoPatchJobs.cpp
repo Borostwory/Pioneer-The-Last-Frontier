@@ -19,6 +19,21 @@ namespace {
 	std::atomic<uint64_t> s_genPatches(0);
 	std::atomic<uint64_t> s_genMicroseconds(0);
 	std::atomic<int> s_quadJobsInFlight(0);
+	// the parts of the jobs (GeoPatchGenStats)
+	std::atomic<uint64_t> s_heightsNanos(0);
+	std::atomic<uint64_t> s_slopesNanos(0);
+	std::atomic<uint64_t> s_normalsNanos(0);
+	std::atomic<uint64_t> s_surfaceNanos(0);
+
+	inline long long NowNanos()
+	{
+		return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+	}
+
+	inline void AddNanos(std::atomic<uint64_t> &to, const long long nanos)
+	{
+		to.fetch_add(uint64_t(std::max(nanos, 0LL)), std::memory_order_relaxed);
+	}
 
 	// adds the lifetime of a patch job to the generation statistics
 	class ScopedGenTimer {
@@ -79,6 +94,10 @@ GeoPatchGenStats GetGeoPatchGenStats()
 	stats.jobs = s_genJobs;
 	stats.patches = s_genPatches;
 	stats.microseconds = s_genMicroseconds;
+	stats.heightsNanos = s_heightsNanos;
+	stats.slopesNanos = s_slopesNanos;
+	stats.normalsNanos = s_normalsNanos;
+	stats.surfaceNanos = s_surfaceNanos;
 	return stats;
 }
 
@@ -97,6 +116,10 @@ void ResetGeoPatchGenStats()
 	s_genJobs = 0;
 	s_genPatches = 0;
 	s_genMicroseconds = 0;
+	s_heightsNanos = 0;
+	s_slopesNanos = 0;
+	s_normalsNanos = 0;
+	s_surfaceNanos = 0;
 }
 
 inline void setColour(GeoVertexSurface &r, const vector3d &v, const double altitude)
@@ -218,6 +241,7 @@ void SSingleSplitRequest::GenerateMesh() const
 	PROFILE_SCOPED()
 	const int borderedEdgeLen = edgeLen + (BORDER_SIZE * 2);
 	const int numBorderedVerts = borderedEdgeLen * borderedEdgeLen;
+	const long long heightsStart = NowNanos();
 
 	// generate heights plus a 1 unit border
 	vector3d *fill_verts = borderVertexs.get();
@@ -244,11 +268,16 @@ void SSingleSplitRequest::GenerateMesh() const
 	{
 		vrts[iHeights] *= (bhts[iHeights] + 1.0);
 	}
+	const long long slopesStart = NowNanos();
+	AddNanos(s_heightsNanos, slopesStart - heightsStart);
 
 	// the slope the colours see (COLOUR_SLOPE_SCALE), if not the vertices' own
 	std::vector<vector3d> colourNormals;
 	const bool fixedSlope = ColourSlopeNormals(pTerrain.Get(), vrts, borderedEdgeLen,
 		BORDER_SIZE, borderedEdgeLen - BORDER_SIZE, BORDER_SIZE, borderedEdgeLen - BORDER_SIZE, colourNormals);
+	const long long loopStart = NowNanos();
+	AddNanos(s_slopesNanos, loopStart - slopesStart);
+	long long surfaceNanos = 0;
 
 	// Generate normals & colors for non-edge vertices since they never change
 	TerrainNoise::ScopedBandLimit bandLimit(maxFrequency);
@@ -276,11 +305,15 @@ void SSingleSplitRequest::GenerateMesh() const
 
 			// color
 			const vector3d p = GetSpherePoint(v0, v1, v2, v3, (x - BORDER_SIZE) * fracStep, (y - BORDER_SIZE) * fracStep);
+			const long long surfaceStart = NowNanos();
 			setSurface(*col, pTerrain.Get(), p, height, fixedSlope ? *(colourNormal++) : n, debugDepth, depth, maxDepth);
+			surfaceNanos += NowNanos() - surfaceStart;
 			assert(col != &colors[edgeLen * edgeLen]);
 			++col;
 		}
 	}
+	AddNanos(s_surfaceNanos, surfaceNanos);
+	AddNanos(s_normalsNanos, NowNanos() - loopStart - surfaceNanos);
 	assert(hts == &heights[edgeLen * edgeLen]);
 	assert(nrm == &normals[edgeLen * edgeLen]);
 	assert(col == &colors[edgeLen * edgeLen]);
@@ -397,6 +430,7 @@ void SQuadSplitRequest::GenerateBorderedData() const
 	PROFILE_SCOPED()
 	const int borderedEdgeLen = (edgeLen * 2) + (BORDER_SIZE * 2) - 1;
 	const int numBorderedVerts = borderedEdgeLen * borderedEdgeLen;
+	const long long heightsStart = NowNanos();
 
 	// generate heights plus a N=BORDER_SIZE unit border
 	vector3d *fill_verts = borderVertexs.get();
@@ -422,6 +456,7 @@ void SQuadSplitRequest::GenerateBorderedData() const
 	for (int iHeights = 0; iHeights < numBorderedVerts; iHeights++) {
 		vrts[iHeights] *= (bhts[iHeights] + 1.0);
 	}
+	AddNanos(s_heightsNanos, NowNanos() - heightsStart);
 }
 
 void SQuadSplitRequest::GenerateSubPatchData(
@@ -437,11 +472,15 @@ void SQuadSplitRequest::GenerateSubPatchData(
 {
 	PROFILE_SCOPED()
 	vector3d *vrts = borderVertexs.get();
+	const long long slopesStart = NowNanos();
 	// the slope the colours see (COLOUR_SLOPE_SCALE), if not the vertices' own
 	std::vector<vector3d> colourNormals;
 	const bool fixedSlope = ColourSlopeNormals(pTerrain.Get(), vrts, borderedEdgeLen,
 		BORDER_SIZE + xoff, BORDER_SIZE + xoff + edgeLen, BORDER_SIZE + yoff, BORDER_SIZE + yoff + edgeLen, colourNormals);
 	const vector3d *colourNormal = colourNormals.data();
+	const long long loopStart = NowNanos();
+	AddNanos(s_slopesNanos, loopStart - slopesStart);
+	long long surfaceNanos = 0;
 
 	// Generate normals & colors for vertices
 	TerrainNoise::ScopedBandLimit bandLimit(NyquistFrequency((v1 - v0).Length() * fracStep));
@@ -472,11 +511,15 @@ void SQuadSplitRequest::GenerateSubPatchData(
 
 			// color
 			const vector3d p = GetSpherePoint(v0, v1, v2, v3, x * fracStep, y * fracStep);
+			const long long surfaceStart = NowNanos();
 			setSurface(*col, pTerrain.Get(), p, height, fixedSlope ? *(colourNormal++) : n, debugDepth, depth + 1, maxDepth);
+			surfaceNanos += NowNanos() - surfaceStart;
 			assert(col != &colors[quadrantIndex][edgeLen * edgeLen]);
 			++col;
 		}
 	}
+	AddNanos(s_surfaceNanos, surfaceNanos);
+	AddNanos(s_normalsNanos, NowNanos() - loopStart - surfaceNanos);
 	assert(hts == &heights[quadrantIndex][edgeLen * edgeLen]);
 	assert(nrm == &normals[quadrantIndex][edgeLen * edgeLen]);
 	assert(col == &colors[quadrantIndex][edgeLen * edgeLen]);

@@ -513,6 +513,7 @@ Terrain::Terrain(const SystemBody *body) :
 	m_minBody(body),
 	m_surfaceProfile(body)
 {
+	m_airless = body->GetVolatileGas() < 0.05;
 
 	// load the heightmap
 	if (!body->GetHeightMapFilename().empty()) {
@@ -775,7 +776,124 @@ void Terrain::GetHeights(const vector3d *vP, double *heightsOut, const size_t co
 	GetBaseHeights(vP, heightsOut, count);
 	if (m_erosion)
 		m_erosion->Apply(*this, vP, heightsOut, count);
+	AddLandforms(vP, heightsOut, count);
 	LevelSites(vP, heightsOut, count);
+}
+
+namespace {
+	// metres: the landforms as shape, of every size up to this; 0: off (Terrain::SetLandformShape)
+	std::atomic<double> s_landformShape(0.0);
+	// as TerrainTiles: the band's octaves, the most octaves, and the classic bodies' largest craters by their radius
+	constexpr int LANDFORM_BAND_OCTAVES = 3;
+	constexpr int LANDFORM_MAX_OCTAVES = 16;
+	constexpr double LANDFORM_CRATER_TOP_PER_RADIUS = 0.25;
+	// The ladder of the landforms' sizes starts from the deepest vertex spacing as GeoSphere reckoned it
+	// (GetLegacyDeepestSpacing), but always with the patches of the planet detail setting the look was judged on
+	// (Very High: 33 vertices along an edge, plus 2 for the skirt), so the ground doesn't follow the setting
+	constexpr int LANDFORM_EDGE_LEN = 33 + 2;
+	// metres above the sea over which the landforms fade in, so they don't move the coasts
+	constexpr double LANDFORM_SHORE_M = 30.0;
+
+	inline double LandformSmoothStep(const double e0, const double e1, const double x)
+	{
+		const double t = std::clamp((x - e0) / (e1 - e0), 0.0, 1.0);
+		return t * t * (3.0 - 2.0 * t);
+	}
+} // namespace
+
+void Terrain::SetLandformShape(const double topMetres)
+{
+	s_landformShape.store(std::max(topMetres, 0.0), std::memory_order_relaxed);
+}
+
+double Terrain::GetLandformShape()
+{
+	return s_landformShape.load(std::memory_order_relaxed);
+}
+
+void Terrain::GetLandformStyle(float style[4]) const
+{
+	if (GetTileStyle(style))
+		return;
+	const std::string name = GetHeightFractalName();
+	auto has = [&](const char *s) { return name.find(s) != std::string::npos; };
+	float rolling = 1.0f, ridged = 0.0f, dunes = 0.0f, craters = 0.0f;
+	if (has("Dunes")) {
+		rolling = 0.4f;
+		dunes = 0.8f;
+	} else if (has("Mountains") || has("Rugged") || has("Ridged") || has("Barren") || has("Mapped")) {
+		rolling = 0.5f;
+		ridged = 0.6f;
+	}
+	if (has("Crater") || has("Asteroid") || m_airless) {
+		craters = 1.0f;
+		rolling *= 0.4f;
+		ridged *= 0.4f;
+		dunes = 0.0f;
+	}
+	style[0] = rolling;
+	style[1] = ridged;
+	style[2] = dunes;
+	style[3] = craters;
+}
+
+const TerrainLandforms::Params &Terrain::GetLandformParams() const
+{
+	std::call_once(m_landformOnce, [this]() {
+		TerrainLandforms::Params &p = m_landformParams;
+		p.radius = m_planetRadius;
+		// the deepest level and its spacing as GeoSphere::CalculateMaxPatchDepth and GetLegacyDeepestSpacing work
+		// them out, with LANDFORM_EDGE_LEN
+		const double edge0 = 2.0 * M_PI * m_planetRadius / double(LANDFORM_EDGE_LEN * 8);
+		double edge = edge0;
+		int meant = 0;
+		while (edge > 100.0 && meant < 15) {
+			edge *= 0.5;
+			meant++;
+		}
+		const int level = std::min(2 * meant, 15);
+		const double ladderBase = 0.5 * edge0 / std::pow(2.0, double(level));
+		// the finest octave as the tiles of the deepest patches have it
+		p.finest = 1;
+		p.finestWave = 2.0 * ladderBase;
+		GetLandformStyle(p.style);
+		p.band = LANDFORM_BAND_OCTAVES;
+		p.count = LANDFORM_BAND_OCTAVES;
+		p.craterTop = GetTileCraterTop();
+		p.landformTop = GetTileLandformTop();
+		p.blocks = GetTileBlocks();
+		if (p.style[3] > 0.0f || p.landformTop > 0.0) {
+			const double largest = std::max(p.style[3] > 0.0f ? (p.craterTop > 0.0 ? p.craterTop : m_planetRadius * LANDFORM_CRATER_TOP_PER_RADIUS) : 0.0, p.landformTop);
+			const int top = int(std::floor(std::log2(std::max(largest / ladderBase, 1.0))));
+			p.count = std::min(std::max(top - p.finest + 1, LANDFORM_BAND_OCTAVES), LANDFORM_MAX_OCTAVES);
+		}
+	});
+	return m_landformParams;
+}
+
+void Terrain::AddLandforms(const vector3d *vP, double *heightsOut, const size_t count) const
+{
+	const double top = GetLandformShape();
+	if (top <= 0.0)
+		return;
+	const TerrainLandforms::Params &params = GetLandformParams();
+	// none finer than the band limit the heights are made with (TerrainNoise::ScopedBandLimit)
+	const double maxFrequency = TerrainNoise::s_maxFrequency;
+	const double finest = maxFrequency > 0.0 ? m_planetRadius / maxFrequency : 0.0;
+	if (params.count <= 0 || finest > top)
+		return;
+	const bool water = (m_surfaceEffects & EFFECT_WATER) != 0;
+	for (size_t i = 0; i < count; i++) {
+		const double base = heightsOut[i];
+		// none in the sea, fading in above it, so the coasts stay where they are
+		const double weight = water ? LandformSmoothStep(0.0, LANDFORM_SHORE_M, base * m_planetRadius) : 1.0;
+		if (weight <= 0.0)
+			continue;
+		const TerrainLandforms::Sample s = TerrainLandforms::Evaluate(params, vP[i].Normalized(), finest, top);
+		const double h = base + weight * s.height * m_invPlanetRadius;
+		// not below the zero level (the sea, or the lowest ground) where the ground was above it
+		heightsOut[i] = base >= 0.0 ? std::max(h, 0.0) : h;
+	}
 }
 
 void Terrain::ProtectSite(const SystemBody *starport, const vector3d &p)

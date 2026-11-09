@@ -129,6 +129,26 @@ namespace Graphics {
 
 		virtual void WriteRendererInfo(std::ostream &out) const {}
 
+		// The graphics context: what the game asks for, what the driver gave, and whether the driver has each
+		// feature the OpenGL 4.6 plan uses (docs/implementation_plans/opengl46-tessellation-compute_plan.md), for
+		// the debug window
+		struct ContextInfo {
+			std::string requested; // the context and shader version the game asks for
+			std::string version, shading, vendor, device; // as the driver names them
+			int major = 0, minor = 0; // the context's version
+			struct Feature {
+				std::string name;
+				std::string phase; // which phase of the plan needs it
+				bool present = false;
+			};
+			std::vector<Feature> features;
+		};
+		virtual const ContextInfo &GetContextInfo() const
+		{
+			static const ContextInfo none;
+			return none;
+		}
+
 		virtual void CheckRenderErrors(const char *func = nullptr, const int line = -1) const {}
 
 		virtual bool SupportsInstancing() = 0;
@@ -246,6 +266,20 @@ namespace Graphics {
 			int depth; // nesting depth of the scope
 			double milliseconds;
 		};
+		// Compute (P6 of docs/implementation_plans/opengl46-tessellation-compute_plan.md): runs the compute shader of a
+		// material made from a shaderdef with a Compute stage, in groupsX x groupsY x groupsZ work groups, in order with
+		// the drawing around it. Its textures marked Image in the shaderdef are bound as images, to read or write.
+		virtual void DispatchCompute(Material *m, uint32_t groupsX, uint32_t groupsY = 1, uint32_t groupsZ = 1) {}
+		// what compute wrote, made visible to what comes after it
+		enum ComputeBarrierBits : uint32_t {
+			BARRIER_TEXTURE_FETCH = 1u << 0, // sampled as a texture
+			BARRIER_IMAGE_ACCESS = 1u << 1, // read or written as an image
+			BARRIER_ALL = 0xffffffffu
+		};
+		virtual void AddComputeBarrier(uint32_t barriers) {}
+		// whether the material's shader compiled and linked, for the debug window's tests
+		virtual bool MaterialCompiled(Material *m) { return true; }
+
 		virtual void BeginGpuTimer(const char *name) {}
 		virtual void EndGpuTimer() {}
 		virtual const std::vector<GpuTiming> &GetGpuTimings() const

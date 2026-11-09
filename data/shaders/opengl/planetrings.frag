@@ -59,7 +59,7 @@ void main(void)
 		// Approximate shadow penumbra, completely non-physical.
 		// pixel_width controls the minimum screen-space size of the penumbra regardless of zoom level in pixels.
 		float pixel_width = abs(fwidth(l)) * 6;
-		float penumbra = 1 - smoothstep(0, max(0.2, pixel_width), l);
+		float penumbra = 1.0 - smoothstep(0.0, max(0.2, pixel_width), l);
 
 		// Compute ring lighting
 		{

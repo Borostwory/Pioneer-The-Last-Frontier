@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <set>
 #include <sstream>
 
@@ -22,10 +23,9 @@ namespace Graphics {
 
 	namespace OGL {
 
-		// #version 140 for OpenGL3.1
-		// #version 150 for OpenGL3.2
-		// #version 330 for OpenGL3.3
-		static const char *s_glslVersion = "#version 140\n";
+		// the shading language of OpenGL 4.6, which the game requires (P5 of
+		// docs/implementation_plans/opengl46-tessellation-compute_plan.md)
+		static const char *s_glslVersion = "#version 460 core\n";
 
 		// Check and warn about compile & link errors
 		static bool check_glsl_errors(const char *filename, GLuint obj)
@@ -149,10 +149,12 @@ namespace Graphics {
 				// Build the final shader text to be compiled
 				AppendSource(s_glslVersion);
 				AppendSource(m_defines.c_str());
-				if (type == GL_VERTEX_SHADER) {
-					AppendSource("#define VERTEX_SHADER\n");
-				} else {
-					AppendSource("#define FRAGMENT_SHADER\n");
+				switch (type) {
+				case GL_VERTEX_SHADER: AppendSource("#define VERTEX_SHADER\n"); break;
+				case GL_TESS_CONTROL_SHADER: AppendSource("#define TESS_CONTROL_SHADER\n"); break;
+				case GL_TESS_EVALUATION_SHADER: AppendSource("#define TESS_EVALUATION_SHADER\n"); break;
+				case GL_COMPUTE_SHADER: AppendSource("#define COMPUTE_SHADER\n"); break;
+				default: AppendSource("#define FRAGMENT_SHADER\n"); break;
 				}
 				AppendSource(code.StripUTF8BOM());
 #if 0
@@ -272,7 +274,7 @@ namespace Graphics {
 			return std::string(s_binaryCacheDir) + "/" + def.name + "-" + hash + ".bin";
 		}
 
-		static uint64_t BinarySourceHash(const ProgramDef &def, const ShaderProgram &vs, const ShaderProgram &fs)
+		static uint64_t BinarySourceHash(const ProgramDef &def, const std::vector<std::unique_ptr<ShaderProgram>> &stages)
 		{
 			std::string text = "1\n"; // (raise this if LoadShaders changes what it sets before linking)
 			for (const GLenum name : { GL_VENDOR, GL_RENDERER, GL_VERSION }) {
@@ -281,8 +283,8 @@ namespace Graphics {
 			}
 			text += s_glslVersion;
 			text += def.defines;
-			text += vs.GetCode();
-			text += fs.GetCode();
+			for (const std::unique_ptr<ShaderProgram> &stage : stages)
+				text += stage->GetCode();
 			return HashString(text);
 		}
 
@@ -386,9 +388,20 @@ namespace Graphics {
 				return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startTime).count();
 			};
 
-			//load the shaders' source
-			ShaderProgram vs(GL_VERTEX_SHADER, def.vertexShader, def.defines);
-			ShaderProgram fs(GL_FRAGMENT_SHADER, def.fragmentShader, def.defines);
+			// load the source of every stage there is: compute alone, or vertex, the tessellation stages if any, and
+			// fragment
+			std::vector<std::unique_ptr<ShaderProgram>> stages;
+			const bool compute = !def.computeShader.empty();
+			if (compute) {
+				stages.emplace_back(new ShaderProgram(GL_COMPUTE_SHADER, def.computeShader, def.defines));
+			} else {
+				stages.emplace_back(new ShaderProgram(GL_VERTEX_SHADER, def.vertexShader, def.defines));
+				if (!def.tessControlShader.empty())
+					stages.emplace_back(new ShaderProgram(GL_TESS_CONTROL_SHADER, def.tessControlShader, def.defines));
+				if (!def.tessEvalShader.empty())
+					stages.emplace_back(new ShaderProgram(GL_TESS_EVALUATION_SHADER, def.tessEvalShader, def.defines));
+				stages.emplace_back(new ShaderProgram(GL_FRAGMENT_SHADER, def.fragmentShader, def.defines));
+			}
 
 			// the compiled program from an earlier run, if the source and the driver are the same
 			const bool useBinaryCache = BinaryCacheSupported();
@@ -396,7 +409,7 @@ namespace Graphics {
 			uint64_t binarySourceHash = 0;
 			if (useBinaryCache) {
 				binaryPath = BinaryCachePath(def);
-				binarySourceHash = BinarySourceHash(def, vs, fs);
+				binarySourceHash = BinarySourceHash(def, stages);
 				const GLuint cached = LoadBinary(binaryPath, binarySourceHash);
 				if (cached) {
 					Log::Info("Program {} loaded from the binary cache in {:.1f} ms", def.name, millisecondsSoFar());
@@ -406,13 +419,13 @@ namespace Graphics {
 			}
 
 			//create and compile shaders
-			vs.Compile();
-			fs.Compile();
-
-			if (!vs.shader || !fs.shader) {
-				Log::Warning("Error loading GLSL shaders for program {}\n", def.name);
-				success = false;
-				return 0;
+			for (std::unique_ptr<ShaderProgram> &stage : stages) {
+				stage->Compile();
+				if (!stage->shader) {
+					Log::Warning("Error loading GLSL shaders for program {}\n", def.name);
+					success = false;
+					return 0;
+				}
 			}
 
 			//create program, attach shaders and link
@@ -420,8 +433,8 @@ namespace Graphics {
 			if (glIsProgram(program) != GL_TRUE)
 				throw ProgramException();
 
-			glAttachShader(program, vs.shader);
-			glAttachShader(program, fs.shader);
+			for (std::unique_ptr<ShaderProgram> &stage : stages)
+				glAttachShader(program, stage->shader);
 
 			//extra attribs, if they exist
 			glBindAttribLocation(program, 0, "a_vertex");

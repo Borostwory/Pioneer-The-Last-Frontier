@@ -8,6 +8,7 @@
 #include "graphics/VertexBuffer.h"
 #include "graphics/opengl/OpenGLLibs.h"
 #include "graphics/opengl/RendererGL.h"
+#include "graphics/UploadStats.h"
 
 #include "profiler/Profiler.h"
 
@@ -122,11 +123,14 @@ namespace Graphics {
 
 			//Allocate GL buffer with undefined contents
 			//Critical optimisation for some architectures in cases where buffer is created and written in the same frame
-			glGenBuffers(1, &m_buffer);
-			glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
 			const Uint32 dataSize = numVertices * m_stride;
-			glBufferData(GL_ARRAY_BUFFER, dataSize, 0, get_buffer_usage(usage));
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			{
+				UploadTimer timer(UPLOAD_BUFFER_NEW, dataSize);
+				glGenBuffers(1, &m_buffer);
+				glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
+				glBufferData(GL_ARRAY_BUFFER, dataSize, 0, get_buffer_usage(usage));
+				glBindBuffer(GL_ARRAY_BUFFER, 0);
+			}
 
 			// Allocate client data store for dynamic buffers
 			if (usage != BUFFER_USAGE_STATIC) {
@@ -138,7 +142,10 @@ namespace Graphics {
 
 		VertexBuffer::~VertexBuffer()
 		{
-			glDeleteBuffers(1, &m_buffer);
+			{
+				UploadTimer timer(UPLOAD_BUFFER_FREE, size_t(m_capacity) * m_stride);
+				glDeleteBuffers(1, &m_buffer);
+			}
 			delete[] m_data;
 		}
 
@@ -149,6 +156,7 @@ namespace Graphics {
 			assert(m_mapMode == BUFFER_MAP_NONE); //must not be currently mapped
 			m_mapMode = mode;
 			if (m_usage == BUFFER_USAGE_STATIC) {
+				UploadTimer timer(UPLOAD_BUFFER_MAP, size_t(m_size) * m_stride);
 				glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
 				if (mode == BUFFER_MAP_READ)
 					return reinterpret_cast<Uint8 *>(glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY));
@@ -165,11 +173,13 @@ namespace Graphics {
 			assert(m_mapMode != BUFFER_MAP_NONE); //not currently mapped
 
 			if (m_usage == BUFFER_USAGE_STATIC) {
+				UploadTimer timer(UPLOAD_BUFFER_WRITE, m_mapMode == BUFFER_MAP_WRITE ? size_t(m_size) * m_stride : 0);
 				glUnmapBuffer(GL_ARRAY_BUFFER);
 				glBindBuffer(GL_ARRAY_BUFFER, 0);
 			} else {
 				if (m_mapMode == BUFFER_MAP_WRITE) {
 					const GLsizei dataSize = m_size * m_stride;
+					UploadTimer timer(UPLOAD_BUFFER_WRITE, dataSize);
 					glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
 					glBufferData(GL_ARRAY_BUFFER, dataSize, 0, get_buffer_usage(m_usage));
 					glBufferSubData(GL_ARRAY_BUFFER, 0, dataSize, m_data);
@@ -194,6 +204,7 @@ namespace Graphics {
 			m_mapLength = range;
 
 			if (m_usage == BUFFER_USAGE_STATIC) {
+				UploadTimer timer(UPLOAD_BUFFER_MAP, range);
 				glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
 				return reinterpret_cast<uint8_t *>(glMapBufferRange(GL_ARRAY_BUFFER, start, range, mode == BUFFER_MAP_READ ? GL_READ_ONLY : GL_WRITE_ONLY));
 			}
@@ -208,8 +219,10 @@ namespace Graphics {
 			assert(m_mapLength != 0);
 
 			if (m_usage == BUFFER_USAGE_STATIC) {
+				UploadTimer timer(UPLOAD_BUFFER_WRITE, m_mapMode == BUFFER_MAP_WRITE ? m_mapLength : 0);
 				glUnmapBuffer(GL_ARRAY_BUFFER);
 			} else if (m_mapMode == BUFFER_MAP_WRITE && flush) {
+				UploadTimer timer(UPLOAD_BUFFER_WRITE, m_mapLength);
 				glBufferSubData(GL_ARRAY_BUFFER, m_mapStart, m_mapLength, m_data + m_mapStart);
 			}
 
@@ -227,6 +240,7 @@ namespace Graphics {
 			assert(m_usage == BUFFER_USAGE_DYNAMIC);
 			assert(start + range <= m_capacity * m_stride);
 
+			UploadTimer timer(UPLOAD_BUFFER_WRITE, range);
 			glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
 			glBufferSubData(GL_ARRAY_BUFFER, start, range, m_data + start);
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -237,6 +251,7 @@ namespace Graphics {
 			PROFILE_SCOPED()
 			assert(m_mapMode == BUFFER_MAP_NONE); //must not be currently mapped
 			if (m_usage == BUFFER_USAGE_DYNAMIC) {
+				UploadTimer timer(UPLOAD_BUFFER_WRITE, size);
 				glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
 				glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(size), static_cast<GLvoid *>(data), GL_DYNAMIC_DRAW);
 			}
@@ -248,6 +263,7 @@ namespace Graphics {
 			assert(m_usage == BUFFER_USAGE_DYNAMIC);
 			assert(m_mapMode == BUFFER_MAP_NONE);
 
+			UploadTimer timer(UPLOAD_BUFFER_NEW, size_t(m_capacity) * m_stride);
 			glBindBuffer(GL_ARRAY_BUFFER, m_buffer);
 			glBufferData(GL_ARRAY_BUFFER, m_capacity * m_stride, nullptr, get_buffer_usage(m_usage));
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -272,10 +288,13 @@ namespace Graphics {
 		{
 			const GLenum usage = (hint == BUFFER_USAGE_STATIC) ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
 			const GLuint gl_size = (elem == INDEX_BUFFER_16BIT ? sizeof(Uint16) : sizeof(Uint32)) * m_size;
-			glGenBuffers(1, &m_buffer);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_buffer);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, gl_size, 0, usage);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			{
+				UploadTimer timer(UPLOAD_BUFFER_NEW, gl_size);
+				glGenBuffers(1, &m_buffer);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_buffer);
+				glBufferData(GL_ELEMENT_ARRAY_BUFFER, gl_size, 0, usage);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			}
 
 			if (GetUsage() != BUFFER_USAGE_STATIC) {
 				if (elem == INDEX_BUFFER_16BIT) {
@@ -290,7 +309,10 @@ namespace Graphics {
 
 		IndexBuffer::~IndexBuffer()
 		{
-			glDeleteBuffers(1, &m_buffer);
+			{
+				UploadTimer timer(UPLOAD_BUFFER_FREE, size_t(m_size) * (m_elemSize == INDEX_BUFFER_16BIT ? sizeof(Uint16) : sizeof(Uint32)));
+				glDeleteBuffers(1, &m_buffer);
+			}
 			if (m_elemSize == INDEX_BUFFER_16BIT)
 				delete[] m_data16;
 			else
@@ -303,6 +325,7 @@ namespace Graphics {
 			assert(m_mapMode == BUFFER_MAP_NONE); //must not be currently mapped
 			m_mapMode = mode;
 			if (GetUsage() == BUFFER_USAGE_STATIC) {
+				UploadTimer timer(UPLOAD_BUFFER_MAP, size_t(m_size) * sizeof(Uint32));
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_buffer);
 				if (mode == BUFFER_MAP_READ)
 					return reinterpret_cast<Uint32 *>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_ONLY));
@@ -319,6 +342,7 @@ namespace Graphics {
 			assert(m_mapMode == BUFFER_MAP_NONE); //must not be currently mapped
 			m_mapMode = mode;
 			if (GetUsage() == BUFFER_USAGE_STATIC) {
+				UploadTimer timer(UPLOAD_BUFFER_MAP, size_t(m_size) * sizeof(Uint16));
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_buffer);
 				if (mode == BUFFER_MAP_READ)
 					return reinterpret_cast<Uint16 *>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_READ_ONLY));
@@ -333,11 +357,14 @@ namespace Graphics {
 		{
 			assert(m_mapMode != BUFFER_MAP_NONE); //not currently mapped
 
+			const size_t indexBytes = size_t(m_size) * (m_elemSize == INDEX_BUFFER_16BIT ? sizeof(Uint16) : sizeof(Uint32));
 			if (GetUsage() == BUFFER_USAGE_STATIC) {
+				UploadTimer timer(UPLOAD_BUFFER_WRITE, m_mapMode == BUFFER_MAP_WRITE ? indexBytes : 0);
 				glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			} else {
 				if (m_mapMode == BUFFER_MAP_WRITE) {
+					UploadTimer timer(UPLOAD_BUFFER_WRITE, indexBytes);
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_buffer);
 					if (m_elemSize == INDEX_BUFFER_16BIT) {
 						glBufferData(GL_ARRAY_BUFFER, sizeof(Uint16) * m_size, 0, GL_DYNAMIC_DRAW);
@@ -359,6 +386,7 @@ namespace Graphics {
 			PROFILE_SCOPED()
 			assert(m_mapMode == BUFFER_MAP_NONE); //must not be currently mapped
 			if (GetUsage() == BUFFER_USAGE_DYNAMIC) {
+				UploadTimer timer(UPLOAD_BUFFER_WRITE, size);
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_buffer);
 				glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(size), static_cast<GLvoid *>(data), GL_DYNAMIC_DRAW);
 			}

@@ -66,7 +66,7 @@ void CalcPlanetDiffuse(inout vec4 diff, in vec4 color, in vec3 L, in vec3 N, in 
 	float nnDotVP = max(0.0, dot(N, -L));
 
 	//need backlight to increase horizon, attempts to model light propagating towards terminator
-	float clampedCosine = (nDotVP + 0.5 * clamp(1.0 - nnDotVP * 4.0, 0, 1) * INV_NUM_LIGHTS);
+	float clampedCosine = (nDotVP + 0.5 * clamp(1.0 - nnDotVP * 4.0, 0.0, 1.0) * INV_NUM_LIGHTS);
 	diff += color * uneclipsed * 0.5 * clampedCosine;
 }
 

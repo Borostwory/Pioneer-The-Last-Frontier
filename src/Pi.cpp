@@ -73,6 +73,7 @@
 
 #include "sound/AmbientSounds.h"
 #include "sound/Sound.h"
+#include "terrain/Terrain.h"
 #include "sound/SoundMusic.h"
 
 #include "profiler/Profiler.h"
@@ -356,6 +357,8 @@ void Pi::App::OnStartup()
 	Pi::SetAmountBackgroundStars(config->Float("AmountOfBackgroundStars"));
 	Pi::SetStarFieldStarSizeFactor(config->Float("StarFieldStarSizeFactor"));
 	Pi::detail.planets = config->Int("DetailPlanets");
+	// being tried: the landforms as real shape (P3 of the OpenGL 4.6 plan), before any terrain is made
+	Terrain::SetLandformShape(config->Float("TerrainLandformShape", 0.0f));
 	Pi::detail.cities = config->Int("DetailCities");
 
 	Graphics::RendererOGL::RegisterRenderer();

@@ -4,6 +4,7 @@
 #include "TextureGL.h"
 #include "RendererGL.h"
 #include "graphics/Renderer.h"
+#include "graphics/UploadStats.h"
 #include "utils.h"
 #include <cassert>
 
@@ -112,6 +113,8 @@ namespace Graphics {
 			PROFILE_SCOPED()
 			// this is kind of a hack, but it limits the amount of things that need to care about multisample textures.
 			m_target = numSamples ? GL_TEXTURE_2D_MULTISAMPLE : GLTextureType(descriptor.type);
+			const size_t layers = m_target == GL_TEXTURE_CUBE_MAP ? 6 : (m_target == GL_TEXTURE_2D_ARRAY ? size_t(descriptor.dataSize.z) : 1);
+			UploadTimer timer(UPLOAD_TEXTURE_NEW, size_t(descriptor.dataSize.x) * size_t(descriptor.dataSize.y) * layers * UploadTexelBytes(descriptor.format) / (IsCompressed(descriptor.format) ? 16 : 1));
 
 			glGenTextures(1, &m_texture);
 			glBindTexture(m_target, m_texture);
@@ -337,6 +340,7 @@ namespace Graphics {
 			switch (m_target) {
 			case GL_TEXTURE_2D:
 				if (!IsCompressed(format)) {
+					UploadTimer timer(UPLOAD_TEXTURE_WRITE, size_t(dataSize.x) * size_t(dataSize.y) * UploadTexelBytes(format));
 					glTexSubImage2D(m_target, 0, pos.x, pos.y, dataSize.x, dataSize.y, GLImageFormat(format), GLImageType(format), data);
 				} else {
 					const GLint oglInternalFormat = GLImageFormat(format);
@@ -347,6 +351,7 @@ namespace Graphics {
 					const unsigned char *pData = static_cast<const unsigned char *>(data);
 					for (unsigned int i = 0; i < numMips; ++i) {
 						size_t bufSize = ((Width + 3) / 4) * ((Height + 3) / 4) * GetMinSize(format);
+						UploadTimer timer(UPLOAD_TEXTURE_WRITE, bufSize);
 						glCompressedTexSubImage2D(m_target, i, pos.x, pos.y, Width, Height, oglInternalFormat, bufSize, &pData[Offset]);
 
 						Offset += bufSize;
@@ -380,6 +385,7 @@ namespace Graphics {
 			switch (m_target) {
 			case GL_TEXTURE_CUBE_MAP:
 				if (!IsCompressed(format)) {
+					UploadTimer timer(UPLOAD_TEXTURE_WRITE, 6 * size_t(dataSize.x) * size_t(dataSize.y) * UploadTexelBytes(format));
 					glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, 0, 0, dataSize.x, dataSize.y, GLImageFormat(format), GLImageType(format), data.posX);
 					glTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, 0, 0, dataSize.x, dataSize.y, GLImageFormat(format), GLImageType(format), data.negX);
 					glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, 0, 0, dataSize.x, dataSize.y, GLImageFormat(format), GLImageType(format), data.posY);
@@ -400,6 +406,7 @@ namespace Graphics {
 					const unsigned char *pData_nz = static_cast<const unsigned char *>(data.negZ);
 					for (unsigned int i = 0; i < numMips; ++i) {
 						size_t bufSize = ((Width + 3) / 4) * ((Height + 3) / 4) * GetMinSize(format);
+						UploadTimer timer(UPLOAD_TEXTURE_WRITE, 6 * bufSize);
 						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, i, 0, 0, Width, Height, oglInternalFormat, bufSize, &pData_px[Offset]);
 						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, i, 0, 0, Width, Height, oglInternalFormat, bufSize, &pData_nx[Offset]);
 						glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, i, 0, 0, Width, Height, oglInternalFormat, bufSize, &pData_py[Offset]);
@@ -435,9 +442,14 @@ namespace Graphics {
 			GLint previous = 0;
 			glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &previous);
 			glBindTexture(m_target, m_texture);
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, 0, 0, dataSize.x, dataSize.y, GLImageFormat(format), GLImageType(format), data);
-			if (buildMipmaps && GetDescriptor().generateMipmaps)
+			{
+				UploadTimer timer(UPLOAD_TEXTURE_WRITE, size_t(dataSize.x) * size_t(dataSize.y) * UploadTexelBytes(format));
+				glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, 0, 0, dataSize.x, dataSize.y, GLImageFormat(format), GLImageType(format), data);
+			}
+			if (buildMipmaps && GetDescriptor().generateMipmaps) {
+				UploadTimer timer(UPLOAD_MIPMAPS, 0);
 				glGenerateMipmap(m_target);
+			}
 			glBindTexture(m_target, GLuint(previous));
 			CHECKERRORS();
 		}
@@ -453,6 +465,7 @@ namespace Graphics {
 			assert(Layers == data.size());
 
 			if (!IsCompressed(format)) {
+				UploadTimer timer(UPLOAD_TEXTURE_WRITE, Layers * size_t(dataSize.x) * size_t(dataSize.y) * UploadTexelBytes(format));
 				for (size_t i = 0; i < Layers; i++) {
 					glTexSubImage3D(
 						GL_TEXTURE_2D_ARRAY,   //	GLenum target,
@@ -478,6 +491,7 @@ namespace Graphics {
 					const unsigned char *pData = static_cast<const unsigned char *>(data[ilayer]);
 					for (unsigned int i = 0; i < numMips; ++i) {
 						size_t bufSize = ((Width + 3) / 4) * ((Height + 3) / 4) * GetMinSize(format);
+						UploadTimer timer(UPLOAD_TEXTURE_WRITE, bufSize);
 						glCompressedTexSubImage3D(
 							m_target,		   //	GLenum  		target,
 							i,				   //	GLint			level,
@@ -578,6 +592,7 @@ namespace Graphics {
 			// Solution: refactor TextureGL::TextureGL() to calculate the required number of mip levels
 			// and store it in the texture's descriptor.
 			if (mipmaps && (!descriptor.numberOfMipMaps || validMips < descriptor.numberOfMipMaps)) {
+				UploadTimer timer(UPLOAD_MIPMAPS, 0);
 				glBindTexture(m_target, m_texture);
 				// set TEXTURE_BASE_LEVEL to the last valid image in the mip chain
 				glTexParameteri(m_target, GL_TEXTURE_BASE_LEVEL, std::max(validMips, 1U) - 1);

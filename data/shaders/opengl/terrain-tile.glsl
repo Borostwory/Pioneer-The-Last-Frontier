@@ -166,6 +166,19 @@ float tileCraterRegion(vec3 up)
 	return smoothstep(0.3, 0.7, sum);
 }
 
+// A crater's centre lies 0.25 to 0.75 across its cell, and it reaches at most 0.8 cells from it (1.6 radii of at most
+// 0.5). So along each axis only the neighbouring cell on the near side can reach a point, or both near its cell's middle:
+// about 9 cells to look at instead of 27, with the same result (as craterCellRange in TerrainTilesCPU.cpp).
+#define CRATER_REACH 0.8
+ivec3 tileCraterCellsFrom(vec3 f)
+{
+	return ivec3(f.x + 0.25 <= CRATER_REACH + 1e-5 ? -1 : 0, f.y + 0.25 <= CRATER_REACH + 1e-5 ? -1 : 0, f.z + 0.25 <= CRATER_REACH + 1e-5 ? -1 : 0);
+}
+ivec3 tileCraterCellsTo(vec3 f)
+{
+	return ivec3(1.25 - f.x <= CRATER_REACH + 1e-5 ? 1 : 0, 1.25 - f.y <= CRATER_REACH + 1e-5 ? 1 : 0, 1.25 - f.z <= CRATER_REACH + 1e-5 ? 1 : 0);
+}
+
 // inside: 1 in a crater's bowl, fading to 0 at its rim
 // varied: of all ages and many sizes, from fresh and sharp to almost worn away; else all alike
 vec4 tileCraters(vec3 q, float salt, float density, bool varied, out float inside)
@@ -174,9 +187,10 @@ vec4 tileCraters(vec3 q, float salt, float density, bool varied, out float insid
 	vec3 grad = vec3(0.0);
 	float form = 0.0;
 	inside = 0.0;
-	for (int z = -1; z <= 1; ++z)
-		for (int y = -1; y <= 1; ++y)
-			for (int x = -1; x <= 1; ++x) {
+	ivec3 lo = tileCraterCellsFrom(q - cell), hi = tileCraterCellsTo(q - cell);
+	for (int z = lo.z; z <= hi.z; ++z)
+		for (int y = lo.y; y <= hi.y; ++y)
+			for (int x = lo.x; x <= hi.x; ++x) {
 				vec3 c = cell + vec3(x, y, z);
 				vec3 h = tileHash33(c, salt + 97.0);
 				if (h.x > density)

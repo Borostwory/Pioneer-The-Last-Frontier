@@ -4,6 +4,7 @@
 #include "UniformBuffer.h"
 
 #include "graphics/Types.h"
+#include "graphics/UploadStats.h"
 #include "profiler/Profiler.h"
 
 using Graphics::BufferBinding;
@@ -39,6 +40,7 @@ void UniformBuffer::BufferData(const size_t size, void *data)
 {
 	PROFILE_SCOPED()
 	assert(m_mapMode == BUFFER_MAP_NONE);
+	Graphics::UploadTimer timer(Graphics::UPLOAD_UNIFORMS, size);
 	glBindBuffer(GL_UNIFORM_BUFFER, m_buffer);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -94,6 +96,7 @@ void UniformLinearBuffer::Reset()
 	m_lastFlush = 0;
 	m_numAllocs = 0;
 
+	Graphics::UploadTimer timer(Graphics::UPLOAD_UNIFORMS, 0);
 	glBindBuffer(GL_UNIFORM_BUFFER, m_buffer);
 	glBufferData(GL_UNIFORM_BUFFER, m_capacity, nullptr, GL_DYNAMIC_DRAW);
 }
@@ -106,6 +109,7 @@ void UniformLinearBuffer::Flush()
 	// If we don't have anything new, don't flush
 	if (m_lastFlush == m_size)
 		return;
+	Graphics::UploadTimer timer(Graphics::UPLOAD_UNIFORMS, m_size - m_lastFlush);
 
 	// Bind the buffer to the specified binding index as well as the GL_UNIFORM_BUFFER_TARGET
 	glBindBuffer(GL_UNIFORM_BUFFER, m_buffer);

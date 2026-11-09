@@ -38,6 +38,10 @@ namespace Graphics {
 			GLuint binding;
 			// Data format of this texture sampler binding (e.g. sampler2d)
 			TextureType format;
+			// an image (Image in the shaderdef): bound with glBindImageTexture in this format and access
+			bool image = false;
+			GLenum imageFormat = 0;
+			GLenum imageAccess = 0;
 		};
 
 		struct BufferBindingData {
@@ -53,6 +57,10 @@ namespace Graphics {
 			std::string name;
 			std::string vertexShader;
 			std::string fragmentShader;
+			// empty if none (ShaderParser::ShaderInfo)
+			std::string tessControlShader;
+			std::string tessEvalShader;
+			std::string computeShader;
 			std::string defines;
 		};
 
@@ -100,7 +108,8 @@ namespace Graphics {
 			std::string GetProgramDefines(const MaterialDescriptor &desc);
 			Program *LoadProgram(const MaterialDescriptor &desc);
 
-			size_t AddTextureBinding(const std::string &name, const std::string &bindName, TextureType type, uint32_t binding);
+			size_t AddTextureBinding(const std::string &name, const std::string &bindName, TextureType type, uint32_t binding,
+				bool image = false, GLenum imageFormat = 0, GLenum imageAccess = 0);
 			size_t AddConstantBinding(const std::string &name, ConstantDataFormat format, uint32_t binding);
 			size_t AddBufferBinding(const std::string &name, uint32_t binding);
 
