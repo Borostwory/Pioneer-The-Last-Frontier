@@ -61,15 +61,16 @@ public:
 		TYPE_STAR_S_BH = 34,		  //stellar blackhole
 		TYPE_STAR_IM_BH = 35,		  //Intermediate-mass blackhole
 		TYPE_STAR_SM_BH = 36,		  //Supermassive blackhole
-		TYPE_PLANET_GAS_GIANT = 37,
-		TYPE_PLANET_ASTEROID = 38,
-		TYPE_PLANET_TERRESTRIAL = 39,
-		TYPE_STARPORT_ORBITAL = 40,
-		TYPE_STARPORT_SURFACE = 41,
+		TYPE_STAR_NEUTRON = 37,		  // neutron star, drawn as a pulsar with jets along its spin axis
+		TYPE_PLANET_GAS_GIANT = 38,
+		TYPE_PLANET_ASTEROID = 39,
+		TYPE_PLANET_TERRESTRIAL = 40,
+		TYPE_STARPORT_ORBITAL = 41,
+		TYPE_STARPORT_SURFACE = 42,
 		TYPE_MIN = TYPE_BROWN_DWARF,	  // <enum skip>
 		TYPE_MAX = TYPE_STARPORT_SURFACE, // <enum skip>
 		TYPE_STAR_MIN = TYPE_BROWN_DWARF, // <enum skip>
-		TYPE_STAR_MAX = TYPE_STAR_SM_BH,  // <enum skip>
+		TYPE_STAR_MAX = TYPE_STAR_NEUTRON, // <enum skip>
 										  // XXX need larger atmosphereless thing
 	};
 

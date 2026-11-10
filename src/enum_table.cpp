@@ -261,6 +261,7 @@ const struct EnumItem ENUM_BodyType[] = {
 	{ "STAR_S_BH", int(SystemBodyType::TYPE_STAR_S_BH) },
 	{ "STAR_IM_BH", int(SystemBodyType::TYPE_STAR_IM_BH) },
 	{ "STAR_SM_BH", int(SystemBodyType::TYPE_STAR_SM_BH) },
+	{ "STAR_NEUTRON", int(SystemBodyType::TYPE_STAR_NEUTRON) },
 	{ "PLANET_GAS_GIANT", int(SystemBodyType::TYPE_PLANET_GAS_GIANT) },
 	{ "PLANET_ASTEROID", int(SystemBodyType::TYPE_PLANET_ASTEROID) },
 	{ "PLANET_TERRESTRIAL", int(SystemBodyType::TYPE_PLANET_TERRESTRIAL) },

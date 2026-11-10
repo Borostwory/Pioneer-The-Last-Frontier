@@ -58,6 +58,7 @@ local starTypes = {
 	{ "STAR_S_BH", "Stellar black hole" },
 	{ "STAR_IM_BH", "Intermediate-mass black hole" },
 	{ "STAR_SM_BH", "Supermassive black hole" },
+	{ "STAR_NEUTRON", "Neutron star (pulsar)" },
 }
 
 local state = {

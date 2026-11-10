@@ -168,6 +168,7 @@ void LuaConstants::Register(lua_State *l)
 	 * STAR_S_BH - stellar black hole
 	 * STAR_IM_BH - intermediate-mass black hole
 	 * STAR_SM_BH - supermassive black hole
+	 * STAR_NEUTRON - neutron star (pulsar)
 	 * PLANET_GAS_GIANT - gas giant
 	 * PLANET_ASTEROID - asteroid
 	 * PLANET_TERRESTRIAL - terrestrial planet

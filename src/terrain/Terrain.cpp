@@ -136,6 +136,7 @@ Terrain *Terrain::InstanceTerrain(const SystemBody *body)
 	case SystemBody::TYPE_STAR_O_HYPER_GIANT:
 	case SystemBody::TYPE_STAR_O_SUPER_GIANT:
 	case SystemBody::TYPE_STAR_O_WF:
+	case SystemBody::TYPE_STAR_NEUTRON:
 		gi = InstanceGenerator<TerrainHeightEllipsoid, TerrainColorWhite>;
 		break;
 

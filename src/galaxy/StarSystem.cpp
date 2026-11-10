@@ -73,7 +73,8 @@ const Color StarSystem::starColors[] = {
 	{ 255, 178, 255 }, // Purple-Blue/O Wolf Rayet Star
 	{ 76, 178, 76 },   // Stellar Blackhole
 	{ 51, 230, 51 },   // Intermediate mass Black-hole
-	{ 0, 255, 0 }	   // Super massive black hole
+	{ 0, 255, 0 },	   // Super massive black hole
+	{ 140, 170, 255 }  // Neutron star (pulsar)
 };
 
 // indexed by enum type turd
@@ -114,7 +115,8 @@ const Color StarSystem::starRealColors[] = {
 	{ 255, 204, 255 }, // O WF
 	{ 22, 0, 24 },	   // small Black hole
 	{ 16, 0, 20 },	   // med BH
-	{ 10, 0, 16 }	   // massive BH
+	{ 10, 0, 16 },	   // massive BH
+	{ 200, 215, 255 }  // neutron star (pulsar)
 };
 
 const double StarSystem::starLuminosities[] = {
@@ -155,6 +157,7 @@ const double StarSystem::starLuminosities[] = {
 	0.0003,	  // Stellar Black hole
 	0.00003,  // IM Black hole
 	0.000003, // Supermassive Black hole
+	0.001,	  // Neutron star (pulsar), dim in visible light
 };
 
 const float StarSystem::starScale[] = {
@@ -195,7 +198,8 @@ const float StarSystem::starScale[] = {
 	1.6f, // O WF
 	1.0f, // Black hole
 	2.5f, // Intermediate-mass blackhole
-	4.0f  // Supermassive blackhole
+	4.0f, // Supermassive blackhole
+	0.6f  // Neutron star (pulsar)
 };
 
 SystemBody *StarSystem::GetBodyByPath(const SystemPath &path) const

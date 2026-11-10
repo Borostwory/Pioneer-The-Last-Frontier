@@ -1,0 +1,12 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+Shader pulsar_jet
+
+Buffer DrawData binding=1
+
+PushConstant vec4 StarColor binding=0
+PushConstant vec4 PulsarTime binding=1
+
+Vertex "star_halo.vert"
+Fragment "pulsar_jet.frag"

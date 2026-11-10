@@ -81,7 +81,8 @@ const fixed StarSystemLegacyGeneratorBase::starMetallicities[] = {
 	fixed(6, 10),	// O WF
 	fixed(1, 1),	//  S BH	Blackholes, give them high metallicity,
 	fixed(1, 1),	// IM BH	so any rocks that happen to be there
-	fixed(1, 1)		// SM BH	may be mining hotspots. FUN :)
+	fixed(1, 1),	// SM BH	may be mining hotspots. FUN :)
+	fixed(1, 1)		// neutron star: born in a supernova, so its planets are metal rich
 };
 
 const StarSystemLegacyGeneratorBase::StarTypeInfo StarSystemLegacyGeneratorBase::starTypeInfo[] = {
@@ -194,7 +195,10 @@ const StarSystemLegacyGeneratorBase::StarTypeInfo StarSystemLegacyGeneratorBase:
 		1, 10 },
 	{ // SM BH
 		{ 2000000, 5000000 }, { 10000, 20000 },
-		10, 24 }
+		10, 24 },
+	{							// neutron star
+		{ 120, 200 }, { 0, 0 }, // about 12 km across, far below 1% of Sol's radius; set in MakeStarOfType
+		300000, 1000000 }
 };
 
 bool StarSystemFromSectorGenerator::Apply(Random &rng, RefCountedPtr<Galaxy> galaxy, const Sector *sec, RefCountedPtr<StarSystem::GeneratorAPI> system, GalaxyGenerator::StarSystemConfig *config)
@@ -1194,6 +1198,12 @@ void StarSystemRandomGenerator::MakeStarOfType(SystemBody *sbody, SystemBody::Bo
 	sbody->m_type = type;
 	sbody->m_seed = rand.Int32();
 	sbody->m_radius = fixed(rand.Int32(starTypeInfo[type].radius[0], starTypeInfo[type].radius[1]), 100);
+	if (type == SystemBody::TYPE_STAR_NEUTRON) {
+		// 10 to 14 km, in Sol radii (696,000 km)
+		sbody->m_radius = fixed(rand.Int32(10, 14), 696000);
+		// spin period 1.5 ms to 1 s, in days
+		sbody->m_rotationPeriod = fixed(rand.Int32(15, 10000), 10000) / fixed(86400, 1);
+	}
 
 	// Assign aspect ratios caused by equatorial bulges due to rotation. See terrain code for details.
 	// XXX to do: determine aspect ratio distributions for dimmer stars. Make aspect ratios consistent with rotation speeds/stability restrictions.

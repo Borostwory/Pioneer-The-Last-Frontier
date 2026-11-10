@@ -1103,6 +1103,7 @@ SystemBody::BodySuperType SystemBody::GetSuperType() const
 	case TYPE_STAR_S_BH:
 	case TYPE_STAR_IM_BH:
 	case TYPE_STAR_SM_BH:
+	case TYPE_STAR_NEUTRON:
 		return SUPERTYPE_STAR;
 	case TYPE_PLANET_GAS_GIANT:
 		return SUPERTYPE_GAS_GIANT;
@@ -1160,6 +1161,7 @@ std::string SystemBody::GetAstroDescription() const
 	case TYPE_STAR_S_BH: return Lang::STAR_S_BH;
 	case TYPE_STAR_IM_BH: return Lang::STAR_IM_BH;
 	case TYPE_STAR_SM_BH: return Lang::STAR_SM_BH;
+	case TYPE_STAR_NEUTRON: return Lang::STAR_NEUTRON;
 	case TYPE_PLANET_GAS_GIANT:
 		if (m_mass > 800) return Lang::VERY_LARGE_GAS_GIANT;
 		if (m_mass > 300) return Lang::LARGE_GAS_GIANT;
@@ -1406,6 +1408,7 @@ const char *SystemBody::GetIcon() const
 	case TYPE_STAR_S_BH: return "icons/object_star_bh.png";
 	case TYPE_STAR_IM_BH: return "icons/object_star_smbh.png";
 	case TYPE_STAR_SM_BH: return "icons/object_star_smbh.png";
+	case TYPE_STAR_NEUTRON: return "icons/object_white_dwarf.png"; // shares the white dwarf icon for now
 	case TYPE_PLANET_GAS_GIANT:
 		if (m_mass > 800) {
 			if (m_averageTemp > 1000)

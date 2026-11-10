@@ -1651,6 +1651,10 @@
     "description": "",
     "message": "Wolf-Rayet star - Imminent collapse"
   },
+  "STAR_NEUTRON": {
+    "description": "",
+    "message": "Pulsar - a spinning neutron star"
+  },
   "STAR_SM_BH": {
     "description": "",
     "message": "Our galactic anchor"

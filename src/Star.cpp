@@ -14,6 +14,21 @@
 #include "graphics/VertexArray.h"
 #include "graphics/VertexBuffer.h"
 
+namespace {
+	// length of each pulsar jet: 0.08 AU, so arriving from hyperspace (about 0.13 AU out) they fill much of the view
+	const double PULSAR_JET_LENGTH = 0.08 * AU;
+	// half the width of the strip the jets are drawn on, as a fraction of their length; it leaves room for the twist and the curl at the tip
+	constexpr double PULSAR_JET_HALF_WIDTH = 0.2;
+	// radius of the glow quad, as a fraction of the jet length; the flare line runs out to its edge
+	constexpr double PULSAR_GLOW_SIZE = 0.5;
+	// spin period used when a neutron star has none set, in seconds (the Vela pulsar's)
+	constexpr double PULSAR_DEFAULT_PERIOD = 0.0893;
+	// the jets slowly whip from side to side with this period, in seconds
+	constexpr double PULSAR_WOBBLE_PERIOD = 7.0;
+	// the gas streaming out along the jets wraps round after this many seconds
+	constexpr double PULSAR_FLOW_WRAP = 3600.0;
+} // namespace
+
 Star::Star(SystemBody *sbody) :
 	TerrainBody(sbody)
 {
@@ -54,6 +69,14 @@ void Star::InitStar()
 
 	auto vtxFormat = Graphics::VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_UV0);
 	m_haloMat.reset(Pi::renderer->CreateMaterial("star_halo", desc, rsd, vtxFormat));
+
+	if (sbody->GetType() == SystemBody::TYPE_STAR_NEUTRON) {
+		// the jets reach far beyond the tiny star, so it must not be culled or drawn as a dot while they're in view
+		m_jetLength = PULSAR_JET_LENGTH;
+		SetClipRadius(m_jetLength);
+		m_pulsarJetMat.reset(Pi::renderer->CreateMaterial("pulsar_jet", desc, rsd, vtxFormat));
+		m_pulsarGlowMat.reset(Pi::renderer->CreateMaterial("pulsar_glow", desc, rsd, vtxFormat));
+	}
 }
 
 Star::VisualProfile Star::GetVisualProfile(const SystemBody *sbody)
@@ -72,6 +95,9 @@ Star::VisualProfile Star::GetVisualProfile(const SystemBody *sbody)
 	case SystemBody::TYPE_STAR_IM_BH:
 	case SystemBody::TYPE_STAR_SM_BH:
 		return { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
+	case SystemBody::TYPE_STAR_NEUTRON:
+		// a smooth, searingly hot surface; its halo is drawn by RenderPulsar instead
+		return { 120.f, 0.05f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
 	default:
 		break;
 	}
@@ -133,7 +159,11 @@ void Star::BuildHaloBuffer(Graphics::Renderer *renderer)
 
 void Star::Render(Graphics::Renderer *renderer, const Camera *camera, const vector3d &viewCoords, const matrix4x4d &viewTransform)
 {
-	double rad = GetClipRadius();
+	const bool pulsar = GetSystemBody()->GetType() == SystemBody::TYPE_STAR_NEUTRON;
+
+	// a pulsar's clip radius covers its jets, so its glow gets its own size
+	double rad = pulsar ? m_jetLength * PULSAR_GLOW_SIZE : GetClipRadius();
+	double jetLength = m_jetLength;
 	vector3d fpos = viewCoords;
 	double len = fpos.Length();
 
@@ -145,6 +175,7 @@ void Star::Render(Graphics::Renderer *renderer, const Camera *camera, const vect
 
 	while (len > 1000.0f) {
 		rad *= 0.25;
+		jetLength *= 0.25;
 		fpos = 0.25 * fpos;
 		len *= 0.25;
 	}
@@ -169,7 +200,9 @@ void Star::Render(Graphics::Renderer *renderer, const Camera *camera, const vect
 	// bodies in front of the star are drawn after it and still cover the glow
 	// black holes have no glow
 	const SystemBody::BodyType type = GetSystemBody()->GetType();
-	if (type < SystemBody::TYPE_STAR_S_BH || type > SystemBody::TYPE_STAR_SM_BH) {
+	if (pulsar) {
+		RenderPulsar(renderer, fpos, trans * rot, rad, jetLength, viewTransform);
+	} else if (type < SystemBody::TYPE_STAR_S_BH || type > SystemBody::TYPE_STAR_SM_BH) {
 		const VisualProfile &vp = m_visualProfile;
 		m_haloMat->SetPushConstant("StarColor"_hash, GetSystemBody()->GetStarColor());
 		m_haloMat->SetPushConstant("StarHalo"_hash, vector3f(vp.coronaSize, vp.streaks, vp.prominences), vp.envelope);
@@ -183,4 +216,46 @@ void Star::Render(Graphics::Renderer *renderer, const Camera *camera, const vect
 	}
 
 	renderer->GetStats().AddToStatCount(Graphics::Stats::STAT_STARS, 1);
+}
+
+void Star::RenderPulsar(Graphics::Renderer *renderer, const vector3d &fpos, const matrix4x4d &faceCamera,
+	double glowRadius, double jetLength, const matrix4x4d &viewTransform)
+{
+	const SystemBody *sbody = GetSystemBody();
+
+	// real time, like the rest of the star animation, so the spin keeps its true rate under time acceleration
+	const double t = Pi::GetApp() ? Pi::GetApp()->GetTime() : 0.0;
+	double period = sbody->GetRotationPeriod();
+	if (!(period > 0.0))
+		period = PULSAR_DEFAULT_PERIOD;
+	const float spin = float(2.0 * M_PI * std::fmod(t, period) / period);
+	const float wobble = float(2.0 * M_PI * std::fmod(t, PULSAR_WOBBLE_PERIOD) / PULSAR_WOBBLE_PERIOD);
+	const float flow = float(std::fmod(t, PULSAR_FLOW_WRAP));
+	const vector3f pulsarTime(spin, wobble, flow);
+	const Color starColor = sbody->GetStarColor();
+
+	// the jets: one strip along the spin axis through the star, turned about the axis to face the camera.
+	// The axis is tilted like a planet's (see Space.cpp, RotateX by the axial tilt).
+	const vector3d axisLocal = matrix3x3d::RotateX(sbody->GetAxialTilt()) * vector3d(0.0, 1.0, 0.0);
+	const vector3d axis = viewTransform.ApplyRotationOnly(axisLocal).NormalizedSafe();
+	const vector3d toCamera = (-fpos).NormalizedSafe();
+	vector3d side = axis.Cross(toCamera);
+	if (side.LengthSqr() < 1e-12) // looking straight down the axis
+		side = axis.Cross(std::abs(axis.x) < 0.9 ? vector3d(1.0, 0.0, 0.0) : vector3d(0.0, 1.0, 0.0));
+	side = side.Normalized();
+	const vector3d normal = side.Cross(axis);
+
+	const matrix4x4d jetTrans = matrix4x4d::Translation(fpos) *
+		matrix4x4d::MakeRotMatrix(side, axis, normal).Inverse() *
+		matrix4x4d::ScaleMatrix(jetLength * PULSAR_JET_HALF_WIDTH, jetLength, 1.0);
+	m_pulsarJetMat->SetPushConstant("StarColor"_hash, starColor);
+	m_pulsarJetMat->SetPushConstant("PulsarTime"_hash, pulsarTime, float(PULSAR_JET_HALF_WIDTH));
+	renderer->SetTransform(matrix4x4f(jetTrans));
+	renderer->DrawMesh(m_haloMesh.get(), m_pulsarJetMat.get());
+
+	// the glow, drawn last so it sits over the roots of the jets
+	m_pulsarGlowMat->SetPushConstant("StarColor"_hash, starColor);
+	m_pulsarGlowMat->SetPushConstant("PulsarTime"_hash, pulsarTime, 0.f);
+	renderer->SetTransform(matrix4x4f(faceCamera * matrix4x4d::ScaleMatrix(glowRadius)));
+	renderer->DrawMesh(m_haloMesh.get(), m_pulsarGlowMat.get());
 }

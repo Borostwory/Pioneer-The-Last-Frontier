@@ -279,6 +279,10 @@ local spawnClientShip = function (star, ship_label)
 	if star:GetSystemBody().type == "WHITE_DWARF" then
 		min = radius * 30
 		max = radius * 40
+	elseif star:GetSystemBody().type == "STAR_NEUTRON" then
+		-- a neutron star is only about 12 km across: a few of its radii would be a deadly orbit, so keep 0.01 AU or so away
+		min = 1.5e9
+		max = 2.0e9
 	else
 		min = radius * 3.5
 		max = radius * 4.5
