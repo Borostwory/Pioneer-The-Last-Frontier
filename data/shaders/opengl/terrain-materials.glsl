@@ -510,12 +510,16 @@ vec4 materialVariedRead(int layer, vec2 uv, vec2 dx, vec2 dy, vec2 uvPatch, vec2
 		count * fract(materialRegionNoise(uvPatch, 0u) + 3.0 * materialRegionNoise(uvFar, 1u));
 	float index = floor(field);
 	vec2 a = MATERIAL_TURNS[int(index) * turnStep], b = MATERIAL_TURNS[int(mod(index + 1.0, count)) * turnStep];
-	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * (index + 1.0));
+	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * mod(index + 1.0, count)); // (the next turn's own offset: past the last turn comes the first, with the first's offset, or the ground jumps along that line; 2026-11-10)
 	vec4 ra = materialRead(vec3(vec2(a.x * uv.x - a.y * uv.y, a.y * uv.x + a.x * uv.y) + offsetA, float(layer)),
 		vec2(a.x * dx.x - a.y * dx.y, a.y * dx.x + a.x * dx.y), vec2(a.x * dy.x - a.y * dy.y, a.y * dy.x + a.x * dy.y)).rgab;
 	vec4 rb = materialRead(vec3(vec2(b.x * uv.x - b.y * uv.y, b.y * uv.x + b.x * uv.y) + offsetB, float(layer)),
 		vec2(b.x * dx.x - b.y * dx.y, b.y * dx.x + b.x * dx.y), vec2(b.x * dy.x - b.y * dy.y, b.y * dy.x + b.x * dy.y)).rgab;
-	return mix(ra, rb, smoothstep(0.5 - blend, 0.5 + blend, field - index + 0.8 * (rb.z - ra.z)));
+	// (the bumps steer the blend only between two turns' edges, none at them, 4t(1 - t): at a turn's edge the next one
+	// takes over whole, or the ground jumps there, in lines along the turns' edges wherever the two heights differ
+	// much; 2026-11-10)
+	float t = field - index;
+	return mix(ra, rb, smoothstep(0.5 - blend, 0.5 + blend, t + 3.2 * t * (1.0 - t) * (rb.z - ra.z)));
 }
 
 // one tile size of 2^level metres. Emission (x), detail (y), height (z), roughness (w: 0 a mirror, 1 fully matte).
@@ -861,10 +865,12 @@ float stoneVariedRead(int layer, vec2 uv, vec2 uvPatch, vec2 uvFar, int turnStep
 	float field = count * fract(materialRegionNoise(uvPatch, 0u) + 3.0 * materialRegionNoise(uvFar, 1u));
 	float index = floor(field);
 	vec2 a = MATERIAL_TURNS[int(index) * turnStep], b = MATERIAL_TURNS[int(mod(index + 1.0, count)) * turnStep];
-	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * (index + 1.0));
+	vec2 offsetA = fract(vec2(0.7548777, 0.5698403) * index), offsetB = fract(vec2(0.7548777, 0.5698403) * mod(index + 1.0, count)); // (the next turn's own offset: past the last turn comes the first, with the first's offset, or the ground jumps along that line; 2026-11-10)
 	float ra = stoneRead(layer, vec2(a.x * uv.x - a.y * uv.y, a.y * uv.x + a.x * uv.y) + offsetA, lod);
 	float rb = stoneRead(layer, vec2(b.x * uv.x - b.y * uv.y, b.y * uv.x + b.x * uv.y) + offsetB, lod);
-	return mix(ra, rb, smoothstep(0.5 - blend, 0.5 + blend, field - index + 0.8 * (rb - ra)));
+	// (as materialVariedRead())
+	float t = field - index;
+	return mix(ra, rb, smoothstep(0.5 - blend, 0.5 + blend, t + 3.2 * t * (1.0 - t) * (rb - ra)));
 }
 
 // as materialTileSample(), the heights alone, smoothed to spacing (metres)

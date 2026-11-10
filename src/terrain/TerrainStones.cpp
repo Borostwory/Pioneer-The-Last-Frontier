@@ -263,10 +263,14 @@ namespace {
 		const float index = std::floor(field);
 		const vector2f a = MATERIAL_TURNS[(int(index) * turnStep) & 7], b = MATERIAL_TURNS[(int(Mod(index + 1.0f, count)) * turnStep) & 7];
 		const vector2f offsetA(Fract(0.7548777f * index), Fract(0.5698403f * index));
-		const vector2f offsetB(Fract(0.7548777f * (index + 1.0f)), Fract(0.5698403f * (index + 1.0f)));
+		// (the next turn's own offset, the first's after the last: as the shader)
+		const float next = Mod(index + 1.0f, count);
+		const vector2f offsetB(Fract(0.7548777f * next), Fract(0.5698403f * next));
 		const float ra = StoneRead(layer, Turn(a, uv) + offsetA, lod);
 		const float rb = StoneRead(layer, Turn(b, uv) + offsetB, lod);
-		return Mix(ra, rb, SmoothStep(0.5f - blend, 0.5f + blend, field - index + 0.8f * (rb - ra)));
+		// (as the shader: the bumps steer the blend between the turns' edges only)
+		const float t = field - index;
+		return Mix(ra, rb, SmoothStep(0.5f - blend, 0.5f + blend, t + 3.2f * t * (1.0f - t) * (rb - ra)));
 	}
 
 	// a point's mapping: where it is in planet-fixed metres (double, so the wrap at 5 tiles comes out exactly), and the
