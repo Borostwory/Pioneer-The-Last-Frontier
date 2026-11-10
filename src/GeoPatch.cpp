@@ -684,24 +684,18 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 		// the extra levels near the player on foot or in the rover: a small radius, whatever the terrain detail distance
 		if (m_depth >= m_geosphere->GetMaxDepth())
 			splitLength = NEAR_SPLIT_WIDTHS * m_edgeLength;
-		bool tooFar = (centroidDist >= splitLength);	// check if the distance is greater than the rough length, which is how far it should be before it can split
+		// (From 2026-11-09 the patches within the stones' reach were kept at the finest level, for walls along the
+		// ground that turned out to be the textures' turns: taken out on 2026-11-10, it cost about half again of the
+		// ground's GPU time, and the choosing of the patches twenty times over.)
+		const bool tooFar = (centroidDist >= splitLength);	// check if the distance is greater than the rough length, which is how far it should be before it can split
 		const bool atMaxDepth = m_depth >= std::min(GEOPATCH_MAX_DEPTH, m_geosphere->GetMaxDepth() + m_geosphere->GetExtraDepth());
-		// P4c: wherever the stones may be raised, the finest patches only. Where a patch meets a coarser one, the two
-		// cut their shared edge at different points, and the stones raised at each opened steps between them, up to the
-		// stones' height, with the edges' dark skirts showing through as walls (2026-11-09). With the finest patches
-		// only, the tessellated ones are all one size and their cut points meet; the coarser ones begin beyond the
-		// stones' reach, where nothing is raised. (A little further than RenderImmediate tessellates, as the camera
-		// moves between this update and the drawing.)
-		const bool inStonesReach = GeoSphere::StonesActive() && InStonesReach(campos, 20.0);
-		if (inStonesReach)
-			tooFar = false;
 		if (atMaxDepth || tooFar) {
 			canSplit = false; // we're too deep in the quadtree or too far away so cannot split
 		}
 		// Merge only a little further out than the split distance, so a camera
 		// hovering near the threshold does not split and merge the same patch
 		// over and over (each split regenerates four patches).
-		if (!atMaxDepth && (centroidDist < splitLength * LOD_MERGE_HYSTERESIS || (GeoSphere::StonesActive() && InStonesReach(campos, 40.0)))) {
+		if (!atMaxDepth && centroidDist < splitLength * LOD_MERGE_HYSTERESIS) {
 			canMerge = false;
 		}
 	}

@@ -92,16 +92,20 @@ uniform vec4 PatchTile;
 // at every pixel (the colour shift alone cost 0.74 ms on New Hope on 2026-11-09). Colour: rgb materialColour(), a
 // materialMeanRoughness(); traits: x materialRoughness(), y materialBumpStrength(). An unused slot: 0.7 and 1.0, as
 // the functions' callers took for no material.
-// cellHashes: materialCellHash() of the 5 x 5 cells (x across, y down) of salts 0 and 1, four to a vector, for the
-// turns' field (materialRegionNoiseTable) to look up instead of working out
 layout(std140) uniform MaterialSlotData {
 	vec4 materialSlotColour[MATERIAL_SLOTS];
 	vec4 materialSlotTraits[MATERIAL_SLOTS];
-	vec4 materialCellHashes[13];
 };
 
+// materialCellHash() of the 5 x 5 cells of salts 0 and 1, for the turns' field (materialRegionNoiseTable) to look up
+// instead of working out: 25 x 2 texels, x the cell (y * 5 + x), y the salt (GeoSphere::CellHashTexture). Never faster
+// than working them out (on Titan, whose materials blend their turns everywhere, 0.25 ms slower), so off; but kept: on
+// 2026-11-10, with it taken out, the NVIDIA driver laid the ground's pixel shader out differently and it came out over
+// the graphics card's most instructions (too many instructions, after 49 s compiling). The shader is at that limit.
+uniform sampler2D materialCellHashTex;
+
 // Cheaper photo textures, each switched in the debug window (GeoSphere: TerrainTextureSimpleFar, TerrainTextureOneScale,
-// TerrainTurnTable). TextureLod x: 1 to read them simply far off, y: from how far (m), full by half as far again;
+// TerrainTurnTexture). TextureLod x: 1 to read them simply far off, y: from how far (m), full by half as far again;
 // z: 1 for one texture size at a time, w: the share of the way between two sizes over which they blend (1: all of it,
 // as before). TextureTurnTable: 1 to look the turns' cell hashes up in the table instead of working them out.
 uniform vec4 TextureLod;
@@ -411,7 +415,11 @@ MaterialMapping materialMapping(vec3 eyepos, vec3 dpdx, vec3 dpdy, vec3 up)
 	// from the fixed size at MaterialNear.y, growing 1.5 levels each time the distance doubles (the size by distance
 	// grows 1), until it meets the size by distance. (Until 2026-11-09 it went back between MaterialNear.y and twice
 	// that: with level 4 out to 100 m, 8 times larger within 100 m, a ring sweeping over the ground as the camera moved.)
-	if (MaterialNear.z > 0.5) {
+	if (MaterialNear.z > 0.5 && GROUND_SKIP(20)) {
+		// (the debug window's comparison: as before 2026-11-09, the ring and all)
+		float far = smoothstep(MaterialNear.y, 2.0 * MaterialNear.y, length(m.rel));
+		m.level = mix(MaterialNear.x, max(MaterialNear.x, m.level), far);
+	} else if (MaterialNear.z > 0.5) {
 		float grown = MaterialNear.x + 1.5 * max(log2(max(length(m.rel), 1e-3) / max(MaterialNear.y, 1e-3)), 0.0);
 		m.level = max(MaterialNear.x, min(m.level, grown));
 	}
@@ -463,12 +471,11 @@ float materialRegionNoise(vec2 p, uint salt)
 	return mix(mix(h.x, h.y, t.x), mix(h.z, h.w, t.x), t.y);
 }
 
-// as materialRegionNoise(), the cells' hashes looked up (the same values: GeoSphere::FillMaterialSlotData works them
-// out with TerrainStones::CellHash); c is already in 0..4
+// as materialRegionNoise(), the cells' hashes looked up (the same values: GeoSphere::CellHashTexture works them out
+// with TerrainStones::CellHash); c is already in 0..4
 float materialCellHashTable(vec2 c, uint salt)
 {
-	int i = int(salt) * 25 + int(c.y) * 5 + int(c.x);
-	return materialCellHashes[i >> 2][i & 3];
+	return texelFetch(materialCellHashTex, ivec2(int(c.y) * 5 + int(c.x), int(salt)), 0).r;
 }
 
 float materialRegionNoiseTable(vec2 p, uint salt)
@@ -569,11 +576,18 @@ vec4 materialTwoSizes(int layer, MaterialMapping m, float k, float f)
 {
 	if (TextureLod.z > 0.5)
 		f = smoothstep(0.5 - 0.5 * TextureLod.w, 0.5 + 0.5 * TextureLod.w, f);
-	if (f <= 0.0)
-		return materialTileSample(layer, m, k);
-	if (f >= 1.0)
-		return materialTileSample(layer, m, k + 1.0);
-	return mix(materialTileSample(layer, m, k), materialTileSample(layer, m, k + 1.0), f);
+	// k alone, k + 1 alone, or both, read in one loop, so the tile read (and the turns in it, the bulk of the photo
+	// textures' code) stands in the shader once here, not four times over. (Until 2026-11-10 each was written out: with
+	// materialSample()'s three of these and its six callers, 72 copies of materialTileSample(), which the NVIDIA driver
+	// could inline into a pixel shader over the graphics card's most instructions.)
+	float first = f >= 1.0 ? k + 1.0 : k;
+	int reads = f > 0.0 && f < 1.0 ? 2 : 1;
+	vec4 r = vec4(0.0);
+	for (int i = 0; i < reads; i++) {
+		float w = reads == 1 ? 1.0 : (i == 0 ? 1.0 - f : f);
+		r += w * materialTileSample(layer, m, first + float(i));
+	}
+	return r;
 }
 
 vec4 materialSample(int layer, MaterialMapping m, float level)
@@ -582,18 +596,30 @@ vec4 materialSample(int layer, MaterialMapping m, float level)
 	float k = floor(level);
 	// (level is often a whole number, as MATERIAL_FIXED_MAX_LEVEL holds it at one over most of the screen: then the next
 	// size would count for nothing, so it isn't read)
-	vec4 r = materialTwoSizes(layer, m, k, level - k);
-	// forest: its floor on foot, its canopy from the air
+	// A second photo blended into some, read only where it shows: the forest's canopy from the air (its floor on foot),
+	// the snow photo on old ice, at the same sizes. Both read in one loop, so the reading stands in the shader once
+	// (as in materialTwoSizes()).
+	int second = -1;
+	float share = 0.0;
 	if (layer == MATERIAL_FOREST) {
-		float canopy = smoothstep(MATERIAL_FOREST_NEAR_LEVEL, MATERIAL_FOREST_FAR_LEVEL, m.level);
-		if (canopy > 0.0)
-			r = mix(r, materialTwoSizes(MATERIAL_FOREST_FAR, m, k, level - k), canopy);
+		second = MATERIAL_FOREST_FAR;
+		share = smoothstep(MATERIAL_FOREST_NEAR_LEVEL, MATERIAL_FOREST_FAR_LEVEL, m.level);
+	} else if (layer == MATERIAL_ICE && MaterialLook.y > 0.5) {
+		second = MATERIAL_SNOW;
+		share = MATERIAL_OLD_ICE_SNOW * (1.0 - clamp(MaterialLook.x / MATERIAL_OLD_ICE_UNTIL, 0.0, 1.0));
 	}
-	// (on old ice, the snow photo at the same sizes, read only there)
-	float oldIce = layer == MATERIAL_ICE && MaterialLook.y > 0.5 ? MATERIAL_OLD_ICE_SNOW * (1.0 - clamp(MaterialLook.x / MATERIAL_OLD_ICE_UNTIL, 0.0, 1.0)) : 0.0;
-	vec4 snow = vec4(0.0, 0.5, 0.5, materialMeanRoughness(MATERIAL_SNOW));
-	if (oldIce > 0.0)
-		snow = materialTwoSizes(MATERIAL_SNOW, m, k, level - k);
+	vec4 r = vec4(0.0);
+	vec4 other = vec4(0.0, 0.5, 0.5, materialMeanRoughness(MATERIAL_SNOW));
+	int reads = share > 0.0 ? 2 : 1;
+	for (int i = 0; i < reads; i++) {
+		vec4 read = materialTwoSizes(i == 0 ? layer : second, m, k, level - k);
+		if (i == 0)
+			r = read;
+		else
+			other = read;
+	}
+	if (layer == MATERIAL_FOREST)
+		r = mix(r, other, share);
 	r.y *= 2.0;
 	// the ice photo has its cracks built in: as strong as this body's are, but never gone, or an old ice moon's ground
 	// is flat and plain up close
@@ -601,7 +627,7 @@ vec4 materialSample(int layer, MaterialMapping m, float level)
 		float strength = max(MaterialLook.x, MATERIAL_ICE_LEAST);
 		r.y = 1.0 + (r.y - 1.0) * strength;
 		r.z = 0.5 + (r.z - 0.5) * strength;
-		r = mix(r, vec4(snow.x, 2.0 * snow.y, snow.z, snow.w), oldIce);
+		r = mix(r, vec4(other.x, 2.0 * other.y, other.z, other.w), share);
 	}
 	return r;
 }
@@ -716,22 +742,48 @@ vec4 terrainMaterialDetail(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 albedo, Materi
 	// Far off, simply (TextureLod.xy): the first material's fine size alone, at the one size nearest, for both
 	// materials (their colours still each their own); fading in from TextureLod.y to half as far again
 	float simple = TextureLod.x > 0.5 ? smoothstep(TextureLod.y, 1.5 * TextureLod.y, distMetres) : 0.0;
-	vec4 c1 = vec4(1.0);
+	// The reads wanted (bits: 1 the first material's fine size, 2 its coarse size, 4 the second's fine size, 8 the
+	// simple one far off), made in one loop, so the reading stands in the shader once rather than four times over
+	// (2026-11-10: with each written out the ground's pixel shader took 5 to 6.5 s to build, and once came out over the
+	// graphics card's most instructions)
+	int wanted = 0;
 	if (simple < 1.0) {
-		if (l1 >= 0) {
-			vec4 f1 = GROUND_SKIP(15) ? vec4(0.0, 0.5, 0.5, 0.7) : materialSample(l1, mapping, mapping.level);
-			c1 = GROUND_SKIP(10) ? vec4(1.0) : materialSample(l1, mapping, coarse);
-			d1 = vec4(f1.x, f1.y * c1.y, f1.z, f1.w);
-		}
-		if (w2 > 0.1 && !GROUND_SKIP(11)) {
-			vec4 f2 = materialSample(l2, mapping, mapping.level);
-			d2 = vec4(f2.x, f2.y * c1.y, f2.z, f2.w);
-		}
+		if (l1 >= 0 && !GROUND_SKIP(15))
+			wanted |= 1;
+		if (l1 >= 0 && !GROUND_SKIP(10))
+			wanted |= 2;
+		if (w2 > 0.1 && !GROUND_SKIP(11))
+			wanted |= 4;
 	}
-	if (simple > 0.0 && l1 >= 0) {
-		vec4 s1 = materialSample(l1, mapping, floor(mapping.level + 0.5));
-		d1 = mix(d1, s1, simple);
-		d2 = mix(d2, s1, simple);
+	if (simple > 0.0 && l1 >= 0)
+		wanted |= 8;
+	vec4 f1 = vec4(0.0, 0.5, 0.5, 0.7), c1 = vec4(1.0), f2 = vec4(0.0), far1 = vec4(0.0);
+	int remaining = wanted;
+	int reads = bitCount(wanted);
+	for (int i = 0; i < reads; i++) {
+		int kind = findLSB(remaining);
+		remaining &= remaining - 1;
+		int layer = kind == 2 ? l2 : l1;
+		float level = kind == 1 ? coarse : (kind == 3 ? floor(mapping.level + 0.5) : mapping.level);
+		vec4 read = materialSample(layer, mapping, level);
+		if (kind == 0)
+			f1 = read;
+		else if (kind == 1)
+			c1 = read;
+		else if (kind == 2)
+			f2 = read;
+		else
+			far1 = read;
+	}
+	if (simple < 1.0) {
+		if (l1 >= 0)
+			d1 = vec4(f1.x, f1.y * c1.y, f1.z, f1.w);
+		if ((wanted & 4) != 0)
+			d2 = vec4(f2.x, f2.y * c1.y, f2.z, f2.w);
+	}
+	if ((wanted & 8) != 0) {
+		d1 = mix(d1, far1, simple);
+		d2 = mix(d2, far1, simple);
 	}
 
 	// blend the two along their bumps: the higher one shows through first
@@ -900,10 +952,12 @@ float stoneTileHeight(int layer, MaterialMapping m, float level, float spacing)
 float stoneSample(int layer, MaterialMapping m, float level, float spacing)
 {
 	level = clamp(level, 0.0, MATERIAL_MAX_LEVEL - 1.0);
-	float k = floor(level);
-	float h = stoneTileHeight(layer, m, k, spacing);
-	if (level > k)
-		h = mix(h, stoneTileHeight(layer, m, k + 1.0, spacing), level - k);
+	float k = floor(level), f = level - k;
+	// (the two sizes in one loop, so the read stands in the shader once, as materialTwoSizes())
+	float h = 0.0;
+	int reads = level > k ? 2 : 1;
+	for (int i = 0; i < reads; i++)
+		h += (reads == 1 ? 1.0 : (i == 0 ? 1.0 - f : f)) * stoneTileHeight(layer, m, k + float(i), spacing);
 	if (layer == MATERIAL_ICE)
 		h = 0.5 + (h - 0.5) * max(MaterialLook.x, MATERIAL_ICE_LEAST);
 	return h;
@@ -980,9 +1034,16 @@ bool terrainStonePick(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 eyepos, vec3 normal
 // bumps as the colours are
 float terrainStoneAt(StonePick p, MaterialMapping m, float spacing)
 {
-	float h1 = stoneSample(p.l1, m, m.level, spacing), h2 = 0.5;
-	if (p.w2 > 0.01)
-		h2 = stoneSample(p.l2, m, m.level, spacing);
+	// (the two materials in one loop, so the read stands in the shader once)
+	float h1 = 0.5, h2 = 0.5;
+	int reads = p.w2 > 0.01 ? 2 : 1;
+	for (int i = 0; i < reads; i++) {
+		float h = stoneSample(i == 0 ? p.l1 : p.l2, m, m.level, spacing);
+		if (i == 0)
+			h1 = h;
+		else
+			h2 = h;
+	}
 	float s1 = p.w1 / max(p.total, 1e-6) + h1;
 	float s2 = p.w2 / max(p.total, 1e-6) + h2;
 	float top = max(s1, s2) - MATERIAL_BLEND_DEPTH;
@@ -1027,48 +1088,72 @@ void terrainStones(vec4 slots[MATERIAL_SLOT_GROUPS], vec3 eyepos, vec3 normal, v
 	// (the cut points' spacing there)
 	float spacing = terrainStoneSpacing(length(eyepos));
 	MaterialMapping m = terrainStoneMapping(eyepos, up, toPlanet);
-	lift = terrainStoneAt(p, m, spacing);
 
 	// the slope, from the heights half a spacing away along two directions on the ground
 	vec3 t1 = normalize(cross(up, abs(up.x) < 0.9 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0)));
 	vec3 t2 = cross(up, t1);
 	float e = 0.5 * spacing;
-	MaterialMapping mx = m, my = m;
-	mx.rel += toPlanet * (t1 * e);
-	my.rel += toPlanet * (t2 * e);
-	slope = ((terrainStoneAt(p, mx, spacing) - lift) * t1 + (terrainStoneAt(p, my, spacing) - lift) * t2) / e;
 
-#if (NUM_LIGHTS > 0)
 	// the shade: toward the main light along the ground, the line to it rising as the light stands; anything standing
 	// above that line shades the point. Out as far as the highest stone here could reach the line, at most half a
 	// tile; the steps closer together near the point, where the small stones are
 	// (only where the stones stand a pixel or more on screen, fading in up to three: smaller, their shade can't be seen)
-	float shadePixels = terrainStonePixels(length(eyepos));
+	bool shadeOn = false;
+	vec3 toward = vec3(0.0);
+	float rise = 1.0, highest = 0.0, shadePixels = 0.0;
+#if (NUM_LIGHTS > 0)
+	shadePixels = terrainStonePixels(length(eyepos));
 	if (MaterialStones.z > 0.5 && shadePixels > 1.0) {
 		vec3 L = normalize(uLight[0].position.xyz);
 		float sunUp = dot(L, up);
 		vec3 along = L - up * sunUp;
 		float alongLen = length(along);
 		if (sunUp > 0.0 && alongLen > 1e-4) {
-			vec3 toward = toPlanet * (along / alongLen);
-			float rise = sunUp / alongLen;
-			float highest = max(p.k1, p.k2) * p.total;
-			float reach = min((highest - lift) / rise, 0.5 * exp2(m.level));
-			if (reach > e) {
-				float soft = 0.1 * highest + 1e-3;
-				float shade = 0.0;
-				for (int i = 1; i <= STONE_SHADOW_STEPS; ++i) {
-					float f = float(i) / float(STONE_SHADOW_STEPS);
-					float s = reach * f * f;
-					MaterialMapping ms = m;
-					ms.rel += toward * s;
-					shade = max(shade, clamp((terrainStoneAt(p, ms, spacing) - lift - s * rise) / soft, 0.0, 1.0));
-				}
-				lit = 1.0 - shade * smoothstep(1.0, 3.0, shadePixels);
-			}
+			shadeOn = true;
+			toward = toPlanet * (along / alongLen);
+			rise = sunUp / alongLen;
+			highest = max(p.k1, p.k2) * p.total;
 		}
 	}
 #endif
+
+	// The heights read: here, half a spacing along each way for the slope, and the steps toward the light for the
+	// shade, in one loop, so the reading stands in the shader once rather than eleven times over (2026-11-10: with
+	// each written out, the stones' shader took 7.5 s to build)
+	float hx = 0.0, hy = 0.0, reach = 0.0, soft = 1.0, shade = 0.0;
+	int reads = 3;
+	for (int i = 0; i < reads; i++) {
+		MaterialMapping mi = m;
+		float s = 0.0;
+		if (i == 1) {
+			mi.rel += toPlanet * (t1 * e);
+		} else if (i == 2) {
+			mi.rel += toPlanet * (t2 * e);
+		} else if (i >= 3) {
+			float f = float(i - 2) / float(STONE_SHADOW_STEPS);
+			s = reach * f * f;
+			mi.rel += toward * s;
+		}
+		float h = terrainStoneAt(p, mi, spacing);
+		if (i == 0) {
+			lift = h;
+			if (shadeOn) {
+				reach = min((highest - lift) / rise, 0.5 * exp2(m.level));
+				soft = 0.1 * highest + 1e-3;
+				if (reach > e)
+					reads = 3 + STONE_SHADOW_STEPS;
+			}
+		} else if (i == 1) {
+			hx = h;
+		} else if (i == 2) {
+			hy = h;
+		} else {
+			shade = max(shade, clamp((h - lift - s * rise) / soft, 0.0, 1.0));
+		}
+	}
+	slope = ((hx - lift) * t1 + (hy - lift) * t2) / e;
+	if (reads > 3)
+		lit = 1.0 - shade * smoothstep(1.0, 3.0, shadePixels);
 }
 
 // ---------------------------------------------------------------- relief

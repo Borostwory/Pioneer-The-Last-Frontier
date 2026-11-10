@@ -1037,6 +1037,34 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 		ImGui::TextColored(dim, "For measuring only, not saved. Stand still, give each about 5 seconds; the log notes each switch.");
 	}
 
+	// the latest changes, each against how it was before them, for their cost
+	ImGui::Spacing();
+	ImGui::SeparatorText("The latest changes, as before (compare fps, \"terrain\" and \"physics\" in the log)");
+	{
+		static const struct {
+			int bit;
+			const char *label, *note;
+		} tries[] = {
+			{ 20, "Textures past the near size as before (the ring)", "texture size as before" },
+			{ 21, "Off screen by the flat ground (holes can show)", "off screen by the flat ground" },
+		};
+		int mask = GeoSphere::GetGroundSkip();
+		for (const auto &t : tries) {
+			bool on = (mask & (1 << t.bit)) != 0;
+			if (ImGui::Checkbox((std::string(t.label) + "##groundTry").c_str(), &on)) {
+				mask = on ? (mask | (1 << t.bit)) : (mask & ~(1 << t.bit));
+				GeoSphere::SetGroundSkip(mask);
+				FrontierLog::Note(std::string("as before: ") + t.note + (on ? " on" : " off"));
+			}
+		}
+		bool oldRover = Pi::config->Int("RoverSprings", 1) == 0;
+		if (ImGui::Checkbox("Rover wheels as before (one point under each, no springs)##groundTry", &oldRover)) {
+			Pi::config->SetInt("RoverSprings", oldRover ? 0 : 1);
+			FrontierLog::Note(std::string("as before: rover wheels ") + (oldRover ? "on" : "off"));
+		}
+		ImGui::TextColored(dim, "Not saved. The rover's cost shows in \"physics\", the ground's in \"terrain\".");
+	}
+
 	// the cheaper photo textures
 	ImGui::Spacing();
 	ImGui::SeparatorText("Cheaper photo textures (compare the look and \"terrain\" in the log)");
@@ -1077,11 +1105,11 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 
 		bool turnTable = GeoSphere::TurnTable();
 		if (ImGui::Checkbox("Texture turns from a table##openglPlan", &turnTable)) {
-			Pi::config->SetInt("TerrainTurnTable", turnTable ? 1 : 0);
+			Pi::config->SetInt("TerrainTurnTexture", turnTable ? 1 : 0);
 			Pi::config->Save();
 			FrontierLog::Note(std::string("textures: turns from a table ") + (turnTable ? "on" : "off"));
 		}
-		ImGui::TextColored(dim, "Worlds with turned textures (Mars, the Moon): the same turns, looked up instead of worked out.");
+		ImGui::TextColored(dim, "The same turns, looked up instead of worked out: never faster, off (on Titan 0.25 ms slower).");
 	}
 
 	// P7: the rover's dust on the graphics card

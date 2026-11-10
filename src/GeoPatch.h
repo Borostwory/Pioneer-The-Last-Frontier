@@ -165,8 +165,8 @@ private:
 	static const int NUM_KIDS = 4;
 
 	bool IsPatchVisible(const Graphics::Frustum &frustum, const vector3d &camPos) const;
-	// P4c: whether the stones could be raised anywhere on the patch, with margin metres more (LODUpdate keeps those
-	// patches at the finest level, RenderImmediate tessellates them)
+	// P4c: whether the stones could be raised anywhere on the patch, with margin metres more (RenderImmediate
+	// tessellates those patches)
 	bool InStonesReach(const vector3d &campos, double margin) const;
 	bool IsOverHorizon(const vector3d &camPos) const;
 

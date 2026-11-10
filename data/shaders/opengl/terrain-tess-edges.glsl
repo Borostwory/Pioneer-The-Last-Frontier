@@ -11,6 +11,8 @@
 // by twice that).
 uniform vec4 MaterialStones;
 uniform vec4 MaterialNear;
+// the ground cost breakdown's switches (terrain-surface.glsl); 21: what's off screen by the flat ground alone
+uniform int GroundSkip;
 
 #include "terrain-stone-aim.glsl"
 
@@ -88,7 +90,7 @@ vec4 terrainTessRaised(vec3 eyepos, vec4 clip, float h)
 bool terrainTessOffscreen(vec3 p0, vec3 p1, vec3 p2, vec4 c0, vec4 c1, vec4 c2)
 {
 	int sides = terrainTessOutsideSides(c0, c1, c2);
-	float h = terrainTessTallestStone();
+	float h = (GroundSkip & (1 << 21)) != 0 ? 0.0 : terrainTessTallestStone();
 	if (sides == 0 || h <= 0.0)
 		return sides != 0;
 	return (sides & terrainTessOutsideSides(terrainTessRaised(p0, c0, h), terrainTessRaised(p1, c1, h), terrainTessRaised(p2, c2, h))) != 0;

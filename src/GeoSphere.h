@@ -154,10 +154,11 @@ public:
 	// P8: whether the sky reads its light from a table worked out once a frame, with the camera in the air (config
 	// SkyTable; only with RealisticScattering=2)
 	static bool SkyTableEnabled();
-	// the cheaper photo textures (terrain-materials.glsl, TextureLod, TextureTurnTable), each switched in the debug
-	// window: simply far off (TerrainTextureSimpleFar) from a distance (TerrainTextureSimpleFrom, m); one size at a time
+	// the cheaper photo textures (terrain-materials.glsl, TextureLod), each switched in the debug window: simply far
+	// off (TerrainTextureSimpleFar) from a distance (TerrainTextureSimpleFrom, m); one size at a time
 	// (TerrainTextureOneScale), blending over a share of the way between sizes (TerrainTextureScaleBand); the turns'
-	// hashes from a table (TerrainTurnTable)
+	// hashes from a table (TerrainTurnTexture, off: never faster, kept as the ground's shader is at the card's most
+	// instructions and, taken out, the driver laid it out over them)
 	static bool TextureSimpleFar();
 	static double TextureSimpleFrom();
 	static bool TextureOneScale();
@@ -286,10 +287,12 @@ private:
 	struct MaterialSlotDataBlock {
 		float colour[16][4];
 		float traits[16][4];
-		float cellHashes[13][4]; // salts 0 and 1, 5 x 5 cells each (materialCellHashTable)
 	};
+
 	MaterialSlotDataBlock m_materialSlotData = {};
 	void FillMaterialSlotData();
+	// the turns' cell hashes (materialCellHashTex in terrain-materials.glsl): the same for every body, made once
+	static Graphics::Texture *CellHashTexture(Graphics::Renderer *renderer);
 	// the patch surface tiles (TerrainSurfaceTiles) of the visible patches
 	void SetSurfaceTiles(double pixelAngle);
 

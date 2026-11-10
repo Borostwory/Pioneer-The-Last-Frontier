@@ -294,17 +294,29 @@ float cityGardenDetail(vec4 garden, MaterialMapping mapping, float distMetres, o
 		return 1.0;
 	float coarse = mapping.level + MATERIAL_COARSE_LEVELS;
 	float detail = 0.0, height = 0.0, rough = 0.0, total = 0.0;
-	for (int k = 0; k < 3; k++) {
-		float w = garden[k];
-		if (w < 0.02)
-			continue;
+	// each garden material there, its fine and coarse sizes, in one loop over the reads, so the reading stands in the
+	// shader once rather than six times over (as terrainMaterialDetail(); 2026-11-10)
+	int gardens = (garden.x >= 0.02 ? 1 : 0) | (garden.y >= 0.02 ? 2 : 0) | (garden.z >= 0.02 ? 4 : 0);
+	int remaining = gardens, k = 0;
+	vec4 f = vec4(0.0);
+	int reads = 2 * bitCount(gardens);
+	for (int i = 0; i < reads; i++) {
+		bool fine = (i & 1) == 0;
+		if (fine) {
+			k = findLSB(remaining);
+			remaining &= remaining - 1;
+		}
 		int layer = k == 0 ? MATERIAL_GRASS : k == 1 ? MATERIAL_TUNDRA : MATERIAL_SOIL;
-		vec4 f = materialSample(layer, mapping, mapping.level);
-		vec4 c = materialSample(layer, mapping, coarse);
-		detail += w * f.y * c.y;
-		height += w * f.z;
-		rough += w * f.w;
-		total += w;
+		vec4 read = materialSample(layer, mapping, fine ? mapping.level : coarse);
+		if (fine) {
+			f = read;
+		} else {
+			float w = garden[k];
+			detail += w * f.y * read.y;
+			height += w * f.z;
+			rough += w * f.w;
+			total += w;
+		}
 	}
 	if (total <= 0.0)
 		return 1.0;

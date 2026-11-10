@@ -913,11 +913,23 @@ void GeoSphere::FillMaterialSlotData()
 		m_materialSlotData.traits[s][2] = 0.0f;
 		m_materialSlotData.traits[s][3] = 0.0f;
 	}
-	// the turns' cell hashes (materialCellHashTable): salt, then y, then x
-	for (int i = 0; i < 52; i++) {
-		const int salt = i / 25, cell = i % 25;
-		m_materialSlotData.cellHashes[i / 4][i % 4] = i < 50 ? TerrainStones::CellHash(float(cell % 5), float(cell / 5), uint32_t(salt)) : 0.0f;
+}
+
+
+Graphics::Texture *GeoSphere::CellHashTexture(Graphics::Renderer *renderer)
+{
+	static RefCountedPtr<Graphics::Texture> s_texture;
+	if (!s_texture) {
+		// 25 x 2: x the cell (y * 5 + x), y the salt (materialCellHashTable)
+		float texels[50];
+		for (int salt = 0; salt < 2; salt++)
+			for (int cell = 0; cell < 25; cell++)
+				texels[salt * 25 + cell] = TerrainStones::CellHash(float(cell % 5), float(cell / 5), uint32_t(salt));
+		const Graphics::TextureDescriptor desc(Graphics::TEXTURE_R32F, vector3f(25.0f, 2.0f, 0.0f), Graphics::NEAREST_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
+		s_texture.Reset(renderer->CreateTexture(desc));
+		s_texture->Update(texels, desc.dataSize, Graphics::TEXTURE_R32F);
 	}
+	return s_texture.Get();
 }
 
 int GeoSphere::GetGroundSkip()
@@ -945,14 +957,15 @@ bool GeoSphere::TextureOneScale()
 	return Pi::config->Int("TerrainTextureOneScale", 0) != 0;
 }
 
+bool GeoSphere::TurnTable()
+{
+	// (a new name, off: the table was TerrainTurnTable, on, until 2026-11-10)
+	return Pi::config->Int("TerrainTurnTexture", 0) != 0;
+}
+
 double GeoSphere::TextureScaleBand()
 {
 	return std::clamp(double(Pi::config->Float("TerrainTextureScaleBand", 0.3f)), 0.02, 1.0);
-}
-
-bool GeoSphere::TurnTable()
-{
-	return Pi::config->Int("TerrainTurnTable", 1) != 0;
 }
 
 bool GeoSphere::SkyTableEnabled()
@@ -1384,7 +1397,8 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		m_surfaceMaterial->SetPushConstant("StoneMesh"_hash, vector3f(float(finest), float(perMetre), 0.0f), 0.0f);
 	}
 	// and the patches kept in view as far below the screen as the tallest stone could raise them (GeoPatch::IsPatchVisible)
-	m_stoneCullMargin = StonesActive() ? DeepestStone(m_terrain.Get()) * StonesHeight() * std::exp2(TextureFixedLevel()) / GetSystemBody()->GetRadius() : 0.0;
+	// (none with the debug window's comparison switch 21: as before 2026-11-09)
+	m_stoneCullMargin = StonesActive() && !(s_groundSkip & (1 << 21)) ? DeepestStone(m_terrain.Get()) * StonesHeight() * std::exp2(TextureFixedLevel()) / GetSystemBody()->GetRadius() : 0.0;
 	// and the viewport, for the edges' length on screen (terrain-tess-edges.glsl)
 	m_surfaceMaterial->SetPushConstant("TessScreen"_hash, vector3f(0.5f * float(renderer->GetViewport().w), 0.5f * float(renderer->GetViewport().h), 0.0f), 0.0f);
 	Graphics::CityGlowDataBlock cityGlow{};
@@ -1672,6 +1686,8 @@ void GeoSphere::SetUpMaterials()
 		// relief below the mesh (terrainReliefNormal() in terrain-materials.glsl)
 		m_texRelief.Reset(Graphics::TextureBuilder::Normal("textures/terrain/relief.png").GetOrCreateTexture(Pi::renderer, "model"));
 		m_surfaceMaterial->SetTexture("terrainRelief"_hash, m_texRelief.Get());
+		// the turns' cell hashes, to look up (TerrainTurnTexture)
+		m_surfaceMaterial->SetTexture("materialCellHashTex"_hash, CellHashTexture(Pi::renderer));
 		SetUpTileStyle();
 
 		// this body's material slots: texture layer per slot (-1 unused), and

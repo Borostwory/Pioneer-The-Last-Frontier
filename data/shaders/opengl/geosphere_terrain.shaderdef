@@ -11,6 +11,7 @@ Texture sampler2D waterWaves
 Texture sampler2DArray terrainMaterials
 Texture sampler2DArray terrainStoneHeights
 Texture sampler2D terrainRelief
+Texture sampler2D materialCellHashTex
 Texture sampler2D terrainTiles
 Texture sampler2D surfaceTileColour
 Texture sampler2D surfaceTileNormal
