@@ -89,6 +89,9 @@ namespace Graphics {
 
 			// background: a program not made yet is built in the background where the driver can (Program::Pending)
 			Program *GetProgramForDesc(const MaterialDescriptor &desc, bool background = false);
+			// starts building that program in the background, unless it's made already, or in the binary cache
+			// (Renderer::PrebuildProgram)
+			void PrebuildProgram(const MaterialDescriptor &desc);
 			uint32_t GetNumVariants() const { return m_variants.size(); }
 
 			TextureBindingData GetTextureBindingInfo(size_t name) const;

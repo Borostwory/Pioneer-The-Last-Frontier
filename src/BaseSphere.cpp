@@ -52,6 +52,8 @@ void BaseSphere::Init(Graphics::Renderer *renderer)
 {
 	PROFILE_SCOPED()
 	GeoSphere::InitGeoSphere();
+	// (after a change to the ground's shaders, its programs built while the game starts and sits in its menu)
+	GeoSphere::PrebuildPrograms(renderer);
 	GasGiant::InitGasGiant();
 	ResetAtmosphereGeometry(renderer);
 }

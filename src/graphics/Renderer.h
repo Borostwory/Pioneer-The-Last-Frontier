@@ -284,6 +284,10 @@ namespace Graphics {
 		// Materials made while this is on have their shaders built by the driver's own threads while the game goes
 		// on, where it can: they aren't drawn until they're ready (MaterialCompiled, WaitForMaterial).
 		virtual void SetBackgroundCompile(bool on) {}
+		// Starts building the program a material of this shader and descriptor will need, in the background, so it's
+		// ready, or nearer, by the time one is made (GeoSphere::PrebuildPrograms); nothing where the driver can't build
+		// in the background. vertexFormat: the materials' own.
+		virtual void PrebuildProgram(const std::string &shader, const MaterialDescriptor &desc, const VertexFormatDesc &vertexFormat) {}
 		// reads a single-channel float texture's first level back (bytes: what out holds), waiting for what compute
 		// wrote to it; for the debug window's checks only (it stalls). False if it can't.
 		virtual bool ReadTexture(Texture *texture, float *out, size_t bytes) { return false; }

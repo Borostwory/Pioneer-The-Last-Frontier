@@ -289,6 +289,21 @@ namespace Graphics {
 			return HashString(text);
 		}
 
+		// the source of every stage there is: compute alone, or vertex, the tessellation stages if any, and fragment
+		static void MakeStages(const ProgramDef &def, std::vector<std::unique_ptr<ShaderProgram>> &stages)
+		{
+			if (!def.computeShader.empty()) {
+				stages.emplace_back(new ShaderProgram(GL_COMPUTE_SHADER, def.computeShader, def.defines));
+			} else {
+				stages.emplace_back(new ShaderProgram(GL_VERTEX_SHADER, def.vertexShader, def.defines));
+				if (def.tessellated && !def.tessControlShader.empty())
+					stages.emplace_back(new ShaderProgram(GL_TESS_CONTROL_SHADER, def.tessControlShader, def.defines));
+				if (def.tessellated && !def.tessEvalShader.empty())
+					stages.emplace_back(new ShaderProgram(GL_TESS_EVALUATION_SHADER, def.tessEvalShader, def.defines));
+				stages.emplace_back(new ShaderProgram(GL_FRAGMENT_SHADER, def.fragmentShader, def.defines));
+			}
+		}
+
 		// returns the linked program, or 0 if there's no good one to be had
 		static GLuint LoadBinary(const std::string &path, const uint64_t sourceHash)
 		{
@@ -369,6 +384,21 @@ namespace Graphics {
 		};
 
 		static bool s_backgroundSupported = false;
+
+		bool Program::InBinaryCache(const ProgramDef &def)
+		{
+			if (!BinaryCacheSupported())
+				return false;
+			std::vector<std::unique_ptr<ShaderProgram>> stages;
+			MakeStages(def, stages);
+			RefCountedPtr<FileSystem::FileData> file = FileSystem::userFiles.ReadFile(BinaryCachePath(def));
+			if (!file.Valid() || file->GetSize() < sizeof(BinaryHeader))
+				return false;
+			BinaryHeader header;
+			std::memcpy(&header, file->GetData(), sizeof(header));
+			return std::memcmp(header.magic, s_binaryMagic, sizeof(s_binaryMagic)) == 0 && header.sourceHash == BinarySourceHash(def, stages) &&
+				header.size == file->GetSize() - sizeof(header);
+		}
 
 		void Program::SetBackgroundSupported(const bool on)
 		{
@@ -464,17 +494,7 @@ namespace Graphics {
 			// load the source of every stage there is: compute alone, or vertex, the tessellation stages if any, and
 			// fragment
 			std::vector<std::unique_ptr<ShaderProgram>> stages;
-			const bool compute = !def.computeShader.empty();
-			if (compute) {
-				stages.emplace_back(new ShaderProgram(GL_COMPUTE_SHADER, def.computeShader, def.defines));
-			} else {
-				stages.emplace_back(new ShaderProgram(GL_VERTEX_SHADER, def.vertexShader, def.defines));
-				if (def.tessellated && !def.tessControlShader.empty())
-					stages.emplace_back(new ShaderProgram(GL_TESS_CONTROL_SHADER, def.tessControlShader, def.defines));
-				if (def.tessellated && !def.tessEvalShader.empty())
-					stages.emplace_back(new ShaderProgram(GL_TESS_EVALUATION_SHADER, def.tessEvalShader, def.defines));
-				stages.emplace_back(new ShaderProgram(GL_FRAGMENT_SHADER, def.fragmentShader, def.defines));
-			}
+			MakeStages(def, stages);
 
 			// the compiled program from an earlier run, if the source and the driver are the same
 			const bool useBinaryCache = BinaryCacheSupported();

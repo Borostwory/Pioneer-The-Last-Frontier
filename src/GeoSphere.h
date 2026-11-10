@@ -66,6 +66,10 @@ public:
 	}
 
 	static void InitGeoSphere();
+	// Starts building the ground's programs most planets need in the background while the game starts and sits in its
+	// menu: with and without seas and lava, with and without air, with and without the stones, under one sun. After a
+	// change to the ground's shaders, then, a planet loaded or seen first rarely waits for its own (2026-11-10).
+	static void PrebuildPrograms(Graphics::Renderer *renderer);
 	static void UninitGeoSphere();
 	static void UpdateAllGeoSpheres();
 	static void OnChangeGeoSphereDetailLevel();

@@ -99,6 +99,7 @@ namespace Graphics {
 		void AddComputeBarrier(uint32_t barriers) final;
 		bool MaterialCompiled(Material *m) final;
 		bool WaitForMaterial(Material *m) final;
+		void PrebuildProgram(const std::string &shader, const MaterialDescriptor &desc, const VertexFormatDesc &vertexFormat) final;
 		void SetBackgroundCompile(bool on) final { m_backgroundCompile = on; }
 		bool ReadTexture(Texture *texture, float *out, size_t bytes) final;
 		void BeginGpuTimer(const char *name) final;
@@ -161,6 +162,8 @@ namespace Graphics {
 		Uint32 m_numDirLights;
 		// SetBackgroundCompile
 		bool m_backgroundCompile = false;
+		// the shader of that name, made the first time it's asked for
+		OGL::Shader *GetOrCreateShader(const std::string &name);
 		float m_minZNear;
 		float m_maxZFar;
 		bool m_useCompressedTextures;

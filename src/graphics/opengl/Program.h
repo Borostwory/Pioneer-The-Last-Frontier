@@ -42,6 +42,9 @@ namespace Graphics {
 			// the renderer when it starts
 			static void SetBackgroundSupported(bool on);
 			static bool BackgroundSupported();
+			// whether the binary cache holds this program for the source and driver as they are now (read from it
+			// in a moment, when it's asked for: nothing to build ahead)
+			static bool InBinaryCache(const ProgramDef &def);
 
 			GLuint GetConstantLocation(uint32_t index) const { return m_constants[index]; }
 			GLuint GetProgramID() const { return m_program; }

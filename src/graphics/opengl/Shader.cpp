@@ -159,6 +159,24 @@ void Shader::Reload()
 	}
 }
 
+void Shader::PrebuildProgram(const MaterialDescriptor &desc)
+{
+	for (auto &pair : m_variants)
+		if (pair.first == desc)
+			return;
+	ProgramDef def = m_programDef;
+	def.defines = GetProgramDefines(desc);
+	def.tessellated = desc.tessellated;
+	// (in the binary cache it's read in a moment when asked for; read now, it would only make the start slower)
+	if (Program::InBinaryCache(def))
+		return;
+	Program *program = new Program(this, def, true);
+	if (program->Loaded() || program->Pending())
+		m_variants.push_back({ desc, program });
+	else
+		delete program;
+}
+
 Program *Shader::LoadProgram(const MaterialDescriptor &desc, const bool background)
 {
 	ProgramDef def = m_programDef;

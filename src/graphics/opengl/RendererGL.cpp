@@ -1093,6 +1093,35 @@ namespace Graphics {
 		return program && program->Loaded();
 	}
 
+	OGL::Shader *RendererOGL::GetOrCreateShader(const std::string &name)
+	{
+		for (auto &pair : m_shaders) {
+			if (pair.first == name)
+				return pair.second;
+		}
+		OGL::Shader *s = new OGL::Shader(name);
+		Log::Info("Created shader {} (address={})\n", name, (void *)s);
+		CheckRenderErrors(__FUNCTION__, __LINE__);
+		m_shaders.push_back({ name, s });
+		return s;
+	}
+
+	void RendererOGL::PrebuildProgram(const std::string &shader, const MaterialDescriptor &desc, const VertexFormatDesc &vertexFormat)
+	{
+		if (!OGL::Program::BackgroundSupported())
+			return;
+		OGL::Shader *s = GetOrCreateShader(shader);
+		if (desc.tessellated && !s->HasTessellation())
+			return;
+		// (with the vertex state its materials are drawn with bound, as CreateMaterial does, so the driver links it
+		// for that and doesn't build it again on its first use)
+		const size_t hash = m_renderStateCache->CacheVertexDesc(vertexFormat);
+		glBindVertexArray(m_renderStateCache->GetVertexArrayObject(hash));
+		s->PrebuildProgram(desc);
+		glBindVertexArray(0);
+		CheckRenderErrors(__FUNCTION__, __LINE__);
+	}
+
 	bool RendererOGL::WaitForMaterial(Material *m)
 	{
 		OGL::Program *program = m ? static_cast<OGL::Material *>(m)->EvaluateVariant() : nullptr;
@@ -1319,20 +1348,7 @@ namespace Graphics {
 		mat->m_vertexState = vao;
 		mat->m_vertexFormatHash = hash;
 
-		OGL::Shader *s = nullptr;
-		for (auto &pair : m_shaders) {
-			if (pair.first == shader)
-				s = pair.second;
-		}
-
-		if (!s) {
-			s = new OGL::Shader(shader);
-			Log::Info("Created shader {} (address={})\n", shader, (void *)s);
-			CheckRenderErrors(__FUNCTION__, __LINE__);
-
-			m_shaders.push_back({ shader, s });
-		}
-		mat->SetShader(s);
+		mat->SetShader(GetOrCreateShader(shader));
 
 		CheckRenderErrors(__FUNCTION__, __LINE__);
 		glBindVertexArray(0);

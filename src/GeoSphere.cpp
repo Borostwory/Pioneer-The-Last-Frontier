@@ -95,6 +95,34 @@ void GeoSphere::InitGeoSphere()
 }
 
 //static
+void GeoSphere::PrebuildPrograms(Graphics::Renderer *renderer)
+{
+	// (as SetUpMaterials makes them, and Material::SetTessellated the stones' version, under one sun: NUM_LIGHTS 1)
+	const int scattering = Pi::config->Int("RealisticScattering");
+	const std::string shader = (scattering == 1 || scattering == 2) ? "rayleigh_geosphere_terrain" : "geosphere_terrain";
+	static const Graphics::EffectType effects[] = { Graphics::EFFECT_GEOSPHERE_TERRAIN, Graphics::EFFECT_GEOSPHERE_TERRAIN_WITH_WATER,
+		Graphics::EFFECT_GEOSPHERE_TERRAIN_WITH_LAVA, Graphics::EFFECT_GEOSPHERE_TERRAIN_WITH_LAVA_AND_WATER };
+	const bool stones = StonesEnabled() || TessellationEnabled();
+	int count = 0;
+	// (the plain ones first, which a load waits for; the stones' after, which it doesn't)
+	for (int tessellated = 0; tessellated < (stones ? 2 : 1); tessellated++) {
+		for (int air = 1; air >= 0; air--) {
+			for (const Graphics::EffectType effect : effects) {
+				Graphics::MaterialDescriptor desc;
+				desc.effect = effect;
+				desc.lighting = true;
+				desc.dirLights = 1;
+				desc.quality = Graphics::HAS_ECLIPSES | (air ? Graphics::HAS_ATMOSPHERE : 0);
+				desc.tessellated = tessellated != 0;
+				renderer->PrebuildProgram(shader, desc, GeoPatchContext::GetVertexFormat());
+				count++;
+			}
+		}
+	}
+	Log::Info("Ground programs: {} asked for ahead; those not in the binary cache are built in the background", count);
+}
+
+//static
 double GeoSphere::GetLodForeshortening()
 {
 	return s_lodForeshortening;
