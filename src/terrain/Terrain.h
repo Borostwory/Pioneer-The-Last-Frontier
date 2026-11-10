@@ -118,6 +118,27 @@ public:
 	static constexpr double LARGE_LANDFORMS_FROM_M = 500.0;
 	static constexpr double LARGE_LANDFORMS_TO_M = 40000.0;
 	static void SetLargeLandforms(bool on);
+	// How much the landforms made into shape darken their hollows and pale their crests in the ground's colour, as
+	// craters do theirs (LandformShade): 0 none, 0.75 at most 75 % on bare airless ground (set in game on Mercury,
+	// 2026-11-10). From the config (TerrainLandformShade); the patches must be made again after a change.
+	static constexpr double LANDFORM_SHADE = 0.75;
+	static void SetLandformShadeStrength(double strength);
+	static double GetLandformShadeStrength();
+	// How the landforms made into shape fade out from afar, where the samples grow too far apart to show them well, in
+	// samples across a hill: their height (crumpled ground from orbit otherwise), and their shade (speckled). From the
+	// config (TerrainLandformFade*) and the debug window; the patches must be made again after a change. The shade comes
+	// in slowly, all of it only close up (set in game on Mercury, 2026-11-10).
+	static constexpr TerrainLandforms::Fade LANDFORM_HEIGHT_FADE = { 2.0, 8.0 };
+	static constexpr TerrainLandforms::Fade LANDFORM_SHADE_FADE = { 2.0, 64.0 };
+	static void SetLandformHeightFade(TerrainLandforms::Fade fade);
+	static TerrainLandforms::Fade GetLandformHeightFade();
+	static void SetLandformShadeFade(TerrainLandforms::Fade fade);
+	static TerrainLandforms::Fade GetLandformShadeFade();
+	// -1..1: how far the landforms AddLandforms makes into shape put p above or below the ground around it (low in
+	// hollows, high on crests), as far as the samples of the current band limit show them; 0 while there are none
+	double LandformShade(const vector3d &p) const;
+	// 0..1: how much of the shade shows through this body's air, which lights the hollows from all round (1: none)
+	virtual double LandformShadeAir() const { return 1.0; }
 	// The largest craters the tiles may draw, in metres; 0: by the planet's size.
 	virtual double GetTileCraterTop() const { return 0.0; }
 	// metres: the tile's landforms, of every size up to this and fixed in space, instead of only those near the patch's

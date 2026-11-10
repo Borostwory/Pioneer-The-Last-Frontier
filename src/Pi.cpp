@@ -361,6 +361,11 @@ void Pi::App::OnStartup()
 	// the large landforms as real shape (P3 of the OpenGL 4.6 plan), before any terrain is made
 	Terrain::SetLandformShape(config->Float("TerrainLandformShape", float(Terrain::LARGE_LANDFORMS_TO_M)));
 	Terrain::SetLandformShapeFrom(config->Float("TerrainLandformShapeFrom", float(Terrain::LARGE_LANDFORMS_FROM_M)));
+	Terrain::SetLandformShadeStrength(config->Float("TerrainLandformShade", float(Terrain::LANDFORM_SHADE)));
+	Terrain::SetLandformHeightFade({ config->Float("TerrainLandformFadeFrom", float(Terrain::LANDFORM_HEIGHT_FADE.from)),
+		config->Float("TerrainLandformFadeFull", float(Terrain::LANDFORM_HEIGHT_FADE.full)) });
+	Terrain::SetLandformShadeFade({ config->Float("TerrainLandformShadeFadeFrom", float(Terrain::LANDFORM_SHADE_FADE.from)),
+		config->Float("TerrainLandformShadeFadeFull", float(Terrain::LANDFORM_SHADE_FADE.full)) });
 	Pi::detail.cities = config->Int("DetailCities");
 
 	Graphics::RendererOGL::RegisterRenderer();

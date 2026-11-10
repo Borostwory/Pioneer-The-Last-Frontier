@@ -2807,6 +2807,22 @@ void TerrainPhysical::GetSurface(const vector3d &p, const double, const vector3d
 	Steep(q, normal, shares);
 	const double altitude = m_state.sea > 0.0 ? AltitudeOf(point, shares) : 1.0;
 	colourOut = ColourFrom(q, point, shares, altitude);
+	// The hills and ridges made into shape (Terrain::AddLandforms) show it in their colour, as craters do theirs
+	// (ColourFrom): their hollows see less of the sky and gather the finer, darker debris, and their crests are bare and
+	// paler. From afar, where the light alone leaves gentle hills flat, this is what shows them. Even on both sides, so
+	// the ground's colour stays the same on average. Less where air lights them from all round, under snow and ice, and
+	// not on molten lava, nor near the water, where the landforms fade out too. Not on what has maps of its own.
+	if (altitude >= 0.0 && !m_lines.IsActiveShell() && !m_grooved) {
+		const double shade = LandformShade(q);
+		if (shade != 0.0) {
+			const double frozen = std::clamp(shares[M::SNOW] + shares[M::ICE], 0.0, 1.0);
+			const double shore = m_state.sea > 0.0 ? Soft(altitude, 0.0, 30.0) : 1.0;
+			const double strength = GetLandformShadeStrength() * LandformShadeAir() * (1.0 - 0.5 * frozen) *
+				(1.0 - std::clamp(shares[M::LAVA], 0.0, 1.0)) * shore;
+			const double k = 1.0 + strength * shade;
+			colourOut = vector3d(std::clamp(colourOut.x * k, 0.0, 1.0), std::clamp(colourOut.y * k, 0.0, 1.0), std::clamp(colourOut.z * k, 0.0, 1.0));
+		}
+	}
 
 	s_lastAltitude.owner = this;
 	s_lastAltitude.p = p;

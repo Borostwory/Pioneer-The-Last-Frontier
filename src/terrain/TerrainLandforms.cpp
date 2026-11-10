@@ -269,14 +269,33 @@ namespace {
 	}
 
 	constexpr double CRATER_MAX_NEST = 2.0;
+
+	// How the landform values spread, measured on the noise (standard deviations; 2026-11-10): rolling's 0.27, as
+	// its noise's 0.19 times 1.4, a little less where it's damped; ridges' 0.5 about a mean of 0.2 (2 * RIDGE_MEAN - 1);
+	// dunes' 0.73 about -0.25 (2 * DUNE_MEAN - 1). Craters' is a guess. The shade divides each style's by its own, so
+	// gentle rolling hills shade as clearly as ridges, then spreads the whole by SHADE_SPREAD, so a typical hollow or
+	// crest is about half the way to the darkest or palest, and one in twenty goes all the way.
+	constexpr double ROLLING_FORM_SPREAD = 0.27;
+	constexpr double RIDGE_FORM_MEAN = 2.0 * RIDGE_MEAN - 1.0, RIDGE_FORM_SPREAD = 0.5;
+	constexpr double DUNE_FORM_MEAN = 2.0 * DUNE_MEAN - 1.0, DUNE_FORM_SPREAD = 0.73;
+	constexpr double CRATER_FORM_SPREAD = 0.5;
+	constexpr double SHADE_SPREAD = 0.5;
 } // namespace
 
-TerrainLandforms::Sample TerrainLandforms::Evaluate(const Params &p, const vector3d &up, const double minWavelength, const double maxWavelength)
+TerrainLandforms::Sample TerrainLandforms::Evaluate(const Params &p, const vector3d &up, const double minWavelength, const double maxWavelength, const double spacing,
+	const Fade heightFade, const Fade shadeFade)
 {
+	// how much of an octave of this wavelength a fade keeps at these samples
+	const auto kept = [spacing](const Fade &fade, const double lambda) {
+		if (spacing <= 0.0 || fade.full <= 0.0)
+			return 1.0;
+		return SmoothStep(fade.from, std::max(fade.full, fade.from + 1e-3), lambda / spacing);
+	};
 	Sample result;
 	const v3 position = up * p.radius;
 	v3 grad(0.0), accumulated(0.0);
 	double height = 0.0, form = 0.0, formWeight = 0.0, nest = 0.0;
+	double shade = 0.0, shadeWeight = 0.0;
 	const bool variedCraters = p.craterTop > 0.0;
 	double craterDensity = 0.35 * std::min(double(p.style[3]), 1.0);
 	if (variedCraters && p.style[3] > 0.0f)
@@ -296,17 +315,32 @@ TerrainLandforms::Sample TerrainLandforms::Evaluate(const Params &p, const vecto
 		const double w = i == 0 ? 0.6 : 1.0;
 		Octave o;
 		bool added = false;
+		// the octave's landform value for the shade, each style's as a share of its usual spread, and their weights
+		double octaveShade = 0.0, octaveWeight = 0.0;
+		const auto addShade = [&](const double weight, const double value, const double mean, const double spread) {
+			octaveShade += weight * (value - mean) / spread;
+			octaveWeight += weight;
+		};
 		if (p.landformTop > 0.0 ? lambda <= p.landformTop * 1.01 : (i < p.band && (p.craterTop <= 0.0 || lambda <= p.craterTop * 1.01))) {
 			if (rolling || ridged) {
 				Noise a, b;
 				GradientNoise(q, salt, rolling && ridged, a, b);
-				if (rolling)
-					o.Add(p.style[0], Rolling(a, accumulated));
-				if (ridged)
-					o.Add(p.style[1], Ridged(rolling ? b : a));
+				if (rolling) {
+					const Octave s = Rolling(a, accumulated);
+					o.Add(p.style[0], s);
+					addShade(p.style[0], s.form, 0.0, ROLLING_FORM_SPREAD);
+				}
+				if (ridged) {
+					const Octave s = Ridged(rolling ? b : a);
+					o.Add(p.style[1], s);
+					addShade(p.style[1], s.form, RIDGE_FORM_MEAN, RIDGE_FORM_SPREAD);
+				}
 			}
-			if (p.style[2] > 0.0f)
-				o.Add(p.style[2], Dunes(q, salt + 2u));
+			if (p.style[2] > 0.0f) {
+				const Octave s = Dunes(q, salt + 2u);
+				o.Add(p.style[2], s);
+				addShade(p.style[2], s.form, DUNE_FORM_MEAN, DUNE_FORM_SPREAD);
+			}
 			if (p.blocks > 0.0)
 				o.Add(p.blocks, Blocks(cell, q, salt + 3u));
 			added = true;
@@ -316,15 +350,27 @@ TerrainLandforms::Sample TerrainLandforms::Evaluate(const Params &p, const vecto
 			const double allowed = 1.0 - SmoothStep(CRATER_MAX_NEST - 0.75, CRATER_MAX_NEST, nest);
 			if (allowed > 0.0) {
 				double inside;
-				o.Add(allowed, Craters(cell, salt + 5u, craterDensity, variedCraters, inside));
+				const Octave s = Craters(cell, salt + 5u, craterDensity, variedCraters, inside);
+				o.Add(allowed, s);
+				addShade(allowed * p.style[3], s.form, 0.0, CRATER_FORM_SPREAD);
 				nest += allowed * inside;
 				added = true;
 			}
 		}
-		if (added)
+		if (added) {
 			result.octaves++;
+			// An octave few samples long shades sample by sample: from orbit, hills a pixel or two wide speckled Mercury
+			// like granite (2026-11-10)
+			// (nor more than the octave's height is kept: no shade without the hill)
+			const double clear = std::min(kept(shadeFade, lambda), kept(heightFade, lambda));
+			if (octaveWeight > 0.0) {
+				shade += clear * octaveShade / octaveWeight;
+				shadeWeight += clear * clear;
+			}
+		}
 		grad += o.g * w;
-		height += o.height * w * lambda;
+		// (hills only a few samples across make the ground crumpled from afar, as plastic wrap: they fade out instead)
+		height += o.height * w * lambda * kept(heightFade, lambda);
 		if (i < p.band) {
 			// weighted towards the band's longest octave
 			const double scale = std::pow(2.0, double(p.band - 1 - i));
@@ -335,5 +381,8 @@ TerrainLandforms::Sample TerrainLandforms::Evaluate(const Params &p, const vecto
 	result.height = height;
 	result.slope = grad - up * grad.Dot(up);
 	result.form = std::clamp(form / std::max(formWeight, 1e-6), -1.0, 1.0);
+	// As strong with few octaves as with many: they're unrelated, so their sum grows as the root of their count. But
+	// not stronger than one octave clearly seen, or a lone octave fading out would keep its full strength.
+	result.shade = shadeWeight > 0.0 ? std::clamp(SHADE_SPREAD * shade / std::sqrt(std::max(shadeWeight, 1.0)), -1.0, 1.0) : 0.0;
 	return result;
 }

@@ -785,6 +785,11 @@ namespace {
 	std::atomic<double> s_landformShape(0.0);
 	// metres: ...from this size up (Terrain::SetLandformShapeFrom)
 	std::atomic<double> s_landformShapeFrom(500.0);
+	// how much they shade the ground's colour (Terrain::SetLandformShadeStrength)
+	std::atomic<double> s_landformShade(Terrain::LANDFORM_SHADE);
+	// how they fade out from afar (Terrain::SetLandformHeightFade, SetLandformShadeFade)
+	std::atomic<double> s_heightFadeFrom(Terrain::LANDFORM_HEIGHT_FADE.from), s_heightFadeFull(Terrain::LANDFORM_HEIGHT_FADE.full);
+	std::atomic<double> s_shadeFadeFrom(Terrain::LANDFORM_SHADE_FADE.from), s_shadeFadeFull(Terrain::LANDFORM_SHADE_FADE.full);
 	// as TerrainTiles: the band's octaves, the most octaves, and the classic bodies' largest craters by their radius
 	constexpr int LANDFORM_BAND_OCTAVES = 3;
 	constexpr int LANDFORM_MAX_OCTAVES = 16;
@@ -821,6 +826,38 @@ void Terrain::SetLandformShapeFrom(const double metres)
 double Terrain::GetLandformShapeFrom()
 {
 	return s_landformShapeFrom.load(std::memory_order_relaxed);
+}
+
+void Terrain::SetLandformShadeStrength(const double strength)
+{
+	s_landformShade.store(std::clamp(strength, 0.0, 1.0), std::memory_order_relaxed);
+}
+
+double Terrain::GetLandformShadeStrength()
+{
+	return s_landformShade.load(std::memory_order_relaxed);
+}
+
+void Terrain::SetLandformHeightFade(const TerrainLandforms::Fade fade)
+{
+	s_heightFadeFrom.store(std::max(fade.from, 0.0), std::memory_order_relaxed);
+	s_heightFadeFull.store(std::max(fade.full, fade.from), std::memory_order_relaxed);
+}
+
+TerrainLandforms::Fade Terrain::GetLandformHeightFade()
+{
+	return { s_heightFadeFrom.load(std::memory_order_relaxed), s_heightFadeFull.load(std::memory_order_relaxed) };
+}
+
+void Terrain::SetLandformShadeFade(const TerrainLandforms::Fade fade)
+{
+	s_shadeFadeFrom.store(std::max(fade.from, 0.0), std::memory_order_relaxed);
+	s_shadeFadeFull.store(std::max(fade.full, fade.from), std::memory_order_relaxed);
+}
+
+TerrainLandforms::Fade Terrain::GetLandformShadeFade()
+{
+	return { s_shadeFadeFrom.load(std::memory_order_relaxed), s_shadeFadeFull.load(std::memory_order_relaxed) };
 }
 
 void Terrain::SetLargeLandforms(const bool on)
@@ -907,6 +944,8 @@ void Terrain::AddLandforms(const vector3d *vP, double *heightsOut, const size_t 
 	// painted at the smaller sizes.
 	TerrainLandforms::Params shape = params;
 	shape.blocks = 0.0;
+	// (finest is two samples: the band limit's)
+	const TerrainLandforms::Fade heightFade = GetLandformHeightFade();
 	const bool water = (m_surfaceEffects & EFFECT_WATER) != 0;
 	for (size_t i = 0; i < count; i++) {
 		const double base = heightsOut[i];
@@ -914,11 +953,28 @@ void Terrain::AddLandforms(const vector3d *vP, double *heightsOut, const size_t 
 		const double weight = water ? LandformSmoothStep(0.0, LANDFORM_SHORE_M, base * m_planetRadius) : 1.0;
 		if (weight <= 0.0)
 			continue;
-		const TerrainLandforms::Sample s = TerrainLandforms::Evaluate(shape, vP[i].Normalized(), smallest, top);
+		const TerrainLandforms::Sample s = TerrainLandforms::Evaluate(shape, vP[i].Normalized(), smallest, top, 0.5 * finest, heightFade);
 		const double h = base + weight * s.height * m_invPlanetRadius;
 		// not below the zero level (the sea, or the lowest ground) where the ground was above it
 		heightsOut[i] = base >= 0.0 ? std::max(h, 0.0) : h;
 	}
+}
+
+double Terrain::LandformShade(const vector3d &p) const
+{
+	// the same octaves as AddLandforms puts into the heights at this band limit
+	const double top = GetLandformShape();
+	if (top <= 0.0 || GetLandformShadeStrength() <= 0.0)
+		return 0.0;
+	const TerrainLandforms::Params &params = GetLandformParams();
+	const double maxFrequency = TerrainNoise::s_maxFrequency;
+	const double finest = maxFrequency > 0.0 ? m_planetRadius / maxFrequency : 0.0;
+	const double smallest = std::max(finest, GetLandformShapeFrom());
+	if (params.count <= 0 || smallest > top)
+		return 0.0;
+	TerrainLandforms::Params shape = params;
+	shape.blocks = 0.0;
+	return TerrainLandforms::Evaluate(shape, p.Normalized(), smallest, top, 0.5 * finest, GetLandformHeightFade(), GetLandformShadeFade()).shade;
 }
 
 void Terrain::ProtectSite(const SystemBody *starport, const vector3d &p)

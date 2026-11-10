@@ -45,6 +45,7 @@
 #include <atomic>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
 #include <fstream>
 #include <functional>
 #include <sstream>
@@ -899,6 +900,101 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 				ImGui::TextWrapped("As shape here: %s", sizes.empty() ? "none (this world's landforms are all smaller, or all larger)" : sizes.c_str());
 			}
 		}
+
+		// their shade in the ground's colour (Terrain::LandformShade): switched at once, to compare before and after
+		ImGui::Spacing();
+		static bool s_shadeOn = Terrain::GetLandformShadeStrength() > 0.0;
+		static float s_shade = Terrain::GetLandformShadeStrength() > 0.0 ? float(Terrain::GetLandformShadeStrength()) : float(Terrain::LANDFORM_SHADE);
+		const auto applyShade = [&]() {
+			const double strength = s_shadeOn ? double(s_shade) : 0.0;
+			Terrain::SetLandformShadeStrength(strength);
+			Pi::config->SetFloat("TerrainLandformShade", float(strength));
+			Pi::config->Save();
+			char note[48];
+			std::snprintf(note, sizeof(note), "landform shade %.2f", strength);
+			FrontierLog::Note(strength > 0.0 ? std::string(note) : std::string("landform shade: off"));
+			Pi::OnChangeDetailLevel();
+		};
+		if (ImGui::Checkbox("Hills shaded in the ground's colour, as craters are##openglPlan", &s_shadeOn))
+			applyShade();
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		ImGui::SliderFloat("shade strength##openglPlan", &s_shade, 0.05f, 1.0f, "%.2f");
+		// (on letting go of the slider, so the ground isn't made again at every step)
+		if (ImGui::IsItemDeactivatedAfterEdit() && s_shadeOn)
+			applyShade();
+		ImGui::TextColored(dim, "Hollows between the hills darker, crests paler, by up to this share on bare airless ground; less with air,");
+		ImGui::TextColored(dim, "snow or ice. Only the hills made into shape (above), so it needs those on. Makes the ground again.");
+		// what it does here: the shade over the ground within 3 km of the ship, at full detail, every half second
+		if (sphere && frame && frame->IsRotFrame() && Pi::player) {
+			static int s_shadeFrames = 0;
+			static double s_shadeTypical = 0.0, s_shadeLow = 0.0, s_shadeHigh = 0.0;
+			if (s_shadeFrames-- <= 0) {
+				s_shadeFrames = 60;
+				const Terrain *terrain = sphere->GetTerrain();
+				const vector3d up = Pi::player->GetPosition().Normalized();
+				const vector3d east = (std::abs(up.y) < 0.9 ? vector3d(0.0, 1.0, 0.0) : vector3d(1.0, 0.0, 0.0)).Cross(up).Normalized();
+				const vector3d north = up.Cross(east);
+				const double reach = 3000.0 / sphere->GetSystemBody()->GetRadius();
+				TerrainNoise::ScopedBandLimit fullDetail(0.0);
+				double sum = 0.0;
+				int n = 0;
+				s_shadeLow = 1.0;
+				s_shadeHigh = -1.0;
+				for (int a = -10; a <= 10; a++) {
+					for (int b = -10; b <= 10; b++) {
+						const double s = terrain->LandformShade((up + east * (reach * a / 10.0) + north * (reach * b / 10.0)).Normalized());
+						sum += s * s;
+						s_shadeLow = std::min(s_shadeLow, s);
+						s_shadeHigh = std::max(s_shadeHigh, s);
+						n++;
+					}
+				}
+				s_shadeTypical = std::sqrt(sum / n);
+			}
+			const double strength = Terrain::GetLandformShadeStrength() * sphere->GetTerrain()->LandformShadeAir();
+			ImGui::Text("Here, within 3 km: shade typically %.2f (from %.2f to %.2f); the colour %.0f %% darker or paler typically, at most %.0f %%",
+				s_shadeTypical, s_shadeLow, s_shadeHigh, 100.0 * strength * s_shadeTypical, 100.0 * strength * std::max(-s_shadeLow, s_shadeHigh));
+			ImGui::TextColored(dim, "(on bare ground; snow and ice halve it)");
+		}
+
+		// how the hills fade out from afar (Terrain::SetLandformHeightFade, SetLandformShadeFade)
+		ImGui::Spacing();
+		ImGui::Text("Fading out from afar, in samples across a hill (the ground's points, or the colour's from orbit):");
+		static float s_heightFade[2] = { float(Terrain::GetLandformHeightFade().from), float(Terrain::GetLandformHeightFade().full) };
+		static float s_shadeFade[2] = { float(Terrain::GetLandformShadeFade().from), float(Terrain::GetLandformShadeFade().full) };
+		const auto applyFades = [&]() {
+			s_heightFade[1] = std::max(s_heightFade[1], s_heightFade[0]);
+			s_shadeFade[1] = std::max(s_shadeFade[1], s_shadeFade[0]);
+			Terrain::SetLandformHeightFade({ s_heightFade[0], s_heightFade[1] });
+			Terrain::SetLandformShadeFade({ s_shadeFade[0], s_shadeFade[1] });
+			Pi::config->SetFloat("TerrainLandformFadeFrom", s_heightFade[0]);
+			Pi::config->SetFloat("TerrainLandformFadeFull", s_heightFade[1]);
+			Pi::config->SetFloat("TerrainLandformShadeFadeFrom", s_shadeFade[0]);
+			Pi::config->SetFloat("TerrainLandformShadeFadeFull", s_shadeFade[1]);
+			Pi::config->Save();
+			char note[128];
+			std::snprintf(note, sizeof(note), "landform fades: height none at %.1f, all from %.1f samples; shade none at %.1f, all from %.1f",
+				s_heightFade[0], s_heightFade[1], s_shadeFade[0], s_shadeFade[1]);
+			FrontierLog::Note(note);
+			Pi::OnChangeDetailLevel();
+		};
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		ImGui::SliderFloat2("hills' height: none at / all from##openglPlan", s_heightFade, 1.0f, 64.0f, "%.1f", ImGuiSliderFlags_Logarithmic);
+		if (ImGui::IsItemDeactivatedAfterEdit())
+			applyFades();
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		ImGui::SliderFloat2("their shade: none at / all from##openglPlan", s_shadeFade, 1.0f, 64.0f, "%.1f", ImGuiSliderFlags_Logarithmic);
+		if (ImGui::IsItemDeactivatedAfterEdit())
+			applyFades();
+		if (ImGui::Button("Defaults (2 / 8 and 2 / 64)##openglPlan")) {
+			s_heightFade[0] = float(Terrain::LANDFORM_HEIGHT_FADE.from);
+			s_heightFade[1] = float(Terrain::LANDFORM_HEIGHT_FADE.full);
+			s_shadeFade[0] = float(Terrain::LANDFORM_SHADE_FADE.from);
+			s_shadeFade[1] = float(Terrain::LANDFORM_SHADE_FADE.full);
+			applyFades();
+		}
+		ImGui::TextColored(dim, "Higher numbers: the hills fade out sooner as you climb, so less crumpling and speckle from orbit, and");
+		ImGui::TextColored(dim, "less of them from mid heights. The shade never outlasts the height. Makes the ground again on letting go.");
 	}
 
 	// P4a: the ground near the camera tessellated

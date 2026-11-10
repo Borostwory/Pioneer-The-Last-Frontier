@@ -49,6 +49,11 @@ GameConfig::GameConfig(const map_string &override_)
 	map["TerrainDetailTiles"] = "1"; // bake GPU detail tiles for nearby terrain patches
 	map["TerrainLandformShape"] = "40000"; // the large landforms as real shape (P3 of the OpenGL 4.6 plan; the settings window's mod tab), every size up to this many metres; 0: off
 	map["TerrainLandformShapeFrom"] = "500"; // ...from this size up (metres); the smaller ones stay painted
+	map["TerrainLandformFadeFrom"] = "2"; // those landforms fade out from afar: none of a hill's height where it's this many samples across...
+	map["TerrainLandformFadeFull"] = "8"; // ...all of it from this many
+	map["TerrainLandformShadeFadeFrom"] = "2"; // and their shade in the colour: none at this many samples across...
+	map["TerrainLandformShadeFadeFull"] = "64"; // ...all of it from this many
+	map["TerrainLandformShade"] = "0.75"; // how much those landforms darken their hollows and pale their crests in the ground's colour, as craters do (0 off, at most 1)
 	map["PlanetOrbitSurface"] = "2"; // how planets are drawn from high orbit: 1 surface tiles, 2 surface tiles at full detail
 	map["TerrainTileBicubic"] = "1"; // read the surface tiles with a sharper filter
 	map["TerrainSurfaceTiles"] = "1"; // bake colour and normal tiles for nearby terrain patches at twice their vertex density (TerrainSurfaceTiles.h, 128 MB of video memory)

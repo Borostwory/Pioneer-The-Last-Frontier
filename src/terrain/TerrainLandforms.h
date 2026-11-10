@@ -35,12 +35,24 @@ namespace TerrainLandforms {
 		double height = 0.0; // metres, about 0 on average
 		vector3d slope = vector3d(0.0); // along the surface
 		double form = 0.0; // the landform value, -1..1: high on crests and rims, low in hollows and crater floors
+		// -1..1, for the colours: the landform value of every octave added, not only the band's, each about as strong,
+		// and each counted only as far as the samples show it clearly (shadeFade); about 0 on average
+		double shade = 0.0;
 		int octaves = 0; // how many were added
 	};
 
+	// How an octave fades out as the samples grow too far apart to show it: in samples to its wavelength, none of it
+	// up to `from`, all of it from `full` (full <= 0: no fading)
+	struct Fade {
+		double from = 0.0;
+		double full = 0.0;
+	};
+
 	// at up (unit, planet-fixed), only the octaves of wavelengths of at least minWavelength metres (0: all), and of
-	// at most maxWavelength metres (0: all)
-	Sample Evaluate(const Params &params, const vector3d &up, double minWavelength, double maxWavelength = 0.0);
+	// at most maxWavelength metres (0: all). spacing: metres between the samples (0: none, so no fading); heightFade:
+	// how much of each octave's height is added, shadeFade: how much it counts towards the shade
+	Sample Evaluate(const Params &params, const vector3d &up, double minWavelength, double maxWavelength = 0.0, double spacing = 0.0,
+		Fade heightFade = {}, Fade shadeFade = {});
 } // namespace TerrainLandforms
 
 #endif // _TERRAINLANDFORMS_H

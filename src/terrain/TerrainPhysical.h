@@ -48,6 +48,8 @@ public:
 	double GetTileBlocks() const override;
 	bool HasFixedDetail() const override { return true; }
 	double GetFarReliefSlopes() const override { return IsSmallOldIce() ? 2.5 : 4.0; }
+	// (air lights the hollows from all round: less than the craters' 0.6, as hills' hollows are broad and open)
+	double LandformShadeAir() const override { return 1.0 - 0.4 * std::min(m_state.air, 1.0); }
 	bool HasWaterAround(const vector3d &p, double radiusMetres) const override;
 	std::vector<std::string> GetGeologyInfo() const override;
 	std::vector<Feature> FindFeatures(const std::string &kind, const vector3d &around) const override;
