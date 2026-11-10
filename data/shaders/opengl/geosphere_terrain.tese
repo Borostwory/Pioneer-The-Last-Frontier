@@ -24,6 +24,7 @@ in vec3 tcNormal[];
 in vec4 tcColor[];
 in vec2 tcTexCoord0[];
 in float tcSkirt[];
+in float tcMorph[];
 in vec4 tcMaterials0[];
 in vec4 tcMaterials1[];
 in vec4 tcMaterials2[];
@@ -57,6 +58,8 @@ out vec3 stoneSlope;
 out float stoneLit;
 // the patch's skirt here (the vertex shader's skirtWeight), for the pixel shader
 out float skirtWeight;
+// how much of the parent patch's surface the ground takes on here (terrain-morph.glsl)
+out float patchMorph;
 
 void main(void)
 {
@@ -88,6 +91,7 @@ void main(void)
 	// (down a patch's skirt the stones taper off to nothing at its bottom, so it hangs below the ground beside rather
 	// than standing up through it; 2026-11-09)
 	skirtWeight = TESS_BLEND(tcSkirt);
+	patchMorph = TESS_BLEND(tcMorph);
 	stoneLift *= 1.0 - skirtWeight;
 	vec3 lift = up * stoneLift;
 	varyingEyepos += lift;

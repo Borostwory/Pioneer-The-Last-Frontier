@@ -33,10 +33,18 @@ public:
 		Color4ub col;
 		vector2f uv;
 		Uint8 materials[TerrainMaterialTable::SLOT_COUNT];
+		// The parent patch's surface at this vertex, as its own triangles draw it there (GeoPatch::UpdateVBOs): its
+		// position less this vertex's, its normal and its colour. The terrain shaders blend towards it with distance
+		// (terrain-morph.glsl), so a patch looks as its parent did where it meets a coarser neighbour, and new detail
+		// grows in rather than popping in. Without a parent: no offset, the vertex's own normal and colour.
+		vector3f morphPos;
+		vector3f morphNorm;
+		Color4ub morphCol;
 	};
 
-	// position, normal, colour, uv, and the material weights as four normalised
-	// UBYTE4 at locations 10 to 13 (a_materials0..3 in the terrain shaders)
+	// position, normal, colour, uv, the material weights as four normalised UBYTE4 at locations 10 to 13
+	// (a_materials0..3 in the terrain shaders), and the parent's surface: its offset and normal at locations 4 and 5
+	// (which the terrain shaders don't use otherwise: a_uv1 and a_tangent, terrain-morph.glsl) and its colour at 14
 	static Graphics::VertexFormatDesc GetVertexFormat()
 	{
 		Graphics::VertexFormatDesc desc = Graphics::VertexFormatDesc::FromAttribSet(
@@ -45,6 +53,9 @@ public:
 		desc.attribs[5] = { Graphics::ATTRIB_FORMAT_UBYTE4, 11, 0, uint16_t(offsetof(VBOVertex, materials) + 4) };
 		desc.attribs[6] = { Graphics::ATTRIB_FORMAT_UBYTE4, 12, 0, uint16_t(offsetof(VBOVertex, materials) + 8) };
 		desc.attribs[7] = { Graphics::ATTRIB_FORMAT_UBYTE4, 13, 0, uint16_t(offsetof(VBOVertex, materials) + 12) };
+		desc.attribs[8] = { Graphics::ATTRIB_FORMAT_FLOAT3, 4, 0, uint16_t(offsetof(VBOVertex, morphPos)) };
+		desc.attribs[9] = { Graphics::ATTRIB_FORMAT_FLOAT3, 5, 0, uint16_t(offsetof(VBOVertex, morphNorm)) };
+		desc.attribs[10] = { Graphics::ATTRIB_FORMAT_UBYTE4, 14, 0, uint16_t(offsetof(VBOVertex, morphCol)) };
 		desc.bindings[0].stride = sizeof(VBOVertex);
 		return desc;
 	}

@@ -995,6 +995,30 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 		}
 		ImGui::TextColored(dim, "Higher numbers: the hills fade out sooner as you climb, so less crumpling and speckle from orbit, and");
 		ImGui::TextColored(dim, "less of them from mid heights. The shade never outlasts the height. Makes the ground again on letting go.");
+
+		// the blend between detail levels (GeoSphere::MorphEnabled and the rest, terrain-morph.glsl): live, no new ground
+		ImGui::Spacing();
+		ImGui::SeparatorText("Blend between the ground's detail levels");
+		{
+			bool morph = GeoSphere::MorphEnabled();
+			if (ImGui::Checkbox("Blend each level into the coarser one at their borders##morph", &morph)) {
+				Pi::config->SetInt("TerrainMorph", morph ? 1 : 0);
+				Pi::config->Save();
+				FrontierLog::Note(std::string("blend between detail levels: ") + (morph ? "on" : "off"));
+			}
+			bool tint = GeoSphere::MorphTint();
+			if (ImGui::Checkbox("Show the blend in red (debug)##morph", &tint))
+				Pi::config->SetInt("TerrainMorphTint", tint ? 1 : 0);
+			static float s_morphWidth = float(GeoSphere::MorphWidth());
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+			if (ImGui::SliderFloat("strip width (share of a square)##morph", &s_morphWidth, 0.02f, 0.5f, "%.2f"))
+				Pi::config->SetFloat("TerrainMorphWidth", s_morphWidth);
+			if (ImGui::IsItemDeactivatedAfterEdit())
+				Pi::config->Save();
+			ImGui::TextColored(dim, "Where a square of ground meets a coarser one, a strip along that edge takes on the coarser look, all of");
+			ImGui::TextColored(dim, "it at the edge (no line); the rest keeps its full detail at any distance. New squares fade in over 0.6 s");
+			ImGui::TextColored(dim, "from the coarser look instead of popping. Red shows the strips and the fading.");
+		}
 	}
 
 	// P4a: the ground near the camera tessellated

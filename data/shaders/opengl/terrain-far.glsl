@@ -101,22 +101,66 @@ vec4 terrainTileCubic(sampler2D atlas, vec2 st)
 	return clamp(sum / (up + left + mid + right + down), 0.0, 1.0);
 }
 
-// weight of this patch's surface tile
-float terrainTileWeight()
+// The parent patch's surface tile, the part of it this patch covers: atlas texture coordinates (origin, size), and
+// its weight, 0 without one (GeoPatch::RenderImmediate). The patch takes it on as it takes on its parent's shape
+// (patchMorph, terrain-morph.glsl), so where it meets a coarser neighbour it shows the same tile that one does.
+uniform vec4 PatchSurfaceParent;
+// how much of the parent's surface the ground takes on here (the vertex shader's)
+in float patchMorph;
+
+// the share of this patch's own tile and of its parent's in the surface
+float terrainTileOwnShare()
 {
-	return PatchSurface.w;
+	return PatchSurface.w * (1.0 - patchMorph);
 }
 
-// uv: the patch coordinates (texCoord0); up: view-space direction from the planet centre to the pixel. Call it
-// only where PatchSurface.w > 0.
+float terrainTileParentShare()
+{
+	return PatchSurfaceParent.w * patchMorph;
+}
+
+// weight of the surface tiles, the patch's own and its parent's: how much of the surface they make, against the
+// vertices' colours and normals (themselves blended towards the parent's)
+float terrainTileWeight()
+{
+	return terrainTileOwnShare() + terrainTileParentShare();
+}
+
+// a tile at atlas texture coordinates tile (origin xy, size z)
+FarSurface terrainTileSurfaceIn(vec3 tile, vec2 uv, vec3 dir, mat3 toView)
+{
+	vec2 st = tile.xy + clamp(uv, 0.0, 1.0) * tile.z;
+	if (FarTexture.w > 0.5)
+		return terrainDecodeSurface(terrainTileCubic(surfaceTileColour, st), terrainTileCubic(surfaceTileNormal, st).xyz, dir, toView);
+	return terrainDecodeSurface(textureLod(surfaceTileColour, st, 0.0), textureLod(surfaceTileNormal, st, 0.0).xyz, dir, toView);
+}
+
+// uv: the patch coordinates (texCoord0); up: view-space direction from the planet centre to the pixel. The patch's
+// own tile and its parent's, each by its share. Call it only where terrainTileWeight() > 0.
 FarSurface terrainTileSurface(vec2 uv, vec3 up)
 {
 	mat3 toView = mat3(cloudAxisX.xyz, cloudAxisY.xyz, cloudAxisZ.xyz);
 	vec3 dir = normalize(transpose(toView) * up);
-	vec2 st = PatchSurface.xy + clamp(uv, 0.0, 1.0) * PatchSurface.z;
-	if (FarTexture.w > 0.5)
-		return terrainDecodeSurface(terrainTileCubic(surfaceTileColour, st), terrainTileCubic(surfaceTileNormal, st).xyz, dir, toView);
-	return terrainDecodeSurface(textureLod(surfaceTileColour, st, 0.0), textureLod(surfaceTileNormal, st, 0.0).xyz, dir, toView);
+	float own = terrainTileOwnShare(), parent = terrainTileParentShare();
+	if (parent <= 0.0)
+		return terrainTileSurfaceIn(PatchSurface.xyz, uv, dir, toView);
+	FarSurface p = terrainTileSurfaceIn(PatchSurfaceParent.xyz, uv, dir, toView);
+	if (own <= 0.0)
+		return p;
+	FarSurface s = terrainTileSurfaceIn(PatchSurface.xyz, uv, dir, toView);
+	float t = parent / (own + parent);
+	s.albedo = mix(s.albedo, p.albedo, t);
+	s.height = mix(s.height, p.height, t);
+	s.normal = normalize(mix(s.normal, p.normal, t));
+	return s;
+}
+
+// the debug window's tint showing the blend between detail levels: red where the ground is all its parent's
+vec3 terrainMorphTint(vec3 colour)
+{
+	if (PatchMorphRange.w < 0.5)
+		return colour;
+	return mix(colour, vec3(1.0, 0.15, 0.05) * max(dot(colour, vec3(0.3, 0.6, 0.1)), 0.15), 0.7 * patchMorph);
 }
 
 #endif

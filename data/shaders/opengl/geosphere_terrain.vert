@@ -4,6 +4,7 @@
 #include "attributes.glsl"
 #include "lib.glsl"
 #include "basesphere_uniforms.glsl"
+#include "terrain-morph.glsl"
 
 out vec3 varyingEyepos;
 out vec3 varyingNormal;
@@ -16,6 +17,8 @@ out float dist;
 out float skirtWeight;
 // what GeoPatch adds to a skirt vertex's uv (SKIRT_UV_MARK)
 #define TERRAIN_SKIRT_UV_MARK 2.0
+// how much of the parent patch's surface the ground takes on here (terrain-morph.glsl), for its surface tile
+out float patchMorph;
 
 // the body's material weights (terrain-materials.glsl)
 layout(location = 10) in vec4 a_materials0;
@@ -38,18 +41,23 @@ out vec4 varyingEmission;
 
 void main(void)
 {
-	gl_Position = matrixTransform();
+	// blended towards the parent patch's surface (terrain-morph.glsl)
+	float morph = terrainMorph();
+	vec4 position = terrainMorphPosition(morph);
+	vec4 colour = terrainMorphColor(morph);
+	patchMorph = morph;
+	gl_Position = uViewProjectionMatrix * position;
 	// the colour's alpha holds the altitude above sea level
-	vertexColor = vec4(a_color.rgb, 1.0);
+	vertexColor = vec4(colour.rgb, 1.0);
 	materialWeights0 = a_materials0;
 	materialWeights1 = a_materials1;
 	materialWeights2 = a_materials2;
 	materialWeights3 = a_materials3;
 #ifdef TERRAIN_WITH_WATER
-	surfaceHeight = a_color.a * 2.0 - 1.0;
+	surfaceHeight = colour.a * 2.0 - 1.0;
 #endif
-	varyingEyepos = vec3(uViewMatrix * a_vertex);
-	varyingNormal = normalize(normalMatrix() * a_normal);
+	varyingEyepos = vec3(uViewMatrix * position);
+	varyingNormal = normalize(normalMatrix() * terrainMorphNormal(morph));
 
 	bool skirt = a_uv0.x > 0.5 * TERRAIN_SKIRT_UV_MARK + 0.5;
 	texCoord0 = skirt ? a_uv0.xy - TERRAIN_SKIRT_UV_MARK : a_uv0.xy;

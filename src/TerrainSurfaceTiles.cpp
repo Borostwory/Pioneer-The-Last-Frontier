@@ -346,6 +346,12 @@ void TerrainSurfaceTiles::Update(GeoSphere *sphere, const std::vector<std::pair<
 	std::vector<std::pair<double, GeoPatch *>> wanted;
 	for (const auto &v : visible) {
 		GeoPatch *patch = v.second;
+		// the parent's tile stays while its children are drawn: they blend towards it with distance (GeoPatch::
+		// SetMorphConstants), and show it again when they merge back
+		if (const GeoPatch *parent = patch->GetParent()) {
+			if (parent->GetSurfaceSlot() >= 0 && parent->GetSurfaceSlot() < int(m_lastSeen.size()))
+				m_lastSeen[parent->GetSurfaceSlot()] = now;
+		}
 		if (patch->GetSurfaceSlot() >= 0) {
 			m_lastSeen[patch->GetSurfaceSlot()] = now;
 			continue;

@@ -15,6 +15,7 @@
 #include "vector3.h"
 #include "graphics/Frustum.h"
 #include "math/Sphere.h"
+#include <chrono>
 #include <deque>
 #include <memory>
 
@@ -143,9 +144,21 @@ public:
 	bool FineEnoughToStandOn() const;
 	// level in the quadtree, 0 for the six faces
 	int GetDepth() const { return m_depth; }
+	// the patch this one is a quarter of, nullptr for the six faces
+	const GeoPatch *GetParent() const { return m_parent; }
+	// How near the camera (planet radii) the centre must come before the patch splits into its four children, as
+	// LODUpdate decides it this frame
+	double SplitLength(const vector3d &campos) const;
+	// Sets the blend towards the parent's surface for drawing this patch (terrain-morph.glsl): PatchMorph and
+	// PatchMorphRange on the material. shadow: for the sun's shadow maps, which take the patch as it ends up, without
+	// the fade-in of a patch just made
+	void SetMorphConstants(Graphics::Material *material, bool shadow) const;
+	// the depth of the patch drawn along dir (unit): the deepest under this one with dir on it; -1 if dir is off it
+	int DrawnDepthAt(const vector3d &dir) const;
 
 	// draws the patches drawn this frame that touch lightBox into the current
-	// sun shadow map, see GeoSphere::RenderShadowCaster
+	// sun shadow map, see GeoSphere::RenderShadowCaster; blended towards their parents as drawn, so the shadows match
+	// the ground
 	void RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d &unitToLight, double radius, const Aabb &lightBox, Graphics::Material *material) const;
 	// the seams check (GeoSphere::CheckSeams): the drawn patches under this one, and the points along a patch's edges
 	// as its mesh has them: direction (unit) and radius (planet radii)
@@ -224,6 +237,19 @@ private:
 	int m_tileSlot = -1;
 	int m_surfaceSlot = -1;
 	bool m_deepUnderSea = false;
+	// the vertex buffer holds the parent's surface to blend towards (UpdateVBOs)
+	bool m_hasMorph = false;
+	// when the patch was first drawn: it fades in from its parent's look (SetMorphConstants)
+	bool m_shown = false;
+	std::chrono::steady_clock::time_point m_shownAt;
+	// where the patch lies on its cube face: its column (along v0 to v1) and row (along v0 to v3) among the 2^depth
+	// patches of its level across the face
+	int m_gridX = 0, m_gridY = 0;
+	// 1 for each edge that meets a coarser patch: at x = 0, x = 1, y = 0, y = 1 of the patch coordinates; worked out
+	// again when the mesh changes (m_coarseEdgesVersion, GeoSphere::GetMeshVersion)
+	void UpdateCoarseEdges() const;
+	mutable float m_coarseEdges[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	mutable Uint32 m_coarseEdgesVersion = ~0u;
 #if DEBUG_PATCHES
 #ifdef DEBUG_BOUNDING_SPHERES
 	std::unique_ptr<Graphics::Drawables::Sphere3D> m_boundsphere;

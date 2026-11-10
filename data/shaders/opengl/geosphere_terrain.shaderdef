@@ -73,6 +73,10 @@ PushConstant vec4 StoneFlatEnd3 binding=33
 PushConstant vec4 StoneFlatEnd4 binding=34
 PushConstant vec4 StoneFlatEnd5 binding=35
 PushConstant vec4 StoneMesh binding=36
+# the blend between detail levels (terrain-morph.glsl, GeoPatch::SetMorphConstants) and the parent's surface tile
+PushConstant vec4 PatchMorph binding=37
+PushConstant vec4 PatchMorphRange binding=38
+PushConstant vec4 PatchSurfaceParent binding=39
 
 Vertex "geosphere_terrain.vert"
 Fragment "geosphere_terrain.frag"

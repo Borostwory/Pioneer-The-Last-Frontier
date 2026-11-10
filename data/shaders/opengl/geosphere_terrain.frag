@@ -27,6 +27,7 @@ in float surfaceHeight;
 #endif
 
 #include "terrain-materials.glsl"
+#include "terrain-morph.glsl"
 #include "terrain-far.glsl"
 #include "shadows.glsl"
 #include "city-ground.glsl"
@@ -286,6 +287,7 @@ void main(void)
 
 	if (skirtWeight <= 0.0)
 		frag_color.rgb *= sceneShadowTint(varyingEyepos, normalize(varyingNormal));
+	frag_color.rgb = terrainMorphTint(frag_color.rgb);
 
 #else // NUM_LIGHTS > 0 -- unlit rendering - stars
 	//emission is used to boost colour of stars, which is a bit odd

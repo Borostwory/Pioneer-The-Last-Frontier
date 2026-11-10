@@ -46,6 +46,8 @@ public:
 	// the terrain mesh along p (GeoPatch::GetDrawnRadius)
 	bool GetDrawnRadius(const vector3d &p, double &radius) const override;
 	uint32_t GetMeshVersion() const override { return m_meshVersion; }
+	// the depth of the patch drawn along dir (unit, planet-fixed), -1 if none (GeoPatch::DrawnDepthAt)
+	int DrawnDepthAt(const vector3d &dir) const;
 	void MarkMeshChanged() { m_meshVersion++; }
 
 	double GetTerrainHeight(const vector3d &p) const final
@@ -135,6 +137,16 @@ public:
 	// for, in pixels (TerrainTessellationPixels).
 	static bool TessellationEnabled();
 	static double TessellationPixels();
+	// The blend between detail levels (GeoPatch::SetMorphConstants, terrain-morph.glsl): along each edge that meets a
+	// coarser patch, a strip of the patch takes on its parent's surface, all of it at the edge, so there's no line
+	// between them; and a patch just made fades in from its parent's look, so new detail grows in. Switched in the debug
+	// window (config TerrainMorph); the strip this share of a patch wide (TerrainMorphWidth); and a tint showing it
+	// (TerrainMorphTint, debug only).
+	static bool MorphEnabled();
+	static double MorphWidth();
+	static bool MorphTint();
+	// reads them from the config (each frame, as the ground is drawn)
+	static void RefreshMorphSettings();
 	// P4b: the ground textures at one size near the camera (config TerrainTextureFixed), tiles of 2^level metres
 	// (TerrainTextureFixedLevel), out to this many metres (TerrainTextureFixedRange)
 	static bool TextureFixedEnabled();

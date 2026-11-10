@@ -98,6 +98,11 @@ static constexpr double LOD_MERGE_HYSTERESIS = 1.25;
 // until a patch's detail tile is baked, it is drawn with an ancestor's up to
 // this many levels up (GeoPatch::FindTile)
 static constexpr int TILE_ANCESTOR_LEVELS = 2;
+// how far beyond an edge (a share of the patch's width) the point is that finds the neighbour across a cube face's edge
+// (UpdateCoarseEdges): well inside a neighbour as large, and clear of DRAWN_COORDS_MARGIN on this face at any depth
+static constexpr double NEIGHBOUR_PROBE = 0.25;
+// a new patch fades in from its parent's look over this long, so none pops in, even if the camera moved in fast
+static constexpr double MORPH_FADE_IN_SECONDS = 0.6;
 
 #if USE_SUB_CENTROID_CLIPPING
 #if NUM_HORIZON_POINTS == 9
@@ -200,6 +205,28 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 		const vector3d v2 = m_corners->m_v2;
 		const vector3d v3 = m_corners->m_v3;
 
+		// The parent's surface at each vertex, to blend towards (terrain-morph.glsl), as the parent's own triangles
+		// draw it: a vertex where the parent has one takes the parent's; one halfway along a parent's edge, the average
+		// of its two ends; one in the middle of a parent's square, the average of the ends of the diagonal its two
+		// triangles share (GeoPatchContext's indices). Blended all the way, the patch lies on its parent's triangles.
+		// Not below the six faces' patches, which are always split, so never drawn.
+		const GeoPatch *parent = m_parent;
+		const PatchVBOData *parentData = parent ? parent->m_patchVBOData.get() : nullptr;
+		m_hasMorph = parent && parent->m_depth >= 1 && parentData && parentData->m_heights && parentData->m_normals && parentData->m_colors;
+		// where this patch's vertex grid starts on the parent's at twice its density (QuadPatchJob's offxy)
+		const Sint32 inner = edgeLen - 2;
+		Sint32 offX = 0, offY = 0;
+		if (m_hasMorph) {
+			const int idx = parent->GetChildIdx(this);
+			offX = (idx == 1 || idx == 2) ? inner - 1 : 0;
+			offY = idx >= 2 ? inner - 1 : 0;
+		}
+		auto parentPoint = [&](const Sint32 px, const Sint32 py) {
+			const Corners &c = *parent->m_corners;
+			return PatchMaths::GetSpherePoint(c.m_v0, c.m_v1, c.m_v2, c.m_v3, double(px) * frac, double(py) * frac) *
+				(1.0 + parentData->m_heights[py * inner + px]);
+		};
+
 		// ----------------------------------------------------
 		// inner loops
 		for (Sint32 y = 1; y < edgeLen - 1; y++) {
@@ -223,6 +250,36 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 				deepUnderSea = deepUnderSea && pColr->col.a <= DEEP_UNDER_SEA;
 				std::copy(pColr->materials, pColr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 				++pColr; // next colour
+
+				if (m_hasMorph) {
+					// the two parent vertices it lies between (the same one twice where it's on one)
+					const Sint32 fx = (x - 1) + offX, fy = (y - 1) + offY;
+					const Sint32 px = fx / 2, py = fy / 2;
+					Sint32 ax = px, ay = py, bx = px, by = py;
+					if ((fx & 1) && (fy & 1)) {
+						ax = px + 1;
+						by = py + 1;
+					} else if (fx & 1) {
+						bx = px + 1;
+					} else if (fy & 1) {
+						by = py + 1;
+					}
+					const vector3d target = (parentPoint(ax, ay) + parentPoint(bx, by)) * 0.5;
+					vtxPtr->morphPos = vector3f(target - m_clipCentroid - p);
+					// (it can lie lower or further out than the patch's own vertices: the skirt and the bounds take it in)
+					minh = std::min(minh, target.Length() - 1.0);
+					m_clipRadius = std::max(m_clipRadius, (target - m_clipCentroid).Length());
+					const Sint32 ia = ay * inner + ax, ib = by * inner + bx;
+					const vector3f na = parentData->m_normals[ia].Normalized(), nb = parentData->m_normals[ib].Normalized();
+					vtxPtr->morphNorm = (na + nb).Length() > 0.0f ? (na + nb).Normalized() : norma;
+					const Color4ub &ca = parentData->m_colors[ia].col, &cb = parentData->m_colors[ib].col;
+					vtxPtr->morphCol = Color4ub(Uint8((int(ca.r) + cb.r + 1) / 2), Uint8((int(ca.g) + cb.g + 1) / 2),
+						Uint8((int(ca.b) + cb.b + 1) / 2), Uint8((int(ca.a) + cb.a + 1) / 2));
+				} else {
+					vtxPtr->morphPos = vector3f(0.0f, 0.0f, 0.0f);
+					vtxPtr->morphNorm = norma;
+					vtxPtr->morphCol = vtxPtr->col;
+				}
 
 				// uv coords
 				vtxPtr->uv.x = 1.0f - xFrac;
@@ -261,6 +318,9 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv + skirtMark;
 			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
+			vtxPtr->morphPos = vector3f(0.0f, 0.0f, 0.0f);
+			vtxPtr->morphNorm = vtxInr->morphNorm;
+			vtxPtr->morphCol = vtxInr->morphCol;
 		}
 		// right-edge
 		for (Sint32 y = 1; y < edgeLen - 1; y++) {
@@ -276,6 +336,9 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv + skirtMark;
 			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
+			vtxPtr->morphPos = vector3f(0.0f, 0.0f, 0.0f);
+			vtxPtr->morphNorm = vtxInr->morphNorm;
+			vtxPtr->morphCol = vtxInr->morphCol;
 		}
 		// ----------------------------------------------------
 		const Sint32 innerTop = 1;
@@ -297,6 +360,9 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv + skirtMark;
 			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
+			vtxPtr->morphPos = vector3f(0.0f, 0.0f, 0.0f);
+			vtxPtr->morphNorm = vtxInr->morphNorm;
+			vtxPtr->morphCol = vtxInr->morphCol;
 		}
 		// bottom-edge
 		for (Sint32 x = 1; x < edgeLen - 1; x++) {
@@ -312,6 +378,9 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->col = vtxInr->col;
 			vtxPtr->uv = vtxInr->uv + skirtMark;
 			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
+			vtxPtr->morphPos = vector3f(0.0f, 0.0f, 0.0f);
+			vtxPtr->morphNorm = vtxInr->morphNorm;
+			vtxPtr->morphCol = vtxInr->morphCol;
 		}
 		// ----------------------------------------------------
 		// corners
@@ -347,13 +416,15 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 		// use the new vertex buffer and the shared index buffer
 		m_patchVBOData->m_patchMesh.reset(renderer->CreateMeshObject(vbd, vtxBuffer, m_ctx->GetIndexBuffer()));
 
-		// Don't need this anymore so throw it away; but for the patches fine enough to stand on, whose normals and
-		// material weights the stones under feet and wheels are worked out from (GetDrawnRadius, P4d of the OpenGL 4.6
-		// plan; only the few deepest ones near the camera)
-		//m_patchVBOData->m_heights.reset();
-		if (!FineEnoughToStandOn()) {
-			m_patchVBOData->m_normals.reset();
-			m_patchVBOData->m_colors.reset();
+		// The heights, normals and colours are kept: the children blend towards them (m_hasMorph above, made again
+		// whenever their vertex buffers are), and the patches fine enough to stand on work out the stones under feet and
+		// wheels from them (GetDrawnRadius, P4d of the OpenGL 4.6 plan). Until 2026-11-10 all but those dropped their
+		// normals and colours here: keeping them costs about 32 bytes a vertex, some 40 MB of memory near the ground.
+
+		// it fades in from its parent's look from now (SetMorphConstants)
+		if (!m_shown) {
+			m_shown = true;
+			m_shownAt = std::chrono::steady_clock::now();
 		}
 
 #if DEBUG_PATCHES
@@ -443,6 +514,23 @@ void GeoPatch::RenderImmediate(Graphics::Renderer *renderer, const vector3d &cam
 		m_geosphere->GetSurfaceMaterial()->SetPushConstant("PatchSurface"_hash,
 			surface ? surface->SlotUV(m_surfaceSlot) : vector3f(0.0f), surfaceWeight);
 
+		// the blend towards the parent's surface (terrain-morph.glsl), and the parent's surface tile with it, so the
+		// patch takes on the parent's tile as it takes on its shape (terrain-far.glsl): the part of it this patch covers
+		// (as FindTile), and how far it has faded in, 0 without one
+		SetMorphConstants(m_geosphere->GetSurfaceMaterial().Get(), false);
+		vector3f parentTile(0.0f);
+		float parentWeight = 0.0f;
+		const TerrainSurfaceTiles *atlas = TerrainSurfaceTiles::Instance();
+		if (m_hasMorph && atlas && !depthView && m_parent->m_surfaceSlot >= 0) {
+			const int idx = m_parent->GetChildIdx(this);
+			const float u = (idx == 0 || idx == 3) ? 0.5f : 0.0f;
+			const float v = idx >= 2 ? 0.5f : 0.0f;
+			const vector3f slot = atlas->SlotUV(m_parent->m_surfaceSlot);
+			parentTile = vector3f(slot.x + u * slot.z, slot.y + v * slot.z, 0.5f * slot.z);
+			parentWeight = atlas->SlotFade(m_parent->m_surfaceSlot);
+		}
+		m_geosphere->GetSurfaceMaterial()->SetPushConstant("PatchSurfaceParent"_hash, parentTile, parentWeight);
+
 		// P4a: tessellated where its triangles are large enough on screen to be cut (at its nearest point), else as
 		// before. The control shader cuts each edge by its own length and distance, so neighbours agree, and an edge
 		// smaller than the aim on screen isn't cut: a patch that isn't tessellated meets one that is cleanly.
@@ -492,8 +580,122 @@ void GeoPatch::RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d
 			m_kids[i]->RenderShadowCaster(renderer, unitToLight, radius, lightBox, material);
 	} else if (HasHeightData() && m_patchVBOData->m_patchMesh) {
 		renderer->SetTransform(matrix4x4f(unitToLight * matrix4x4d::Translation(m_clipCentroid)));
+		SetMorphConstants(material, true);
 		renderer->DrawMesh(m_patchVBOData->m_patchMesh.get(), material);
 	}
+}
+
+double GeoPatch::SplitLength(const vector3d &campos) const
+{
+	// the six faces' patches always split
+	if (m_depth == 0)
+		return DBL_MAX;
+	// The base split length shrinks to about 3 patch widths on deep
+	// levels, so distant terrain stayed coarse (quads of ~25 px at 4K).
+	// Also split within a set number of patch widths (the terrain detail
+	// distance setting), read every update so changes apply live.
+	double splitLength = std::max(m_splitLength, m_geosphere->GetLodDistance() * m_edgeLength);
+	// Seen edge-on (towards the limb from orbit, or the horizon from low
+	// down) a patch is squashed on screen along the view direction, and
+	// its triangles shrink to a pixel or two, where the GPU shades every
+	// one of them in 2x2 pixel blocks: a lot of terrain shading for little
+	// visible detail. Such patches split later, by the square root of the
+	// foreshortening (constant triangle area on screen), at most at half
+	// the distance. The detail across the view direction is coarser there
+	// by the same factor. GetLodForeshortening() blends this in (0 = off).
+	const double centroidDist = (campos - m_clipCentroid).Length();
+	const double foreshortening = GeoSphere::GetLodForeshortening();
+	if (foreshortening > 0.0 && centroidDist > 0.0) {
+		const double facing = m_clipCentroid.Dot(campos - m_clipCentroid) / centroidDist;
+		const double shrink = std::sqrt(Clamp(facing, 0.25, 1.0));
+		splitLength *= 1.0 + (shrink - 1.0) * foreshortening;
+	}
+	// the extra levels near the player on foot or in the rover: a small radius, whatever the terrain detail distance
+	if (m_depth >= m_geosphere->GetMaxDepth())
+		splitLength = NEAR_SPLIT_WIDTHS * m_edgeLength;
+	return splitLength;
+}
+
+void GeoPatch::SetMorphConstants(Graphics::Material *material, const bool shadow) const
+{
+	// Along each edge that meets a coarser patch, a strip of the patch takes on its parent's surface: all of it at the
+	// edge, where it then matches the coarser neighbour, none of it the strip's width in (GeoSphere::MorphWidth). The
+	// rest keeps its own detail at any distance. And a patch just made fades in from its parent's look.
+	if (!m_hasMorph || !GeoSphere::MorphEnabled()) {
+		material->SetPushConstant("PatchMorphRange"_hash, vector3f(0.25f, 0.0f, 0.0f), 0.0f);
+		return;
+	}
+	UpdateCoarseEdges();
+	float fadeIn = 0.0f;
+	if (m_shown && !shadow) {
+		const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - m_shownAt).count();
+		fadeIn = float(1.0 - Clamp(seconds / MORPH_FADE_IN_SECONDS, 0.0, 1.0));
+	}
+	material->SetPushConstant("PatchMorph"_hash, vector3f(m_coarseEdges[0], m_coarseEdges[1], m_coarseEdges[2]), m_coarseEdges[3]);
+	material->SetPushConstant("PatchMorphRange"_hash, vector3f(float(GeoSphere::MorphWidth()), fadeIn, 1.0f), GeoSphere::MorphTint() ? 1.0f : 0.0f);
+}
+
+void GeoPatch::UpdateCoarseEdges() const
+{
+	const Uint32 version = m_geosphere->GetMeshVersion();
+	if (m_coarseEdgesVersion == version)
+		return;
+	m_coarseEdgesVersion = version;
+	// The neighbour across each edge, from the patches of this cube face: the patch drawn at the cell next to this
+	// one, found down the quadtree by the cell's bits (no geometry). Across the face's own edge the neighbour is on
+	// another face, turned: found by a point just beyond the edge instead (GeoSphere::DrawnDepthAt).
+	const GeoPatch *root = this;
+	while (root->m_parent)
+		root = root->m_parent;
+	const int cells = 1 << m_depth;
+	auto faceDepthAt = [&](const int gx, const int gy) {
+		const GeoPatch *p = root;
+		for (int k = 1; k <= m_depth; k++) {
+			if (!p->m_kids[0])
+				return p->m_depth;
+			const int xb = (gx >> (m_depth - k)) & 1, yb = (gy >> (m_depth - k)) & 1;
+			p = p->m_kids[yb ? (xb ? 2 : 3) : (xb ? 1 : 0)].get();
+		}
+		return m_depth; // as fine, or finer
+	};
+	const int dx[4] = { -1, 1, 0, 0 }, dy[4] = { 0, 0, -1, 1 };
+	const double px[4] = { -NEIGHBOUR_PROBE, 1.0 + NEIGHBOUR_PROBE, 0.5, 0.5 };
+	const double py[4] = { 0.5, 0.5, -NEIGHBOUR_PROBE, 1.0 + NEIGHBOUR_PROBE };
+	for (int e = 0; e < 4; e++) {
+		const int gx = m_gridX + dx[e], gy = m_gridY + dy[e];
+		int depth;
+		if (gx >= 0 && gy >= 0 && gx < cells && gy < cells) {
+			depth = faceDepthAt(gx, gy);
+		} else {
+			const vector3d probe = PatchMaths::GetSpherePoint(m_corners->m_v0, m_corners->m_v1, m_corners->m_v2, m_corners->m_v3, px[e], py[e]);
+			depth = m_geosphere->DrawnDepthAt(probe);
+		}
+		m_coarseEdges[e] = depth >= 0 && depth < m_depth ? 1.0f : 0.0f;
+	}
+}
+
+int GeoPatch::DrawnDepthAt(const vector3d &dir) const
+{
+	double x, y;
+	if (!PatchMaths::GetPatchCoords(m_corners->m_v0, m_corners->m_v1, m_corners->m_v2, m_corners->m_v3, dir, x, y))
+		return -1;
+	const double lo = -DRAWN_COORDS_MARGIN, hi = 1.0 + DRAWN_COORDS_MARGIN;
+	if (x < lo || x > hi || y < lo || y > hi)
+		return -1;
+	// (the children as GetDrawnRadius picks them)
+	if (m_kids[0]) {
+		const int kid = x < 0.5 ? (y < 0.5 ? 0 : 3) : (y < 0.5 ? 1 : 2);
+		const int depth = m_kids[kid]->DrawnDepthAt(dir);
+		if (depth >= 0)
+			return depth;
+		for (int i = 0; i < NUM_KIDS; i++) {
+			const int other = i != kid ? m_kids[i]->DrawnDepthAt(dir) : -1;
+			if (other >= 0)
+				return other;
+		}
+		return m_depth + 1;
+	}
+	return m_depth;
 }
 
 bool GeoPatch::FineEnoughToStandOn() const
@@ -662,28 +864,7 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 	double centroidDist = DBL_MAX;
 	if (m_depth > 0) {
 		centroidDist = (campos - m_clipCentroid).Length();		// distance from camera to centre of the patch
-		// The base split length shrinks to about 3 patch widths on deep
-		// levels, so distant terrain stayed coarse (quads of ~25 px at 4K).
-		// Also split within a set number of patch widths (the terrain detail
-		// distance setting), read every update so changes apply live.
-		double splitLength = std::max(m_splitLength, m_geosphere->GetLodDistance() * m_edgeLength);
-		// Seen edge-on (towards the limb from orbit, or the horizon from low
-		// down) a patch is squashed on screen along the view direction, and
-		// its triangles shrink to a pixel or two, where the GPU shades every
-		// one of them in 2x2 pixel blocks: a lot of terrain shading for little
-		// visible detail. Such patches split later, by the square root of the
-		// foreshortening (constant triangle area on screen), at most at half
-		// the distance. The detail across the view direction is coarser there
-		// by the same factor. GetLodForeshortening() blends this in (0 = off).
-		const double foreshortening = GeoSphere::GetLodForeshortening();
-		if (foreshortening > 0.0 && centroidDist > 0.0) {
-			const double facing = m_clipCentroid.Dot(campos - m_clipCentroid) / centroidDist;
-			const double shrink = std::sqrt(Clamp(facing, 0.25, 1.0));
-			splitLength *= 1.0 + (shrink - 1.0) * foreshortening;
-		}
-		// the extra levels near the player on foot or in the rover: a small radius, whatever the terrain detail distance
-		if (m_depth >= m_geosphere->GetMaxDepth())
-			splitLength = NEAR_SPLIT_WIDTHS * m_edgeLength;
+		const double splitLength = SplitLength(campos);
 		// (From 2026-11-09 the patches within the stones' reach were kept at the finest level, for walls along the
 		// ground that turned out to be the textures' turns: taken out on 2026-11-10, it cost about half again of the
 		// ground's GPU time, and the choosing of the patches twenty times over.)
@@ -778,6 +959,9 @@ void GeoPatch::ReceiveHeightmaps(SQuadSplitResult *psr)
 				data.v0, data.v1, data.v2, data.v3,
 				newDepth, data.patchID));
 			m_kids[i]->m_parent = this;
+			// (the children's corners as QuadPatchJob lays them out: 1 and 2 on the far side along x, 2 and 3 along y)
+			m_kids[i]->m_gridX = 2 * m_gridX + ((i == 1 || i == 2) ? 1 : 0);
+			m_kids[i]->m_gridY = 2 * m_gridY + (i >= 2 ? 1 : 0);
 		}
 
 		for (int i = 0; i < NUM_KIDS; i++) {

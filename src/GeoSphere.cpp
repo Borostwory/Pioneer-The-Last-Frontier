@@ -1139,6 +1139,48 @@ double GeoSphere::TessellationPixels()
 	return std::clamp(double(Pi::config->Float("TerrainTessellationPixels", 20.0f)), 2.0, 64.0);
 }
 
+namespace {
+	// read from the config once a frame (GeoSphere::RefreshMorphSettings): every patch drawn asks, in each shadow map too
+	struct MorphSettings {
+		bool enabled = true;
+		double width = 0.5; // (set in game on Mercury, 2026-11-10)
+		bool tint = false;
+	};
+	MorphSettings s_morph;
+} // namespace
+
+void GeoSphere::RefreshMorphSettings()
+{
+	s_morph.enabled = Pi::config->Int("TerrainMorph", 1) != 0;
+	s_morph.width = std::clamp(double(Pi::config->Float("TerrainMorphWidth", 0.5f)), 0.02, 0.5);
+	s_morph.tint = Pi::config->Int("TerrainMorphTint", 0) != 0;
+}
+
+bool GeoSphere::MorphEnabled()
+{
+	return s_morph.enabled;
+}
+
+double GeoSphere::MorphWidth()
+{
+	return s_morph.width;
+}
+
+int GeoSphere::DrawnDepthAt(const vector3d &dir) const
+{
+	for (int i = 0; i < NUM_PATCHES; i++) {
+		const int depth = m_patches[i] ? m_patches[i]->DrawnDepthAt(dir) : -1;
+		if (depth >= 0)
+			return depth;
+	}
+	return -1;
+}
+
+bool GeoSphere::MorphTint()
+{
+	return s_morph.tint;
+}
+
 bool GeoSphere::TextureFixedEnabled()
 {
 	return Pi::config->Int("TerrainTextureFixed", 1) != 0;
@@ -1366,6 +1408,8 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	// store this for later usage in the update method.
 	m_tempCampos = campos;
 	m_hasTempCampos = true;
+	// the blend between detail levels, as switched (each patch asks as it's drawn, in the shadow maps too)
+	RefreshMorphSettings();
 
 	if (m_initStage < eDefaultUpdateState)
 		return;
@@ -1633,7 +1677,8 @@ void GeoSphere::RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4
 	if (!m_shadowMaterial) {
 		Graphics::RenderStateDesc rsd;
 		rsd.cullMode = Graphics::CULL_NONE;
-		m_shadowMaterial.Reset(renderer->CreateMaterial("shadowcaster", Graphics::MaterialDescriptor(), rsd, GeoPatchContext::GetVertexFormat()));
+		// (its own, which blends the patches towards their parents as they're drawn: terrain-morph.glsl)
+		m_shadowMaterial.Reset(renderer->CreateMaterial("terrain_shadowcaster", Graphics::MaterialDescriptor(), rsd, GeoPatchContext::GetVertexFormat()));
 	}
 	for (int i = 0; i < NUM_PATCHES; i++)
 		if (m_patches[i])

@@ -1,0 +1,15 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# Depth-only drawing of the terrain patches into the sun shadow maps (see SceneShadows.h), blended towards their
+# parents as they're drawn (terrain-morph.glsl), so the shadows match the ground
+
+Shader terrain_shadowcaster
+
+Buffer DrawData binding=1
+
+PushConstant vec4 PatchMorph binding=0
+PushConstant vec4 PatchMorphRange binding=1
+
+Vertex "terrain_shadowcaster.vert"
+Fragment "shadowcaster.frag"

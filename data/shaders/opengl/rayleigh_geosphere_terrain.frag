@@ -57,6 +57,7 @@ in vec3 waterSkyLight;
 #endif
 
 #include "terrain-materials.glsl"
+#include "terrain-morph.glsl"
 #include "terrain-far.glsl"
 #include "shadows.glsl"
 #include "city-lights.glsl"
@@ -295,4 +296,5 @@ void main(void)
 	if (!GROUND_SKIP(5) && skirtWeight <= 0.0)
 		frag_color.rgb *= sceneShadowTint(varyingEyepos, normalize(varyingNormal));
 #endif
+	frag_color.rgb = terrainMorphTint(frag_color.rgb);
 }
