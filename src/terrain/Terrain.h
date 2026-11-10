@@ -115,7 +115,7 @@ public:
 	static double GetLandformShapeFrom();
 	// The sizes the settings window's mod tab switches on ("Large landforms", on by default since 2026-11-10); others
 	// only in the debug window. SetLargeLandforms: those, or none; the patches must be made again after a change.
-	static constexpr double LARGE_LANDFORMS_FROM_M = 500.0;
+	static constexpr double LARGE_LANDFORMS_FROM_M = 540.0;
 	static constexpr double LARGE_LANDFORMS_TO_M = 40000.0;
 	static void SetLargeLandforms(bool on);
 	// How much the landforms made into shape darken their hollows and pale their crests in the ground's colour, as

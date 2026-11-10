@@ -671,7 +671,7 @@ void GeoSphere::StoneMeshSpacing(double &finest, double &perMetre) const
 
 double GeoSphere::StonesFadePixels()
 {
-	return std::clamp(double(Pi::config->Float("TerrainStonesFadePixels", 4.0f)), 0.5, 16.0);
+	return std::clamp(double(Pi::config->Float("TerrainStonesFadePixels", 16.0f)), 0.5, 16.0);
 }
 
 double GeoSphere::StonePixelsAt(double metres) const
@@ -685,7 +685,7 @@ double GeoSphere::StonePixelsAt(double metres) const
 
 double GeoSphere::StonesFullPixels()
 {
-	return std::clamp(double(Pi::config->Float("TerrainStonesFullPixels", 16.0f)), 1.0, 32.0);
+	return std::clamp(double(Pi::config->Float("TerrainStonesFullPixels", 32.0f)), 1.0, 32.0);
 }
 
 void GeoSphere::UpdateStoneFlats(const vector3d &campos)
@@ -977,7 +977,7 @@ bool GeoSphere::TextureSimpleFar()
 
 double GeoSphere::TextureSimpleFrom()
 {
-	return std::clamp(double(Pi::config->Float("TerrainTextureSimpleFrom", 1500.0f)), 100.0, 20000.0);
+	return std::clamp(double(Pi::config->Float("TerrainTextureSimpleFrom", 100.0f)), 100.0, 20000.0);
 }
 
 bool GeoSphere::TextureOneScale()
@@ -993,7 +993,7 @@ bool GeoSphere::TurnTable()
 
 double GeoSphere::TextureScaleBand()
 {
-	return std::clamp(double(Pi::config->Float("TerrainTextureScaleBand", 0.3f)), 0.02, 1.0);
+	return std::clamp(double(Pi::config->Float("TerrainTextureScaleBand", 0.5f)), 0.02, 1.0);
 }
 
 bool GeoSphere::SkyTableEnabled()
@@ -1136,7 +1136,7 @@ bool GeoSphere::TessellationEnabled()
 
 double GeoSphere::TessellationPixels()
 {
-	return std::clamp(double(Pi::config->Float("TerrainTessellationPixels", 20.0f)), 2.0, 64.0);
+	return std::clamp(double(Pi::config->Float("TerrainTessellationPixels", 5.0f)), 2.0, 64.0);
 }
 
 namespace {
@@ -1188,12 +1188,12 @@ bool GeoSphere::TextureFixedEnabled()
 
 double GeoSphere::TextureFixedLevel()
 {
-	return std::clamp(double(Pi::config->Float("TerrainTextureFixedLevel", 3.0f)), 0.0, 8.0);
+	return std::clamp(double(Pi::config->Float("TerrainTextureFixedLevel", 4.0f)), 0.0, 8.0);
 }
 
 double GeoSphere::TextureFixedRange()
 {
-	return std::clamp(double(Pi::config->Float("TerrainTextureFixedRange", 50.0f)), 2.0, 500.0);
+	return std::clamp(double(Pi::config->Float("TerrainTextureFixedRange", 100.0f)), 2.0, 500.0);
 }
 
 bool GeoSphere::StonesEnabled()
@@ -1203,7 +1203,7 @@ bool GeoSphere::StonesEnabled()
 
 double GeoSphere::StonesHeight()
 {
-	return std::clamp(double(Pi::config->Float("TerrainStonesHeight", 1.0f)), 0.0, 4.0);
+	return std::clamp(double(Pi::config->Float("TerrainStonesHeight", 0.5f)), 0.0, 4.0);
 }
 
 bool GeoSphere::StoneShadowsEnabled()

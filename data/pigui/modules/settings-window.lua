@@ -702,7 +702,7 @@ local function showModOptions()
 		Engine.SettingsSetInt("TerrainStones", stones and 1 or 0)
 	end
 
-	-- The large landforms as real shape in the ground, 500 m to 40 km (src/terrain/Terrain.cpp, P3 of the OpenGL 4.6
+	-- The large landforms as real shape in the ground, 540 m to 40 km (src/terrain/Terrain.cpp, P3 of the OpenGL 4.6
 	-- plan); the ground is made again. Other sizes only in the debug window.
 	ui.separator()
 	local landforms = Engine.GetLargeLandforms()

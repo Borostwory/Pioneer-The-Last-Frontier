@@ -7,8 +7,8 @@
 // view, y: the edge on screen to aim for, pixels), MaterialNear and MaterialStones.
 //
 // Gradually coarser with distance, by how tall the stones stand on screen: where even the tallest stone here stands at
-// least TessParams.w pixels (the debug window's slider, 8 to start), the cuts aim for TessParams.y; below that, the aim grows as the stones shrink, so the
-// cuts stay as far apart against the stones as up close; from MaterialNear.w pixels (the debug window's slider, 2 to
+// least TessParams.w pixels (the debug window's slider, 32 to start), the cuts aim for TessParams.y; below that, the aim grows as the stones shrink, so the
+// cuts stay as far apart against the stones as up close; from MaterialNear.w pixels (the debug window's slider, 16 to
 // start) down to half that the stones fade out, and below it nothing is cut or raised.
 
 // the stones' height on screen (pixels) from which they fade out, and below half of which they're gone

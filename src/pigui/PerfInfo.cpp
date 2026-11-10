@@ -1334,8 +1334,8 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 				FrontierLog::Note(fmt::format("{} {}", note, value));
 			}
 		};
-		slider("strength##creaseStrength", "CreaseShadeStrength", 1.5f, 0.0f, 4.0f, "x %.2f", "crease shading: strength");
-		slider("reach##creaseReach", "CreaseShadeReach", 1.0f, 0.1f, 4.0f, "%.2f m", "crease shading: reach (m)");
+		slider("strength##creaseStrength", "CreaseShadeStrength", 4.0f, 0.0f, 4.0f, "x %.2f", "crease shading: strength");
+		slider("reach##creaseReach", "CreaseShadeReach", 4.0f, 0.1f, 4.0f, "%.2f m", "crease shading: reach (m)");
 		slider("without air##creaseVacuum", "CreaseShadeVacuum", 0.5f, 0.0f, 1.0f, "%.2f", "crease shading: share without air");
 		ImGui::TextColored(dim, "GTAO: the sky hidden by what rises round each point, out to the reach. Fades out from 200 to 800 m away.");
 		ImGui::TextColored(dim, "Strength: x1 as worked out, more darker. Without air: its strength there, as a share of in Earth's air.");

@@ -211,12 +211,12 @@ bool ScreenEffects::CreasesEnabled()
 
 double ScreenEffects::CreaseStrength()
 {
-	return Clamp(double(Pi::config->Float("CreaseShadeStrength", 1.5f)), 0.0, 4.0);
+	return Clamp(double(Pi::config->Float("CreaseShadeStrength", 4.0f)), 0.0, 4.0);
 }
 
 double ScreenEffects::CreaseReach()
 {
-	return Clamp(double(Pi::config->Float("CreaseShadeReach", 1.0f)), 0.1, 4.0);
+	return Clamp(double(Pi::config->Float("CreaseShadeReach", 4.0f)), 0.1, 4.0);
 }
 
 double ScreenEffects::CreaseVacuumShare()

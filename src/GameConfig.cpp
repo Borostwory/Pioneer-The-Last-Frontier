@@ -48,7 +48,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["PlanetLodForeshortening"] = "100"; // percent: how much later terrain patches seen edge-on split
 	map["TerrainDetailTiles"] = "1"; // bake GPU detail tiles for nearby terrain patches
 	map["TerrainLandformShape"] = "40000"; // the large landforms as real shape (P3 of the OpenGL 4.6 plan; the settings window's mod tab), every size up to this many metres; 0: off
-	map["TerrainLandformShapeFrom"] = "500"; // ...from this size up (metres); the smaller ones stay painted
+	map["TerrainLandformShapeFrom"] = "540"; // ...from this size up (metres); the smaller ones stay painted
 	map["TerrainLandformFadeFrom"] = "2"; // those landforms fade out from afar: none of a hill's height where it's this many samples across...
 	map["TerrainLandformFadeFull"] = "8"; // ...all of it from this many
 	map["TerrainLandformShadeFadeFrom"] = "2"; // and their shade in the colour: none at this many samples across...
@@ -69,8 +69,8 @@ GameConfig::GameConfig(const map_string &override_)
 	map["ShadowDebug"] = "0";        // 1: tint by shadow map, near red, mid green, far blue
 	map["EdgeSmoothing"] = "2";      // anti-aliasing on the finished picture: 0 off, 1 FXAA, 2 SMAA (ScreenEffects.cpp; the settings window's Video tab)
 	map["CreaseShade"] = "0";        // soft shade in creases and where things meet the ground (GTAO, ScreenEffects.cpp): off; a switch in the debug window only
-	map["CreaseShadeStrength"] = "1.5"; // the visible sky to this power: 1 as worked out, more darker
-	map["CreaseShadeReach"] = "1.0"; // metres, up to 4
+	map["CreaseShadeStrength"] = "4"; // the visible sky to this power: 1 as worked out, more darker
+	map["CreaseShadeReach"] = "4"; // metres, up to 4
 	map["CreaseShadeVacuum"] = "0.5"; // its strength without air, as a share of in Earth's air
 	map["CityLights"] = "100";       // percent: brightness of the cities' street lamps and building lights at night, 0 off (CityOnPlanet.h)
 	map["CityGlow"] = "100";         // percent: brightness of the starport cities' lights seen from afar at night, 0 off (city-glow.glsl)
