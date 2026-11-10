@@ -139,9 +139,11 @@ private:
 	// the previous step and the drawn pose as they are now (just placed or loaded)
 	void ResetInterp();
 	// the distance from the planet centre of the ground under each wheel, for
-	// the rover at pos with orient; false into the sea, or up a step too high
-	// for a wheel to climb
-	bool FindContacts(const Frame *frame, const vector3d &pos, const matrix3x3d &orient, double contacts[4]) const;
+	// the rover at pos with orient: where the round tyre rests on the ground
+	// along its length; false into the sea, or up a step too high for a wheel
+	// to climb. onBody (if given): whether it rests on something over the
+	// terrain (a pad, a building)
+	bool FindContacts(const Frame *frame, const vector3d &pos, const matrix3x3d &orient, double contacts[4], bool onBody[4] = nullptr) const;
 	// the chassis on the plane through the wheels' contacts: its up and the
 	// distance of its origin from the planet centre
 	void FitGround(const vector3d &pos, const matrix3x3d &orient, const double contacts[4], vector3d &up, double &radius) const;
@@ -161,6 +163,9 @@ private:
 	vector3d m_forward;
 	vector3d m_up;
 	double m_vUp = 0.0;
+	// the ground under the chassis last step (distance from the planet centre; 0 not yet known), for how fast it
+	// rises and falls under the suspension
+	double m_groundRadius = 0.0;
 	double m_speed = 0.0;
 	bool m_onGround = false;
 	int m_wheelsOnGround = 0;

@@ -5,6 +5,7 @@
 
 #include "DynamicBody.h"
 #include "Frame.h"
+#include "GameConfig.h"
 #include "GameSaveError.h"
 #include "JsonUtils.h"
 #include "Lang.h"
@@ -46,6 +47,28 @@ namespace {
 	constexpr double SUSP_UP = 0.25;
 	constexpr double SUSP_DOWN = 0.25;
 	constexpr double SUSP_RATE = 20.0;
+	// The suspension's spring, as how fast (1/s) the chassis settles back to its height over the ground, critically
+	// damped; it carries the chassis over bumps within the travel, rather than the chassis being shoved up by each
+	// rise of the ground in one step, which threw it up to MAX_LAUNCH off every stone, metres high in low gravity
+	// (2026-11-10)
+	constexpr double SPRING_RATE = 6.0;
+	// the steepest the ground under it rises, as speed up per speed along: no faster than that is it pushed up when the
+	// suspension bottoms out, nor does the ground's rise count in its damping
+	constexpr double CLIMB_SLOPE = 0.85;
+	// standing still, how fast (1/s) it settles on the ground as it is now
+	constexpr double SETTLE_RATE = 4.0;
+	// where along its length (shares of its radius, ahead and behind) a tyre feels for the ground: it rests on the
+	// highest of them, as a round wheel would, so it rolls over stones smaller than itself rather than stepping up
+	// onto each at once
+	// (the drawn ground alone there; pads and buildings by one ray down the middle, a ray each costing too much)
+	constexpr double TYRE_FOOTPRINT[] = { -0.6, 0.0, 0.6 };
+
+	// the debug window's comparison: the round tyres and the springs (2026-11-10), or the wheels and chassis as before
+	// them (one point under each wheel, the chassis set on the ground each step)
+	bool RoverSprings()
+	{
+		return Pi::config->Int("RoverSprings", 1) != 0;
+	}
 	// how much of a landing's speed (m/s) the suspension takes, in metres
 	constexpr double LANDING_SQUASH = 0.04;
 	// the chassis turns to the ground at ORIENT_RATE (1/s), leans no more than
@@ -389,20 +412,39 @@ matrix3x3d Rover::MakeOrient() const
 	return matrix3x3d::FromVectors(forward.Cross(m_up), m_up, -forward);
 }
 
-bool Rover::FindContacts(const Frame *frame, const vector3d &pos, const matrix3x3d &orient, double contacts[4]) const
+bool Rover::FindContacts(const Frame *frame, const vector3d &pos, const matrix3x3d &orient, double contacts[4], bool onBody[4]) const
 {
 	const TerrainBody *terrain = static_cast<const TerrainBody *>(frame->GetBody());
+	const vector3d ahead = orient * vector3d(0.0, 0.0, -1.0);
+	const bool springs = RoverSprings();
 	bool ok = true;
 	for (int i = 0; i < 4; i++) {
 		// under the wheel, measured from where it last touched the ground, or
 		// in the air from where it is (at rest on the chassis' ground plane)
 		const Wheel &w = m_wheels[i];
-		const vector3d up = (pos + orient * vector3d(w.hub.x, 0.0, w.hub.z)).Normalized();
-		const double from = m_onGround ? w.contact : (pos + orient * vector3d(w.hub.x, 0.0, w.hub.z)).Length();
-		const double ground = Walker::GroundRadius(frame, up * from, PROBE_ABOVE, PROBE_BELOW, nullptr, GetGeom());
+		const vector3d below = pos + orient * vector3d(w.hub.x, 0.0, w.hub.z);
+		const vector3d up = below.Normalized();
+		const double from = m_onGround ? w.contact : below.Length();
+		// the round tyre along its length: a little way ahead of or behind its lowest point its edge stands higher
+		// by its radius less the height of the circle there, and it rests on whichever ground reaches it first
+		double ground = -DBL_MAX;
+		for (const double share : TYRE_FOOTPRINT) {
+			if (!springs && share != 0.0)
+				continue;
+			const double along = share * m_wheelRadius;
+			const double rise = m_wheelRadius - std::sqrt(std::max(m_wheelRadius * m_wheelRadius - along * along, 0.0));
+			ground = std::max(ground, terrain->GetDrawnTerrainHeight((below + ahead * along).Normalized()) - rise);
+		}
+		// a pad, a road or a building under it
+		const Body *hit = nullptr;
+		const double middle = Walker::GroundRadius(frame, up * from, PROBE_ABOVE, PROBE_BELOW, &hit, GetGeom());
+		const bool body = hit != nullptr && middle >= ground;
+		ground = std::max(ground, middle);
 		if (ground - from > WHEEL_STEP || Walker::IsSea(terrain, up, ground))
 			ok = false;
 		contacts[i] = ground;
+		if (onBody)
+			onBody[i] = body;
 	}
 	return ok;
 }
@@ -501,6 +543,7 @@ void Rover::PlaceOnGround(const vector3d &pos, const vector3d &forward)
 		at = pos.Normalized() * radius;
 		for (int i = 0; i < 4; i++)
 			m_wheels[i].contact = contacts[i];
+		m_groundRadius = radius;
 	}
 
 	for (Wheel &w : m_wheels)
@@ -619,7 +662,8 @@ void Rover::TimeStepUpdate(const float timeStep)
 	// the sea bed under the water)
 	vector3d next = pos + move;
 	double contacts[4];
-	if (!FindContacts(frame, next, orient, contacts)) {
+	bool onBody[4];
+	if (!FindContacts(frame, next, orient, contacts, onBody)) {
 		if (move.LengthSqr() > 0.0) {
 			const vector3d d = move.Normalized();
 			const double into = vFlat.Dot(d);
@@ -627,22 +671,28 @@ void Rover::TimeStepUpdate(const float timeStep)
 				vFlat -= d * (into * (1.0 + BOUNCE));
 			next = pos;
 		}
-		if (!FindContacts(frame, next, orient, contacts)) {
+		if (!FindContacts(frame, next, orient, contacts, onBody)) {
 			m_forward = oldForward;
 			orient = MakeOrient();
-			FindContacts(frame, next, orient, contacts);
+			FindContacts(frame, next, orient, contacts, onBody);
 		}
 	}
 	vector3d groundUp;
 	double groundRadius;
 	FitGround(next, orient, contacts, groundUp, groundRadius);
 
-	// up and down: on its wheels the chassis follows the ground, falling to
-	// it no faster than gravity while the wheels reach down for it; thrown
-	// off a crest or an edge it flies until it lands
+	// up and down: on its wheels the chassis rides its suspension over the
+	// ground, falling no faster than gravity while the wheels reach down for
+	// it; thrown off a crest or an edge it flies until it lands
 	const double r = next.Length();
+	const double flatSpeed = vFlat.Length();
+	// how fast the ground under it rises, no faster than it could climb at this speed (a stone's edge isn't a ramp)
+	const double climbMax = CLIMB_SLOPE * flatSpeed;
+	const double groundRate = m_groundRadius > 0.0 ? Clamp((groundRadius - m_groundRadius) / dt, -climbMax, climbMax) : 0.0;
+	m_groundRadius = groundRadius;
 	double newRadius;
-	if (m_onGround) {
+	if (m_onGround && !RoverSprings()) {
+		// as before the springs: the chassis set on the ground each step, thrown by its rise
 		const double lowest = r + (m_vUp - g * dt) * dt;
 		if (groundRadius >= lowest - SUSP_DOWN) {
 			newRadius = std::max(groundRadius, lowest);
@@ -651,6 +701,34 @@ void Rover::TimeStepUpdate(const float timeStep)
 			m_onGround = false;
 			m_vUp -= g * dt;
 			newRadius = r + m_vUp * dt;
+		}
+	} else if (m_onGround && flatSpeed < HOLD_SPEED && throttle == 0.0) {
+		// standing still: it settles on the ground as it is now, whatever
+		// changes it (the stones fading in and out with the camera's distance,
+		// the mesh growing finer near it), and is never thrown by that
+		newRadius = r + (groundRadius - r) * (1.0 - std::exp(-SETTLE_RATE * dt));
+		m_vUp = 0.0;
+	} else if (m_onGround) {
+		// the springs, compressed by the ground rising under the wheels, push
+		// it up, holding it against gravity at rest, damped against how fast
+		// it moves from the ground; they only push, so where the ground falls
+		// away faster than gravity the wheels reach down for it
+		// (the damping worked out at the end of the step, so it stays steady at long steps, time accelerated)
+		const double compressed = groundRadius - r;
+		const double spring = g + SPRING_RATE * SPRING_RATE * compressed + 2.0 * SPRING_RATE * groundRate;
+		const double damped = (m_vUp + (spring - g) * dt) / (1.0 + 2.0 * SPRING_RATE * dt);
+		if (compressed > -SUSP_DOWN && spring - 2.0 * SPRING_RATE * damped > 0.0)
+			m_vUp = damped;
+		else
+			m_vUp -= g * dt;
+		newRadius = r + m_vUp * dt;
+		if (groundRadius - newRadius > SUSP_UP) {
+			// bottomed out: pushed up with the ground, no faster than it climbs
+			newRadius = groundRadius - SUSP_UP;
+			m_vUp = std::max(m_vUp, std::min({ (newRadius - r) / dt, MAX_LAUNCH, climbMax }));
+		} else if (groundRadius < newRadius - SUSP_DOWN) {
+			// the wheels can't reach it: in the air
+			m_onGround = false;
 		}
 	} else {
 		m_vUp -= g * dt;
@@ -691,7 +769,7 @@ void Rover::TimeStepUpdate(const float timeStep)
 		// a road or a building over it)
 		const vector3d up = column / atRest;
 		w.ground = up * contacts[i];
-		w.onTerrain = touching && contacts[i] < terrain->GetDrawnTerrainHeight(up) + WHEEL_TOUCH_MARGIN;
+		w.onTerrain = touching && !onBody[i];
 	}
 	m_speed = vFlat.Dot(AlongGround(m_forward, nextUp));
 	if (m_onGround) {
