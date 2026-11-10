@@ -851,28 +851,53 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 
 	// P3: the landforms as real shape, being tried. The patches are made again after a change.
 	ImGui::Spacing();
-	ImGui::SeparatorText("P3: the landforms as real shape (being tried)");
+	ImGui::SeparatorText("P3: the large landforms as real shape (on/off in the settings' mod tab)");
 	{
 		static bool s_shape = Terrain::GetLandformShape() > 0.0;
-		static float s_top = Terrain::GetLandformShape() > 0.0 ? float(Terrain::GetLandformShape()) : 500.0f;
+		static float s_top = Terrain::GetLandformShape() > 0.0 ? float(Terrain::GetLandformShape()) : float(Terrain::LARGE_LANDFORMS_TO_M);
+		static float s_from = float(Terrain::GetLandformShapeFrom());
+		// (switched in the settings window's mod tab too: follow it)
+		static double s_seenTop = Terrain::GetLandformShape(), s_seenFrom = Terrain::GetLandformShapeFrom();
+		if (Terrain::GetLandformShape() != s_seenTop || Terrain::GetLandformShapeFrom() != s_seenFrom) {
+			s_seenTop = Terrain::GetLandformShape();
+			s_seenFrom = Terrain::GetLandformShapeFrom();
+			s_shape = s_seenTop > 0.0;
+			if (s_shape)
+				s_top = float(s_seenTop);
+			s_from = float(s_seenFrom);
+		}
 		ImGui::Checkbox("Landforms in the ground's shape##openglPlan", &s_shape);
+		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+		ImGui::SliderFloat("smallest as shape##openglPlan", &s_from, 10.0f, 40000.0f, "%.0f m", ImGuiSliderFlags_Logarithmic);
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
 		ImGui::SliderFloat("largest as shape##openglPlan", &s_top, 10.0f, 40000.0f, "%.0f m", ImGuiSliderFlags_Logarithmic);
 		const double wanted = s_shape ? double(s_top) : 0.0;
-		const bool changed = std::abs(wanted - Terrain::GetLandformShape()) > 0.5;
+		const bool changed = std::abs(wanted - Terrain::GetLandformShape()) > 0.5 || (wanted > 0.0 && std::abs(s_from - Terrain::GetLandformShapeFrom()) > 0.5);
 		if (ImGui::Button(changed ? "Apply (makes the ground again)##openglPlan" : "Applied##openglPlan") && changed) {
 			Terrain::SetLandformShape(wanted);
+			Terrain::SetLandformShapeFrom(s_from);
 			Pi::config->SetFloat("TerrainLandformShape", float(wanted));
+			Pi::config->SetFloat("TerrainLandformShapeFrom", s_from);
 			Pi::config->Save();
-			FrontierLog::Note(wanted > 0.0 ? "landforms as real shape, up to " + std::to_string(int(wanted)) + " m" : "landforms as real shape: off");
+			FrontierLog::Note(wanted > 0.0 ? "landforms as real shape, from " + std::to_string(int(s_from)) + " m up to " + std::to_string(int(wanted)) + " m" : "landforms as real shape: off");
 			Pi::OnChangeDetailLevel();
 		}
-		ImGui::TextColored(dim, "On: the GPU detail tiles are off, so the landforms aren't drawn twice; the crest and hollow materials they");
-		ImGui::TextColored(dim, "steered are gone until P3 step 2. Ground that moves can bury or lift a landed ship: take off first.");
+		ImGui::TextColored(dim, "On: the landforms from the smallest to the largest size become real shape; the smaller ones stay painted");
+		ImGui::TextColored(dim, "as before, and none are drawn twice. No cracked slabs as shape. Ground that moves can bury or lift a landed ship: take off first.");
 		if (sphere) {
 			const TerrainLandforms::Params &lp = sphere->GetTerrain()->GetLandformParams();
 			ImGui::Text("Here: %d octaves, %.1f m to %.0f m; styles rolling %.2f, ridged %.2f, dunes %.2f, craters %.2f",
 				lp.count, lp.finestWave, lp.finestWave * std::pow(2.0, double(lp.count - 1)), lp.style[0], lp.style[1], lp.style[2], lp.style[3]);
+			// the sizes this world has that are shape now (the same rule as Terrain::AddLandforms)
+			if (Terrain::GetLandformShape() > 0.0) {
+				std::string sizes;
+				for (int i = 0; i < lp.count; i++) {
+					const double wave = lp.finestWave * std::pow(2.0, double(i));
+					if (wave >= Terrain::GetLandformShapeFrom() * 0.99 && wave <= Terrain::GetLandformShape() * 1.01)
+						sizes += (sizes.empty() ? "" : ", ") + std::to_string(int(wave + 0.5)) + " m";
+				}
+				ImGui::TextWrapped("As shape here: %s", sizes.empty() ? "none (this world's landforms are all smaller, or all larger)" : sizes.c_str());
+			}
 		}
 	}
 

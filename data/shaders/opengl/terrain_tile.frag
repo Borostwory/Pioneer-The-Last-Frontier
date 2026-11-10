@@ -34,6 +34,9 @@ uniform float TileCraterTop;
 uniform float TileLandformTop;
 // weight of the cracked slabs and blocks (Terrain::GetTileBlocks)
 uniform float TileBlocks;
+// metres: the landforms from x up to y are real shape in the heights (Terrain::SetLandformShape, SetLandformShapeFrom),
+// so they aren't painted as well; y 0: none are
+uniform vec4 TileShape;
 
 // as TerrainTiles::MAX_OCTAVES
 #define TILE_MAX_OCTAVES 16
@@ -85,6 +88,9 @@ void main(void)
 		if (i >= count)
 			continue;
 		float lambda = TileOctaves.x * exp2(float(i));
+		// (as Terrain::AddLandforms takes them)
+		if (TileShape.y > 0.0 && lambda >= TileShape.x * 0.99 && lambda <= TileShape.y * 1.01)
+			continue;
 		vec3 q = tileOctaveOrigin(i, count) + rel / lambda;
 		float salt = TileOctaves.y + float(i);
 		// the shortest octave is close to the texel size: weaker

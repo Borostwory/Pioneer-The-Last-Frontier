@@ -264,5 +264,8 @@ void TerrainTiles::Bake(Graphics::Renderer *r, GeoSphere *sphere, GeoPatch *patc
 	m->SetPushConstant("TileCraterTop"_hash, float(sphere->GetTerrain()->GetTileCraterTop()));
 	m->SetPushConstant("TileLandformTop"_hash, float(landformTop));
 	m->SetPushConstant("TileBlocks"_hash, float(sphere->GetTerrain()->GetTileBlocks()));
+	// the sizes that are real shape in the heights, not painted as well
+	const double shapeTop = Terrain::GetLandformShape();
+	m->SetPushConstant("TileShape"_hash, vector3f(float(Terrain::GetLandformShapeFrom()), float(shapeTop), 0.0f), 0.0f);
 	r->DrawBuffer(m_triangle.get(), m);
 }

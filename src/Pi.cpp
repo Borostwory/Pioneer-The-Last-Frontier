@@ -358,8 +358,9 @@ void Pi::App::OnStartup()
 	Pi::SetAmountBackgroundStars(config->Float("AmountOfBackgroundStars"));
 	Pi::SetStarFieldStarSizeFactor(config->Float("StarFieldStarSizeFactor"));
 	Pi::detail.planets = config->Int("DetailPlanets");
-	// being tried: the landforms as real shape (P3 of the OpenGL 4.6 plan), before any terrain is made
-	Terrain::SetLandformShape(config->Float("TerrainLandformShape", 0.0f));
+	// the large landforms as real shape (P3 of the OpenGL 4.6 plan), before any terrain is made
+	Terrain::SetLandformShape(config->Float("TerrainLandformShape", float(Terrain::LARGE_LANDFORMS_TO_M)));
+	Terrain::SetLandformShapeFrom(config->Float("TerrainLandformShapeFrom", float(Terrain::LARGE_LANDFORMS_FROM_M)));
 	Pi::detail.cities = config->Int("DetailCities");
 
 	Graphics::RendererOGL::RegisterRenderer();

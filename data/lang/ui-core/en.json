@@ -2627,6 +2627,14 @@
     "description": "Settings window, The Last Frontier tab: tooltip of the 'Ground tessellation and bump mapping' checkbox",
     "message": "Raises the stones and lumps of the ground near you out of it, so they stand up instead of being painted flat. Costs some speed."
   },
+  "LARGE_LANDFORMS": {
+    "description": "Settings window, The Last Frontier tab, Graphics: checkbox that makes the large hills and ridges real shape in the ground",
+    "message": "Large landforms"
+  },
+  "LARGE_LANDFORMS_DESC": {
+    "description": "Settings window, The Last Frontier tab: tooltip of the 'Large landforms' checkbox",
+    "message": "Gives the ground broad hills and ridges, 500 m to 40 km across, as real shape you can see on the horizon and fly over. Smaller ones stay painted on. The ground is made again when you change this: take off first, or a landed ship may end up in or above it."
+  },
   "ORBIT_SURFACE_FULL": {
     "description": "Settings window, The Last Frontier tab: 'Planets from orbit' choice, the default",
     "message": "Full detail"

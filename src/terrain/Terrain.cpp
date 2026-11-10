@@ -783,6 +783,8 @@ void Terrain::GetHeights(const vector3d *vP, double *heightsOut, const size_t co
 namespace {
 	// metres: the landforms as shape, of every size up to this; 0: off (Terrain::SetLandformShape)
 	std::atomic<double> s_landformShape(0.0);
+	// metres: ...from this size up (Terrain::SetLandformShapeFrom)
+	std::atomic<double> s_landformShapeFrom(500.0);
 	// as TerrainTiles: the band's octaves, the most octaves, and the classic bodies' largest craters by their radius
 	constexpr int LANDFORM_BAND_OCTAVES = 3;
 	constexpr int LANDFORM_MAX_OCTAVES = 16;
@@ -809,6 +811,23 @@ void Terrain::SetLandformShape(const double topMetres)
 double Terrain::GetLandformShape()
 {
 	return s_landformShape.load(std::memory_order_relaxed);
+}
+
+void Terrain::SetLandformShapeFrom(const double metres)
+{
+	s_landformShapeFrom.store(std::max(metres, 0.0), std::memory_order_relaxed);
+}
+
+double Terrain::GetLandformShapeFrom()
+{
+	return s_landformShapeFrom.load(std::memory_order_relaxed);
+}
+
+void Terrain::SetLargeLandforms(const bool on)
+{
+	SetLandformShape(on ? LARGE_LANDFORMS_TO_M : 0.0);
+	if (on)
+		SetLandformShapeFrom(LARGE_LANDFORMS_FROM_M);
 }
 
 void Terrain::GetLandformStyle(float style[4]) const
@@ -880,8 +899,14 @@ void Terrain::AddLandforms(const vector3d *vP, double *heightsOut, const size_t 
 	// none finer than the band limit the heights are made with (TerrainNoise::ScopedBandLimit)
 	const double maxFrequency = TerrainNoise::s_maxFrequency;
 	const double finest = maxFrequency > 0.0 ? m_planetRadius / maxFrequency : 0.0;
-	if (params.count <= 0 || finest > top)
+	// only the large sizes: the smaller ones stay painted by the GPU detail tiles (TerrainTiles skips these)
+	const double smallest = std::max(finest, GetLandformShapeFrom());
+	if (params.count <= 0 || smallest > top)
 		return;
+	// No cracked slabs as shape: this large, they made plateaus with jagged cliffs (Io, 2026-11-10). They stay
+	// painted at the smaller sizes.
+	TerrainLandforms::Params shape = params;
+	shape.blocks = 0.0;
 	const bool water = (m_surfaceEffects & EFFECT_WATER) != 0;
 	for (size_t i = 0; i < count; i++) {
 		const double base = heightsOut[i];
@@ -889,7 +914,7 @@ void Terrain::AddLandforms(const vector3d *vP, double *heightsOut, const size_t 
 		const double weight = water ? LandformSmoothStep(0.0, LANDFORM_SHORE_M, base * m_planetRadius) : 1.0;
 		if (weight <= 0.0)
 			continue;
-		const TerrainLandforms::Sample s = TerrainLandforms::Evaluate(params, vP[i].Normalized(), finest, top);
+		const TerrainLandforms::Sample s = TerrainLandforms::Evaluate(shape, vP[i].Normalized(), smallest, top);
 		const double h = base + weight * s.height * m_invPlanetRadius;
 		// not below the zero level (the sea, or the lowest ground) where the ground was above it
 		heightsOut[i] = base >= 0.0 ? std::max(h, 0.0) : h;

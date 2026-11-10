@@ -29,6 +29,7 @@
 #include "scenegraph/Model.h"
 #include "sound/Sound.h"
 #include "sound/SoundMusic.h"
+#include "terrain/Terrain.h"
 #include "utils.h"
 
 #include <SDL_timer.h>
@@ -440,6 +441,26 @@ static int l_engine_set_planet_detail_level(lua_State *l)
 	if (level != Pi::detail.planets) {
 		Pi::detail.planets = level;
 		Pi::config->SetInt("DetailPlanets", level);
+		Pi::OnChangeDetailLevel();
+	}
+	return 0;
+}
+
+// The large landforms as real shape in the ground (Terrain::SetLargeLandforms; the settings window's mod tab): on
+// or off, with the sizes fixed (others only in the debug window). The ground is made again after a change.
+static int l_engine_get_large_landforms(lua_State *l)
+{
+	lua_pushboolean(l, Terrain::GetLandformShape() > 0.0);
+	return 1;
+}
+
+static int l_engine_set_large_landforms(lua_State *l)
+{
+	const bool on = lua_toboolean(l, 1);
+	if (on != (Terrain::GetLandformShape() > 0.0)) {
+		Terrain::SetLargeLandforms(on);
+		Pi::config->SetFloat("TerrainLandformShape", float(Terrain::GetLandformShape()));
+		Pi::config->SetFloat("TerrainLandformShapeFrom", float(Terrain::GetLandformShapeFrom()));
 		Pi::OnChangeDetailLevel();
 	}
 	return 0;
@@ -1047,6 +1068,8 @@ void LuaEngine::Register()
 
 		{ "GetPlanetDetailLevel", l_engine_get_planet_detail_level },
 		{ "SetPlanetDetailLevel", l_engine_set_planet_detail_level },
+		{ "GetLargeLandforms", l_engine_get_large_landforms },
+		{ "SetLargeLandforms", l_engine_set_large_landforms },
 		{ "GetCityDetailLevel", l_engine_get_city_detail_level },
 		{ "SetCityDetailLevel", l_engine_set_city_detail_level },
 

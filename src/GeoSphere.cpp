@@ -1337,7 +1337,12 @@ void GeoSphere::SetCityGlowData(const vector3d &campos, Graphics::CityGlowDataBl
 // the light on slopes from afar and the surface tiles' filter (FarTexture in terrain-far.glsl)
 void GeoSphere::SetFarLook()
 {
-	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(float(m_terrain->GetFarReliefSlopes()), 0.0f, 0.0f),
+	// Not steeper from afar while the large landforms are real shape (Terrain::SetLandformShape, SetLandformShapeFrom):
+	// steepened, their hills drew crumpled shadows from orbit, like plastic wrap (Mercury, Abu Nuwas, 2026-11-10).
+	// They give the far view relief of their own; lit as they are, they look as they do up close.
+	const bool largeLandforms = Terrain::GetLandformShape() > 0.0 && Terrain::GetLandformShapeFrom() < Terrain::GetLandformShape();
+	const double slopes = largeLandforms ? 1.0 : m_terrain->GetFarReliefSlopes();
+	m_surfaceMaterial->SetPushConstant("FarTexture"_hash, vector3f(float(slopes), 0.0f, 0.0f),
 		Pi::config->Int("TerrainTileBicubic", 1) != 0 ? 1.0f : 0.0f);
 }
 
@@ -1587,10 +1592,10 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 		for (int i = 0; i < NUM_PATCHES; i++) {
 			m_patches[i]->GatherRenderablePatches(m_visiblePatches, renderer, campos, frustum);
 		}
-		// config TerrainDetailTiles (Terrain Debug window): 0 frees the atlas. Also while the landforms are real
-		// shape (Terrain::SetLandformShape), so they aren't drawn twice.
+		// config TerrainDetailTiles (Terrain Debug window): 0 frees the atlas. (While the large landforms are real
+		// shape, Terrain::SetLandformShape, the tiles leave them out, so they aren't drawn twice.)
 		TerrainTiles *tiles = nullptr;
-		if (Pi::config->Int("TerrainDetailTiles", 1) == 0 || Terrain::GetLandformShape() > 0.0)
+		if (Pi::config->Int("TerrainDetailTiles", 1) == 0)
 			TerrainTiles::Destroy();
 		else if (GetSystemBody()->GetSuperType() != SystemBody::SUPERTYPE_STAR)
 			tiles = TerrainTiles::Get(renderer);

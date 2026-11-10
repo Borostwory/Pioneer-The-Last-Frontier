@@ -47,7 +47,8 @@ GameConfig::GameConfig(const map_string &override_)
 	map["PlanetLodDistance"] = "15"; // terrain patches split within this many patch widths of the camera
 	map["PlanetLodForeshortening"] = "100"; // percent: how much later terrain patches seen edge-on split
 	map["TerrainDetailTiles"] = "1"; // bake GPU detail tiles for nearby terrain patches
-	map["TerrainLandformShape"] = "0"; // being tried (P3 of the OpenGL 4.6 plan): the tiles' landforms as real shape, every size up to this many metres; 0: off
+	map["TerrainLandformShape"] = "40000"; // the large landforms as real shape (P3 of the OpenGL 4.6 plan; the settings window's mod tab), every size up to this many metres; 0: off
+	map["TerrainLandformShapeFrom"] = "500"; // ...from this size up (metres); the smaller ones stay painted
 	map["PlanetOrbitSurface"] = "2"; // how planets are drawn from high orbit: 1 surface tiles, 2 surface tiles at full detail
 	map["TerrainTileBicubic"] = "1"; // read the surface tiles with a sharper filter
 	map["TerrainSurfaceTiles"] = "1"; // bake colour and normal tiles for nearby terrain patches at twice their vertex density (TerrainSurfaceTiles.h, 128 MB of video memory)

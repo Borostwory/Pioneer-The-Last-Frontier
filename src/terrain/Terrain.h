@@ -108,6 +108,16 @@ public:
 	// config (TerrainLandformShape) and the debug window; the patches must be made again after a change.
 	static void SetLandformShape(double topMetres);
 	static double GetLandformShape();
+	// With it: only the landforms from this size up (metres) become shape, the large-scale shape; the smaller ones stay
+	// painted by the GPU detail tiles, as with the shape off (2026-11-10). From the config (TerrainLandformShapeFrom)
+	// and the debug window; the patches must be made again after a change.
+	static void SetLandformShapeFrom(double metres);
+	static double GetLandformShapeFrom();
+	// The sizes the settings window's mod tab switches on ("Large landforms", on by default since 2026-11-10); others
+	// only in the debug window. SetLargeLandforms: those, or none; the patches must be made again after a change.
+	static constexpr double LARGE_LANDFORMS_FROM_M = 500.0;
+	static constexpr double LARGE_LANDFORMS_TO_M = 40000.0;
+	static void SetLargeLandforms(bool on);
 	// The largest craters the tiles may draw, in metres; 0: by the planet's size.
 	virtual double GetTileCraterTop() const { return 0.0; }
 	// metres: the tile's landforms, of every size up to this and fixed in space, instead of only those near the patch's

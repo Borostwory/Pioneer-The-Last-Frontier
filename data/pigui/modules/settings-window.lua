@@ -702,6 +702,15 @@ local function showModOptions()
 		Engine.SettingsSetInt("TerrainStones", stones and 1 or 0)
 	end
 
+	-- The large landforms as real shape in the ground, 500 m to 40 km (src/terrain/Terrain.cpp, P3 of the OpenGL 4.6
+	-- plan); the ground is made again. Other sizes only in the debug window.
+	ui.separator()
+	local landforms = Engine.GetLargeLandforms()
+	c,landforms = checkbox(lui.LARGE_LANDFORMS, landforms, lui.LARGE_LANDFORMS_DESC)
+	if c then
+		Engine.SetLargeLandforms(landforms)
+	end
+
 	-- Sun shadows of ships, stations and buildings (src/SceneShadows.cpp); applied immediately
 	ui.separator()
 	local shadowQualityLabels = { lui.OFF, lui.SHADOW_QUALITY_LOW, lui.SHADOW_QUALITY_MEDIUM, lui.SHADOW_QUALITY_HIGH }
