@@ -1,8 +1,9 @@
 -- Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
 -- Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
--- The Last Frontier: the volumetric cloud settings (src/PlanetClouds.cpp), in the debug window's The Last Frontier
--- tab. The settings window keeps only the on/off switch. Everything here applies at once.
+-- The Last Frontier: the volumetric cloud fine tuning (src/PlanetClouds.cpp), in the debug window's The Last Frontier
+-- tab. The on/off switch and the quality settings (resolution, steps, temporal, softening, shadows) are in the
+-- settings window, The Last Frontier tab. Everything here applies at once.
 
 local Engine = require 'Engine'
 local Lang = require 'Lang'
@@ -49,21 +50,6 @@ local function drawCloudSettings()
 		return
 	end
 
-	local cloudResolutionLabels = { lui.CLOUD_RESOLUTION_LOW, lui.CLOUD_RESOLUTION_MEDIUM, lui.CLOUD_RESOLUTION_HIGH, lui.CLOUD_RESOLUTION_VERY_HIGH, lui.CLOUD_RESOLUTION_ULTRA, lui.CLOUD_RESOLUTION_FULL }
-	local cloudResolution = Engine.SettingsGetInt("CloudResolution")
-	c,cloudResolution = combo(lui.CLOUD_RESOLUTION, cloudResolution, cloudResolutionLabels,
-		lui.CLOUD_RESOLUTION_DESC)
-	if c then
-		Engine.SettingsSetInt("CloudResolution", cloudResolution)
-	end
-
-	local cloudResolutionSpace = Engine.SettingsGetInt("CloudResolutionSpace")
-	c,cloudResolutionSpace = combo(lui.CLOUD_RESOLUTION_SPACE, cloudResolutionSpace, cloudResolutionLabels,
-		lui.CLOUD_RESOLUTION_SPACE_DESC)
-	if c then
-		Engine.SettingsSetInt("CloudResolutionSpace", cloudResolutionSpace)
-	end
-
 	local cloudSpaceDetail = Engine.SettingsGetInt("CloudSpaceDetail")
 	c,cloudSpaceDetail = slider(lui.CLOUD_SPACE_DETAIL, cloudSpaceDetail, 0, 200,
 		lui.CLOUD_SPACE_DETAIL_DESC)
@@ -71,43 +57,11 @@ local function drawCloudSettings()
 		Engine.SettingsSetInt("CloudSpaceDetail", cloudSpaceDetail)
 	end
 
-	local cloudQualityLabels = { lui.CLOUD_QUALITY_LOW, lui.CLOUD_QUALITY_MEDIUM, lui.CLOUD_QUALITY_HIGH, lui.CLOUD_QUALITY_VERY_HIGH }
-	local cloudQuality = Engine.SettingsGetInt("CloudQuality")
-	c,cloudQuality = combo(lui.CLOUD_QUALITY, cloudQuality, cloudQualityLabels,
-		lui.CLOUD_QUALITY_DESC)
-	if c then
-		Engine.SettingsSetInt("CloudQuality", cloudQuality)
-	end
-
-	local cloudTemporalLabels = { lui.OFF, lui.CLOUD_TEMPORAL_4X, lui.CLOUD_TEMPORAL_9X, lui.CLOUD_TEMPORAL_16X }
-	local cloudTemporal = Engine.SettingsGetInt("CloudTemporal")
-	c,cloudTemporal = combo(lui.CLOUD_TEMPORAL, cloudTemporal, cloudTemporalLabels,
-		lui.CLOUD_TEMPORAL_DESC)
-	if c then
-		Engine.SettingsSetInt("CloudTemporal", cloudTemporal)
-	end
-
-	local cloudSoftnessLabels = { lui.CLOUD_SOFTENING_SHARP, lui.CLOUD_SOFTENING_SOFT, lui.CLOUD_SOFTENING_VERY_SOFT }
-	local cloudSoftness = Engine.SettingsGetInt("CloudSoftness")
-	c,cloudSoftness = combo(lui.CLOUD_SOFTENING, cloudSoftness, cloudSoftnessLabels,
-		lui.CLOUD_SOFTENING_DESC)
-	if c then
-		Engine.SettingsSetInt("CloudSoftness", cloudSoftness)
-	end
-
 	local cloudWeatherMaps = Engine.SettingsGetInt("CloudWeatherMaps") ~= 0
 	c,cloudWeatherMaps = checkbox(lui.CLOUD_WEATHER_MAPS, cloudWeatherMaps,
 		lui.CLOUD_WEATHER_MAPS_DESC)
 	if c then
 		Engine.SettingsSetInt("CloudWeatherMaps", cloudWeatherMaps and 1 or 0)
-	end
-
-	local cloudShadowLabels = { lui.OFF, lui.CLOUD_SHADOWS_SOFT, lui.CLOUD_SHADOWS_DETAILED }
-	local cloudShadows = Engine.SettingsGetInt("CloudShadows")
-	c,cloudShadows = combo(lui.CLOUD_SHADOWS, cloudShadows, cloudShadowLabels,
-		lui.CLOUD_SHADOWS_DESC)
-	if c then
-		Engine.SettingsSetInt("CloudShadows", cloudShadows)
 	end
 
 	local cloudSpeed = Engine.SettingsGetInt("CloudSpeed")

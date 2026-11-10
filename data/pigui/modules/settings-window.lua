@@ -743,14 +743,63 @@ local function showModOptions()
 		end
 	end
 
-	-- Volumetric clouds (src/PlanetClouds.cpp); applied immediately. Only the on/off switch here; the rest of the
-	-- cloud settings are in the debug window, The Last Frontier tab (pigui/modules/clouds-debug.lua).
+	-- Volumetric clouds (src/PlanetClouds.cpp); applied immediately. The on/off switch and the quality settings are
+	-- here; the space detail slider, cached weather patterns, cloud speed and per-layer tuning are in the debug
+	-- window, The Last Frontier tab (pigui/modules/clouds-debug.lua).
 	ui.separator()
 	local cloudsEnabled = Engine.SettingsGetInt("CloudsEnabled") ~= 0
 	c,cloudsEnabled = checkbox(lui.CLOUD_VOLUMETRIC, cloudsEnabled,
 		lui.CLOUD_VOLUMETRIC_DESC)
 	if c then
 		Engine.SettingsSetInt("CloudsEnabled", cloudsEnabled and 1 or 0)
+	end
+	if cloudsEnabled then
+		local cloudResolutionLabels = { lui.CLOUD_RESOLUTION_LOW, lui.CLOUD_RESOLUTION_MEDIUM, lui.CLOUD_RESOLUTION_HIGH, lui.CLOUD_RESOLUTION_VERY_HIGH, lui.CLOUD_RESOLUTION_ULTRA, lui.CLOUD_RESOLUTION_FULL }
+		local cloudResolution = Engine.SettingsGetInt("CloudResolution")
+		c,cloudResolution = combo(lui.CLOUD_RESOLUTION, cloudResolution, cloudResolutionLabels,
+			lui.CLOUD_RESOLUTION_DESC)
+		if c then
+			Engine.SettingsSetInt("CloudResolution", cloudResolution)
+		end
+
+		local cloudResolutionSpace = Engine.SettingsGetInt("CloudResolutionSpace")
+		c,cloudResolutionSpace = combo(lui.CLOUD_RESOLUTION_SPACE, cloudResolutionSpace, cloudResolutionLabels,
+			lui.CLOUD_RESOLUTION_SPACE_DESC)
+		if c then
+			Engine.SettingsSetInt("CloudResolutionSpace", cloudResolutionSpace)
+		end
+
+		local cloudQualityLabels = { lui.CLOUD_QUALITY_LOW, lui.CLOUD_QUALITY_MEDIUM, lui.CLOUD_QUALITY_HIGH, lui.CLOUD_QUALITY_VERY_HIGH }
+		local cloudQuality = Engine.SettingsGetInt("CloudQuality")
+		c,cloudQuality = combo(lui.CLOUD_QUALITY, cloudQuality, cloudQualityLabels,
+			lui.CLOUD_QUALITY_DESC)
+		if c then
+			Engine.SettingsSetInt("CloudQuality", cloudQuality)
+		end
+
+		local cloudTemporalLabels = { lui.OFF, lui.CLOUD_TEMPORAL_4X, lui.CLOUD_TEMPORAL_9X, lui.CLOUD_TEMPORAL_16X }
+		local cloudTemporal = Engine.SettingsGetInt("CloudTemporal")
+		c,cloudTemporal = combo(lui.CLOUD_TEMPORAL, cloudTemporal, cloudTemporalLabels,
+			lui.CLOUD_TEMPORAL_DESC)
+		if c then
+			Engine.SettingsSetInt("CloudTemporal", cloudTemporal)
+		end
+
+		local cloudSoftnessLabels = { lui.CLOUD_SOFTENING_SHARP, lui.CLOUD_SOFTENING_SOFT, lui.CLOUD_SOFTENING_VERY_SOFT }
+		local cloudSoftness = Engine.SettingsGetInt("CloudSoftness")
+		c,cloudSoftness = combo(lui.CLOUD_SOFTENING, cloudSoftness, cloudSoftnessLabels,
+			lui.CLOUD_SOFTENING_DESC)
+		if c then
+			Engine.SettingsSetInt("CloudSoftness", cloudSoftness)
+		end
+
+		local cloudShadowLabels = { lui.OFF, lui.CLOUD_SHADOWS_SOFT, lui.CLOUD_SHADOWS_DETAILED }
+		local cloudShadows = Engine.SettingsGetInt("CloudShadows")
+		c,cloudShadows = combo(lui.CLOUD_SHADOWS, cloudShadows, cloudShadowLabels,
+			lui.CLOUD_SHADOWS_DESC)
+		if c then
+			Engine.SettingsSetInt("CloudShadows", cloudShadows)
+		end
 	end
 
 	modSection(lui.MOD_SOUND)
