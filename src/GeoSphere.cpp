@@ -42,8 +42,11 @@
 #include "utils.h"
 #include "vcacheopt/vcacheopt.h"
 #include <algorithm>
+#include <cmath>
 #include <deque>
+#include <map>
 #include <thread>
+#include <tuple>
 
 RefCountedPtr<GeoPatchContext> GeoSphere::s_patchContext;
 
@@ -524,6 +527,109 @@ double GeoSphere::StoneLiftAt(const vector3d &point, const vector3d &normal, con
 	params.meshPerMetre = float(perMetre);
 	params.maxCuts = 64.0f;
 	return TerrainStones::Lift(params, pt);
+}
+
+void GeoSphere::CheckSeams() const
+{
+	std::vector<const GeoPatch *> drawn;
+	for (int i = 0; i < NUM_PATCHES; i++)
+		if (m_patches[i])
+			m_patches[i]->CollectDrawn(drawn);
+	struct Point {
+		GeoPatch::EdgePoint e;
+		int patch;
+	};
+	// (by direction, in cells a few millimetres wide on Earth: points that are one fall in one cell, but for those
+	// on a cell's border, which is rare enough not to matter here)
+	std::map<std::tuple<int64_t, int64_t, int64_t>, std::vector<Point>> cells;
+	std::vector<GeoPatch::EdgePoint> points;
+	for (int p = 0; p < int(drawn.size()); p++) {
+		points.clear();
+		drawn[p]->EdgePoints(points);
+		for (const GeoPatch::EdgePoint &pt : points) {
+			const auto key = std::make_tuple(int64_t(std::llround(pt.dir.x * 1e9)), int64_t(std::llround(pt.dir.y * 1e9)), int64_t(std::llround(pt.dir.z * 1e9)));
+			cells[key].push_back({ pt, p });
+		}
+	}
+	const double radius = GetSystemBody()->GetRadius();
+	const vector3d camera = m_tempCampos;
+	struct Seam {
+		double step, distance;
+		vector3d dir;
+		int depthA, depthB;
+	};
+	std::vector<Seam> seams;
+	// and where both keep their surface (near the camera): the normal and the material weights either side
+	struct Surface {
+		double distance, angle;
+		int material, slot;
+		vector3d dir;
+		int depthA, depthB;
+	};
+	std::vector<Surface> surfaces;
+	int shared = 0, sharedSurface = 0;
+	for (const auto &cell : cells) {
+		const std::vector<Point> &list = cell.second;
+		for (size_t a = 0; a < list.size(); a++) {
+			for (size_t b = a + 1; b < list.size(); b++) {
+				if (list[a].patch == list[b].patch)
+					continue;
+				shared++;
+				const GeoPatch::EdgePoint &ea = list[a].e, &eb = list[b].e;
+				const double distance = (ea.dir * ea.radius - camera).Length() * radius;
+				const double step = std::abs(ea.radius - eb.radius) * radius;
+				if (step > 0.01)
+					seams.push_back({ step, distance, ea.dir, drawn[list[a].patch]->GetDepth(), drawn[list[b].patch]->GetDepth() });
+				if (ea.hasSurface && eb.hasSurface) {
+					sharedSurface++;
+					const double angle = std::acos(std::clamp(double(ea.normal.Dot(eb.normal)), -1.0, 1.0)) * 180.0 / M_PI;
+					int material = 0, slot = -1;
+					for (int s = 0; s < TerrainMaterialTable::SLOT_COUNT; s++) {
+						const int d = std::abs(int(ea.materials[s]) - int(eb.materials[s]));
+						if (d > material) {
+							material = d;
+							slot = s;
+						}
+					}
+					if (angle > 0.5 || material > 4)
+						surfaces.push_back({ distance, angle, material, slot, ea.dir, drawn[list[a].patch]->GetDepth(), drawn[list[b].patch]->GetDepth() });
+				}
+			}
+		}
+	}
+	std::sort(seams.begin(), seams.end(), [](const Seam &a, const Seam &b) { return a.distance < b.distance; });
+	char line[256];
+	std::snprintf(line, sizeof(line), "SEAMS %s: %d drawn patches, %d edge points shared by two, %d at two heights (over 1 cm); the nearest of them:",
+		GetSystemBody()->GetName().c_str(), int(drawn.size()), shared, int(seams.size()));
+	FrontierLog::Note(line);
+	for (size_t i = 0; i < seams.size() && i < 16; i++) {
+		const Seam &s = seams[i];
+		std::snprintf(line, sizeof(line), "    %.0f m from the camera, lat %.5f lon %.5f: %.3f m apart, levels %d and %d", s.distance,
+			std::asin(std::clamp(s.dir.y, -1.0, 1.0)) * 180.0 / M_PI, std::atan2(s.dir.x, s.dir.z) * 180.0 / M_PI, s.step, s.depthA, s.depthB);
+		FrontierLog::Note(line);
+	}
+	double worst = 0.0;
+	for (const Seam &s : seams)
+		worst = std::max(worst, s.step);
+	std::snprintf(line, sizeof(line), "    the widest anywhere: %.3f m", worst);
+	FrontierLog::Note(line);
+
+	std::sort(surfaces.begin(), surfaces.end(), [](const Surface &a, const Surface &b) { return a.distance < b.distance; });
+	double worstAngle = 0.0;
+	int worstMaterial = 0;
+	for (const Surface &s : surfaces) {
+		worstAngle = std::max(worstAngle, s.angle);
+		worstMaterial = std::max(worstMaterial, s.material);
+	}
+	std::snprintf(line, sizeof(line), "SEAMS' SURFACE: %d shared points with their surface kept, %d with different normals (over 0.5 degrees) or material weights (over 4 of 255); worst %.2f degrees, %d of 255; the nearest:",
+		sharedSurface, int(surfaces.size()), worstAngle, worstMaterial);
+	FrontierLog::Note(line);
+	for (size_t i = 0; i < surfaces.size() && i < 16; i++) {
+		const Surface &s = surfaces[i];
+		std::snprintf(line, sizeof(line), "    %.0f m from the camera, lat %.5f lon %.5f: normals %.2f degrees apart, material slot %d weights %d of 255 apart, levels %d and %d",
+			s.distance, std::asin(std::clamp(s.dir.y, -1.0, 1.0)) * 180.0 / M_PI, std::atan2(s.dir.x, s.dir.z) * 180.0 / M_PI, s.angle, s.slot, s.material, s.depthA, s.depthB);
+		FrontierLog::Note(line);
+	}
 }
 
 void GeoSphere::StoneMeshSpacing(double &finest, double &perMetre) const

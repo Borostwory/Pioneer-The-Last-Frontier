@@ -91,6 +91,8 @@ static constexpr double GEOPATCH_SUBDIVIDE_AT_CAMDIST = 5.0;
 static constexpr double NEAR_SPLIT_WIDTHS = 1.5;
 // how deep a patch's skirt is at least on the physical generator's ground, in gaps between its vertices
 static constexpr double SKIRT_VERTEX_GAPS = 2.0;
+// added to a skirt vertex's uv (the terrain vertex shaders' TERRAIN_SKIRT_UV_MARK)
+static constexpr float SKIRT_UV_MARK = 2.0f;
 // children are merged back only beyond this multiple of the split distance
 static constexpr double LOD_MERGE_HYSTERESIS = 1.25;
 // until a patch's detail tile is baked, it is drawn with an ancestor's up to
@@ -236,6 +238,10 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 		if (m_geosphere->GetTerrain()->HasFixedDetail())
 			minhScale = std::min(minhScale, minh + 1.0 - SKIRT_VERTEX_GAPS * GetVertexSpacing());
 		// ----------------------------------------------------
+		// (the skirts' vertices carry their inner neighbour's uv plus SKIRT_UV_MARK, so the terrain's vertex shaders can
+		// tell them from the ground's: the stones raised on a skirt taper to nothing at its bottom, rather than standing
+		// it up through the ground beside, a row of dark teeth along the patch's edge; 2026-11-09)
+		const vector2f skirtMark(SKIRT_UV_MARK, SKIRT_UV_MARK);
 		const Sint32 innerLeft = 1;
 		const Sint32 innerRight = edgeLen - 2;
 		const Sint32 outerLeft = 0;
@@ -253,7 +259,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->pos = vector3f(p);
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
-			vtxPtr->uv = vtxInr->uv;
+			vtxPtr->uv = vtxInr->uv + skirtMark;
 			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 		}
 		// right-edge
@@ -268,7 +274,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->pos = vector3f(p);
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
-			vtxPtr->uv = vtxInr->uv;
+			vtxPtr->uv = vtxInr->uv + skirtMark;
 			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 		}
 		// ----------------------------------------------------
@@ -289,7 +295,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->pos = vector3f(p);
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
-			vtxPtr->uv = vtxInr->uv;
+			vtxPtr->uv = vtxInr->uv + skirtMark;
 			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 		}
 		// bottom-edge
@@ -304,7 +310,7 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 			vtxPtr->pos = vector3f(p);
 			vtxPtr->norm = vtxInr->norm;
 			vtxPtr->col = vtxInr->col;
-			vtxPtr->uv = vtxInr->uv;
+			vtxPtr->uv = vtxInr->uv + skirtMark;
 			std::copy(vtxInr->materials, vtxInr->materials + TerrainMaterialTable::SLOT_COUNT, vtxPtr->materials);
 		}
 		// ----------------------------------------------------
@@ -446,10 +452,8 @@ void GeoPatch::RenderImmediate(Graphics::Renderer *renderer, const vector3d &cam
 		// held against the reach in metres, so every patch in view was tessellated.)
 		bool tessellate = false;
 		const double nearest = std::max((m_clipCentroid - campos).Length() - m_clipRadius, 1e-9);
-		if (GeoSphere::StonesActive()) {
-			const double nearestMetres = nearest * m_geosphere->GetSystemBody()->GetRadius();
-			tessellate = nearestMetres < GeoSphere::StonesReach() && m_geosphere->StonePixelsAt(nearestMetres) >= 0.5 * GeoSphere::StonesFadePixels();
-		}
+		if (GeoSphere::StonesActive())
+			tessellate = InStonesReach(campos, 0.0);
 		else if (GeoSphere::TessellationEnabled())
 			tessellate = GetVertexSpacing() / (nearest * m_geosphere->GetPixelAngle()) > GeoSphere::TessellationPixels();
 		if (m_geosphere->GetSurfaceMaterial()->SetTessellated(tessellate) && tessellate)
@@ -494,7 +498,11 @@ void GeoPatch::RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d
 
 bool GeoPatch::FineEnoughToStandOn() const
 {
-	return GetVertexSpacing() * m_geosphere->GetSystemBody()->GetRadius() <= 2.0 * m_geosphere->GetLegacyDeepestSpacing();
+	// The two deepest levels there can be here. (Until 2026-11-09 by the vertex spacing against twice
+	// GetLegacyDeepestSpacing, an old reckoning that comes out finer than the deepest patches really are: on Mercury
+	// 6 m against 12, so no patch kept its surface, and feet and wheels didn't stand on the stones there.)
+	const int deepest = std::min(int(GEOPATCH_MAX_DEPTH), int(m_geosphere->GetMaxDepth() + m_geosphere->GetExtraDepth()));
+	return m_depth + 1 >= deepest;
 }
 
 double GeoPatch::GetVertexSpacing() const
@@ -676,15 +684,24 @@ void GeoPatch::LODUpdate(const vector3d &campos, const Graphics::Frustum &frustu
 		// the extra levels near the player on foot or in the rover: a small radius, whatever the terrain detail distance
 		if (m_depth >= m_geosphere->GetMaxDepth())
 			splitLength = NEAR_SPLIT_WIDTHS * m_edgeLength;
-		const bool tooFar = (centroidDist >= splitLength);	// check if the distance is greater than the rough length, which is how far it should be before it can split
+		bool tooFar = (centroidDist >= splitLength);	// check if the distance is greater than the rough length, which is how far it should be before it can split
 		const bool atMaxDepth = m_depth >= std::min(GEOPATCH_MAX_DEPTH, m_geosphere->GetMaxDepth() + m_geosphere->GetExtraDepth());
+		// P4c: wherever the stones may be raised, the finest patches only. Where a patch meets a coarser one, the two
+		// cut their shared edge at different points, and the stones raised at each opened steps between them, up to the
+		// stones' height, with the edges' dark skirts showing through as walls (2026-11-09). With the finest patches
+		// only, the tessellated ones are all one size and their cut points meet; the coarser ones begin beyond the
+		// stones' reach, where nothing is raised. (A little further than RenderImmediate tessellates, as the camera
+		// moves between this update and the drawing.)
+		const bool inStonesReach = GeoSphere::StonesActive() && InStonesReach(campos, 20.0);
+		if (inStonesReach)
+			tooFar = false;
 		if (atMaxDepth || tooFar) {
 			canSplit = false; // we're too deep in the quadtree or too far away so cannot split
 		}
 		// Merge only a little further out than the split distance, so a camera
 		// hovering near the threshold does not split and merge the same patch
 		// over and over (each split regenerates four patches).
-		if (!atMaxDepth && centroidDist < splitLength * LOD_MERGE_HYSTERESIS) {
+		if (!atMaxDepth && (centroidDist < splitLength * LOD_MERGE_HYSTERESIS || (GeoSphere::StonesActive() && InStonesReach(campos, 40.0)))) {
 			canMerge = false;
 		}
 	}
@@ -810,6 +827,52 @@ void GeoPatch::ReceiveJobHandle(Job::Handle job)
 {
 	assert(!m_job.HasJob());
 	m_job = static_cast<Job::Handle &&>(job);
+}
+
+void GeoPatch::CollectDrawn(std::vector<const GeoPatch *> &out) const
+{
+	// (as GatherRenderablePatches, without the camera's culling)
+	if (m_kids[0]) {
+		for (int i = 0; i < NUM_KIDS; i++)
+			m_kids[i]->CollectDrawn(out);
+	} else if (m_patchVBOData && m_patchVBOData->m_heights) {
+		out.push_back(this);
+	}
+}
+
+void GeoPatch::EdgePoints(std::vector<EdgePoint> &out) const
+{
+	if (!m_patchVBOData || !m_patchVBOData->m_heights)
+		return;
+	// (as UpdateVBOs: the heights are the inner (edgeLen - 2) squared, the skirt around them)
+	const int edgeLen = m_ctx->GetEdgeLen();
+	const int inner = edgeLen - 2;
+	const double frac = m_ctx->GetFrac();
+	const double *heights = m_patchVBOData->m_heights.get();
+	for (int y = 0; y < inner; y++) {
+		for (int x = 0; x < inner; x++) {
+			if (x != 0 && y != 0 && x != inner - 1 && y != inner - 1)
+				continue;
+			EdgePoint e;
+			e.dir = PatchMaths::GetSpherePoint(m_corners->m_v0, m_corners->m_v1, m_corners->m_v2, m_corners->m_v3, double(x) * frac, double(y) * frac);
+			e.radius = heights[y * inner + x] + 1.0;
+			if (m_patchVBOData->m_normals && m_patchVBOData->m_colors) {
+				e.hasSurface = true;
+				e.normal = m_patchVBOData->m_normals[y * inner + x].Normalized();
+				std::copy(m_patchVBOData->m_colors[y * inner + x].materials, m_patchVBOData->m_colors[y * inner + x].materials + TerrainMaterialTable::SLOT_COUNT, e.materials);
+			}
+			out.push_back(e);
+		}
+	}
+}
+
+bool GeoPatch::InStonesReach(const vector3d &campos, double margin) const
+{
+	// (the nearest the patch could come, its bounding sphere's; and where even the tallest stone would stand too small
+	// on screen they've faded out)
+	const double nearest = std::max((m_clipCentroid - campos).Length() - m_clipRadius, 1e-9) * m_geosphere->GetSystemBody()->GetRadius();
+	const double within = std::max(nearest - margin, 1e-3);
+	return within < GeoSphere::StonesReach() && m_geosphere->StonePixelsAt(within) >= 0.5 * GeoSphere::StonesFadePixels();
 }
 
 bool GeoPatch::IsPatchVisible(const Graphics::Frustum &frustum, const vector3d &camPos) const

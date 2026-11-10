@@ -189,6 +189,9 @@ public:
 	// how far below the screen ground may lie and still be raised into view by the stones, planet radii
 	// (GeoPatch::IsPatchVisible)
 	double GetStoneCullMargin() const { return m_stoneCullMargin; }
+	// Debug: where two drawn patches share an edge point, whether they put it at the same height; the worst to the log
+	// (FrontierLog), with both patches' levels
+	void CheckSeams() const;
 	// P4d's check: the stones' height under the camera, worked out by the main processor and by the graphics card
 	struct StoneProbe {
 		bool valid = false; // both are in

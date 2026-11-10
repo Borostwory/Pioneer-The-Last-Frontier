@@ -11,6 +11,11 @@ out vec4 vertexColor;
 
 out vec2 texCoord0;
 out float dist;
+// 1 on the patch's skirt, 0 on its ground (GeoPatch marks the skirt's uv): the stones taper off down the skirt, and
+// it's lit as the ground beside it
+out float skirtWeight;
+// what GeoPatch adds to a skirt vertex's uv (SKIRT_UV_MARK)
+#define TERRAIN_SKIRT_UV_MARK 2.0
 
 // the body's material weights (terrain-materials.glsl)
 layout(location = 10) in vec4 a_materials0;
@@ -46,7 +51,9 @@ void main(void)
 	varyingEyepos = vec3(uViewMatrix * a_vertex);
 	varyingNormal = normalize(normalMatrix() * a_normal);
 
-	texCoord0 = a_uv0.xy;
+	bool skirt = a_uv0.x > 0.5 * TERRAIN_SKIRT_UV_MARK + 0.5;
+	texCoord0 = skirt ? a_uv0.xy - TERRAIN_SKIRT_UV_MARK : a_uv0.xy;
+	skirtWeight = skirt ? 1.0 : 0.0;
 	dist = length(varyingEyepos);
 
 #ifdef TERRAIN_WITH_LAVA

@@ -34,6 +34,8 @@ in float stoneLift;
 in vec3 stoneSlope;
 in float stoneLit;
 #endif
+// 1 on the patch's skirt (the vertex shader's), 0 on its ground
+in float skirtWeight;
 
 out vec4 frag_color;
 
@@ -180,6 +182,11 @@ void main(void)
 	// and of the raised stones (P4e)
 	sunLit *= stoneLit;
 #endif
+	// A patch's skirt shows only through a gap where two patches don't quite meet: lit as the ground beside it, whose
+	// normal it has, not in the shadow of the ground above it, black on a body without air: a dark line along the
+	// gap, zigzag where a finer patch meets a coarser one (2026-11-10)
+	if (skirtWeight > 0.0)
+		sunLit = 1.0;
 	vec3 light = vec3(0.0);
 	vec3 materialGlint = vec3(0.0);
 	float backscatter = 1.0;
@@ -285,7 +292,7 @@ void main(void)
 
 	frag_color = toSRGB(1 - exp(-frag_color));
 #if (NUM_LIGHTS > 0)
-	if (!GROUND_SKIP(5))
+	if (!GROUND_SKIP(5) && skirtWeight <= 0.0)
 		frag_color.rgb *= sceneShadowTint(varyingEyepos, normalize(varyingNormal));
 #endif
 }

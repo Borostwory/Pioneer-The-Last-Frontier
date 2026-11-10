@@ -893,6 +893,9 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 			Pi::config->Save();
 		if (sphere)
 			ImGui::Text("Patches drawn tessellated: %d of %d", sphere->GetDrawnPatches().tessellated, sphere->GetDrawnPatches().count);
+		// where two patches meet at different heights, gaps in the ground (to the log)
+		if (sphere && ImGui::Button("Check the patches' seams (to the log)##openglPlan"))
+			sphere->CheckSeams();
 		ImGui::TextColored(dim, "Should look the same. The wireframe view (Terrain and GPU) shows the finer triangles; GPU time: \"terrain\".");
 	}
 

@@ -147,12 +147,27 @@ public:
 	// draws the patches drawn this frame that touch lightBox into the current
 	// sun shadow map, see GeoSphere::RenderShadowCaster
 	void RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d &unitToLight, double radius, const Aabb &lightBox, Graphics::Material *material) const;
+	// the seams check (GeoSphere::CheckSeams): the drawn patches under this one, and the points along a patch's edges
+	// as its mesh has them: direction (unit) and radius (planet radii)
+	void CollectDrawn(std::vector<const GeoPatch *> &out) const;
+	struct EdgePoint {
+		vector3d dir;
+		double radius;
+		// (only on the patches fine enough to stand on, which keep them)
+		bool hasSurface = false;
+		vector3f normal;
+		Uint8 materials[TerrainMaterialTable::SLOT_COUNT] = {};
+	};
+	void EdgePoints(std::vector<EdgePoint> &out) const;
 
 
 private:
 	static const int NUM_KIDS = 4;
 
 	bool IsPatchVisible(const Graphics::Frustum &frustum, const vector3d &camPos) const;
+	// P4c: whether the stones could be raised anywhere on the patch, with margin metres more (LODUpdate keeps those
+	// patches at the finest level, RenderImmediate tessellates them)
+	bool InStonesReach(const vector3d &campos, double margin) const;
 	bool IsOverHorizon(const vector3d &camPos) const;
 
 	RefCountedPtr<GeoPatchContext> m_ctx;

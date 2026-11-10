@@ -23,6 +23,7 @@ in vec3 tcEyepos[];
 in vec3 tcNormal[];
 in vec4 tcColor[];
 in vec2 tcTexCoord0[];
+in float tcSkirt[];
 in vec4 tcMaterials0[];
 in vec4 tcMaterials1[];
 in vec4 tcMaterials2[];
@@ -54,6 +55,8 @@ out vec4 varyingEmission;
 out float stoneLift;
 out vec3 stoneSlope;
 out float stoneLit;
+// the patch's skirt here (the vertex shader's skirtWeight), for the pixel shader
+out float skirtWeight;
 
 void main(void)
 {
@@ -82,6 +85,10 @@ void main(void)
 #else
 	terrainStones(slots, varyingEyepos, normalize(varyingNormal), up, 1.0e4, false, stoneLift, stoneSlope, stoneLit);
 #endif
+	// (down a patch's skirt the stones taper off to nothing at its bottom, so it hangs below the ground beside rather
+	// than standing up through it; 2026-11-09)
+	skirtWeight = TESS_BLEND(tcSkirt);
+	stoneLift *= 1.0 - skirtWeight;
 	vec3 lift = up * stoneLift;
 	varyingEyepos += lift;
 	// (back to the patch's own units by the view matrix's turn, transposed, and its scale squared: the patches are
