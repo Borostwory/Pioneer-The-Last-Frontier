@@ -79,7 +79,7 @@ GameConfig::GameConfig(const map_string &override_)
 	// step with the fallbacks in PlanetClouds.cpp
 	map["CloudResolution"] = "4"; // 0 low .. 5 full, see PlanetClouds.cpp
 	map["CloudTemporal"] = "2";   // temporal reconstruction: 0 off, 1 4x (2x2 blocks), 2 9x (3x3), 3 16x (4x4)
-	map["CloudSoftness"] = "1";   // 0 sharp .. 2 soft
+	map["CloudSoftness"] = "0";   // 0 sharp .. 2 soft
 	map["CloudShadows"] = "2";    // terrain shadows: 0 off, 1 soft, 2 detailed
 	map["CloudResolutionSpace"] = "5"; // resolution when far above the clouds (5 = full)
 	map["CloudQuality"] = "2";    // raymarch steps: 0 16, 1 24, 2 32, 3 48

@@ -53,7 +53,8 @@ namespace {
 	// real time, so high time acceleration does not make the clouds flicker
 	static const double CLOUD_MAX_TIME_RATE = 100.0;
 
-	// Settings (config.ini, also in the video settings window):
+	// Settings (config.ini; the on/off switch in the settings window, the rest in the debug window,
+	// The Last Frontier tab, Volumetric Clouds - pigui/modules/clouds-debug.lua):
 	//   CloudsEnabled    0/1
 	//   CloudResolution  0..5: effective cloud resolution 360, 540, 720, 1080, 1440 lines, or full
 	//   CloudResolutionSpace  0..5: the same, used when the camera is well above the clouds
@@ -910,7 +911,7 @@ namespace PlanetClouds {
 		const matrix4x4f proj = r->GetProjection();
 
 		CloudPassBlock passData {};
-		const int softness = Clamp(Pi::config->Int("CloudSoftness", 1), 0, 2);
+		const int softness = Clamp(Pi::config->Int("CloudSoftness", 0), 0, 2);
 		SetVec4(passData.histSize, pass.histW, pass.histH, pass.shadowUsedW, pass.shadowUsedH);
 
 		// the nearest planet (largest on screen) gets temporal reconstruction,
