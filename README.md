@@ -20,6 +20,40 @@
 
 Click a screenshot to see it larger.
 
+### New World Generator
+
+Every planet and moon starts from a few facts about its surface: how much
+rock, metal, ice, water and air it has, how hot and how volcanic it is, and
+whether there is life. From those, the game works out the rest: land and
+seas, deserts, forests and ice caps, rivers running down valleys into lakes,
+craters, volcanoes and lava, dunes, and cracked ice on moons like Europa.
+Plants take a colour that suits their star, and each world's air gives its
+sky its own colour. Everything is fixed to the world, so the mountain you see
+from orbit is the one you land on.
+
+<p>
+  <a href=".github/images/screens/world-gen-1.jpg"><img src=".github/images/screens/world-gen-1.jpg" width="49%" alt="Europa's cracked ice and chaos ground from low orbit"></a>
+  <a href=".github/images/screens/world-gen-2.jpg"><img src=".github/images/screens/world-gen-2.jpg" width="49%" alt="Europa from space"></a>
+</p>
+<p>
+  <a href=".github/images/screens/world-gen-3.jpg"><img src=".github/images/screens/world-gen-3.jpg" width="49%" alt="Io's sulphur plains and lava from space"></a>
+  <a href=".github/images/screens/world-gen-4.jpg"><img src=".github/images/screens/world-gen-4.jpg" width="49%" alt="A ship and the rover on New Hope's dry ground at sunset"></a>
+</p>
+
+### New Graphics Engine
+
+The game now runs on OpenGL 4.6. Near you, tessellation splits the ground
+into many small pieces, so its stones and lumps stand up out of it instead of
+being painted flat, and your boots and the rover's wheels ride over them.
+Bump mapping makes them catch the sun and cast small shadows. Ground textures
+are four times sharper, and new anti-aliasing (FXAA and SMAA) smooths jagged
+edges, clouds included.
+
+<p>
+  <a href=".github/images/screens/graphics-engine-1.jpg"><img src=".github/images/screens/graphics-engine-1.jpg" width="49%" alt="Tessellated icy ground on Titan"></a>
+  <a href=".github/images/screens/graphics-engine-2.jpg"><img src=".github/images/screens/graphics-engine-2.jpg" width="49%" alt="Tessellated cracked ground on New Hope at sunset"></a>
+</p>
+
 ### Orbit Planner
 
 Chains of planned burns, rendezvous and flyby planning, closed-loop autoburn,
@@ -61,16 +95,6 @@ Volumetric multi-layer clouds, weather fronts and cloud shadows.
 <p>
   <a href=".github/images/screens/clouds-1.jpg"><img src=".github/images/screens/clouds-1.jpg" width="49%" alt="Volumetric clouds"></a>
   <a href=".github/images/screens/clouds-2.jpg"><img src=".github/images/screens/clouds-2.jpg" width="49%" alt="Volumetric clouds"></a>
-</p>
-
-### Planet Terrain
-
-Per-pixel ground and water, photo-based ground materials, river valleys and
-detailed terrain from orbit to the ground.
-
-<p>
-  <a href=".github/images/screens/terrain.jpg"><img src=".github/images/screens/terrain.jpg" width="49%" alt="Terrain improvements"></a>
-  <a href=".github/images/screens/terrain-clouds.jpg"><img src=".github/images/screens/terrain-clouds.jpg" width="49%" alt="Terrain and clouds"></a>
 </p>
 
 ### Cities
@@ -191,10 +215,15 @@ loses its label.
 
 ### And more
 
+- **A more accurate Sol** – Mimas, Enceladus and Miranda added, and Sol's
+  planets and moons corrected with NASA's numbers. Olympus Mons stands at its
+  true height.
+- **Faster and smoother** – faster loading and better performance.
 - **Hyperspace** – a relativistic jump effect and new jump sounds.
 - **Audio** – wind, rover and hyperspace sounds, and new thruster and landing
   gear sounds.
-- **Developer Tools** – a tab of their own in the debug window: travel, surface and hangar tools, GPU timers and terrain debugging.
+- **Developer Tools** – a tab of their own in the debug window: travel,
+  surface and hangar tools, GPU timers and terrain debugging.
 
 
 ## Bugs
@@ -212,6 +241,9 @@ not on the upstream Pioneer project.
 1. Download the `.zip` from the release's assets.
 2. Unzip it anywhere.
 3. Run `pioneer.exe`.
+
+**You need** a graphics card whose driver supports OpenGL 4.6. Most cards
+from the last several years do.
 
 The mod's options are in their own **The Last Frontier (mod)** tab in the
 settings window.
