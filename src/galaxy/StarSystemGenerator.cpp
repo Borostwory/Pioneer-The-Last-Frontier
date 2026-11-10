@@ -676,6 +676,17 @@ const SystemBody *StarSystemRandomGenerator::FindStarAndTrueOrbitalRange(const S
  * on a set of density heuristics (in PickPlanetType), and remaining body
  * parameters are set to complete body generation.
  */
+// true when one of the system's stars is a pulsar (a neutron star)
+static bool HasPulsar(const StarSystem *system)
+{
+	if (!system)
+		return false;
+	for (const SystemBody *star : system->GetStars())
+		if (star->GetType() == SystemBody::TYPE_STAR_NEUTRON)
+			return true;
+	return false;
+}
+
 void StarSystemRandomGenerator::PickPlanetType(SystemBody *sbody, Random &rand)
 {
 	PROFILE_SCOPED()
@@ -767,6 +778,10 @@ void StarSystemRandomGenerator::PickPlanetType(SystemBody *sbody, Random &rand)
 		if (rand.Int32(3)) amount_volatiles *= sbody->GetMassAsFixed();
 		// total atmosphere loss
 		if (rand.Fixed() > sbody->GetMassAsFixed()) amount_volatiles = fixed();
+		// planets in a pulsar's system are barren: no air, water, ice or life. They formed from the
+		// rock left after the explosion, and the pulsar's radiation strips anything else away
+		if (star->GetType() == SystemBody::TYPE_STAR_NEUTRON || HasPulsar(sbody->GetStarSystem()))
+			amount_volatiles = fixed();
 
 		//Output("Amount volatiles: %f\n", amount_volatiles.ToFloat());
 		// fudge how much of the volatiles are in which state
@@ -955,7 +970,18 @@ fixed StarSystemRandomGenerator::CalcBodySatelliteShellDensity(Random &rand, Sys
 			discMin = 100 * primary->GetRadiusAsFixed() * AU_SOL_RADIUS;
 		}
 
-		if (primary->GetType() == SystemBody::TYPE_WHITE_DWARF) {
+		const bool pulsar = primary->GetType() == SystemBody::TYPE_STAR_NEUTRON;
+		// the explosion that made a pulsar blew away the whole system's planet-forming disc,
+		// so its partner stars only get the same small leftover disc
+		const bool pulsarSystem = pulsar || HasPulsar(primary->GetStarSystem());
+
+		if (pulsar) {
+			// Pulsar planets formed from the little that was left after the explosion, like the
+			// rocky planets of PSR B1257+12 (0.02 to 4 Earths, 0.19 to 0.46 AU). A small disc from
+			// 0.1 AU out to between 0.5 and 2.5 AU, holding a few Earth masses (see below)
+			discMin = fixed(1, 10);
+			discMax = fixed(1, 2) + 2 * rand.Fixed();
+		} else if (primary->GetType() == SystemBody::TYPE_WHITE_DWARF) {
 			// white dwarfs will have started as stars < 8 solar
 			// masses or so, so pick discMax according to that
 			// We give it a larger discMin because it used to be a much larger star
@@ -969,10 +995,14 @@ fixed StarSystemRandomGenerator::CalcBodySatelliteShellDensity(Random &rand, Sys
 		// having limited discMin by bin-separation/fake roche, and
 		// discMax by some relation to star mass, we can now compute
 		// disc density
-		fixed discDensity = get_disc_density(primary, discMin, discMax, fixed(1, 100));
+		// In a pulsar's system a disc holds a hundred-thousandth of its star's mass (about 5 Earths
+		// round the pulsar itself) instead of a hundredth: enough for a few rocks, never a gas giant
+		fixed discDensity = get_disc_density(primary, discMin, discMax, pulsarSystem ? fixed(1, 100000) : fixed(1, 100));
 
-		// Avoid very small, dense stars creating unnatural amounts of gas giants surrounding
-		discDensity *= std::min(primary->GetRadiusAsFixed() / primary->GetMassAsFixed(), fixed(1,1));
+		// Avoid very small, dense stars creating unnatural amounts of gas giants surrounding.
+		// Not for pulsar systems: a pulsar's tiny size would leave no planets at all, and the disc is already small
+		if (!pulsarSystem)
+			discDensity *= std::min(primary->GetRadiusAsFixed() / primary->GetMassAsFixed(), fixed(1,1));
 
 		// NOTE: limits applied here scale the density distribution function so
 		// that bodies are naturally of low mass at the binary/trinary limit
@@ -1503,8 +1533,9 @@ void PopulateStarSystemGenerator::PopulateStage1(SystemBody *sbody, StarSystem::
 		PopulateStage1(child, system, outTotalPop);
 	}
 
-	// unexplored systems have no population (that we know about)
-	if (system->GetExplored() != StarSystem::eEXPLORED_AT_START) {
+	// unexplored systems have no population (that we know about), and nobody lives in a pulsar's system:
+	// its radiation is deadly and there is nothing there worth the risk
+	if (system->GetExplored() != StarSystem::eEXPLORED_AT_START || HasPulsar(system)) {
 		sbody->m_population = outTotalPop = fixed();
 		return;
 	}
@@ -1969,7 +2000,8 @@ bool PopulateStarSystemGenerator::Apply(Random &rng, RefCountedPtr<Galaxy> galax
 	SetSysPolit(sec, system, system->GetTotalPop());
 	SetCommodityLegality(system);
 
-	if (addSpaceStations) {
+	// no stations or bases in a pulsar's system
+	if (addSpaceStations && !HasPulsar(system.Get())) {
 		PopulateAddStations(system->GetRootBody().Get(), system.Get());
 	}
 

@@ -252,6 +252,9 @@ bool SectorRandomSystemsGenerator::Apply(Random &rng, RefCountedPtr<Galaxy> gala
 				s.m_starType[0] = SystemBody::TYPE_STAR_K;
 			} else if (weight < 250000) { // weight < 250000
 				s.m_starType[0] = SystemBody::TYPE_WHITE_DWARF;
+			} else if (weight < 250003) {
+				// pulsars, 3 in a million, taken from the red dwarfs: about the real rate of active pulsars
+				s.m_starType[0] = SystemBody::TYPE_STAR_NEUTRON;
 			} else if (weight < 900000) { //weight < 900000
 				s.m_starType[0] = SystemBody::TYPE_STAR_M;
 			} else {
@@ -281,15 +284,26 @@ bool SectorRandomSystemsGenerator::Apply(Random &rng, RefCountedPtr<Galaxy> gala
 		}
 		//Output("%d: %d%\n", sx, sy);
 
+		// A pulsar's partners can only be brown dwarfs, white dwarfs or red dwarfs: the explosion that made it
+		// throws bigger partners away. This also stops "anything up to the main star's type" picking giants
+		// and black holes, as the neutron star comes last in the list of star types.
+		const bool pulsar = s.m_starType[0] == SystemBody::TYPE_STAR_NEUTRON;
+		const SystemBody::BodyType partnerMax = pulsar ? SystemBody::TYPE_STAR_M : s.m_starType[0];
+
 		if (s.m_numStars > 1) {
-			s.m_starType[1] = SystemBody::BodyType(rng.Int32(SystemBody::TYPE_STAR_MIN, s.m_starType[0]));
+			s.m_starType[1] = SystemBody::BodyType(rng.Int32(SystemBody::TYPE_STAR_MIN, partnerMax));
 			if (s.m_numStars > 2) {
-				s.m_starType[2] = SystemBody::BodyType(rng.Int32(SystemBody::TYPE_STAR_MIN, s.m_starType[0]));
+				s.m_starType[2] = SystemBody::BodyType(rng.Int32(SystemBody::TYPE_STAR_MIN, partnerMax));
 				s.m_starType[3] = SystemBody::BodyType(rng.Int32(SystemBody::TYPE_STAR_MIN, s.m_starType[2]));
 			}
 		}
 
-		if ((s.m_starType[0] <= SystemBody::TYPE_STAR_A) && (rng.Int32(10) == 0)) {
+		if (pulsar) {
+			// Pulsars took the place of some red dwarfs. Draw the same random numbers the red dwarf would
+			// have drawn for its chance to be a giant, so the other systems in the sector stay as they were.
+			if (rng.Int32(10) == 0 && freq > Square(10))
+				rng.Int32(1000);
+		} else if ((s.m_starType[0] <= SystemBody::TYPE_STAR_A) && (rng.Int32(10) == 0)) {
 			// make primary a giant. never more than one giant in a system
 			if (freq > Square(10)) {
 				const Uint32 weight = rng.Int32(1000);
