@@ -56,6 +56,7 @@ GameConfig::GameConfig(const map_string &override_)
 	map["TerrainLandformShade"] = "0.75"; // how much those landforms darken their hollows and pale their crests in the ground's colour, as craters do (0 off, at most 1)
 	map["TerrainMorph"] = "1"; // where the ground's detail meets a coarser level, a strip blends into it, so no line between them; new detail fades in (terrain-morph.glsl)
 	map["TerrainMorphWidth"] = "0.5"; // the strip's width, a share of a square of ground
+	map["ShadowGroundShare"] = "0.004"; // ground this share of its distance below the ground in the cached middle and far sun shadow maps isn't in their shadow (SceneShadows.cpp)
 	map["PlanetOrbitSurface"] = "2"; // how planets are drawn from high orbit: 1 surface tiles, 2 surface tiles at full detail
 	map["TerrainTileBicubic"] = "1"; // read the surface tiles with a sharper filter
 	map["TerrainSurfaceTiles"] = "1"; // bake colour and normal tiles for nearby terrain patches at twice their vertex density (TerrainSurfaceTiles.h, 128 MB of video memory)

@@ -11,6 +11,8 @@
 #include "core/Log.h"
 #include "vector3.h"
 
+#include <algorithm>
+#include <chrono>
 #include <deque>
 
 namespace Graphics {
@@ -45,7 +47,13 @@ public:
 
 	// the terrain mesh along p (GeoPatch::GetDrawnRadius)
 	bool GetDrawnRadius(const vector3d &p, double &radius) const override;
-	uint32_t GetMeshVersion() const override { return m_meshVersion; }
+	// Changes as the mesh does: patches split or merged, and every frame while new patches fade in from their parents'
+	// shape (GeoPatch::SetMorphConstants), so the sun's cached shadow maps are drawn again as the ground changes.
+	uint32_t GetMeshVersion() const override { return m_meshVersion + m_fadeVersion; }
+	// changes when patches split or merge only
+	uint32_t GetTreeVersion() const { return m_meshVersion; }
+	// a patch fades in from its parent's shape until then
+	void NoteFadeIn(std::chrono::steady_clock::time_point until) { m_fadingUntil = std::max(m_fadingUntil, until); }
 	// the depth of the patch drawn along dir (unit, planet-fixed), -1 if none (GeoPatch::DrawnDepthAt)
 	int DrawnDepthAt(const vector3d &dir) const;
 	void MarkMeshChanged() { m_meshVersion++; }
@@ -334,6 +342,9 @@ private:
 	Sint32 m_maxDepth;
 	Sint32 m_extraDepth = 0;
 	uint32_t m_meshVersion = 0;
+	// counts the frames drawn while patches fade in (GetMeshVersion)
+	uint32_t m_fadeVersion = 0;
+	std::chrono::steady_clock::time_point m_fadingUntil;
 
 	// effective terrain detail distance for this frame, see GetLodDistance()
 	double m_lodDistance = 8.0;

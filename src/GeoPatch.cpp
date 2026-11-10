@@ -421,10 +421,12 @@ void GeoPatch::UpdateVBOs(Graphics::Renderer *renderer)
 		// wheels from them (GetDrawnRadius, P4d of the OpenGL 4.6 plan). Until 2026-11-10 all but those dropped their
 		// normals and colours here: keeping them costs about 32 bytes a vertex, some 40 MB of memory near the ground.
 
-		// it fades in from its parent's look from now (SetMorphConstants)
+		// it fades in from its parent's look from now (SetMorphConstants), the ground changing shape meanwhile
 		if (!m_shown) {
 			m_shown = true;
 			m_shownAt = std::chrono::steady_clock::now();
+			if (m_hasMorph)
+				m_geosphere->NoteFadeIn(m_shownAt + std::chrono::milliseconds(int(MORPH_FADE_IN_SECONDS * 1000.0)));
 		}
 
 #if DEBUG_PATCHES
@@ -517,7 +519,7 @@ void GeoPatch::RenderImmediate(Graphics::Renderer *renderer, const vector3d &cam
 		// the blend towards the parent's surface (terrain-morph.glsl), and the parent's surface tile with it, so the
 		// patch takes on the parent's tile as it takes on its shape (terrain-far.glsl): the part of it this patch covers
 		// (as FindTile), and how far it has faded in, 0 without one
-		SetMorphConstants(m_geosphere->GetSurfaceMaterial().Get(), false);
+		SetMorphConstants(m_geosphere->GetSurfaceMaterial().Get());
 		vector3f parentTile(0.0f);
 		float parentWeight = 0.0f;
 		const TerrainSurfaceTiles *atlas = TerrainSurfaceTiles::Instance();
@@ -580,7 +582,7 @@ void GeoPatch::RenderShadowCaster(Graphics::Renderer *renderer, const matrix4x4d
 			m_kids[i]->RenderShadowCaster(renderer, unitToLight, radius, lightBox, material);
 	} else if (HasHeightData() && m_patchVBOData->m_patchMesh) {
 		renderer->SetTransform(matrix4x4f(unitToLight * matrix4x4d::Translation(m_clipCentroid)));
-		SetMorphConstants(material, true);
+		SetMorphConstants(material);
 		renderer->DrawMesh(m_patchVBOData->m_patchMesh.get(), material);
 	}
 }
@@ -616,18 +618,20 @@ double GeoPatch::SplitLength(const vector3d &campos) const
 	return splitLength;
 }
 
-void GeoPatch::SetMorphConstants(Graphics::Material *material, const bool shadow) const
+void GeoPatch::SetMorphConstants(Graphics::Material *material) const
 {
 	// Along each edge that meets a coarser patch, a strip of the patch takes on its parent's surface: all of it at the
 	// edge, where it then matches the coarser neighbour, none of it the strip's width in (GeoSphere::MorphWidth). The
-	// rest keeps its own detail at any distance. And a patch just made fades in from its parent's look.
+	// rest keeps its own detail at any distance. And a patch just made fades in from its parent's look: in the sun's
+	// shadow maps too, or for that while its crests and rims lay below their own shadows, and flickered black (2026-11-10).
+	// (GeoSphere::GetMeshVersion changes meanwhile, so the cached maps follow.)
 	if (!m_hasMorph || !GeoSphere::MorphEnabled()) {
 		material->SetPushConstant("PatchMorphRange"_hash, vector3f(0.25f, 0.0f, 0.0f), 0.0f);
 		return;
 	}
 	UpdateCoarseEdges();
 	float fadeIn = 0.0f;
-	if (m_shown && !shadow) {
+	if (m_shown) {
 		const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - m_shownAt).count();
 		fadeIn = float(1.0 - Clamp(seconds / MORPH_FADE_IN_SECONDS, 0.0, 1.0));
 	}
@@ -637,7 +641,7 @@ void GeoPatch::SetMorphConstants(Graphics::Material *material, const bool shadow
 
 void GeoPatch::UpdateCoarseEdges() const
 {
-	const Uint32 version = m_geosphere->GetMeshVersion();
+	const Uint32 version = m_geosphere->GetTreeVersion();
 	if (m_coarseEdgesVersion == version)
 		return;
 	m_coarseEdgesVersion = version;

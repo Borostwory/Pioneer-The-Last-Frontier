@@ -1018,6 +1018,26 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 			ImGui::TextColored(dim, "Where a square of ground meets a coarser one, a strip along that edge takes on the coarser look, all of");
 			ImGui::TextColored(dim, "it at the edge (no line); the rest keeps its full detail at any distance. New squares fade in over 0.6 s");
 			ImGui::TextColored(dim, "from the coarser look instead of popping. Red shows the strips and the fading.");
+
+			// the distant shadow maps' tolerance for ground that changed since they were drawn (SceneShadows.cpp)
+			// (in thousandths of the distance)
+			static float s_tolerance = 1000.0f * Pi::config->Float("ShadowGroundShare", 0.004f);
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+			if (ImGui::SliderFloat("distant shadows: ground tolerance (thousandths of its distance)##morph", &s_tolerance, 0.0f, 20.0f, "%.1f"))
+				Pi::config->SetFloat("ShadowGroundShare", 0.001f * s_tolerance);
+			if (ImGui::IsItemDeactivatedAfterEdit())
+				Pi::config->Save();
+			ImGui::TextColored(dim, "The middle and far sun shadow maps are kept and redrawn now and then; ground that came out lower since");
+			ImGui::TextColored(dim, "went black in them. 4: ground 10 km away may lie 40 m lower, 1 km away 4 m. Higher: less black, but small");
+			ImGui::TextColored(dim, "shadows in the distance are lost. 0: as before.");
+
+			// finding where black shadows come from (SceneShadows.cpp): live
+			bool shadowTint = Pi::config->Int("ShadowDebug", 0) != 0;
+			if (ImGui::Checkbox("Tint by sun shadow map: red near, green middle, blue far##morph", &shadowTint))
+				Pi::config->SetInt("ShadowDebug", shadowTint ? 1 : 0);
+			bool distantMaps = Pi::config->Int("ShadowDistantMaps", 1) != 0;
+			if (ImGui::Checkbox("Middle and far sun shadow maps (off: near one only)##morph", &distantMaps))
+				Pi::config->SetInt("ShadowDistantMaps", distantMaps ? 1 : 0);
 		}
 	}
 

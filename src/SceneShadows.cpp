@@ -45,8 +45,18 @@ namespace {
 	// or this much game time has passed (station doors and the like)
 	constexpr double CACHE_REDRAW_SECONDS = 5.0;
 	// or the terrain's mesh has changed, and this much real time has passed: a floor refined below the coarser ground still
-	// in the map would be in its shadow, as black blobs
-	constexpr double CACHE_REDRAW_MESH_SECONDS = 0.5;
+	// in the map would be in its shadow, as black blobs (0.5 s until 2026-11-10: black crater floors for that long)
+	constexpr double CACHE_REDRAW_MESH_SECONDS = 0.1;
+	// Ground drawn up to this share of its distance from the camera below the ground in a cached (mid or far) map isn't
+	// in its shadow (config ShadowGroundShare, the debug window). The ground changes between the redraws of those maps:
+	// as the camera comes in, finer patches keep replacing coarser ones, and wherever the new ground lies lower than the
+	// map has it, it went black, flickering, and fading as the camera came closer (2026-11-10). How much it can change
+	// goes with how coarse it is, and that with the distance: its vertices are about 1/240 to 1/480 of the distance
+	// apart (the terrain detail distance of 15 patch widths, 32 gaps a patch), and a level's craters about that deep. So
+	// the tolerance goes with the distance too; shadows of what's smaller than that are lost, as the mesh can't hold
+	// them anyway. (Until then a share of the map's texels: half a metre in the middle map, far too little.)
+	// (4 thousandths set in game on Mercury, 2026-11-10)
+	constexpr double GROUND_TOLERANCE_SHARE = 0.004;
 
 	// parked ships and stations stay put long enough for the cached maps
 	bool IsStaticCaster(const Body *b)
@@ -360,12 +370,22 @@ void SceneShadows::Begin(const CameraContext *camera, const Graphics::Light &sun
 
 	Graphics::ShadowDataBlock data;
 	Graphics::Texture *maps[NUM_CASCADES];
+	const double groundTolerance = Clamp(double(Pi::config->Float("ShadowGroundShare", float(GROUND_TOLERANCE_SHARE))), 0.0, 0.05);
+	const bool distantMaps = Pi::config->Int("ShadowDistantMaps", 1) != 0;
 	for (int i = 0; i < NUM_CASCADES; i++) {
 		const Cascade &c = m_cascades[i];
 		data.cascadeMatrix[i] = matrix4x4f(BoxProjection(c.box, true) * viewToLight(c));
+		// (the debug window can leave out the middle and far maps, config ShadowDistantMaps: everything then maps
+		// beyond their depth, so the shaders take nothing from them)
+		if (i > 0 && !distantMaps) {
+			matrix4x4f none = matrix4x4f::ScaleMatrix(0.0f, 0.0f, 0.0f);
+			none[14] = 10.0f;
+			data.cascadeMatrix[i] = none;
+		}
 		data.cascadeParams[i][0] = float((c.box.max.x - c.box.min.x) / c.size); // texel size
 		data.cascadeParams[i][1] = float(1.0 / (c.box.max.z - c.box.min.z));	  // depth per metre
-		data.cascadeParams[i][2] = 0.f;
+		// (none in the near map, redrawn each frame with the ground as drawn)
+		data.cascadeParams[i][2] = i == 0 ? 0.f : float(groundTolerance); // the ground's tolerance, a share of its distance
 		data.cascadeParams[i][3] = 0.f;
 		maps[i] = c.target->GetDepthTexture();
 	}

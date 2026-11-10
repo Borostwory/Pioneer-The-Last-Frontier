@@ -1410,6 +1410,9 @@ void GeoSphere::Render(Graphics::Renderer *renderer, const matrix4x4d &modelView
 	m_hasTempCampos = true;
 	// the blend between detail levels, as switched (each patch asks as it's drawn, in the shadow maps too)
 	RefreshMorphSettings();
+	// while patches fade in the ground changes shape each frame: the cached shadow maps must follow (GetMeshVersion)
+	if (std::chrono::steady_clock::now() < m_fadingUntil)
+		m_fadeVersion++;
 
 	if (m_initStage < eDefaultUpdateState)
 		return;

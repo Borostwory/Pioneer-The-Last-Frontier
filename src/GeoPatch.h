@@ -150,9 +150,8 @@ public:
 	// LODUpdate decides it this frame
 	double SplitLength(const vector3d &campos) const;
 	// Sets the blend towards the parent's surface for drawing this patch (terrain-morph.glsl): PatchMorph and
-	// PatchMorphRange on the material. shadow: for the sun's shadow maps, which take the patch as it ends up, without
-	// the fade-in of a patch just made
-	void SetMorphConstants(Graphics::Material *material, bool shadow) const;
+	// PatchMorphRange on the material, for the ground and the sun's shadow maps alike, so the shadows fit the ground
+	void SetMorphConstants(Graphics::Material *material) const;
 	// the depth of the patch drawn along dir (unit): the deepest under this one with dir on it; -1 if dir is off it
 	int DrawnDepthAt(const vector3d &dir) const;
 
@@ -246,7 +245,7 @@ private:
 	// patches of its level across the face
 	int m_gridX = 0, m_gridY = 0;
 	// 1 for each edge that meets a coarser patch: at x = 0, x = 1, y = 0, y = 1 of the patch coordinates; worked out
-	// again when the mesh changes (m_coarseEdgesVersion, GeoSphere::GetMeshVersion)
+	// again when patches split or merge (m_coarseEdgesVersion, GeoSphere::GetTreeVersion)
 	void UpdateCoarseEdges() const;
 	mutable float m_coarseEdges[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	mutable Uint32 m_coarseEdgesVersion = ~0u;

@@ -12,7 +12,7 @@
 
 layout(std140) uniform ShadowData {
 	mat4 shadowMatrix[3];  // view space -> shadow map coordinates (xy 0..1, z depth)
-	vec4 shadowCascade[3]; // x: texel size (m), y: depth per metre
+	vec4 shadowCascade[3]; // x: texel size (m), y: depth per metre, z: the ground's tolerance (a share of its distance)
 	vec4 shadowState;      // x: 1 while the shadow maps are valid, y: share of the sunlight a shadow removes, z: 1 to tint by cascade
 };
 
@@ -31,6 +31,9 @@ vec3 shadowCoord(int cascade, vec3 pos, vec3 normal, float cosLight)
 	float sinLight = sqrt(1.0 - cosLight * cosLight);
 	vec3 c = (shadowMatrix[cascade] * vec4(pos + normal * (texel * (0.5 + sinLight)), 1.0)).xyz;
 	c.z += texel * (0.2 + 0.5 * min(sinLight / cosLight, 10.0)) * shadowCascade[cascade].y;
+	// and the cached maps' tolerance for ground that changed since they were drawn, a share of its distance from the
+	// camera (SceneShadows.cpp)
+	c.z += shadowCascade[cascade].z * length(pos) * shadowCascade[cascade].y;
 	return c;
 }
 

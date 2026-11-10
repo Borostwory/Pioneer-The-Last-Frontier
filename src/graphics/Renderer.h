@@ -48,7 +48,7 @@ namespace Graphics {
 		static constexpr int NUM_CASCADES = 3; // near, mid, far
 
 		matrix4x4f cascadeMatrix[NUM_CASCADES]; // view space -> shadow map coordinates (xy 0..1, z depth)
-		float cascadeParams[NUM_CASCADES][4];	 // normal offset (m), depth bias, unused, unused
+		float cascadeParams[NUM_CASCADES][4];	 // texel size (m), depth per metre, the ground's tolerance (share of its distance), unused
 		float state[4];							 // x: 1 while the shadow maps are valid, y: share of the sunlight a shadow removes
 	};
 	static_assert(sizeof(ShadowDataBlock) == 256, "ShadowDataBlock must match the std140 layout of ShadowData");
