@@ -1135,6 +1135,22 @@
     "description": "",
     "message": "Edit Note"
   },
+  "EDGE_SMOOTHING": {
+    "description": "Settings window, Video tab: drop-down for the anti-aliasing done on the finished picture (off, FXAA, SMAA)",
+    "message": "Anti-aliasing"
+  },
+  "EDGE_SMOOTHING_DESC": {
+    "description": "Settings window, Video tab: tooltip of the 'Anti-aliasing' drop-down",
+    "message": "Smooths the jagged edges of ships, buildings and the ground. FXAA costs the least but softens fine detail a little; SMAA is sharper. Applied immediately."
+  },
+  "EDGE_SMOOTHING_FXAA": {
+    "description": "Settings window, Video tab: 'Anti-aliasing' choice, the cheaper kind",
+    "message": "FXAA"
+  },
+  "EDGE_SMOOTHING_SMAA": {
+    "description": "Settings window, Video tab: 'Anti-aliasing' choice, the sharper kind",
+    "message": "SMAA"
+  },
   "EFFECTS": {
     "description": "",
     "message": "Effects:"

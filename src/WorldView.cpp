@@ -15,6 +15,7 @@
 #include "Json.h"
 #include "Pi.h"
 #include "Player.h"
+#include "ScreenEffects.h"
 #include <SDL_keycode.h>
 #include "SectorView.h"
 #include "Sensors.h"
@@ -240,6 +241,10 @@ void WorldView::Draw3D()
 	// NB: Do any screen space rendering after here:
 	// Things like the cockpit and AR features like hudtrails, space dust etc.
 	m_viewController->Draw(m_camera.get());
+
+	// the world's jagged edges smoothed, the cockpit's too, before the HUD and the screen's menus and text
+	// (ScreenEffects.h)
+	ScreenEffects::DrawEdgeSmoothing(m_renderer);
 
 	// the ship's 3D HUD is not shown out of the ship
 	const bool offShip = m_game->GetExcursion()->IsOffShip();

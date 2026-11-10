@@ -1,0 +1,16 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# SMAA, step 2 of 3: the blend weights (ScreenEffects.cpp)
+Shader smaa_weights
+
+Texture sampler2D edgesTex
+Texture sampler2D areaTex
+Texture sampler2D searchTex
+
+Buffer DrawData binding=1
+
+PushConstant vec4 EdgeScreen binding=0
+
+Vertex "smaa_weights.vert"
+Fragment "smaa_weights.frag"

@@ -150,6 +150,14 @@ local function showVideoOptions()
 		Engine.SetVideoResolution(mode.width,mode.height)
 	end
 
+	-- Anti-aliasing on the finished picture (src/ScreenEffects.cpp): 0 off, 1 FXAA, 2 SMAA; applied immediately
+	local edgeSmoothingLabels = { lui.OFF, lui.EDGE_SMOOTHING_FXAA, lui.EDGE_SMOOTHING_SMAA }
+	local edgeSmoothing = math.max(0, math.min(2, Engine.SettingsGetInt("EdgeSmoothing")))
+	c,edgeSmoothing = combo(lui.EDGE_SMOOTHING, edgeSmoothing, edgeSmoothingLabels, lui.EDGE_SMOOTHING_DESC)
+	if c then
+		Engine.SettingsSetInt("EdgeSmoothing", edgeSmoothing)
+	end
+
 	-- (locked: forced in GameConfig.cpp)
 	ui.text(lui.MULTISAMPLING .. ": " .. lui.OFF)
 	ui.text(lui.REALISTIC_SCATTERING .. ": " .. lui.RAYLEIGH_ACCURATE)

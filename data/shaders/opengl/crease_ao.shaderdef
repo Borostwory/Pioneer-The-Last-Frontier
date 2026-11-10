@@ -1,0 +1,16 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# Crease shading, step 2: the shade in creases and where things meet (GTAO), at half the screen's size (ScreenEffects.cpp)
+Shader crease_ao
+
+Texture sampler2D sceneDist
+
+Buffer DrawData binding=1
+
+PushConstant vec4 CreaseProj binding=0
+PushConstant vec4 CreaseScreen binding=1
+PushConstant vec4 CreaseParams binding=2
+
+Vertex "screen_pass.vert"
+Fragment "crease_ao.frag"

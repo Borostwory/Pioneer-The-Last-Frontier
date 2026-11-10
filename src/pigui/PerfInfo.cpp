@@ -15,6 +15,7 @@
 #include "Planet.h"
 #include "Pi.h"
 #include "Player.h"
+#include "ScreenEffects.h"
 #include "SectorView.h"
 #include "Space.h"
 #include "TerrainSurfaceTiles.h"
@@ -1116,6 +1117,44 @@ void PiGui::PerfInfo::DrawOpenGLPlan()
 		}
 		ImGui::TextColored(dim, "Should look the same. GPU time: \"atmosphere\" (the sky) and \"sky table\" (filling the table) in the log.");
 		ImGui::TextColored(dim, "Only with the realistic scattering setting at its highest; from outside the air the sky works as before.");
+	}
+
+	// passes over the whole picture (ScreenEffects.h)
+	ImGui::Spacing();
+	ImGui::SeparatorText("Screen effects: crease shading and anti-aliasing");
+	{
+		bool creases = ScreenEffects::CreasesEnabled();
+		if (ImGui::Checkbox("Shade in creases##screenEffects", &creases)) {
+			Pi::config->SetInt("CreaseShade", creases ? 1 : 0);
+			Pi::config->Save();
+			FrontierLog::Note(std::string("crease shading: ") + (creases ? "on" : "off"));
+		}
+		if (ScreenEffects::CreasesFailed())
+			ImGui::TextColored(no, "Its shaders didn't compile (see the log); it stays off.");
+		const auto slider = [](const char *label, const char *key, float def, float lo, float hi, const char *format, const char *note) {
+			float value = std::clamp(Pi::config->Float(key, def), lo, hi);
+			ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+			if (ImGui::SliderFloat(label, &value, lo, hi, format))
+				Pi::config->SetFloat(key, value);
+			if (ImGui::IsItemDeactivatedAfterEdit()) {
+				Pi::config->Save();
+				FrontierLog::Note(fmt::format("{} {}", note, value));
+			}
+		};
+		slider("strength##creaseStrength", "CreaseShadeStrength", 1.5f, 0.0f, 4.0f, "x %.2f", "crease shading: strength");
+		slider("reach##creaseReach", "CreaseShadeReach", 1.0f, 0.1f, 4.0f, "%.2f m", "crease shading: reach (m)");
+		slider("without air##creaseVacuum", "CreaseShadeVacuum", 0.5f, 0.0f, 1.0f, "%.2f", "crease shading: share without air");
+		ImGui::TextColored(dim, "GTAO: the sky hidden by what rises round each point, out to the reach. Fades out from 200 to 800 m away.");
+		ImGui::TextColored(dim, "Strength: x1 as worked out, more darker. Without air: its strength there, as a share of in Earth's air.");
+		ImGui::TextColored(dim, "It darkens the picture as drawn, sunlit or not. GPU time: \"creases\" in the log.");
+
+		// (chosen in the settings window, Video tab: Anti-aliasing)
+		static const char *const modeNames[3] = { "off", "FXAA", "SMAA" };
+		const int mode = ScreenEffects::EdgeSmoothingMode();
+		ImGui::Text("Anti-aliasing: %s (set in the settings window, Video tab)", modeNames[mode]);
+		if (ScreenEffects::EdgeSmoothingFailed(mode))
+			ImGui::TextColored(no, "Its shaders didn't compile (see the log); it stays off.");
+		ImGui::TextColored(dim, "GPU time: \"edge smoothing\" in the log. Smooths each picture on its own: the shimmer of distant textures as you move stays.");
 	}
 
 	// P6: compute fills an image every frame while ticked, and the tessellation stages compile and link

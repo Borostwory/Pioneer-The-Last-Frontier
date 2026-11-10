@@ -32,6 +32,7 @@
 #include "Projectile.h"
 #include "SaveGameManager.h"
 #include "SectorView.h"
+#include "ScreenEffects.h"
 #include "Sfx.h"
 #include "Shields.h"
 #include "ShipType.h"
@@ -446,6 +447,7 @@ void Pi::App::OnShutdown()
 	NavLights::Uninit();
 	Shields::Uninit();
 	SfxManager::Uninit();
+	ScreenEffects::Uninit();
 	Sound::Uninit();
 	CityOnPlanet::Uninit();
 	BaseSphere::Uninit();

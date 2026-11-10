@@ -1,0 +1,15 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# SMAA, step 3 of 3: the blending (ScreenEffects.cpp)
+Shader smaa_blend
+
+Texture sampler2D colourTex
+Texture sampler2D blendTex
+
+Buffer DrawData binding=1
+
+PushConstant vec4 EdgeScreen binding=0
+
+Vertex "smaa_blend.vert"
+Fragment "smaa_blend.frag"

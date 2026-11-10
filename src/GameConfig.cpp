@@ -58,6 +58,11 @@ GameConfig::GameConfig(const map_string &override_)
 	map["ShadowDistance"] = "10000";  // metres around the camera with shadows of terrain, stations, cities and parked ships
 	map["ShadowStrength"] = "75";    // percent of the sunlight a shadow removes under an Earth-like sky (always 100 in vacuum)
 	map["ShadowDebug"] = "0";        // 1: tint by shadow map, near red, mid green, far blue
+	map["EdgeSmoothing"] = "2";      // anti-aliasing on the finished picture: 0 off, 1 FXAA, 2 SMAA (ScreenEffects.cpp; the settings window's Video tab)
+	map["CreaseShade"] = "0";        // soft shade in creases and where things meet the ground (GTAO, ScreenEffects.cpp): off; a switch in the debug window only
+	map["CreaseShadeStrength"] = "1.5"; // the visible sky to this power: 1 as worked out, more darker
+	map["CreaseShadeReach"] = "1.0"; // metres, up to 4
+	map["CreaseShadeVacuum"] = "0.5"; // its strength without air, as a share of in Earth's air
 	map["CityLights"] = "100";       // percent: brightness of the cities' street lamps and building lights at night, 0 off (CityOnPlanet.h)
 	map["CityGlow"] = "100";         // percent: brightness of the starport cities' lights seen from afar at night, 0 off (city-glow.glsl)
 	map["CloudsEnabled"] = "1";

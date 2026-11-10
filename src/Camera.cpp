@@ -13,6 +13,7 @@
 #include "PlanetClouds.h"
 #include "Player.h"
 #include "SceneShadows.h"
+#include "ScreenEffects.h"
 #include "Sfx.h"
 #include "Ship.h"
 #include "Space.h"
@@ -332,6 +333,19 @@ void Camera::Update()
 	m_sortedBodies.sort();
 }
 
+// How much air there is round the camera, for the crease shading: 0 none, 1 Earth's at its surface or more
+static double AirAtCamera(const Frame *camFrame, FrameId camFrameId)
+{
+	const Frame *parent = camFrame ? Frame::GetFrame(camFrame->GetParent()) : nullptr;
+	const Body *body = parent ? parent->GetBody() : nullptr;
+	if (!body || !body->IsType(ObjectType::PLANET))
+		return 0.0;
+	const Planet *planet = static_cast<const Planet *>(body);
+	double pressure, density;
+	planet->GetAtmosphericState(planet->GetInterpPositionRelTo(camFrameId).Length(), &pressure, &density);
+	return Clamp(density / EARTH_ATMOSPHERE_SURFACE_DENSITY, 0.0, 1.0);
+}
+
 void Camera::Draw(const Body *excludeBody)
 {
 	PROFILE_SCOPED()
@@ -458,6 +472,10 @@ void Camera::Draw(const Body *excludeBody)
 	m_renderer->EndGpuTimer();
 	RestoreLighting();
 	m_shadows->End();
+
+	// soft shade in creases and where things meet the ground, over the solid things drawn so far, before anything
+	// see-through (ScreenEffects.h)
+	ScreenEffects::DrawCreases(m_renderer, AirAtCamera(camFrame, camFrameId));
 
 	// Engine flames write no depth, so the clouds would be composited over
 	// them wherever there is cloud behind them. Those the clouds may hide

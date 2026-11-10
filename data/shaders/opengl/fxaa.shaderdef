@@ -1,0 +1,14 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# Edge smoothing, the simple way: FXAA on the finished picture (ScreenEffects.cpp)
+Shader fxaa
+
+Texture sampler2D colourTex
+
+Buffer DrawData binding=1
+
+PushConstant vec4 EdgeScreen binding=0
+
+Vertex "screen_pass.vert"
+Fragment "fxaa.frag"
