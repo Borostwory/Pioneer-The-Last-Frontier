@@ -454,6 +454,7 @@ void Pi::App::OnShutdown()
 	Shields::Uninit();
 	SfxManager::Uninit();
 	ScreenEffects::Uninit();
+	Star::UninitLens();
 	Sound::Uninit();
 	CityOnPlanet::Uninit();
 	BaseSphere::Uninit();

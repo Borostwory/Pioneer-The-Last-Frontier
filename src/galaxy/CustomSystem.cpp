@@ -1192,12 +1192,13 @@ static void checks(CustomSystemBody &csb)
 	if (csb.bodyData.m_type == SystemBody::TYPE_STAR_S_BH ||
 		csb.bodyData.m_type == SystemBody::TYPE_STAR_IM_BH ||
 		csb.bodyData.m_type == SystemBody::TYPE_STAR_SM_BH) {
+		// a black hole's size is its event horizon, the Schwarzschild radius 2GM/c^2: set from its mass whatever
+		// the file says, so its shadow comes out the right size (Star::RenderBlackHoleLens)
 		double schwarzschild = 2 * csb.bodyData.m_mass.ToDouble() * ((G * SOL_MASS) / (LIGHT_SPEED * LIGHT_SPEED));
 		schwarzschild /= SOL_RADIUS;
-		if (csb.bodyData.m_radius < schwarzschild) {
-			Output("Warning: Blackhole radius defaulted to Schwarzschild radius (%f Sol radii)\n", schwarzschild);
-			csb.bodyData.m_radius = schwarzschild;
-		}
+		csb.bodyData.m_radius = fixed::FromDouble(schwarzschild);
+		// and it gives no light: without a temperature set, its colour was never worked out
+		csb.bodyData.GenerateStarColor();
 	}
 }
 

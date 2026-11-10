@@ -44,6 +44,9 @@ public:
 	// Slowly turning angles (radians, wrapped) that animate the star shaders seamlessly
 	static vector3f GetAnimationAngles();
 
+	// Frees the black hole light bending's textures and material (at shutdown)
+	static void UninitLens();
+
 protected:
 	void InitStar();
 	void BuildHaloBuffer(Graphics::Renderer *renderer);
@@ -51,6 +54,10 @@ protected:
 	// fpos is the star's scaled view position; glowRadius and jetLength are scaled the same way.
 	void RenderPulsar(Graphics::Renderer *renderer, const vector3d &fpos, const matrix4x4d &faceCamera,
 		double glowRadius, double jetLength, const matrix4x4d &viewTransform);
+	// A black hole: the picture behind it bent by its gravity, and its black shadow (black_hole_lens.frag).
+	// Returns false if it couldn't be drawn, so the plain black sphere is drawn instead.
+	bool RenderBlackHoleLens(Graphics::Renderer *renderer, const Camera *camera, const vector3d &viewCoords,
+		const matrix4x4d &viewTransform);
 
 	std::unique_ptr<Graphics::Material> m_haloMat;
 	std::unique_ptr<Graphics::MeshObject> m_haloMesh;

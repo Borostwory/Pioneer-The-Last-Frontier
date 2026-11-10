@@ -1,0 +1,19 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+# A black hole: the picture behind it bent by its gravity, and its shadow (Star::RenderBlackHoleLens)
+Shader black_hole_lens
+
+Texture sampler2D sceneTex
+Texture samplerCube skyTex
+
+Buffer DrawData binding=1
+
+PushConstant vec4 LensHole binding=0
+PushConstant vec4 LensProj binding=1
+PushConstant vec4 SkyX binding=2
+PushConstant vec4 SkyY binding=3
+PushConstant vec4 SkyZ binding=4
+
+Vertex "screen_pass.vert"
+Fragment "black_hole_lens.frag"

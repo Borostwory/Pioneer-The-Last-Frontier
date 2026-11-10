@@ -217,6 +217,13 @@ const vector3d nm_to_rgb[48] = {
 
 void SystemBodyData::GenerateStarColor()
 {
+	// a black hole gives no light (its look is the light it bends, see Star::RenderBlackHoleLens)
+	if (m_type == SystemBodyType::TYPE_STAR_S_BH || m_type == SystemBodyType::TYPE_STAR_IM_BH ||
+		m_type == SystemBodyType::TYPE_STAR_SM_BH) {
+		m_starColor = Color(0, 0, 0, 255);
+		return;
+	}
+
 	// https://www.shadertoy.com/view/NlGXzz
 
 	// [360-830 nm]

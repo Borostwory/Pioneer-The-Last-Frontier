@@ -3,13 +3,21 @@
 
 #include "Star.h"
 
+#include "Background.h"
+#include "Camera.h"
+#include "Game.h"
 #include "Pi.h"
+#include "Space.h"
+#include "core/Log.h"
 #include "core/StringHash.h"
 #include "galaxy/StarSystem.h"
 #include "galaxy/SystemBody.h"
+#include "graphics/Graphics.h"
 #include "graphics/Material.h"
+#include "graphics/RenderTarget.h"
 #include "graphics/Renderer.h"
 #include "graphics/RenderState.h"
+#include "graphics/Texture.h"
 #include "graphics/Types.h"
 #include "graphics/VertexArray.h"
 #include "graphics/VertexBuffer.h"
@@ -17,7 +25,7 @@
 namespace {
 	// length of each pulsar jet: 0.08 AU, so arriving from hyperspace (about 0.13 AU out) they fill much of the view
 	const double PULSAR_JET_LENGTH = 0.08 * AU;
-	// half the width of the strip the jets are drawn on, as a fraction of their length; it leaves room for the twist and the curl at the tip
+	// half the width of the strip the jets are drawn on, as a fraction of their length; it leaves room for the twist
 	constexpr double PULSAR_JET_HALF_WIDTH = 0.2;
 	// radius of the glow quad, as a fraction of the jet length; the flare line runs out to its edge
 	constexpr double PULSAR_GLOW_SIZE = 0.5;
@@ -27,7 +35,124 @@ namespace {
 	constexpr double PULSAR_WOBBLE_PERIOD = 7.0;
 	// the gas streaming out along the jets wraps round after this many seconds
 	constexpr double PULSAR_FLOW_WRAP = 3600.0;
+
+	bool IsBlackHole(SystemBody::BodyType type)
+	{
+		return type == SystemBody::TYPE_STAR_S_BH || type == SystemBody::TYPE_STAR_IM_BH || type == SystemBody::TYPE_STAR_SM_BH;
+	}
+
+	// a black hole's Schwarzschild radius, 2GM/c^2, in metres
+	double SchwarzschildRadius(const SystemBody *sbody)
+	{
+		return 2.0 * G * sbody->GetMass() / (LIGHT_SPEED * LIGHT_SPEED);
+	}
+
+	// How far round a black hole its light bending is drawn, in Schwarzschild radii. Its clip radius: the hole is drawn
+	// (not culled, nor drawn as a dot) while this much of the sky around it is in view. The bending there is tiny: the
+	// shader leaves out what moves less than a fraction of a pixel.
+	constexpr double LENS_REACH = 1.0e4;
+	// size of each face of the sky snapshot the light bending reads, in pixels
+	constexpr Uint16 SKY_SIZE = 2048;
+
+	// cubemap faces in OpenGL order (+X, -X, +Y, -Y, +Z, -Z): view direction and up vector,
+	// as for the hyperspace snapshot (WorldView.cpp)
+	const vector3d SKY_FACES[6][2] = {
+		{ { 1, 0, 0 }, { 0, -1, 0 } },
+		{ { -1, 0, 0 }, { 0, -1, 0 } },
+		{ { 0, 1, 0 }, { 0, 0, 1 } },
+		{ { 0, -1, 0 }, { 0, 0, -1 } },
+		{ { 0, 0, 1 }, { 0, -1, 0 } },
+		{ { 0, 0, -1 }, { 0, -1, 0 } },
+	};
+
+	// what the light bending needs, made once and kept for all black holes
+	struct LensResources {
+		bool tried = false;
+		bool ready = false;
+		std::unique_ptr<Graphics::Material> material;
+		std::unique_ptr<Graphics::VertexArray> triangle;
+
+		// the sky all round (stars, Milky Way, background), in the root frame's axes, and whose sky it is
+		std::unique_ptr<Graphics::RenderTarget> skyTarget;
+		RefCountedPtr<Graphics::Texture> skyCube;
+		const Background::Container *skyOf = nullptr;
+		SystemPath skyPath;
+		bool haveSky = false;
+
+		// the picture drawn so far (everything further away than the hole), to bend
+		std::unique_ptr<Graphics::RenderTarget> sceneTarget;
+		int sceneW = 0, sceneH = 0;
+	};
+	std::unique_ptr<LensResources> s_lens;
+
+	bool EnsureLens(Graphics::Renderer *r)
+	{
+		if (!s_lens)
+			s_lens.reset(new LensResources());
+		LensResources &res = *s_lens;
+		if (!res.tried) {
+			res.tried = true;
+			// one triangle covering the screen, as for the screen passes (ScreenEffects.cpp)
+			res.triangle.reset(new Graphics::VertexArray(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_UV0, 3));
+			res.triangle->Add(vector3f(-1.0f, -1.0f, 0.0f), vector2f(0.0f, 0.0f));
+			res.triangle->Add(vector3f(3.0f, -1.0f, 0.0f), vector2f(2.0f, 0.0f));
+			res.triangle->Add(vector3f(-1.0f, 3.0f, 0.0f), vector2f(0.0f, 2.0f));
+
+			Graphics::RenderStateDesc rsd;
+			rsd.blendMode = Graphics::BLEND_SOLID;
+			rsd.cullMode = Graphics::CULL_NONE;
+			rsd.depthTest = false;
+			rsd.depthWrite = false;
+			const Graphics::VertexFormatDesc vfmt = Graphics::VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_UV0);
+			res.material.reset(r->CreateMaterial("black_hole_lens", Graphics::MaterialDescriptor(), rsd, vfmt));
+
+			res.skyTarget.reset(r->CreateRenderTarget({ SKY_SIZE, SKY_SIZE, Graphics::TEXTURE_NONE, Graphics::TEXTURE_NONE, false }));
+			res.skyCube.Reset(r->CreateTexture(Graphics::TextureDescriptor(Graphics::TEXTURE_RGBA_8888,
+				vector3f(SKY_SIZE, SKY_SIZE, 0.0f), vector2f(1.0f, 1.0f), Graphics::LINEAR_CLAMP,
+				false, false, false, 0, Graphics::TEXTURE_CUBE_MAP)));
+
+			// (waits for the shader if it's being compiled in the background)
+			res.ready = res.material && r->WaitForMaterial(res.material.get()) && res.skyTarget && res.skyCube.Valid();
+			if (!res.ready)
+				Log::Warning("The black hole light bending couldn't be set up; black holes are drawn as plain black spheres.\n");
+		}
+		return res.ready;
+	}
+
+	// Draws the sky (and only the sky) all round into the snapshot: a 90 degree camera turned to face each side of the
+	// cube in turn, in the root frame's axes
+	void TakeSkySnapshot(Graphics::Renderer *r, Background::Container *background, float zNear)
+	{
+		LensResources &res = *s_lens;
+		const float fov = Graphics::GetFov();
+
+		RefCountedPtr<CameraContext> context(new CameraContext(SKY_SIZE, SKY_SIZE, 90.0f, zNear, 1.0e9f));
+
+		// restores the render target, viewport and matrices
+		Graphics::Renderer::StateTicket ticket(r);
+		const Graphics::ViewportExtents extents = { 0, 0, SKY_SIZE, SKY_SIZE };
+		for (Uint32 face = 0; face < 6; face++) {
+			const vector3d &forward = SKY_FACES[face][0];
+			const vector3d &up = SKY_FACES[face][1];
+
+			res.skyTarget->SetCubeFaceTexture(face, res.skyCube.Get());
+			r->SetRenderTarget(res.skyTarget.get());
+			r->SetViewport(extents);
+			r->ClearScreen(Color::BLACK, false);
+			context->ApplyDrawTransforms(r);
+			// root frame to view: the rows are the camera's axes (right, up, back)
+			background->Draw(matrix4x4d::MakeRotMatrix(forward.Cross(up), up, -forward));
+			// render this face before the next one is attached
+			r->FlushCommandBuffers();
+		}
+		Graphics::SetFov(fov);
+	}
 } // namespace
+
+void Star::UninitLens()
+{
+	s_lens.reset();
+}
 
 Star::Star(SystemBody *sbody) :
 	TerrainBody(sbody)
@@ -76,6 +201,11 @@ void Star::InitStar()
 		SetClipRadius(m_jetLength);
 		m_pulsarJetMat.reset(Pi::renderer->CreateMaterial("pulsar_jet", desc, rsd, vtxFormat));
 		m_pulsarGlowMat.reset(Pi::renderer->CreateMaterial("pulsar_glow", desc, rsd, vtxFormat));
+	}
+
+	if (IsBlackHole(sbody->GetType())) {
+		// its light bending reaches far beyond its shadow
+		SetClipRadius(std::max(sbody->GetRadius(), SchwarzschildRadius(sbody)) * LENS_REACH);
 	}
 }
 
@@ -194,12 +324,22 @@ void Star::Render(Graphics::Renderer *renderer, const Camera *camera, const vect
 		BuildHaloBuffer(renderer);
 	}
 
+	const SystemBody::BodyType type = GetSystemBody()->GetType();
+
+	// a black hole: the picture behind it bent round it, with its shadow in the middle. Its own black sphere is
+	// smaller than the shadow, and drawn before, it would be bent into the picture as a black ring, so it's only
+	// drawn if the bending can't be.
+	if (IsBlackHole(type)) {
+		if (!RenderBlackHoleLens(renderer, camera, viewCoords, viewTransform))
+			TerrainBody::Render(renderer, camera, viewCoords, viewTransform);
+		renderer->GetStats().AddToStatCount(Graphics::Stats::STAT_STARS, 1);
+		return;
+	}
+
 	TerrainBody::Render(renderer, camera, viewCoords, viewTransform);
 
 	// the halo goes over the star, so its glow can spill across the limb like bloom;
 	// bodies in front of the star are drawn after it and still cover the glow
-	// black holes have no glow
-	const SystemBody::BodyType type = GetSystemBody()->GetType();
 	if (pulsar) {
 		RenderPulsar(renderer, fpos, trans * rot, rad, jetLength, viewTransform);
 	} else if (type < SystemBody::TYPE_STAR_S_BH || type > SystemBody::TYPE_STAR_SM_BH) {
@@ -258,4 +398,91 @@ void Star::RenderPulsar(Graphics::Renderer *renderer, const vector3d &fpos, cons
 	m_pulsarGlowMat->SetPushConstant("PulsarTime"_hash, pulsarTime, 0.f);
 	renderer->SetTransform(matrix4x4f(faceCamera * matrix4x4d::ScaleMatrix(glowRadius)));
 	renderer->DrawMesh(m_haloMesh.get(), m_pulsarGlowMat.get());
+}
+
+bool Star::RenderBlackHoleLens(Graphics::Renderer *renderer, const Camera *camera, const vector3d &viewCoords,
+	const matrix4x4d &viewTransform)
+{
+	if (!camera || !Pi::game || !Pi::game->GetSpace())
+		return false;
+	if (!EnsureLens(renderer))
+		return false;
+	LensResources &res = *s_lens;
+
+	const double rs = SchwarzschildRadius(GetSystemBody());
+	const double distance = viewCoords.Length();
+	if (!(rs > 0.0) || !(distance > 0.0))
+		return false;
+
+	// the camera's projection: only its scale is used (no off-centre views)
+	const matrix4x4f proj = renderer->GetProjection();
+	if (!(proj[0] > 0.0f) || !(proj[5] > 0.0f))
+		return false;
+
+	// the sky snapshot, taken again in each new system
+	Space *space = Pi::game->GetSpace();
+	Background::Container *background = space->GetBackground();
+	if (!background)
+		return false;
+	if (!space->GetStarSystem())
+		return false;
+	const SystemPath path = space->GetStarSystem()->GetPath();
+	const bool sameSystem = res.haveSky && res.skyPath.HasValidSystem() && path.HasValidSystem() && res.skyPath.IsSameSystem(path);
+	if (!sameSystem || res.skyOf != background) {
+		TakeSkySnapshot(renderer, background, camera->GetContext()->GetZNear());
+		res.skyOf = background;
+		res.skyPath = path;
+		res.haveSky = true;
+	}
+
+	// the picture drawn so far: the sky and everything further away than the hole, to bend.
+	// What's nearer is drawn after, unbent, in front.
+	Graphics::RenderTarget *target = renderer->GetRenderTarget();
+	const int w = target ? target->GetDesc().width : renderer->GetWindowWidth();
+	const int h = target ? target->GetDesc().height : renderer->GetWindowHeight();
+	if (w <= 0 || h <= 0)
+		return false;
+	if (!res.sceneTarget || res.sceneW != w || res.sceneH != h) {
+		res.sceneTarget.reset(renderer->CreateRenderTarget({ Uint16(w), Uint16(h), Graphics::TEXTURE_RGBA_8888, Graphics::TEXTURE_NONE, false }));
+		res.sceneW = w;
+		res.sceneH = h;
+	}
+	if (!res.sceneTarget)
+		return false;
+
+	// restores the render target, viewport and matrices
+	Graphics::Renderer::StateTicket ticket(renderer);
+	renderer->BeginGpuTimer("black hole");
+
+	bool haveScene = false;
+	if (target) {
+		if (target->GetDesc().numSamples > 0)
+			renderer->ResolveRenderTarget(target, res.sceneTarget.get(), { 0, 0, w, h });
+		else
+			renderer->CopyRenderTarget(target, res.sceneTarget.get(), { 0, 0, w, h }, { 0, 0, w, h }, false);
+		haveScene = true;
+	}
+
+	Graphics::Material *m = res.material.get();
+	// the hole's direction from the camera, and its distance in Schwarzschild radii
+	m->SetPushConstant("LensHole"_hash, vector3f(viewCoords / distance), float(distance / rs));
+	// x, y: the projection's scale; z: the angle one pixel spans (radians); w: whether the picture can be read
+	const float pixelAngle = float(2.0 / (double(proj[5]) * double(h)));
+	m->SetPushConstant("LensProj"_hash, vector3f(proj[0], proj[5], pixelAngle), haveScene ? 1.0f : 0.0f);
+	// view to root frame (the snapshot's axes): the rows are the frame-to-view rotation's columns.
+	// (Frames that don't rotate all share the root frame's axes.)
+	m->SetPushConstant("SkyX"_hash, vector3f(vector3d(viewTransform[0], viewTransform[1], viewTransform[2]).Normalized()), 0.0f);
+	m->SetPushConstant("SkyY"_hash, vector3f(vector3d(viewTransform[4], viewTransform[5], viewTransform[6]).Normalized()), 0.0f);
+	m->SetPushConstant("SkyZ"_hash, vector3f(vector3d(viewTransform[8], viewTransform[9], viewTransform[10]).Normalized()), 0.0f);
+	m->SetTexture("sceneTex"_hash, res.sceneTarget->GetColorTexture());
+	m->SetTexture("skyTex"_hash, res.skyCube.Get());
+
+	if (target) {
+		renderer->SetRenderTarget(target);
+		renderer->SetViewport({ 0, 0, w, h });
+	}
+	renderer->DrawBuffer(res.triangle.get(), m);
+
+	renderer->EndGpuTimer();
+	return true;
 }

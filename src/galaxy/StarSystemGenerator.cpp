@@ -1244,6 +1244,11 @@ void StarSystemRandomGenerator::MakeStarOfType(SystemBody *sbody, SystemBody::Bo
 		break;
 	}
 	sbody->m_mass = fixed(rand.Int32(starTypeInfo[type].mass[0], starTypeInfo[type].mass[1]), 100);
+	if (type == SystemBody::TYPE_STAR_S_BH || type == SystemBody::TYPE_STAR_IM_BH || type == SystemBody::TYPE_STAR_SM_BH) {
+		// a black hole's size is its event horizon, the Schwarzschild radius 2GM/c^2, in Sol radii
+		sbody->m_radius = fixed::FromDouble(2.0 * G * SOL_MASS * sbody->GetMassAsFixed().ToDouble() /
+			(LIGHT_SPEED * LIGHT_SPEED) / SOL_RADIUS);
+	}
 	sbody->m_averageTemp = rand.Int32(starTypeInfo[type].tempMin, starTypeInfo[type].tempMax);
 	sbody->GenerateStarColor();
 	sbody->SetAtmFromParameters();

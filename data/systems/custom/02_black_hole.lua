@@ -10,7 +10,7 @@ local s = CustomSystem:new('Sagittarius A*', { 'STAR_SM_BH' })
 
 
 local SagA = CustomSystemBody:new('Sagittarius A*', 'STAR_SM_BH')
-	:radius(f(8500,1))
+	:radius(f(1739,100))   -- its event horizon, 17.4 Sol radii (0.08 AU); the game sets a black hole's size from its mass anyway
 	:mass(f(4100000,1))
 
 
