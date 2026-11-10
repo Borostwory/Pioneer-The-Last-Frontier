@@ -1,0 +1,13 @@
+## Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
+## Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
+
+Shader pulsar_cone
+
+Buffer DrawData binding=1
+
+PushConstant vec4 StarColor binding=0
+PushConstant vec4 PulsarCone binding=1
+PushConstant vec4 PulsarBeam binding=2
+
+Vertex "pulsar_cone.vert"
+Fragment "pulsar_cone.frag"

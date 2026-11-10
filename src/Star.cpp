@@ -6,7 +6,9 @@
 #include "Background.h"
 #include "Camera.h"
 #include "Game.h"
+#include "MathUtil.h"
 #include "Pi.h"
+#include "Random.h"
 #include "Space.h"
 #include "core/Log.h"
 #include "core/StringHash.h"
@@ -31,8 +33,18 @@ namespace {
 	constexpr double PULSAR_GLOW_SIZE = 0.5;
 	// spin period used when a neutron star has none set, in seconds (the Vela pulsar's)
 	constexpr double PULSAR_DEFAULT_PERIOD = 0.0893;
-	// the jets slowly whip from side to side with this period, in seconds
-	constexpr double PULSAR_WOBBLE_PERIOD = 7.0;
+	// The beams come out of the magnetic poles, which are tilted from the spin axis, so each beam sweeps round a
+	// cone once a turn, like a lighthouse. Each pulsar's tilt is picked from this range, in degrees (Vela's is
+	// thought to be about 40 to 70)
+	constexpr double PULSAR_MAGNETIC_TILT_MIN = 15.0;
+	constexpr double PULSAR_MAGNETIC_TILT_MAX = 60.0;
+	// how long the eye holds a picture, in seconds: a beam that sweeps round in less than this is seen as a
+	// glowing hollow cone, a slower one as a beam with a fading trail behind it
+	constexpr double PULSAR_EXPOSURE = 0.1;
+	// half the width of a beam, as an angle seen from the star, in radians (about how far the jet strands spread)
+	constexpr double PULSAR_BEAM_HALF_ANGLE = 0.06;
+	// the trail behind a beam fades by e^-3 from the beam to its end
+	constexpr double PULSAR_TRAIL_FADE = 3.0;
 	// the gas streaming out along the jets wraps round after this many seconds
 	constexpr double PULSAR_FLOW_WRAP = 3600.0;
 
@@ -201,6 +213,16 @@ void Star::InitStar()
 		SetClipRadius(m_jetLength);
 		m_pulsarJetMat.reset(Pi::renderer->CreateMaterial("pulsar_jet", desc, rsd, vtxFormat));
 		m_pulsarGlowMat.reset(Pi::renderer->CreateMaterial("pulsar_glow", desc, rsd, vtxFormat));
+
+		// the cone swept by the beams is a triangle mesh with normals
+		Graphics::RenderStateDesc coneRsd = rsd;
+		coneRsd.primitiveType = Graphics::TRIANGLES;
+		auto coneFormat = Graphics::VertexFormatDesc::FromAttribSet(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_NORMAL | Graphics::ATTRIB_UV0);
+		m_pulsarConeMat.reset(Pi::renderer->CreateMaterial("pulsar_cone", desc, coneRsd, coneFormat));
+
+		// the angle between the magnetic poles and the spin axis, fixed for each pulsar
+		Random rng({ sbody->GetSeed(), 0x5075u });
+		m_magneticTilt = DEG2RAD(rng.Double(PULSAR_MAGNETIC_TILT_MIN, PULSAR_MAGNETIC_TILT_MAX));
 	}
 
 	if (IsBlackHole(sbody->GetType())) {
@@ -368,36 +390,104 @@ void Star::RenderPulsar(Graphics::Renderer *renderer, const vector3d &fpos, cons
 	double period = sbody->GetRotationPeriod();
 	if (!(period > 0.0))
 		period = PULSAR_DEFAULT_PERIOD;
-	const float spin = float(2.0 * M_PI * std::fmod(t, period) / period);
-	const float wobble = float(2.0 * M_PI * std::fmod(t, PULSAR_WOBBLE_PERIOD) / PULSAR_WOBBLE_PERIOD);
+	// where the beams are round the spin axis: one turn per spin
+	const double spinAngle = 2.0 * M_PI * std::fmod(t, period) / period;
+	const float spin = float(spinAngle);
 	const float flow = float(std::fmod(t, PULSAR_FLOW_WRAP));
-	const vector3f pulsarTime(spin, wobble, flow);
 	const Color starColor = sbody->GetStarColor();
 
-	// the jets: one strip along the spin axis through the star, turned about the axis to face the camera.
-	// The axis is tilted like a planet's (see Space.cpp, RotateX by the axial tilt).
-	const vector3d axisLocal = matrix3x3d::RotateX(sbody->GetAxialTilt()) * vector3d(0.0, 1.0, 0.0);
-	const vector3d axis = viewTransform.ApplyRotationOnly(axisLocal).NormalizedSafe();
+	// How far the beams sweep while the eye holds a picture, and so how they are seen: a slow pulsar's beams with
+	// a short trail, a fast one's as a glowing hollow cone (the same light spread round the whole turn).
+	const double sweep = std::min(2.0 * M_PI * std::max(PULSAR_EXPOSURE, double(Pi::GetFrameTime())) / period, 4.0 * M_PI);
+	const double arc = std::min(sweep, 2.0 * M_PI);
+	// the trail fades behind the beam, until the beam laps it so often that the cone is lit evenly
+	const double lapped = std::min(std::max((sweep - 2.0 * M_PI) / (2.0 * M_PI), 0.0), 1.0);
+	const double fade = PULSAR_TRAIL_FADE * (1.0 - lapped * lapped * (3.0 - 2.0 * lapped));
+	// how wide a beam is, as an angle round the cone
+	const double tilt = m_magneticTilt;
+	const double beamArc = 2.0 * PULSAR_BEAM_HALF_ANGLE / std::max(std::sin(tilt), 0.05);
+	// the beam itself: as bright as the newest part of its trail would be, at most full brightness
+	const double trailScale = fade > 1e-3 ? fade / (1.0 - std::exp(-fade)) : 1.0;
+	const float beamWeight = float(std::min(1.0, trailScale * beamArc / arc));
+
+	// The spin axis is tilted like a planet's (see Space.cpp, RotateX by the axial tilt). The beams come out of the
+	// magnetic poles, tilted from the spin axis, and turn round it.
+	const matrix3x3d spinFrame = matrix3x3d::RotateX(sbody->GetAxialTilt());
+	const vector3d axisX = viewTransform.ApplyRotationOnly(spinFrame * vector3d(1.0, 0.0, 0.0)).NormalizedSafe();
+	const vector3d axisY = viewTransform.ApplyRotationOnly(spinFrame * vector3d(0.0, 1.0, 0.0)).NormalizedSafe();
+	const vector3d axisZ = viewTransform.ApplyRotationOnly(spinFrame * vector3d(0.0, 0.0, 1.0)).NormalizedSafe();
+	const vector3d beam = (std::sin(tilt) * std::cos(spinAngle) * axisX + std::cos(tilt) * axisY +
+		std::sin(tilt) * std::sin(spinAngle) * axisZ).NormalizedSafe();
+
+	// the cone the beams sweep round, with their trail or their smear
+	if (!m_pulsarConeMesh)
+		BuildPulsarCone(renderer);
+	const matrix4x4d coneTrans = matrix4x4d::Translation(fpos) *
+		matrix4x4d::MakeRotMatrix(axisX, axisY, axisZ).Inverse() *
+		matrix4x4d::ScaleMatrix(jetLength);
+	m_pulsarConeMat->SetPushConstant("StarColor"_hash, starColor);
+	m_pulsarConeMat->SetPushConstant("PulsarCone"_hash, vector3f(spin, float(arc), float(fade)), float(beamArc));
+	m_pulsarConeMat->SetPushConstant("PulsarBeam"_hash, vector3f(beamWeight, float(sweep >= 2.0 * M_PI), 0.f), 0.f);
+	renderer->SetTransform(matrix4x4f(coneTrans));
+	renderer->DrawMesh(m_pulsarConeMesh.get(), m_pulsarConeMat.get());
+
+	// the beams themselves: one strip through the star along the magnetic axis, turned about it to face the camera
 	const vector3d toCamera = (-fpos).NormalizedSafe();
-	vector3d side = axis.Cross(toCamera);
-	if (side.LengthSqr() < 1e-12) // looking straight down the axis
-		side = axis.Cross(std::abs(axis.x) < 0.9 ? vector3d(1.0, 0.0, 0.0) : vector3d(0.0, 1.0, 0.0));
+	vector3d side = beam.Cross(toCamera);
+	if (side.LengthSqr() < 1e-12) // looking straight down the beam
+		side = beam.Cross(std::abs(beam.x) < 0.9 ? vector3d(1.0, 0.0, 0.0) : vector3d(0.0, 1.0, 0.0));
 	side = side.Normalized();
-	const vector3d normal = side.Cross(axis);
+	const vector3d normal = side.Cross(beam);
 
 	const matrix4x4d jetTrans = matrix4x4d::Translation(fpos) *
-		matrix4x4d::MakeRotMatrix(side, axis, normal).Inverse() *
+		matrix4x4d::MakeRotMatrix(side, beam, normal).Inverse() *
 		matrix4x4d::ScaleMatrix(jetLength * PULSAR_JET_HALF_WIDTH, jetLength, 1.0);
 	m_pulsarJetMat->SetPushConstant("StarColor"_hash, starColor);
-	m_pulsarJetMat->SetPushConstant("PulsarTime"_hash, pulsarTime, float(PULSAR_JET_HALF_WIDTH));
+	m_pulsarJetMat->SetPushConstant("PulsarTime"_hash, vector3f(spin, beamWeight, flow), float(PULSAR_JET_HALF_WIDTH));
 	renderer->SetTransform(matrix4x4f(jetTrans));
 	renderer->DrawMesh(m_haloMesh.get(), m_pulsarJetMat.get());
+
+	const vector3f pulsarTime(spin, 0.f, flow);
 
 	// the glow, drawn last so it sits over the roots of the jets
 	m_pulsarGlowMat->SetPushConstant("StarColor"_hash, starColor);
 	m_pulsarGlowMat->SetPushConstant("PulsarTime"_hash, pulsarTime, 0.f);
 	renderer->SetTransform(matrix4x4f(faceCamera * matrix4x4d::ScaleMatrix(glowRadius)));
 	renderer->DrawMesh(m_haloMesh.get(), m_pulsarGlowMat.get());
+}
+
+void Star::BuildPulsarCone(Graphics::Renderer *renderer)
+{
+	// Two cones with their tips at the star, opening round the spin axis (y) at the magnetic tilt: the north
+	// beam's and, mirrored through the star, the south beam's. uv: x = distance from the star in jet lengths,
+	// y = angle round the axis (radians), the same for both, as the south beam is always opposite the north one.
+	const int rings = 16;
+	const int segments = 128;
+	const float sinT = float(std::sin(m_magneticTilt));
+	const float cosT = float(std::cos(m_magneticTilt));
+
+	Graphics::VertexArray va(Graphics::ATTRIB_POSITION | Graphics::ATTRIB_NORMAL | Graphics::ATTRIB_UV0, 2 * rings * segments * 6);
+	auto vertex = [&](float sign, int ring, int seg) {
+		const float s = float(ring) / float(rings);
+		const float a = float(2.0 * M_PI) * float(seg) / float(segments);
+		const vector3f dir(sinT * std::cos(a), cosT, sinT * std::sin(a));
+		const vector3f n(cosT * std::cos(a), -sinT, cosT * std::sin(a));
+		va.Add(sign * s * dir, sign * n, vector2f(s, a));
+	};
+	for (float sign : { 1.f, -1.f }) {
+		for (int r = 0; r < rings; r++) {
+			for (int g = 0; g < segments; g++) {
+				vertex(sign, r, g);
+				vertex(sign, r + 1, g);
+				vertex(sign, r + 1, g + 1);
+				vertex(sign, r, g);
+				vertex(sign, r + 1, g + 1);
+				vertex(sign, r, g + 1);
+			}
+		}
+	}
+
+	m_pulsarConeMesh.reset(renderer->CreateMeshObjectFromArray(&va));
 }
 
 bool Star::RenderBlackHoleLens(Graphics::Renderer *renderer, const Camera *camera, const vector3d &viewCoords,

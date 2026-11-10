@@ -14,7 +14,7 @@ out vec4 frag_color;
 
 // black-body star colour
 uniform vec4 StarColor;
-// x: spin angle, y: slow whip angle (radians), z: seconds
+// x: spin angle (radians), y: unused, z: seconds
 uniform vec4 PulsarTime;
 
 // as in star_halo.frag: display-encode the linear black-body colour
@@ -39,8 +39,9 @@ void main(void)
 	// soft glow round it
 	float glow = 0.6 * exp(-r / 0.06) + 0.18 * pow(1.0 - r, 4.0);
 
-	// starburst: thin rays of uneven length, slowly turning
-	float a = atan(quadPos.y, quadPos.x) + PulsarTime.y * 0.02;
+	// starburst: thin rays of uneven length, slowly turning, 10 turns an hour so it doesn't jump when the
+	// seconds wrap round (every 3600, see PULSAR_FLOW_WRAP in Star.cpp)
+	float a = atan(quadPos.y, quadPos.x) + PulsarTime.z * (2.0 * PI * 10.0 / 3600.0);
 	float n = cloudFbm(vec3(cos(a) * 9.0, sin(a) * 9.0, 1.7), 3, 1.0);
 	float ray = max(n - 0.4, 0.0) / 0.6;
 	float rays = 0.8 * ray * ray * ray * exp(-r / (0.08 + 0.3 * n));

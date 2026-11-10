@@ -50,10 +50,13 @@ public:
 protected:
 	void InitStar();
 	void BuildHaloBuffer(Graphics::Renderer *renderer);
-	// A pulsar's two jets along its spin axis and its glow (pulsar_jet.frag, pulsar_glow.frag).
+	// A pulsar's two beams, sweeping round the spin axis like a lighthouse, the cone they smear into when they
+	// turn faster than the eye can follow, and its glow (pulsar_jet.frag, pulsar_cone.frag, pulsar_glow.frag).
 	// fpos is the star's scaled view position; glowRadius and jetLength are scaled the same way.
 	void RenderPulsar(Graphics::Renderer *renderer, const vector3d &fpos, const matrix4x4d &faceCamera,
 		double glowRadius, double jetLength, const matrix4x4d &viewTransform);
+	// the two cones the beams sweep round, one jet length long, around the y axis
+	void BuildPulsarCone(Graphics::Renderer *renderer);
 	// A black hole: the picture behind it bent by its gravity, and its black shadow (black_hole_lens.frag).
 	// Returns false if it couldn't be drawn, so the plain black sphere is drawn instead.
 	bool RenderBlackHoleLens(Graphics::Renderer *renderer, const Camera *camera, const vector3d &viewCoords,
@@ -66,7 +69,10 @@ protected:
 	// pulsars only
 	std::unique_ptr<Graphics::Material> m_pulsarJetMat;
 	std::unique_ptr<Graphics::Material> m_pulsarGlowMat;
-	double m_jetLength = 0.0; // length of each jet, in metres
+	std::unique_ptr<Graphics::Material> m_pulsarConeMat;
+	std::unique_ptr<Graphics::MeshObject> m_pulsarConeMesh;
+	double m_jetLength = 0.0;	  // length of each jet, in metres
+	double m_magneticTilt = 0.0; // angle between the magnetic poles (where the beams come out) and the spin axis, radians
 };
 
 #endif /* _STAR_H */

@@ -1,9 +1,11 @@
 // Copyright © 2008-2026 Pioneer Developers. See AUTHORS.txt for details
 // Licensed under the terms of the GPL v3. See licenses/GPL-3.txt
 
-// A pulsar's two jets, painted on one strip that runs along the spin axis through the star
-// (Star::RenderPulsar). Two strands of glowing gas are wound round each other and turn with
-// the star's real spin; the jet whips slowly from side to side and fades out towards its end.
+// A pulsar's two beams, painted on one strip that runs along the magnetic axis through the star
+// (Star::RenderPulsar), which sweeps round the spin axis once a turn. Two strands of glowing gas
+// are wound round each other and turn with the star's real spin; the beam fades out towards its end.
+// When the beams sweep faster than the eye can follow, the strip fades and pulsar_cone.frag shows
+// the smear instead.
 
 #include "attributes.glsl"
 #include "cloud-noise.glsl"
@@ -15,8 +17,8 @@ out vec4 frag_color;
 
 // black-body star colour
 uniform vec4 StarColor;
-// x: spin angle, y: slow whip angle (radians), z: seconds, for the outflow,
-// w: the strip's half width in jet lengths
+// x: spin angle (radians), y: brightness (lower when the beam smears into a cone), z: seconds, for the
+// outflow, w: the strip's half width in jet lengths
 uniform vec4 PulsarTime;
 
 // (PI is defined for every shader, see graphics/opengl/Shader.cpp)
@@ -29,15 +31,11 @@ const float FLOW_SPEED = 0.6;
 // as in star_halo.frag: display-encode the linear black-body colour
 const float DISPLAY_GAMMA = 2.2;
 
-// sideways bend of a jet's centre line at distance s from the star, so the whole jet whips slowly
-float bend(float s, float side)
-{
-	float w = PulsarTime.y + side * 1.9;
-	return s * s * (0.035 * sin(w) + 0.015 * sin(2.0 * w + 1.3 + 3.0 * s));
-}
-
 void main(void)
 {
+	if (PulsarTime.y <= 0.001)
+		discard;
+
 	float s = abs(quadPos.y);
 	float side = quadPos.y >= 0.0 ? 1.0 : -1.0;
 	// across the jet, in jet lengths
@@ -46,7 +44,7 @@ void main(void)
 	float px = max(fwidth(x), 1e-6);
 	float flow = PulsarTime.z * FLOW_SPEED;
 
-	float xc = x - bend(s, side);
+	float xc = x;
 
 	// two strands wound round each other, widening outwards; the near half of each turn is brighter
 	float amp = 0.004 + 0.05 * s;
@@ -82,5 +80,5 @@ void main(void)
 
 	// fade out at the strip's long edges
 	float edge = 1.0 - smoothstep(0.85, 1.0, abs(quadPos.x));
-	frag_color = vec4(col * edge * 1.2, 1.0);
+	frag_color = vec4(col * edge * 1.2 * PulsarTime.y, 1.0);
 }
