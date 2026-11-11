@@ -180,7 +180,7 @@ planets and moons without life.
 
 <p>
   <a href=".github/images/screens/tube-station-outside.jpg"><img src=".github/images/screens/tube-station-outside.jpg" width="49%" alt="Tube station from outside"></a>
-  <a href=".github/images/screens/tube-station-docking-hall.jpg"><img src=".github/images/screens/tube-station-docking-hall.jpg" width="49%" alt="The docking hall in the spoke, looking out into the tube"></a>
+  <a href=".github/images/screens/tube-station-docking-hall.jpg"><img src=".github/images/screens/tube-station-docking-hall.jpg" width="49%" alt="The docking hall in the spoke"></a>
 </p>
 <p>
   <a href=".github/images/screens/tube-station-forcefield.jpg"><img src=".github/images/screens/tube-station-forcefield.jpg" width="49%" alt="Forcefield membrane over the tube's end"></a>
@@ -197,6 +197,21 @@ yellow barrier gates. It turns up at random around any world.
 <p>
   <a href=".github/images/screens/cuboct-station-mars.jpg"><img src=".github/images/screens/cuboct-station-mars.jpg" width="49%" alt="Cuboctahedron station orbiting Mars"></a>
   <a href=".github/images/screens/cuboct-station-hangar-entrance.jpg"><img src=".github/images/screens/cuboct-station-hangar-entrance.jpg" width="49%" alt="The slot entrance and approach scaffold"></a>
+</p>
+
+### Underground Asteroid Base
+
+A base dug into an asteroid. On the surface there is only a wide ring with
+a lid in two halves. A 300 m shaft runs down to a hangar underground, where
+a turning floor carries four landing pads. Ships go in one at a time: the
+floor turns a free pad under the shaft, the lid slides open, and you fly
+down. When you leave, the base lifts your ship back up the shaft. AI ships
+wait their turn above the base. It's on Phobos, Deimos and Thebe, and turns up
+at random on asteroids more than 10 km across.
+
+<p>
+  <a href=".github/images/screens/asteroid-base-outside.jpg"><img src=".github/images/screens/asteroid-base-outside.jpg" width="49%" alt="The base's ring and lid on Thebe, seen from above"></a>
+  <a href=".github/images/screens/asteroid-base-hangar.jpg"><img src=".github/images/screens/asteroid-base-hangar.jpg" width="49%" alt="The underground hangar, looking up the shaft"></a>
 </p>
 
 ### Hyperjump Route Planner
