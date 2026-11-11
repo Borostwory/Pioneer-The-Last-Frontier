@@ -12,6 +12,7 @@
 #include "vector3.h"
 
 #include <memory>
+#include <vector>
 
 class Body;
 class CameraContext;
@@ -70,7 +71,17 @@ public:
 		// only what is below it or a little above (not through the roof to the
 		// ground), and left out of the ground's light map
 		bool interior = false;
+		// an interior lamp of a station in space: lights all round, with no up
+		bool allRound = false;
 	};
+
+	// the station model's tag_interiorlight_* lamps (cool white, *_warm_* warm;
+	// reach and brightness as a floodlight's times the empty's scale)
+	static void AddInteriorLamps(const SceneGraph::Model *model, bool allRound, std::vector<Light> &out);
+	// the grid listing the lights of each cell over the square rect (as
+	// CityLightDataBlock::mapRect), packed into one texture (city-lights.glsl);
+	// fills gridInfo (as CityLightDataBlock::grid)
+	static Graphics::Texture *MakeLightGrid(const std::vector<Light> &lights, const float rect[4], float gridInfo[4]);
 
 	bool HasLights() const { return m_lightMap.Valid(); }
 	bool HasInteriorLights() const { return m_hasInteriorLights && m_lightGrid.Valid(); }
@@ -352,6 +363,30 @@ private:
 	static void LoadCityFlavour(const FileSystem::FileInfo &file);
 	static void LoadBuildingType(std::string_view key, const Json &buildingDef, BuildingType &out);
 	static void GetModelSize(const Aabb &aabb, uint8_t size[2]);
+};
+
+// The interior lamps of a station in space (no city around it): its
+// tag_interiorlight_* lamps, always on and lighting all round, in the
+// station's frame, handed to the shaders as a city's lights are
+// (Camera::SetCityLights, city-lights.glsl).
+struct StationLamps {
+	// none if the model has no lamps
+	static std::unique_ptr<StationLamps> Make(const SceneGraph::Model *model);
+	// all but the view transform and the strength
+	void GetLightData(Graphics::CityLightDataBlock &out) const;
+	Graphics::Texture *GetLightMap() const { return map.Get(); }
+	Graphics::Texture *GetLightGrid() const { return grid.Get(); }
+
+	// from the station's frame to the lamps' space: the shaders' grid lies
+	// across that space's x and z, so its y is the station's axis along which
+	// the lamps spread least (lamps one over another share the grid's cells)
+	const matrix4x4f &GetToLamps() const { return toLamps; }
+
+	RefCountedPtr<Graphics::Texture> map; // one black texel: no ground light
+	RefCountedPtr<Graphics::Texture> grid;
+	float rect[4] = {};
+	float gridInfo[4] = {};
+	matrix4x4f toLamps = matrix4x4f::Identity;
 };
 
 #endif /* _CITYONPLANET_H */

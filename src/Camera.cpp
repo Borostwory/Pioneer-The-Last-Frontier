@@ -638,12 +638,14 @@ void Camera::SetCityLights() const
 	if (brightness <= 0)
 		return;
 
+	// the nearest station with a lit city, or with its own interior lamps (in space)
 	const BodyAttrs *nearest = nullptr;
 	for (const BodyAttrs &attrs : m_sortedBodies) {
 		if (!attrs.body->IsType(ObjectType::SPACESTATION))
 			continue;
-		const CityOnPlanet *city = static_cast<const SpaceStation *>(attrs.body)->GetAdjacentCity();
-		if (city && city->HasLights() && (!nearest || attrs.camDist < nearest->camDist))
+		const SpaceStation *station = static_cast<const SpaceStation *>(attrs.body);
+		const CityOnPlanet *city = station->GetAdjacentCity();
+		if (((city && city->HasLights()) || station->GetStationLamps()) && (!nearest || attrs.camDist < nearest->camDist))
 			nearest = &attrs;
 	}
 	if (!nearest)
@@ -652,17 +654,28 @@ void Camera::SetCityLights() const
 	// city space: the station's frame around its position
 	const SpaceStation *station = static_cast<const SpaceStation *>(nearest->body);
 	const matrix4x4d cityToView = nearest->viewTransform * matrix4x4d(station->GetInterpOrient(), station->GetInterpPosition());
+	const double fade = CityOnPlanet::LightsFade(nearest->camDist) * (brightness / 100.0);
+
+	Graphics::CityLightDataBlock data;
+	if (const StationLamps *lamps = station->GetStationLamps()) {
+		// a station in space: its lamps, always on
+		if (fade <= 0.0)
+			return;
+		lamps->GetLightData(data);
+		data.viewToCity = lamps->GetToLamps() * matrix4x4f(cityToView.Inverse());
+		data.state[3] = float(fade);
+		m_renderer->SetCityLightData(&data, lamps->GetLightMap(), lamps->GetLightGrid());
+		return;
+	}
 
 	const vector3d up = cityToView.ApplyRotationOnly(vector3d(0.0, 1.0, 0.0));
 	const CityOnPlanet *city = station->GetAdjacentCity();
 	// night lights only in the dark, the station's interior lamps always
-	const double fade = CityOnPlanet::LightsFade(nearest->camDist) * (brightness / 100.0);
 	const double strength = CityDarkness(station, up) * fade;
 	const double interior = city->HasInteriorLights() ? fade : 0.0;
 	if (strength <= 0.0 && interior <= 0.0)
 		return;
 
-	Graphics::CityLightDataBlock data;
 	city->GetLightData(data);
 	data.viewToCity = matrix4x4f(cityToView.Inverse());
 	data.state[0] = float(strength);

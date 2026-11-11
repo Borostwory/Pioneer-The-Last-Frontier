@@ -111,10 +111,14 @@ void cityGridLights(vec3 pos, vec3 n, vec3 V, float shininess, inout vec3 diffus
 		// night lights in the dark; interior lamps always, not through the roof
 		float strength = cityState.x;
 		if (b.w < 0.0) {
-			float above = pos.y - a.y;
-			if (above >= CITY_INTERIOR_LIGHT_ABOVE)
-				continue;
-			strength = cityState.w * (1.0 - smoothstep(0.0, CITY_INTERIOR_LIGHT_ABOVE, above));
+			strength = cityState.w;
+			// -1: below ground, not up through the roof; -2: a station in space, all round
+			if (b.w > -1.5) {
+				float above = pos.y - a.y;
+				if (above >= CITY_INTERIOR_LIGHT_ABOVE)
+					continue;
+				strength *= 1.0 - smoothstep(0.0, CITY_INTERIOR_LIGHT_ABOVE, above);
+			}
 		}
 		if (strength <= 0.0)
 			continue;

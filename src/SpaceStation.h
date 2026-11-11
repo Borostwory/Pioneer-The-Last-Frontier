@@ -16,6 +16,7 @@
 class Body;
 class Camera;
 class CityOnPlanet;
+struct StationLamps;
 class Frame;
 class NavLights;
 class Ship;
@@ -82,6 +83,8 @@ public:
 	bool IsGroundStation() const;
 	// the city around a ground station, once it has been close enough to be drawn
 	const CityOnPlanet *GetAdjacentCity() const { return m_adjacentCity; }
+	// the interior lamps of a station in space (none on the ground: its city has them)
+	const StationLamps *GetStationLamps() const { return m_stationLamps.get(); }
 	CityOnPlanet *GetAdjacentCity() { return m_adjacentCity; }
 
 	bool AllocateStaticSlot(int &slot);
@@ -160,6 +163,7 @@ private:
 	const SpaceStationType *m_type;
 	const SystemBody *m_sbody;
 	CityOnPlanet *m_adjacentCity;
+	std::unique_ptr<StationLamps> m_stationLamps;
 	enum { NUM_STATIC_SLOTS = 4 };
 	bool m_staticSlot[NUM_STATIC_SLOTS];
 

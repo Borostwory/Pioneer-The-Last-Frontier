@@ -254,6 +254,11 @@ void SpaceStation::InitStation()
 	if (model->SupportsPatterns()) {
 		model->SetPattern(rand.Int32(0, model->GetNumPatterns() - 1));
 	}
+
+	// the lamps inside a station in space (a ground station's city has its own)
+	m_stationLamps.reset();
+	if (!ground)
+		m_stationLamps = StationLamps::Make(model);
 }
 
 SpaceStation::~SpaceStation()

@@ -4,8 +4,8 @@
     <contributor>
       <authoring_tool>Pioneer Blender add-on</authoring_tool>
     </contributor>
-    <created>2026-10-31T22:50:50</created>
-    <modified>2026-10-31T22:50:50</modified>
+    <created>2026-11-11T15:42:33</created>
+    <modified>2026-11-11T15:42:33</modified>
     <unit name="meter" meter="1" />
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -1690,6 +1690,60 @@
       </node>
       <node id="tag_interior3" name="tag_interior3" type="NODE">
         <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -320 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_deck1_l1" name="tag_interiorlight_warm_deck1_l1" type="NODE">
+        <matrix sid="transform">2.2 0 0 -48 0 2.2 0 -52 0 0 2.2 -96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_deck1_l2" name="tag_interiorlight_warm_deck1_l2" type="NODE">
+        <matrix sid="transform">2.2 0 0 -48 0 2.2 0 -52 0 0 2.2 0 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_deck1_l3" name="tag_interiorlight_warm_deck1_l3" type="NODE">
+        <matrix sid="transform">2.2 0 0 -48 0 2.2 0 -52 0 0 2.2 96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_deck1_r1" name="tag_interiorlight_warm_deck1_r1" type="NODE">
+        <matrix sid="transform">2.2 0 0 48 0 2.2 0 -52 0 0 2.2 -96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_deck1_r2" name="tag_interiorlight_warm_deck1_r2" type="NODE">
+        <matrix sid="transform">2.2 0 0 48 0 2.2 0 -52 0 0 2.2 0 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_deck1_r3" name="tag_interiorlight_warm_deck1_r3" type="NODE">
+        <matrix sid="transform">2.2 0 0 48 0 2.2 0 -52 0 0 2.2 96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_deck2_l1" name="tag_interiorlight_deck2_l1" type="NODE">
+        <matrix sid="transform">2.2 0 0 -48 0 2.2 0 52 0 0 2.2 -96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_deck2_l2" name="tag_interiorlight_deck2_l2" type="NODE">
+        <matrix sid="transform">2.2 0 0 -48 0 2.2 0 52 0 0 2.2 0 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_deck2_l3" name="tag_interiorlight_deck2_l3" type="NODE">
+        <matrix sid="transform">2.2 0 0 -48 0 2.2 0 52 0 0 2.2 96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_deck2_r1" name="tag_interiorlight_deck2_r1" type="NODE">
+        <matrix sid="transform">2.2 0 0 48 0 2.2 0 52 0 0 2.2 -96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_deck2_r2" name="tag_interiorlight_deck2_r2" type="NODE">
+        <matrix sid="transform">2.2 0 0 48 0 2.2 0 52 0 0 2.2 0 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_deck2_r3" name="tag_interiorlight_deck2_r3" type="NODE">
+        <matrix sid="transform">2.2 0 0 48 0 2.2 0 52 0 0 2.2 96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_wall_l1" name="tag_interiorlight_warm_wall_l1" type="NODE">
+        <matrix sid="transform">1.8 0 0 -145 0 1.8 0 0 0 0 1.8 -96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_wall_l2" name="tag_interiorlight_wall_l2" type="NODE">
+        <matrix sid="transform">1.8 0 0 -145 0 1.8 0 0 0 0 1.8 0 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_wall_l3" name="tag_interiorlight_warm_wall_l3" type="NODE">
+        <matrix sid="transform">1.8 0 0 -145 0 1.8 0 0 0 0 1.8 96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_wall_r1" name="tag_interiorlight_wall_r1" type="NODE">
+        <matrix sid="transform">1.8 0 0 145 0 1.8 0 0 0 0 1.8 -96 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_wall_r2" name="tag_interiorlight_warm_wall_r2" type="NODE">
+        <matrix sid="transform">1.8 0 0 145 0 1.8 0 0 0 0 1.8 0 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_wall_r3" name="tag_interiorlight_wall_r3" type="NODE">
+        <matrix sid="transform">1.8 0 0 145 0 1.8 0 0 0 0 1.8 96 0 0 0 1</matrix>
       </node>
     </visual_scene>
   </library_visual_scenes>

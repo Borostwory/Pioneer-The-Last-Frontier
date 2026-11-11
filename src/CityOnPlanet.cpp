@@ -1087,25 +1087,34 @@ void CityOnPlanet::GenerateFixedLights(const SpaceStation *station)
 		m_fixedLights.push_back({ pos, FLOOD_RADIUS * scale, (warm ? warmColour : floodColour) * (scale * scale), std::max(1.0f, pos.y) });
 	}
 
-	// lamps inside the station: tag_interiorlight_* empties, on day and night,
-	// cool white (tag_interiorlight_warm_* warm), reach and brightness as a
-	// floodlight's times the empty's scale; they light only what is below
-	// them, fading out a little above them (city-lights.glsl)
-	std::vector<SceneGraph::Tag *> interiorTags;
-	station->GetModel()->FindTagsByStartOfName("tag_interiorlight_", interiorTags);
-	for (const SceneGraph::Tag *tag : interiorTags) {
+	// lamps inside the station, on day and night; they light only what is
+	// below them, fading out a little above them (city-lights.glsl)
+	const size_t before = m_fixedLights.size();
+	AddInteriorLamps(station->GetModel(), false, m_fixedLights);
+	if (m_fixedLights.size() > before) {
+		m_hasInteriorLights = true;
+		Log::Verbose("\tCityOnPlanet: {} interior lamps", m_fixedLights.size() - before);
+	}
+
+	Log::Verbose("\tCityOnPlanet: {} street lamps and floodlights", m_fixedLights.size());
+}
+
+/*static*/
+void CityOnPlanet::AddInteriorLamps(const SceneGraph::Model *model, bool allRound, std::vector<Light> &out)
+{
+	const vector3f coolColour = vector3f(0.9f, 0.95f, 1.0f) * FLOOD_BRIGHTNESS;
+	const vector3f warmColour = vector3f(1.0f, 0.78f, 0.5f) * FLOOD_BRIGHTNESS;
+	std::vector<SceneGraph::Tag *> tags;
+	model->FindTagsByStartOfName("tag_interiorlight_", tags);
+	for (const SceneGraph::Tag *tag : tags) {
 		const matrix4x4f &m = tag->GetGlobalTransform();
 		const float scale = std::max(0.1f, m.GetOrient().VectorX().Length());
 		const bool warm = starts_with(tag->GetName(), "tag_interiorlight_warm_");
-		Light light{ m.GetTranslate(), FLOOD_RADIUS * scale, (warm ? warmColour : floodColour) * (scale * scale), 1.0f };
+		Light light{ m.GetTranslate(), FLOOD_RADIUS * scale, (warm ? warmColour : coolColour) * (scale * scale), 1.0f };
 		light.interior = true;
-		m_fixedLights.push_back(light);
-		m_hasInteriorLights = true;
+		light.allRound = allRound;
+		out.push_back(light);
 	}
-	if (!interiorTags.empty())
-		Log::Verbose("	CityOnPlanet: {} interior lamps", interiorTags.size());
-
-	Log::Verbose("\tCityOnPlanet: {} street lamps and floodlights", m_fixedLights.size());
 }
 
 void CityOnPlanet::BuildLighting()
@@ -1212,22 +1221,28 @@ void CityOnPlanet::BakeLightMap(const std::vector<Light> &lights)
 // city-lights.glsl.
 void CityOnPlanet::BuildLightGrid(const std::vector<Light> &lights)
 {
+	m_lightGrid.Reset(MakeLightGrid(lights, m_lightRect, m_lightGridInfo));
+}
+
+/*static*/
+Graphics::Texture *CityOnPlanet::MakeLightGrid(const std::vector<Light> &lights, const float rect[4], float gridInfo[4])
+{
 	PROFILE_SCOPED()
-	const float size = 1.0f / m_lightRect[2];
+	const float size = 1.0f / rect[2];
 	const uint32_t width = uint32_t(std::ceil(size / LIGHT_GRID_CELL));
 	const size_t numCells = size_t(width) * width;
 
 	// visits the cells within a light's reach
 	auto forCells = [&](const Light &light, auto &&visit) {
 		const float r = light.radius;
-		const int x0 = std::max(0, int(std::floor((light.pos.x - r - m_lightRect[0]) / LIGHT_GRID_CELL)));
-		const int x1 = std::min(int(width) - 1, int(std::floor((light.pos.x + r - m_lightRect[0]) / LIGHT_GRID_CELL)));
-		const int z0 = std::max(0, int(std::floor((light.pos.z - r - m_lightRect[1]) / LIGHT_GRID_CELL)));
-		const int z1 = std::min(int(width) - 1, int(std::floor((light.pos.z + r - m_lightRect[1]) / LIGHT_GRID_CELL)));
+		const int x0 = std::max(0, int(std::floor((light.pos.x - r - rect[0]) / LIGHT_GRID_CELL)));
+		const int x1 = std::min(int(width) - 1, int(std::floor((light.pos.x + r - rect[0]) / LIGHT_GRID_CELL)));
+		const int z0 = std::max(0, int(std::floor((light.pos.z - r - rect[1]) / LIGHT_GRID_CELL)));
+		const int z1 = std::min(int(width) - 1, int(std::floor((light.pos.z + r - rect[1]) / LIGHT_GRID_CELL)));
 		for (int cz = z0; cz <= z1; cz++) {
 			for (int cx = x0; cx <= x1; cx++) {
 				// the nearest point of the cell
-				const float minX = m_lightRect[0] + cx * LIGHT_GRID_CELL, minZ = m_lightRect[1] + cz * LIGHT_GRID_CELL;
+				const float minX = rect[0] + cx * LIGHT_GRID_CELL, minZ = rect[1] + cz * LIGHT_GRID_CELL;
 				const float dx = Clamp(light.pos.x, minX, minX + LIGHT_GRID_CELL) - light.pos.x;
 				const float dz = Clamp(light.pos.z, minZ, minZ + LIGHT_GRID_CELL) - light.pos.z;
 				if (dx * dx + dz * dz < r * r)
@@ -1259,8 +1274,8 @@ void CityOnPlanet::BuildLightGrid(const std::vector<Light> &lights)
 		uint32_t count = counts[c];
 		if (count > LIGHT_CELL_MAX) {
 			// the brightest at the cell's centre
-			const float cx = m_lightRect[0] + (c % width + 0.5f) * LIGHT_GRID_CELL;
-			const float cz = m_lightRect[1] + (c / width + 0.5f) * LIGHT_GRID_CELL;
+			const float cx = rect[0] + (c % width + 0.5f) * LIGHT_GRID_CELL;
+			const float cz = rect[1] + (c / width + 0.5f) * LIGHT_GRID_CELL;
 			auto brightness = [&](uint32_t i) {
 				const Light &l = lights[i];
 				const float dx = l.pos.x - cx, dz = l.pos.z - cz;
@@ -1303,19 +1318,20 @@ void CityOnPlanet::BuildLightGrid(const std::vector<Light> &lights)
 		*texel++ = light.colour.x;
 		*texel++ = light.colour.y;
 		*texel++ = light.colour.z;
-		// below zero: an interior lamp (city-lights.glsl)
-		*texel++ = light.interior ? -1.0f : light.height;
+		// below zero: an interior lamp, -2 lighting all round (city-lights.glsl)
+		*texel++ = light.allRound ? -2.0f : light.interior ? -1.0f : light.height;
 	}
 
-	m_lightGridInfo[0] = float(width);
-	m_lightGridInfo[1] = float(width);
-	m_lightGridInfo[2] = float(headerTexels);
-	m_lightGridInfo[3] = float(headerTexels + indexTexels);
+	gridInfo[0] = float(width);
+	gridInfo[1] = float(width);
+	gridInfo[2] = float(headerTexels);
+	gridInfo[3] = float(headerTexels + indexTexels);
 
 	const vector3f dataSize(float(LIGHT_ATLAS_WIDTH), float(rows), 0.0f);
 	const Graphics::TextureDescriptor desc(Graphics::TEXTURE_RGBA32F, dataSize, Graphics::NEAREST_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
-	m_lightGrid.Reset(Pi::renderer->CreateTexture(desc));
-	m_lightGrid->Update(atlas.data(), dataSize, Graphics::TEXTURE_RGBA32F);
+	Graphics::Texture *grid = Pi::renderer->CreateTexture(desc);
+	grid->Update(atlas.data(), dataSize, Graphics::TEXTURE_RGBA32F);
+	return grid;
 }
 
 void CityOnPlanet::GetLightData(Graphics::CityLightDataBlock &out) const
@@ -1325,6 +1341,73 @@ void CityOnPlanet::GetLightData(Graphics::CityLightDataBlock &out) const
 		out.grid[i] = m_lightGridInfo[i];
 	}
 	out.state[0] = 1.0f;
+	out.state[1] = LIGHT_NEAR_DISTANCE;
+	out.state[2] = LIGHT_HEIGHT_RANGE;
+	out.state[3] = 0.0f;
+}
+
+/*static*/
+std::unique_ptr<StationLamps> StationLamps::Make(const SceneGraph::Model *model)
+{
+	PROFILE_SCOPED()
+	std::vector<CityOnPlanet::Light> lamps;
+	CityOnPlanet::AddInteriorLamps(model, true, lamps);
+	if (lamps.empty())
+		return nullptr;
+
+	auto out = std::make_unique<StationLamps>();
+	// the lamps' space: its y the station's axis the lamps spread least along
+	// (turning the axes round, so it stays a rotation)
+	vector3f lo(1e30f), hi(-1e30f);
+	for (const CityOnPlanet::Light &lamp : lamps) {
+		lo = vector3f(std::min(lo.x, lamp.pos.x), std::min(lo.y, lamp.pos.y), std::min(lo.z, lamp.pos.z));
+		hi = vector3f(std::max(hi.x, lamp.pos.x), std::max(hi.y, lamp.pos.y), std::max(hi.z, lamp.pos.z));
+	}
+	const vector3f spread = hi - lo;
+	matrix4x4f &m = out->toLamps;
+	m = matrix4x4f::Identity;
+	if (spread.x < spread.y && spread.x <= spread.z) {
+		// lamps' (x, y, z) = station's (z, x, y)
+		m[0] = 0.0f, m[4] = 0.0f, m[8] = 1.0f;
+		m[1] = 1.0f, m[5] = 0.0f, m[9] = 0.0f;
+		m[2] = 0.0f, m[6] = 1.0f, m[10] = 0.0f;
+	} else if (spread.z < spread.y && spread.z < spread.x) {
+		// lamps' (x, y, z) = station's (y, z, x)
+		m[0] = 0.0f, m[4] = 1.0f, m[8] = 0.0f;
+		m[1] = 0.0f, m[5] = 0.0f, m[9] = 1.0f;
+		m[2] = 1.0f, m[6] = 0.0f, m[10] = 0.0f;
+	}
+	for (CityOnPlanet::Light &lamp : lamps)
+		lamp.pos = m * lamp.pos;
+
+	// the grid covers a square around the station holding all the light
+	float half = 0.0f;
+	for (const CityOnPlanet::Light &lamp : lamps)
+		half = std::max(half, std::max(std::abs(lamp.pos.x), std::abs(lamp.pos.z)) + lamp.radius);
+	out->rect[0] = -half;
+	out->rect[1] = -half;
+	out->rect[2] = 1.0f / (2.0f * half);
+	out->rect[3] = LIGHT_GRID_CELL;
+	out->grid.Reset(CityOnPlanet::MakeLightGrid(lamps, out->rect, out->gridInfo));
+
+	// no light on the ground: a black light map
+	const float black[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	const vector3f one(1.0f, 1.0f, 0.0f);
+	const Graphics::TextureDescriptor desc(Graphics::TEXTURE_RGBA16F, one, Graphics::NEAREST_CLAMP, false, false, false, 0, Graphics::TEXTURE_2D);
+	out->map.Reset(Pi::renderer->CreateTexture(desc));
+	out->map->Update(black, one, Graphics::TEXTURE_RGBA16F);
+
+	Log::Verbose("StationLamps: {} interior lamps over {}m", lamps.size(), 2.0f * half);
+	return out;
+}
+
+void StationLamps::GetLightData(Graphics::CityLightDataBlock &out) const
+{
+	for (int i = 0; i < 4; i++) {
+		out.mapRect[i] = rect[i];
+		out.grid[i] = gridInfo[i];
+	}
+	out.state[0] = 0.0f;
 	out.state[1] = LIGHT_NEAR_DISTANCE;
 	out.state[2] = LIGHT_HEIGHT_RANGE;
 	out.state[3] = 0.0f;

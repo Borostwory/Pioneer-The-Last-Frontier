@@ -891,6 +891,150 @@
       <node id="tag_interior1" name="tag_interior1" type="NODE">
         <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -338 0 0 0 1</matrix>
       </node>
+      <node id="tag_interiorlight_warm_ring1_1" name="tag_interiorlight_warm_ring1_1" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 80.3635 0 0 2 -325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring1_2" name="tag_interiorlight_warm_ring1_2" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 194.0147 0 0 2 -325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring1_3" name="tag_interiorlight_warm_ring1_3" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 194.0147 0 0 2 -325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring1_4" name="tag_interiorlight_warm_ring1_4" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 80.3635 0 0 2 -325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring1_5" name="tag_interiorlight_warm_ring1_5" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 -80.3635 0 0 2 -325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring1_6" name="tag_interiorlight_warm_ring1_6" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 -194.0147 0 0 2 -325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring1_7" name="tag_interiorlight_warm_ring1_7" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 -194.0147 0 0 2 -325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring1_8" name="tag_interiorlight_warm_ring1_8" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 -80.3635 0 0 2 -325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring2_1" name="tag_interiorlight_ring2_1" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 80.3635 0 0 2 -195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring2_2" name="tag_interiorlight_ring2_2" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 194.0147 0 0 2 -195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring2_3" name="tag_interiorlight_ring2_3" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 194.0147 0 0 2 -195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring2_4" name="tag_interiorlight_ring2_4" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 80.3635 0 0 2 -195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring2_5" name="tag_interiorlight_ring2_5" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 -80.3635 0 0 2 -195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring2_6" name="tag_interiorlight_ring2_6" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 -194.0147 0 0 2 -195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring2_7" name="tag_interiorlight_ring2_7" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 -194.0147 0 0 2 -195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring2_8" name="tag_interiorlight_ring2_8" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 -80.3635 0 0 2 -195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring3_1" name="tag_interiorlight_warm_ring3_1" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 80.3635 0 0 2 -65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring3_2" name="tag_interiorlight_warm_ring3_2" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 194.0147 0 0 2 -65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring3_3" name="tag_interiorlight_warm_ring3_3" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 194.0147 0 0 2 -65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring3_4" name="tag_interiorlight_warm_ring3_4" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 80.3635 0 0 2 -65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring3_5" name="tag_interiorlight_warm_ring3_5" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 -80.3635 0 0 2 -65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring3_6" name="tag_interiorlight_warm_ring3_6" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 -194.0147 0 0 2 -65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring3_7" name="tag_interiorlight_warm_ring3_7" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 -194.0147 0 0 2 -65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring3_8" name="tag_interiorlight_warm_ring3_8" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 -80.3635 0 0 2 -65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring4_1" name="tag_interiorlight_ring4_1" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 80.3635 0 0 2 65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring4_2" name="tag_interiorlight_ring4_2" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 194.0147 0 0 2 65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring4_3" name="tag_interiorlight_ring4_3" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 194.0147 0 0 2 65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring4_4" name="tag_interiorlight_ring4_4" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 80.3635 0 0 2 65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring4_5" name="tag_interiorlight_ring4_5" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 -80.3635 0 0 2 65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring4_6" name="tag_interiorlight_ring4_6" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 -194.0147 0 0 2 65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring4_7" name="tag_interiorlight_ring4_7" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 -194.0147 0 0 2 65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring4_8" name="tag_interiorlight_ring4_8" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 -80.3635 0 0 2 65 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring5_1" name="tag_interiorlight_warm_ring5_1" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 80.3635 0 0 2 195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring5_2" name="tag_interiorlight_warm_ring5_2" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 194.0147 0 0 2 195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring5_3" name="tag_interiorlight_warm_ring5_3" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 194.0147 0 0 2 195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring5_4" name="tag_interiorlight_warm_ring5_4" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 80.3635 0 0 2 195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring5_5" name="tag_interiorlight_warm_ring5_5" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 -80.3635 0 0 2 195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring5_6" name="tag_interiorlight_warm_ring5_6" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 -194.0147 0 0 2 195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring5_7" name="tag_interiorlight_warm_ring5_7" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 -194.0147 0 0 2 195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_ring5_8" name="tag_interiorlight_warm_ring5_8" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 -80.3635 0 0 2 195 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring6_1" name="tag_interiorlight_ring6_1" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 80.3635 0 0 2 325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring6_2" name="tag_interiorlight_ring6_2" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 194.0147 0 0 2 325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring6_3" name="tag_interiorlight_ring6_3" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 194.0147 0 0 2 325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring6_4" name="tag_interiorlight_ring6_4" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 80.3635 0 0 2 325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring6_5" name="tag_interiorlight_ring6_5" type="NODE">
+        <matrix sid="transform">2 0 0 -194.0147 0 2 0 -80.3635 0 0 2 325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring6_6" name="tag_interiorlight_ring6_6" type="NODE">
+        <matrix sid="transform">2 0 0 -80.3635 0 2 0 -194.0147 0 0 2 325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring6_7" name="tag_interiorlight_ring6_7" type="NODE">
+        <matrix sid="transform">2 0 0 80.3635 0 2 0 -194.0147 0 0 2 325 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_ring6_8" name="tag_interiorlight_ring6_8" type="NODE">
+        <matrix sid="transform">2 0 0 194.0147 0 2 0 -80.3635 0 0 2 325 0 0 0 1</matrix>
+      </node>
       <node id="barriers" name="barriers" type="NODE">
         <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
         <instance_geometry url="#barriers-mesh" name="barriers">
