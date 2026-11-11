@@ -40,6 +40,8 @@ static const ConditionProperty s_conditionProperties[] = {
 	{ "liquid", [](const SystemBody *b) { return b->GetVolatileLiquid(); } },
 	{ "life", [](const SystemBody *b) { return b->GetLife(); } },
 	{ "population", [](const SystemBody *b) { return b->GetPopulation(); } }, // billions
+	// km; 0 on anything that is not an asteroid
+	{ "asteroid_radius", [](const SystemBody *b) { return b->GetType() == SystemBody::TYPE_PLANET_ASTEROID ? b->GetRadius() / 1000.0 : 0.0; } },
 };
 
 SpaceStationType::SpaceStationType(const std::string &id_, const std::string &path_) :

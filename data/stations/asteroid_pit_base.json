@@ -1,7 +1,9 @@
 {
    "model" : "asteroid_pit_base",
    "type" : "surface",
-   "custom_only" : true,
+   "conditions" : {
+      "min_asteroid_radius" : 5
+   },
    "parking_distance" : 5000,
    "parking_gap_size" : 2000,
    "pad_offset" : 150,
