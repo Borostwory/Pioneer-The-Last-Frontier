@@ -581,6 +581,8 @@ void SectorMap::Draw3D()
 	auto &renderer = m_context.renderer;
 	m_secLineVerts->Clear();
 	m_labels.array.clear();
+	m_nearStars.clear();
+	m_nearStarsPath.clear();
 
 	float aspect = m_size.x / m_size.y;
 
@@ -600,6 +602,10 @@ void SectorMap::Draw3D()
 	matrix4x4f sectorTrans = modelview;
 	sectorTrans.Translate(-FFRAC(m_pos.x) * Sector::SIZE, -FFRAC(m_pos.y) * Sector::SIZE, -FFRAC(m_pos.z) * Sector::SIZE);
 	renderer->SetTransform(sectorTrans);
+
+	// remember the camera, so the mouse can find stars later this frame
+	m_pickView = sectorTrans;
+	m_pickProj = renderer->GetProjection();
 
 	if (m_zoomClamped <= FAR_THRESHOLD)
 		DrawNearSectors(sectorTrans);
@@ -647,7 +653,58 @@ void SectorMap::Draw3D()
 
 void SectorMap::DrawLabels(bool interactive, const ImVec2 &imagePos)
 {
-	if (!m_hideLabels) DrawLabelsInternal(interactive, imagePos);
+	bool labelHovered = false;
+	if (!m_hideLabels) labelHovered = DrawLabelsInternal(interactive, imagePos);
+	// a label under the cursor wins; otherwise look for the nearest star
+	if (interactive && !labelHovered && !m_rotateWithMouseButton) PickStar(imagePos);
+}
+
+void SectorMap::PickStar(const ImVec2 &imagePos)
+{
+	const bool farMode = m_zoomClamped > FAR_THRESHOLD;
+	const std::vector<vector3f> &points = farMode ? m_farstars : m_nearStars;
+	const std::vector<SystemPath> &paths = farMode ? m_farstarsPath : m_nearStarsPath;
+	if (points.empty() || points.size() != paths.size()) return;
+
+	ImVec2 mpos = ImGui::GetMousePos();
+	mpos.x -= imagePos.x;
+	mpos.y -= imagePos.y;
+	if (mpos.x < 0 || mpos.y < 0 || mpos.x > m_size.x || mpos.y > m_size.y) return;
+
+	// how close (in pixels) the cursor has to be to a star to pick it
+	const float pickRadius = std::max(8.f, m_labels.fontSize * 0.7f);
+	float bestDist2 = pickRadius * pickRadius;
+	size_t best = points.size();
+	ImVec2 bestPos;
+
+	for (size_t i = 0; i < points.size(); ++i) {
+		const vector3f s = Graphics::ProjectToScreen(m_pickView * points[i], m_pickProj);
+		if (s.z >= 0.0f) continue; // behind the camera
+		const float x = s.x * m_size.x;
+		const float y = m_size.y - s.y * m_size.y;
+		const float dx = x - mpos.x;
+		const float dy = y - mpos.y;
+		const float d2 = dx * dx + dy * dy;
+		if (d2 < bestDist2) {
+			bestDist2 = d2;
+			best = i;
+			bestPos = ImVec2(x, y);
+		}
+	}
+	if (best == points.size()) return;
+
+	const SystemPath &path = paths[best];
+
+	// ring around the star and its name, so the player sees what they will pick
+	ImDrawList *fg = ImGui::GetForegroundDrawList();
+	const ImVec2 center(bestPos.x + imagePos.x, bestPos.y + imagePos.y);
+	fg->AddCircle(center, pickRadius * 0.8f, m_labels.highlightColor | IM_COL32_A_MASK, 0, 2.f);
+	RefCountedPtr<Sector> sec = GetCached(path);
+	if (path.systemIndex < sec->m_systems.size())
+		ImGui::SetTooltip("%s", sec->m_systems[path.systemIndex].GetName().c_str());
+
+	if (m_context.input->IsMouseButtonReleased(SDL_BUTTON_LEFT))
+		OnClickLabel(path);
 }
 
 void SectorMap::SetSize(vector2d size)
@@ -719,7 +776,7 @@ void SectorMap::SetLabelParams(std::string fontName, int fontSize, float gap, Co
 }
 
 // function should run inside imgui context
-void SectorMap::DrawLabelsInternal(bool interactive, const ImVec2 &imagePos)
+bool SectorMap::DrawLabelsInternal(bool interactive, const ImVec2 &imagePos)
 {
 	// sort the labels to draw them starting from the farthest
 	std::sort(m_labels.array.begin(), m_labels.array.end(), [](const std::unique_ptr<Label> &a, const std::unique_ptr<Label> &b) {
@@ -787,6 +844,8 @@ void SectorMap::DrawLabelsInternal(bool interactive, const ImVec2 &imagePos)
     drawData.Textures = &ImGui::GetIO().Fonts->TexList;
 
 	m_context.pigui->GetRenderer()->RenderDrawData(&drawData);
+
+	return hovered_i != NOT_FOUND;
 }
 
 void SectorMap::GotoSector(const SystemPath &path)
@@ -1030,6 +1089,10 @@ void SectorMap::DrawNearSector(const int sx, const int sy, const int sz, const m
 		const Color starColor = dim ? DIM_STAR_COLOR : Color(col[0], col[1], col[2], 255);
 		AddStarBillboard(systrans, vector3f(0.f), starColor, 0.5f);
 
+		// remember where the star is, so the mouse can pick it
+		m_nearStars.push_back(Sector::SIZE * vector3f(float(sx - int(floorf(m_pos.x))), float(sy - int(floorf(m_pos.y))), float(sz - int(floorf(m_pos.z)))) + i->GetPosition());
+		m_nearStarsPath.push_back(i->GetPath());
+
 		// add label
 		if (!dim && !(showMode & m_context.HIDE_LABEL)) PutSystemLabel(*i, showMode & m_context.SHADOW_LABEL);
 	}
@@ -1047,13 +1110,14 @@ void SectorMap::DrawFarSectors(const matrix4x4f &modelview)
 	if (m_toggledFaction || buildRadius != m_radiusFar || !secOrigin.ExactlyEqual(m_secPosFar)) {
 		m_farstars.clear();
 		m_farstarsColor.clear();
+		m_farstarsPath.clear();
 		m_visibleFactions.clear();
 
 		for (int sx = secOrigin.x - buildRadius; sx <= secOrigin.x + buildRadius; sx++) {
 			for (int sy = secOrigin.y - buildRadius; sy <= secOrigin.y + buildRadius; sy++) {
 				for (int sz = secOrigin.z - buildRadius; sz <= secOrigin.z + buildRadius; sz++) {
 					if ((vector3f(sx, sy, sz) - secOrigin).Length() <= buildRadius) {
-						BuildFarSector(GetCached(SystemPath(sx, sy, sz)), Sector::SIZE * secOrigin, m_farstars, m_farstarsColor);
+						BuildFarSector(GetCached(SystemPath(sx, sy, sz)), Sector::SIZE * secOrigin, m_farstars, m_farstarsColor, m_farstarsPath);
 					}
 				}
 			}
@@ -1076,7 +1140,7 @@ void SectorMap::DrawFarSectors(const matrix4x4f &modelview)
 	PutFactionLabels(Sector::SIZE * secOrigin);
 }
 
-void SectorMap::BuildFarSector(RefCountedPtr<Sector> sec, const vector3f &origin, std::vector<vector3f> &points, std::vector<Color> &colors)
+void SectorMap::BuildFarSector(RefCountedPtr<Sector> sec, const vector3f &origin, std::vector<vector3f> &points, std::vector<Color> &colors, std::vector<SystemPath> &paths)
 {
 	PROFILE_SCOPED()
 	Color starColor;
@@ -1087,6 +1151,7 @@ void SectorMap::BuildFarSector(RefCountedPtr<Sector> sec, const vector3f &origin
 		if (!i->IsExplored()) {
 			points.push_back((*i).GetFullPosition() - origin);
 			colors.push_back({ 100, 100, 100, 155 }); // flat gray for unexplored systems
+			paths.push_back((*i).GetPath());
 			continue;
 		}
 
@@ -1101,6 +1166,7 @@ void SectorMap::BuildFarSector(RefCountedPtr<Sector> sec, const vector3f &origin
 
 		points.push_back((*i).GetFullPosition() - origin);
 		colors.push_back(starColor);
+		paths.push_back((*i).GetPath());
 	}
 }
 

@@ -94,12 +94,15 @@ private:
 
 	void DrawNearSectors(const matrix4x4f &modelview);
 	void DrawNearSector(const int sx, const int sy, const int sz, const matrix4x4f &trans);
-	void DrawLabelsInternal(bool interactive, const ImVec2 &imagePos = { 0.0, 0.0 });
+	// returns true if the cursor is over a label
+	bool DrawLabelsInternal(bool interactive, const ImVec2 &imagePos = { 0.0, 0.0 });
+	// lets the player point at and click any star on the map, even one without a label
+	void PickStar(const ImVec2 &imagePos);
 	void PutSystemLabels(RefCountedPtr<Sector> sec, const vector3f &origin, int drawRadius);
 	void PutSystemLabel(const Sector::System &sys, bool shadow);
 
 	void DrawFarSectors(const matrix4x4f &modelview);
-	void BuildFarSector(RefCountedPtr<Sector> sec, const vector3f &origin, std::vector<vector3f> &points, std::vector<Color> &colors);
+	void BuildFarSector(RefCountedPtr<Sector> sec, const vector3f &origin, std::vector<vector3f> &points, std::vector<Color> &colors, std::vector<SystemPath> &paths);
 	void PutFactionLabels(const vector3f &secPos);
 
 	void OnClickLabel(const SystemPath &path);
@@ -144,6 +147,15 @@ private:
 
 	std::vector<vector3f> m_farstars;
 	std::vector<Color> m_farstarsColor;
+	std::vector<SystemPath> m_farstarsPath;
+
+	// stars drawn this frame in close-up mode, for mouse picking
+	// (same coordinate space as m_farstars: relative to the current sector)
+	std::vector<vector3f> m_nearStars;
+	std::vector<SystemPath> m_nearStarsPath;
+	// camera used for the stars this frame, for mouse picking
+	matrix4x4f m_pickView;
+	matrix4x4f m_pickProj;
 
 	vector3f m_secPosFar;
 	int m_radiusFar;
