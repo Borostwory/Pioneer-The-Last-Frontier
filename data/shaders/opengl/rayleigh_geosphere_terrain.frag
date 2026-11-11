@@ -161,6 +161,9 @@ void main(void)
 	}
 	surfaceRoughness = mix(surfaceRoughness, MATERIAL_PAVING_ROUGHNESS, paved);
 	detailMul.rgb = mix(detailMul.rgb, vec3(1.0), pavingSmoothing);
+	// the gardens, lots and roads cover the terrain's ice, metal and dust: none of their shine, shadow tint or
+	// backscatter (the gardens on metal Phobos shone as bare metal; 2026-11-11)
+	lightWeights *= 1.0 - paved;
 
 	// the lamps of nearby ships on the land and the water, added after the
 	// cloud shadows (ship-lights.glsl)
