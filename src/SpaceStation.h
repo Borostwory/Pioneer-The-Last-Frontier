@@ -7,7 +7,9 @@
 #include "ModelBody.h"
 #include "Quaternion.h"
 #include "SpaceStationType.h"
+#include "sound/Sound.h"
 
+#include <deque>
 #define MAX_DOCKING_PORTS 240 //256-(0x10), 0x10 is used because the collision surfaces use it as an identifying flag
 #define DOCKING_CLEARANCE_TIMEOUT (10.0 * 60.0)  // (10 min)
 
@@ -26,6 +28,7 @@ namespace Graphics {
 
 namespace SceneGraph {
 	class Animation;
+	class MatrixTransform;
 }
 
 class SpaceStation : public ModelBody {
@@ -72,6 +75,8 @@ public:
 	int GetFreeDockingPort(const Ship *s) const; // returns -1 if none free
 	int GetMyDockingPort(const Ship *s) const;
 	int NumShipsDocked() const;
+	// the ship docked, docking or leaving at a bay (from 0), or nullptr
+	Ship *GetShipInBay(int bay) const { return bay >= 0 && bay < int(m_shipDocking.size()) ? m_shipDocking[bay].ship : nullptr; }
 
 	const SpaceStationType *GetStationType() const { return m_type; }
 	bool IsGroundStation() const;
@@ -90,6 +95,21 @@ public:
 	// Return true if any lightning changes were applied, only do so if body is inside
 	// or near enough to the station
 	bool CalcInteriorLighting(const Body *b, Color4ub& sLight, double& sIntensity) const;
+
+	// A station with a turning floor under one shaft (SpaceStationType::Revolver):
+	// the ships take turns. Whether it is the ship's turn (its spot is under the
+	// shaft: come over the shaft and lower the gear, and the lid opens); whether
+	// the lid is open for it, to come down now; and where (in the station's
+	// frame) a ship with clearance waits for its turn.
+	bool IsRevolver() const { return m_type->IsRevolver(); }
+	// a bay's docked transform in station space, where it is now (a
+	// revolver station's spots turn with its floor)
+	matrix4x4d GetBayLocalTransform(int bay) const;
+	bool IsShaftReadyFor(const Ship *ship) const;
+	bool IsShaftOpenFor(const Ship *ship) const;
+	vector3d GetRevolverHoldPosition(int bay) const;
+	// what the floor and the lid are doing, in words (log, debug window); empty if not a revolver
+	std::string GetRevolverStatus() const;
 
 
 protected:
@@ -146,6 +166,52 @@ private:
 	SceneGraph::Animation *m_doorAnimation;
 	double m_doorAnimationStep;
 	double m_doorAnimationState;
+
+	// the turning floor and its lid (IsRevolver): one job at a time, in turn
+	enum class RevolverPhase {
+		IDLE,	 // lid closed, nothing to do
+		TURNING, // the job's spot is turning under the shaft
+		OPENING, // the lid opens
+		OPEN,	 // the ship comes down, or is lifted out
+		CLOSING, // the lid closes
+		WAITING	 // the spot is under the shaft: waiting for the arriving ship over it, gear down
+				 // (last, so the numbers of the others in saved games stay the same)
+	};
+	// whether the ship of an arriving job hovers over the shaft with its gear down
+	bool RevolverShipOverShaft() const;
+	struct RevolverJob {
+		int bay = -1;
+		bool leaving = false;
+	};
+	RevolverPhase m_revPhase = RevolverPhase::IDLE;
+	RevolverPhase m_revLoggedPhase = RevolverPhase::IDLE;
+	RevolverJob m_revJob;
+	std::deque<RevolverJob> m_revQueue;
+	double m_floorAngle = 0.0; // radians, the floor's turn from the model's pose
+	SceneGraph::Animation *m_turnAnimation = nullptr;
+	// the spots' pad lights (navlight_pad*): the model keeps every navlight
+	// where it was made (Loader::CreateNavlight), so they are turned with the
+	// floor here; with their place at rest
+	std::vector<std::pair<SceneGraph::MatrixTransform *, matrix4x4f>> m_padLights;
+	double m_padLightsAngle = -1.0;
+
+	// the lid's and the floor's sounds (data/sounds/Station/RevolverLid,
+	// RevolverTurn), heard from the base while they move
+	Sound::Event m_lidSound;
+	Sound::Event m_turnSound;
+	bool m_lidSoundOn = false;
+	bool m_turnSoundOn = false;
+	// startFx / stopFx: played once as the movement starts / stops (RevolverTurnStart:
+	// the floor's motor engaging, RevolverTurnStop: winding down)
+	void RevolverSound(Sound::Event &sound, bool &on, const char *fx, bool moving,
+		const char *startFx = nullptr, const char *stopFx = nullptr);
+	bool m_revGeomsMoved = false; // the lid moved this step: its collision follows
+
+	void RevolverUpdate(const double timeStep);
+	void RevolverEnqueue(int bay, bool leaving);
+	bool RevolverJobValid(const RevolverJob &job) const;
+	void RevolverSave(Json &spaceStationObj) const;
+	void RevolverLoad(const Json &spaceStationObj);
 
 	std::unique_ptr<NavLights> m_navLights;
 };

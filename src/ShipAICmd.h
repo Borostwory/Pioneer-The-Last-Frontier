@@ -101,6 +101,9 @@ private:
 	vector3d m_dockupdir;
 	EDockingStates m_state; // see TimeStepUpdate()
 	int m_targetIndex;		// used during deserialisation
+	// at a revolver station (SpaceStation::IsRevolver): waiting off to the
+	// side for the shaft to open, instead of flying the approach
+	bool m_holding = false;
 
 	void IncrementState()
 	{

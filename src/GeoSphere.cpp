@@ -1731,6 +1731,15 @@ void GeoSphere::SetUpMaterials()
 		//solid blendmode
 		Graphics::RenderStateDesc rsd;
 		surfDesc.quality |= Graphics::HAS_ECLIPSES;
+		// (a version of the ground's shaders of its own, only on bodies with a revolver starport)
+		if (m_terrain->HasGroundHoles()) {
+			surfDesc.quality |= Graphics::HAS_GROUND_HOLES;
+			std::vector<Terrain::GroundHole> holes;
+			m_terrain->GetGroundHoles(holes);
+			for (const Terrain::GroundHole &hole : holes)
+				Output("%s: hole in the ground at (%.4f, %.4f, %.4f), %.0f m across\n", GetSystemBody()->GetName().c_str(),
+					hole.dir.x, hole.dir.y, hole.dir.z, 2.0 * hole.chord * GetSystemBody()->GetRadius());
+		}
 		const int scattering = Pi::config->Int("RealisticScattering");
 		// built in the background, and waited for in Render only close to the ground
 		Pi::renderer->SetBackgroundCompile(true);

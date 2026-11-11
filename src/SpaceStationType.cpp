@@ -86,6 +86,25 @@ SpaceStationType::SpaceStationType(const std::string &id_, const std::string &pa
 
 	weight = std::max(0.0f, data.value("weight", 1.0f));
 
+	// a turning floor under one shaft (SpaceStationType::Revolver); the
+	// positions come from the model in OnSetupComplete
+	const auto rev = data.find("revolver");
+	if (rev != data.end() && rev->is_object()) {
+		if (dockMethod != SURFACE) {
+			Output("station def '%s': \"revolver\" only works on surface stations, ignored\n", path_.c_str());
+		} else {
+			m_revolver.enabled = true;
+			m_revolver.turnSpeed = std::max(0.1f, rev->value("turn_speed", m_revolver.turnSpeed));
+			m_revolver.liftSpeed = std::max(0.5f, rev->value("lift_speed", m_revolver.liftSpeed));
+			m_revolver.liftHeight = std::max(1.0f, rev->value("lift_height", m_revolver.liftHeight));
+			m_revolver.lidTime = std::max(0.5f, rev->value("lid_time", m_revolver.lidTime));
+			m_revolver.holdDistance = rev->value("hold_distance", m_revolver.holdDistance);
+			m_revolver.holdHeight = rev->value("hold_height", m_revolver.holdHeight);
+			m_revolver.holeRadius = std::max(0.0f, rev->value("hole_radius", m_revolver.holeRadius));
+			m_revolver.holeDepth = std::max(0.0f, rev->value("hole_depth", m_revolver.holeDepth));
+		}
+	}
+
 	const auto conds = data.find("conditions");
 	if (conds != data.end() && conds->is_object()) {
 		for (const auto &cond : conds->items()) {
@@ -271,6 +290,49 @@ void SpaceStationType::OnSetupComplete()
 	numDockingPorts = m_bayPaths.size();
 
 	assert(!m_bayPaths.empty());
+
+	if (m_revolver.enabled)
+		SetUpRevolver();
+}
+
+// The angle of p round the hub, seen from above: from +x towards -z, the way
+// a turn of the floor about +y (Blender's +z) carries it.
+static double AngleRoundHub(const vector3d &p, const vector3d &hub)
+{
+	return atan2(-(p.z - hub.z), p.x - hub.x);
+}
+
+void SpaceStationType::SetUpRevolver()
+{
+	// all the bays share the shaft: one port, its entrance the pad point under it
+	if (m_ports.size() != 1) {
+		Output("%s: a revolver station needs exactly one entrance (the shaft), it has %u; the turning floor is off\n",
+			modelName.c_str(), unsigned(m_ports.size()));
+		m_revolver.enabled = false;
+		return;
+	}
+	m_revolver.shaft = vector3d(m_ports[0].m_approach[DockStage::APPROACH2].GetTranslate());
+
+	SceneGraph::Tag *hubTag = model->FindTagByName("tag_turntable");
+	if (!hubTag) {
+		Output("%s: a revolver station needs a tag_turntable at the floor's centre; the turning floor is off\n", modelName.c_str());
+		m_revolver.enabled = false;
+		return;
+	}
+	m_revolver.hub = vector3d(hubTag->GetGlobalTransform().GetTranslate());
+
+	// the turn of the floor that brings each bay's spot under the shaft
+	const double shaftAngle = AngleRoundHub(m_revolver.shaft, m_revolver.hub);
+	m_revolver.bayAngles.assign(m_bayPaths.size(), 0.0);
+	for (const auto &bp : m_bayPaths) {
+		const vector3d spot(bp.second.m_docking.at(DockStage::DOCKED).GetTranslate());
+		double a = shaftAngle - AngleRoundHub(spot, m_revolver.hub);
+		a = fmod(a, 2.0 * M_PI);
+		if (a < 0.0)
+			a += 2.0 * M_PI;
+		m_revolver.bayAngles.at(bp.first - 1) = a;
+		Output(" revolver bay %u: floor turned %.1f degrees\n", bp.first, a * 180.0 / M_PI);
+	}
 }
 
 const SpaceStationType::SPort *SpaceStationType::FindPortByBay(const int zeroBaseBayID) const

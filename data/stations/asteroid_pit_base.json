@@ -1,0 +1,18 @@
+{
+   "model" : "asteroid_pit_base",
+   "type" : "surface",
+   "custom_only" : true,
+   "parking_distance" : 5000,
+   "parking_gap_size" : 2000,
+   "pad_offset" : 150,
+   "flatten_radius" : 670,
+   "revolver" : {
+      "turn_speed" : 9.0,
+      "lift_speed" : 20.0,
+      "lift_height" : 345.0,
+      "hold_distance" : 800.0,
+      "hold_height" : 500.0,
+      "hole_radius" : 150.0,
+      "hole_depth" : 330.0
+   }
+}

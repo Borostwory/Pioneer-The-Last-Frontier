@@ -17,6 +17,7 @@
 #include "core/Log.h"
 #include "../galaxy/SystemBody.h"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <iterator>
@@ -1011,6 +1012,10 @@ void Terrain::SetFlatSite(const SystemBody *starport, const vector3d &p)
 	const double flat = type->FlattenRadius() + SITE_MARGIN_M;
 	site.flatChord = flat / m_planetRadius;
 	site.blendChord = (flat + std::max(SITE_BLEND_MIN_M, flat)) / m_planetRadius;
+	if (type->IsRevolver() && type->GetRevolver().holeRadius > 0.0f) {
+		site.holeChord = type->GetRevolver().holeRadius / m_planetRadius;
+		site.holeDepth = type->GetRevolver().holeDepth / m_planetRadius;
+	}
 
 	std::lock_guard<std::mutex> lock(m_flatSitesLock);
 	auto sites = m_flatSites ? std::make_shared<std::vector<FlatSite>>(*m_flatSites) : std::make_shared<std::vector<FlatSite>>();
@@ -1026,6 +1031,49 @@ std::shared_ptr<const std::vector<Terrain::FlatSite>> Terrain::FlatSites() const
 {
 	std::lock_guard<std::mutex> lock(m_flatSitesLock);
 	return m_flatSites;
+}
+
+bool Terrain::HasGroundHoles() const
+{
+	const std::shared_ptr<const std::vector<FlatSite>> sites = FlatSites();
+	if (!sites)
+		return false;
+	return std::any_of(sites->begin(), sites->end(), [](const FlatSite &s) { return s.holeChord > 0.0; });
+}
+
+void Terrain::GetGroundHoles(std::vector<GroundHole> &out) const
+{
+	out.clear();
+	const std::shared_ptr<const std::vector<FlatSite>> sites = FlatSites();
+	if (!sites)
+		return;
+	for (const FlatSite &site : *sites) {
+		if (site.holeChord <= 0.0)
+			continue;
+		GroundHole hole;
+		hole.dir = site.pos;
+		hole.chord = site.holeChord;
+		hole.floor = site.height - site.holeDepth;
+		hole.skirtChord = site.flatChord;
+		out.push_back(hole);
+	}
+}
+
+bool Terrain::GroundHoleFloor(const vector3d &p, double &floorOut) const
+{
+	const std::shared_ptr<const std::vector<FlatSite>> sites = FlatSites();
+	if (!sites)
+		return false;
+	for (const FlatSite &site : *sites) {
+		if (site.holeChord <= 0.0)
+			continue;
+		// (a hole is small: the distance from the site along the sphere is its chord)
+		if ((p - site.pos).LengthSqr() < site.holeChord * site.holeChord) {
+			floorOut = site.height - site.holeDepth;
+			return true;
+		}
+	}
+	return false;
 }
 
 void Terrain::LevelSites(const vector3d *vP, double *heightsOut, const size_t count) const

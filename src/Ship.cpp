@@ -50,6 +50,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <limits>
 #include <vector>
 
@@ -113,7 +114,7 @@ namespace {
 			if (!stationType) continue;
 
 			for (Uint32 bay = 0; bay < stationType->NumDockingPorts(); ++bay) {
-				const matrix4x4f bayDocked = stationType->GetStageTransform(int(bay), DockStage::DOCKED);
+				const matrix4x4f bayDocked = matrix4x4f(station->GetBayLocalTransform(int(bay)));
 				const vector3d bayLocal = vector3d(bayDocked.GetTranslate());
 				const vector3d bayWorld = station->GetPosition() + station->GetOrient() * bayLocal;
 				const vector3d padUp = bayWorld.NormalizedSafe();
@@ -671,8 +672,41 @@ bool Ship::OnDamage(Body *attacker, float kgDamage, const CollisionContact &cont
 	return true;
 }
 
+// Every bump of a ship within 3 km of a revolver base (SpaceStation::IsRevolver)
+// goes to the log: what it hit, where in the base's own axes (y up from the
+// ground), how fast. At most twice a second per ship.
+static void LogBumpNearRevolver(const Ship *ship, const Body *other, Uint32 flags, double relVel)
+{
+	if (!Pi::game || !Pi::game->GetSpace())
+		return;
+	static std::map<const Ship *, double> lastLogged;
+	const double now = Pi::game->GetTime();
+	auto last = lastLogged.find(ship);
+	if (last != lastLogged.end() && now - last->second < 0.5)
+		return;
+	for (Body *body : Pi::game->GetSpace()->GetBodiesMaybeNear(ship, 3000.0)) {
+		if (!body->IsType(ObjectType::SPACESTATION) || !static_cast<SpaceStation *>(body)->IsRevolver())
+			continue;
+		const SpaceStation *station = static_cast<SpaceStation *>(body);
+		if (station->GetFrame() != ship->GetFrame())
+			continue;
+		const vector3d p = ship->GetPositionRelTo(station) * station->GetOrient();
+		const char *kind = other->IsType(ObjectType::SPACESTATION) ? "the base" : other->IsType(ObjectType::PLANET) ? "the ground" : other->IsType(ObjectType::SHIP) ? "a ship" : "something";
+		// what its AI was doing (the deepest order it follows)
+		char ai[256] = "";
+		const_cast<Ship *>(ship)->AIGetStatusText(ai);
+		Output("%s bumped into %s (%s, surface flags %u) at x %.0f, y %.0f, z %.0f m from %s, %.1f m/s, %s, AI: %s\n",
+			ship->GetLabel().c_str(), kind, other->GetLabel().c_str(), flags, p.x, p.y, p.z,
+			station->GetLabel().c_str(), relVel, EnumStrings::GetString("ShipFlightState", ship->GetFlightState()), ai);
+		lastLogged[ship] = now;
+		return;
+	}
+}
+
 bool Ship::OnCollision(Body *b, Uint32 flags, double relVel)
 {
+	LogBumpNearRevolver(this, b, flags, relVel);
+
 	// Collision with SpaceStation docking or entrance surface is
 	// completely handled by SpaceStations, you only
 	// need to return a "true" value in order to trigger

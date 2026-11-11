@@ -1330,6 +1330,7 @@ AICmdDock::AICmdDock(const Json &jsonObj) :
 		m_dockdir = jsonObj["dock_dir"];
 		m_dockupdir = jsonObj["dock_up_dir"];
 		m_state = EDockingStates(jsonObj["state"]);
+		m_holding = jsonObj.value("holding", false);
 	} catch (Json::type_error &) {
 		throw SavedGameCorruptException();
 	}
@@ -1345,6 +1346,8 @@ void AICmdDock::SaveToJson(Json &jsonObj)
 	aiCommandObj["dock_dir"] = m_dockdir;
 	aiCommandObj["dock_up_dir"] = m_dockupdir;
 	aiCommandObj["state"] = m_state;
+	if (m_holding)
+		aiCommandObj["holding"] = true;
 	jsonObj["ai_command"] = aiCommandObj; // Add ai command object to supplied object.
 }
 
@@ -1357,6 +1360,10 @@ void AICmdDock::SaveToJson(Json &jsonObj)
 bool AICmdDock::TimeStepUpdate()
 {
 	Ship *ship = nullptr;
+	// on the way to the waiting point when the shaft opened: go now
+	if (m_holding && m_child && m_target && m_target->IsRevolver() && m_dBody->IsType(ObjectType::SHIP) &&
+		m_target->IsShaftReadyFor(static_cast<Ship *>(m_dBody)))
+		m_child.reset();
 	if (!ProcessChild()) return false;
 	if (!m_target) return true;
 
@@ -1402,6 +1409,33 @@ bool AICmdDock::TimeStepUpdate()
 		if (!cleared || (port == -1)) {
 			ship->AIMessage(Ship::AIERROR_REFUSED_PERM);
 			return true;
+		}
+	}
+
+	// A revolver station takes one ship at a time down its shaft: wait at
+	// this ship's own point off to the side until the shaft is open for it,
+	// then fly the approach from the start.
+	if (m_target->IsRevolver()) {
+		if (!m_target->IsShaftReadyFor(ship)) {
+			if (!m_holding) {
+				m_holding = true;
+				m_state = eDockGetDataStart;
+			}
+			const vector3d hold = m_target->GetRevolverHoldPosition(port);
+			const vector3d holdHere = GetPosInFrame(m_dBody->GetFrame(), m_target->GetFrame(), hold);
+			if ((holdHere - m_dBody->GetPosition()).LengthSqr() > 200.0 * 200.0) {
+				m_child.reset(new AICmdFlyTo(m_dBody, m_target->GetFrame(), hold, 0.0, false));
+				ProcessChild();
+			} else {
+				// hover there (still in the ship's frame, the planet's turning one)
+				ship->SetWheelState(false);
+				m_prop->AIMatchVel(vector3d(0.0));
+			}
+			return false;
+		}
+		if (m_holding) {
+			m_holding = false;
+			m_state = eDockGetDataStart;
 		}
 	}
 
@@ -1472,7 +1506,10 @@ bool AICmdDock::TimeStepUpdate()
 	if (vdiff.Dot(reldir) < 0) {
 		m_dBody->SetDecelerating(true);
 	}
-	if (m_state < eInvalidDockingStage && af < 0.01 && ship->GetWheelState() >= 1.0f) {
+	// over a revolver station's shaft with the gear down: the lid opens, and the
+	// ship comes down only once it is open (it hovers here meanwhile)
+	const bool waitForLid = m_state == eDockFlyToEnd && m_target->IsRevolver() && !m_target->IsShaftOpenFor(ship);
+	if (m_state < eInvalidDockingStage && af < 0.01 && ship->GetWheelState() >= 1.0f && !waitForLid) {
 		IncrementState();
 	}
 

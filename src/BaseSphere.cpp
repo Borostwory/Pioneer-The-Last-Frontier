@@ -36,8 +36,13 @@ struct BaseSphereDataBlock {
 	alignas(16) float atmosHazeExtinction[4]; // rgb: of Earth's haze, scattering and absorption
 	alignas(16) float atmosHazeGlow[4];		  // rgb: forward scattering (g)
 	alignas(16) float atmosGasAbsorb[4];	  // rgb: colour the gas absorbs, in 1e-6
+
+	// the holes cut in the ground (Terrain::GroundHole; GROUND_HOLES in the terrain shaders)
+	alignas(16) float groundHoles[BaseSphere::MAX_GROUND_HOLES][4]; // xyz: view-space direction from the centre, w: radius in planet radii
+	alignas(16) float groundHoleSkirts[BaseSphere::MAX_GROUND_HOLES][4]; // x: radius in planet radii out to which no skirts are drawn
+	alignas(16) float groundHoleCount[4];				// x: how many
 };
-static_assert(sizeof(BaseSphereDataBlock) == 224, "");
+static_assert(sizeof(BaseSphereDataBlock) == 224 + 32 * BaseSphere::MAX_GROUND_HOLES + 16, "");
 
 std::unique_ptr<Graphics::Drawables::Sphere3D> BaseSphere::m_atmos;
 
@@ -124,6 +129,25 @@ void BaseSphere::SetMaterialParameters(const matrix4x4d &trans, const float radi
 	matData.atmosHazeExtinction[3] = ap.hazeGlowFromAbove;
 	matData.atmosHazeGlow[3] = 0.0f;
 	matData.atmosGasAbsorb[3] = 0.0f;
+
+	// the holes in the ground, as the planet stands in view space
+	if (m_terrain) {
+		static thread_local std::vector<Terrain::GroundHole> holes;
+		m_terrain->GetGroundHoles(holes);
+		int n = 0;
+		for (const Terrain::GroundHole &hole : holes) {
+			if (n >= MAX_GROUND_HOLES)
+				break;
+			const vector3d dir = trans.ApplyRotationOnly(hole.dir).Normalized();
+			matData.groundHoles[n][0] = float(dir.x);
+			matData.groundHoles[n][1] = float(dir.y);
+			matData.groundHoles[n][2] = float(dir.z);
+			matData.groundHoles[n][3] = float(hole.chord);
+			matData.groundHoleSkirts[n][0] = float(hole.skirtChord);
+			n++;
+		}
+		matData.groundHoleCount[0] = float(n);
+	}
 
 	// we handle up to three shadows at a time
 	auto it = shadows.cbegin(), itEnd = shadows.cend();

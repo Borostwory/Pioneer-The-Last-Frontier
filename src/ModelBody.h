@@ -56,13 +56,15 @@ public:
 
 protected:
 	void SaveToJson(Json &jsonObj, Space *space) override;
+	// puts the collision where the body is, the moving parts' (collision_d*)
+	// where its animations have them now
+	void MoveGeoms(const matrix4x4d &, const vector3d &);
 
 private:
 	void RebuildCollisionMesh();
 	void DeleteGeoms();
 	void AddGeomsToFrame(Frame *);
 	void RemoveGeomsFromFrame(Frame *);
-	void MoveGeoms(const matrix4x4d &, const vector3d &);
 
 	bool m_isStatic;
 	bool m_colliding;

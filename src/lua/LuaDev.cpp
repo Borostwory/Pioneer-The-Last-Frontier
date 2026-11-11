@@ -12,6 +12,7 @@
 #include "Planet.h"
 #include "Ship.h"
 #include "Space.h"
+#include "SpaceStation.h"
 #include "WorldView.h"
 #include "galaxy/Galaxy.h"
 #include "galaxy/GalaxyCache.h"
@@ -419,6 +420,39 @@ static int l_dev_teleport_near_body(lua_State *l)
 }
 
 /*
+ * Put a flying ship at rest near a station, in the station's own axes: height
+ * metres up its axis (above the ground for a ground station) and side metres
+ * out along its x axis, level with the station and with no AI orders. For
+ * watching ships come and go.
+ *
+ * > Dev.PlaceNearStation(ship, station, height, side)
+ */
+static int l_dev_place_near_station(lua_State *l)
+{
+	if (!Pi::game || !Pi::game->GetSpace())
+		return luaL_error(l, "Dev.PlaceNearStation only works when there is a game running");
+
+	Ship *ship = LuaObject<Ship>::CheckFromLua(1);
+	SpaceStation *station = LuaObject<SpaceStation>::CheckFromLua(2);
+	const double height = luaL_checknumber(l, 3);
+	const double side = luaL_optnumber(l, 4, 0.0);
+
+	if (ship->GetFlightState() != Ship::FLYING)
+		return luaL_error(l, "Dev.PlaceNearStation: the ship must be flying");
+
+	const matrix3x3d &orient = station->GetOrient();
+	ship->AIClearInstructions();
+	ship->ClearThrusterState();
+	ship->SetFrame(station->GetFrame());
+	ship->SetPosition(station->GetPosition() + orient * vector3d(side, height, 0.0));
+	// level with the station: top up its axis
+	ship->SetOrient(orient);
+	ship->SetVelocity(vector3d(0.0));
+	ship->SetAngVelocity(vector3d(0.0));
+	return 0;
+}
+
+/*
  * Put a ship on a planet or moon of the current system at a latitude and
  * longitude (radians, as Body:GetGroundPosition gives them): landed if
  * altitude is 0 or less, else that many metres above the terrain, at rest
@@ -764,6 +798,7 @@ void LuaDev::Register()
 		{ "FindSystemsWithStarType", l_dev_find_systems_with_star_type },
 		{ "TeleportNearBody", l_dev_teleport_near_body },
 		{ "PlaceOnSurface", l_dev_place_on_surface },
+		{ "PlaceNearStation", l_dev_place_near_station },
 		{ "GetTerrainFeatures", l_dev_get_terrain_features },
 		{ "DescribeTerrain", l_dev_describe_terrain },
 		{ "MakeTerrainMap", l_dev_make_terrain_map },

@@ -22,6 +22,9 @@ namespace Graphics {
 
 class BaseSphere {
 public:
+	// the most holes in the ground the shaders know of (Terrain::GroundHole; basesphere_uniforms.glsl)
+	static constexpr int MAX_GROUND_HOLES = 4;
+
 	BaseSphere(const SystemBody *body);
 	virtual ~BaseSphere();
 

@@ -13,6 +13,9 @@
 #include "scenegraph/MatrixTransform.h"
 #include "scenegraph/Serializer.h"
 #include "scenegraph/Tag.h"
+#include "CollMesh.h"
+#include "collider/GeomTree.h"
+#include "core/Log.h"
 #include "utils.h"
 
 extern "C" {
@@ -230,6 +233,41 @@ Model *BinaryConverter::Load(const std::string &shortname, const std::string &ba
 	return nullptr;
 }
 
+// A model's moving collision (collision_d* meshes, CollisionGeometry::IsDynamic)
+// read back from its .sgm: each CollisionGeometry node needs its GeomTree again,
+// as CollisionVisitor gave it when the model was first loaded, for ModelBody to
+// find it (DynGeomFinder) and move it with the animations. Without it the
+// moving collision stayed where its mesh file put it, untransformed (a revolver
+// station's lid halves stood upright across its shaft). The trees were saved
+// in the order CollisionVisitor met the nodes, depth first, as this visitor does.
+namespace {
+	class DynamicCollisionFinder : public NodeVisitor {
+	public:
+		std::vector<CollisionGeometry *> found;
+		void ApplyCollisionGeometry(CollisionGeometry &cg) override
+		{
+			if (cg.IsDynamic())
+				found.push_back(&cg);
+		}
+	};
+} // namespace
+
+static void LinkDynamicCollision(Group *root, CollMesh *collMesh)
+{
+	DynamicCollisionFinder finder;
+	root->Accept(finder);
+	const std::vector<GeomTree *> &trees = collMesh->GetDynGeomTrees();
+	if (finder.found.size() != trees.size()) {
+		Log::Warning("Model's moving collision: {} meshes but {} trees, not linked", finder.found.size(), trees.size());
+		return;
+	}
+	for (size_t i = 0; i < trees.size(); i++) {
+		if (int(finder.found[i]->GetVertices().size()) != trees[i]->GetNumVertices())
+			Log::Warning("Model's moving collision {}: {} vertices, its tree {}", i, finder.found[i]->GetVertices().size(), trees[i]->GetNumVertices());
+		finder.found[i]->SetGeomTree(trees[i]);
+	}
+}
+
 Model *BinaryConverter::CreateModel(const std::string &filename, Serializer::Reader &rd)
 {
 	PROFILE_SCOPED()
@@ -262,6 +300,7 @@ Model *BinaryConverter::CreateModel(const std::string &filename, Serializer::Rea
 	RefCountedPtr<CollMesh> collMesh(new CollMesh());
 	collMesh->Load(rd);
 	m_model->SetCollisionMesh(collMesh);
+	LinkDynamicCollision(root, collMesh.Get());
 	m_model->SetDrawClipRadius(rd.Float());
 
 	LoadAnimations(rd);

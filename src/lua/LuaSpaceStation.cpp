@@ -123,7 +123,7 @@ static int l_spacestation_get_assigned_bay_nav_error(lua_State *l)
 		return 1;
 	}
 
-	matrix4x4f dockedTransform = ss->GetStationType()->GetStageTransform(number, DockStage::DOCKED);
+	matrix4x4f dockedTransform = matrix4x4f(ss->GetBayLocalTransform(number));
 
 	const matrix3x3d &orient = ss->GetInterpOrient();
 	const vector3d dock_location = orient * vector3d(dockedTransform.GetTranslate());
@@ -194,6 +194,58 @@ static int l_spacestation_attr_is_ground_station(lua_State *l)
 	return 1;
 }
 
+/*
+ * Attribute: isRevolver
+ *
+ * true if the station's landing spots sit on a turning floor under one shaft
+ * (SpaceStationType::Revolver)
+ */
+static int l_spacestation_attr_is_revolver(lua_State *l)
+{
+	SpaceStation *s = LuaObject<SpaceStation>::CheckFromLua(1);
+	lua_pushboolean(l, s->IsRevolver());
+	return 1;
+}
+
+/*
+ * Method: GetRevolverStatus
+ *
+ * What a revolver station's floor and lid are doing, in words, for debugging;
+ * an empty string for other stations.
+ *
+ * > text = station:GetRevolverStatus()
+ */
+static int l_spacestation_get_revolver_status(lua_State *l)
+{
+	SpaceStation *s = LuaObject<SpaceStation>::CheckFromLua(1);
+	const std::string status = s->GetRevolverStatus();
+	lua_pushstring(l, status.c_str());
+	return 1;
+}
+
+/*
+ * Method: GetDockedShips
+ *
+ * The ships docked, docking or leaving at the station, by bay (1 up; a bay
+ * without a ship is left out).
+ *
+ * > ships = station:GetDockedShips()
+ */
+static int l_spacestation_get_docked_ships(lua_State *l)
+{
+	SpaceStation *s = LuaObject<SpaceStation>::CheckFromLua(1);
+	lua_newtable(l);
+	for (int bay = 0; bay < s->GetDockingPortCount(); bay++) {
+		Ship *ship = s->GetShipInBay(bay);
+		if (!ship)
+			continue;
+		lua_pushinteger(l, bay + 1);
+		LuaObject<Ship>::PushToLua(ship);
+		lua_settable(l, -3);
+	}
+	return 1;
+}
+
 template <>
 const char *LuaObject<SpaceStation>::s_type = "SpaceStation";
 
@@ -208,6 +260,8 @@ void LuaObject<SpaceStation>::RegisterClass()
 		{ "GetAssignedBayNumber", l_spacestation_get_assigned_bay_number },
 		{ "GetAssignedBayNavError", l_spacestation_get_assigned_bay_nav_error },
 		{ "GetNearbyTraffic", l_spacestation_get_nearby_traffic },
+		{ "GetRevolverStatus", l_spacestation_get_revolver_status },
+		{ "GetDockedShips", l_spacestation_get_docked_ships },
 
 		{ 0, 0 }
 	};
@@ -216,6 +270,7 @@ void LuaObject<SpaceStation>::RegisterClass()
 		{ "numDocks", l_spacestation_attr_num_docks },
 		{ "isGroundStation", l_spacestation_attr_is_ground_station },
 		{ "numShipsDocked", l_spacestation_attr_num_ships_docked },
+		{ "isRevolver", l_spacestation_attr_is_revolver },
 
 		{ 0, 0 }
 	};

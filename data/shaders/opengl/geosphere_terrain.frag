@@ -63,6 +63,10 @@ uniform float PatchDetailFrequency;
 
 void main(void)
 {
+#ifdef GROUND_HOLES
+	if (inGroundHole(varyingEyepos, skirtWeight > 0.0))
+		discard;
+#endif
 	vec3 eyeposScaled = varyingEyepos * geosphereInvRadius;
 	vec3 eyenorm = normalize(varyingEyepos);
 	vec3 tnorm = normalize(varyingNormal);

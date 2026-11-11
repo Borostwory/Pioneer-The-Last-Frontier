@@ -1,0 +1,617 @@
+<?xml version='1.0' encoding='utf-8'?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+  <asset>
+    <contributor>
+      <authoring_tool>Pioneer Blender add-on</authoring_tool>
+    </contributor>
+    <created>2026-11-11T15:19:14</created>
+    <modified>2026-11-11T15:19:14</modified>
+    <unit name="meter" meter="1" />
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="pit_hull-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pit_interior-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pit_hangar_wall-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pit_dark-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pit_deck-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pit_lid-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pit_markings-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pit_hazard-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pit_roof-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pit_shaft_above-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pit_shaft_below-effect">
+      <profile_COMMON>
+        <technique sid="common">
+          <lambert>
+            <diffuse>
+              <color sid="diffuse">0.8 0.8 0.8 1</color>
+            </diffuse>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_materials>
+    <material id="pit_hull-material" name="pit_hull">
+      <instance_effect url="#pit_hull-effect" />
+    </material>
+    <material id="pit_interior-material" name="pit_interior">
+      <instance_effect url="#pit_interior-effect" />
+    </material>
+    <material id="pit_hangar_wall-material" name="pit_hangar_wall">
+      <instance_effect url="#pit_hangar_wall-effect" />
+    </material>
+    <material id="pit_dark-material" name="pit_dark">
+      <instance_effect url="#pit_dark-effect" />
+    </material>
+    <material id="pit_deck-material" name="pit_deck">
+      <instance_effect url="#pit_deck-effect" />
+    </material>
+    <material id="pit_lid-material" name="pit_lid">
+      <instance_effect url="#pit_lid-effect" />
+    </material>
+    <material id="pit_markings-material" name="pit_markings">
+      <instance_effect url="#pit_markings-effect" />
+    </material>
+    <material id="pit_hazard-material" name="pit_hazard">
+      <instance_effect url="#pit_hazard-effect" />
+    </material>
+    <material id="pit_roof-material" name="pit_roof">
+      <instance_effect url="#pit_roof-effect" />
+    </material>
+    <material id="pit_shaft_above-material" name="pit_shaft_above">
+      <instance_effect url="#pit_shaft_above-effect" />
+    </material>
+    <material id="pit_shaft_below-material" name="pit_shaft_below">
+      <instance_effect url="#pit_shaft_below-effect" />
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="collision_pad01-mesh" name="collision_pad01">
+      <mesh>
+        <source id="collision_pad01-mesh-positions">
+          <float_array id="collision_pad01-mesh-positions-array" count="24">-100 -100 -1 -100 -100 0 -100 100 -1 -100 100 0 100 -100 -1 100 -100 0 100 100 -1 100 100 0</float_array>
+          <technique_common>
+            <accessor source="#collision_pad01-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float" />
+              <param name="Y" type="float" />
+              <param name="Z" type="float" />
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="collision_pad01-mesh-normals">
+          <float_array id="collision_pad01-mesh-normals-array" count="18">-1 0 0 0 1 0 1 0 0 0 -1 0 0 0 -1 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#collision_pad01-mesh-normals-array" count="6" stride="3">
+              <param name="X" type="float" />
+              <param name="Y" type="float" />
+              <param name="Z" type="float" />
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="collision_pad01-mesh-vertices">
+          <input semantic="POSITION" source="#collision_pad01-mesh-positions" />
+        </vertices>
+        <triangles count="12">
+          <input semantic="VERTEX" source="#collision_pad01-mesh-vertices" offset="0" />
+          <input semantic="NORMAL" source="#collision_pad01-mesh-normals" offset="1" />
+          <p>0 0 1 0 3 0 0 0 3 0 2 0 2 1 3 1 7 1 2 1 7 1 6 1 6 2 7 2 5 2 6 2 5 2 4 2 4 3 5 3 1 3 4 3 1 3 0 3 2 4 6 4 4 4 2 4 4 4 0 4 7 5 3 5 1 5 7 5 1 5 5 5</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="collision_pad01" name="collision_pad01" type="NODE">
+        <matrix sid="transform">1.947072e-07 -1 0 0 1 1.947072e-07 0 0 0 0 1 -270 0 0 0 1</matrix>
+        <instance_geometry url="#collision_pad01-mesh" name="collision_pad01" />
+      </node>
+      <node id="tag_interiorlight_warm_spot1" name="tag_interiorlight_warm_spot1" type="NODE">
+        <matrix sid="transform">1.2 0 0 0 0 1.2 0 2.755455e-14 0 0 1.2 -220 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_spot2" name="tag_interiorlight_warm_spot2" type="NODE">
+        <matrix sid="transform">1.2 0 0 225 0 1.2 0 -225 0 0 1.2 -220 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_spot3" name="tag_interiorlight_warm_spot3" type="NODE">
+        <matrix sid="transform">1.2 0 0 450 0 1.2 0 0 0 0 1.2 -220 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_spot4" name="tag_interiorlight_warm_spot4" type="NODE">
+        <matrix sid="transform">1.2 0 0 225 0 1.2 0 225 0 0 1.2 -220 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim01" name="navlight_red_rim01" type="NODE">
+        <matrix sid="transform">1 0 0 634 0 1 0 0 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim02" name="navlight_red_rim02" type="NODE">
+        <matrix sid="transform">1 0 0 585.7396 0 1 0 242.6213 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim03" name="navlight_red_rim03" type="NODE">
+        <matrix sid="transform">1 0 0 448.3057 0 1 0 448.3057 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim04" name="navlight_red_rim04" type="NODE">
+        <matrix sid="transform">1 0 0 242.6213 0 1 0 585.7396 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim05" name="navlight_red_rim05" type="NODE">
+        <matrix sid="transform">1 0 0 3.88213e-14 0 1 0 634 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim06" name="navlight_red_rim06" type="NODE">
+        <matrix sid="transform">1 0 0 -242.6213 0 1 0 585.7396 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim07" name="navlight_red_rim07" type="NODE">
+        <matrix sid="transform">1 0 0 -448.3057 0 1 0 448.3057 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim08" name="navlight_red_rim08" type="NODE">
+        <matrix sid="transform">1 0 0 -585.7396 0 1 0 242.6213 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim09" name="navlight_red_rim09" type="NODE">
+        <matrix sid="transform">1 0 0 -634 0 1 0 7.76426e-14 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim10" name="navlight_red_rim10" type="NODE">
+        <matrix sid="transform">1 0 0 -585.7396 0 1 0 -242.6213 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim11" name="navlight_red_rim11" type="NODE">
+        <matrix sid="transform">1 0 0 -448.3057 0 1 0 -448.3057 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim12" name="navlight_red_rim12" type="NODE">
+        <matrix sid="transform">1 0 0 -242.6213 0 1 0 -585.7396 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim13" name="navlight_red_rim13" type="NODE">
+        <matrix sid="transform">1 0 0 -1.164639e-13 0 1 0 -634 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim14" name="navlight_red_rim14" type="NODE">
+        <matrix sid="transform">1 0 0 242.6213 0 1 0 -585.7396 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim15" name="navlight_red_rim15" type="NODE">
+        <matrix sid="transform">1 0 0 448.3057 0 1 0 -448.3057 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_red_rim16" name="navlight_red_rim16" type="NODE">
+        <matrix sid="transform">1 0 0 585.7396 0 1 0 -242.6213 0 0 1 0.9601307 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth01" name="navlight_green_mouth01" type="NODE">
+        <matrix sid="transform">1 0 0 150.0602 0 1 0 29.84882 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth02" name="navlight_green_mouth02" type="NODE">
+        <matrix sid="transform">1 0 0 127.2149 0 1 0 85.00224 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth03" name="navlight_green_mouth03" type="NODE">
+        <matrix sid="transform">1 0 0 85.00224 0 1 0 127.2149 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth04" name="navlight_green_mouth04" type="NODE">
+        <matrix sid="transform">1 0 0 29.84882 0 1 0 150.0602 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth05" name="navlight_green_mouth05" type="NODE">
+        <matrix sid="transform">1 0 0 -29.84882 0 1 0 150.0602 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth06" name="navlight_green_mouth06" type="NODE">
+        <matrix sid="transform">1 0 0 -85.00224 0 1 0 127.2149 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth07" name="navlight_green_mouth07" type="NODE">
+        <matrix sid="transform">1 0 0 -127.2149 0 1 0 85.00224 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth08" name="navlight_green_mouth08" type="NODE">
+        <matrix sid="transform">1 0 0 -150.0602 0 1 0 29.84882 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth09" name="navlight_green_mouth09" type="NODE">
+        <matrix sid="transform">1 0 0 -150.0602 0 1 0 -29.84882 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth10" name="navlight_green_mouth10" type="NODE">
+        <matrix sid="transform">1 0 0 -127.2149 0 1 0 -85.00224 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth11" name="navlight_green_mouth11" type="NODE">
+        <matrix sid="transform">1 0 0 -85.00224 0 1 0 -127.2149 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth12" name="navlight_green_mouth12" type="NODE">
+        <matrix sid="transform">1 0 0 -29.84882 0 1 0 -150.0602 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth13" name="navlight_green_mouth13" type="NODE">
+        <matrix sid="transform">1 0 0 29.84882 0 1 0 -150.0602 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth14" name="navlight_green_mouth14" type="NODE">
+        <matrix sid="transform">1 0 0 85.00224 0 1 0 -127.2149 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth15" name="navlight_green_mouth15" type="NODE">
+        <matrix sid="transform">1 0 0 127.2149 0 1 0 -85.00224 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_mouth16" name="navlight_green_mouth16" type="NODE">
+        <matrix sid="transform">1 0 0 150.0602 0 1 0 -29.84882 0 0 1 35.7 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_01" name="navlight_shaft1_01" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 25 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_02" name="navlight_shaft1_02" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 5 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_03" name="navlight_shaft1_03" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 -35 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_04" name="navlight_shaft1_04" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 -55 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_05" name="navlight_shaft1_05" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 -75 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_06" name="navlight_shaft1_06" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 -95 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_07" name="navlight_shaft1_07" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 -115 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_08" name="navlight_shaft1_08" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 -135 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_09" name="navlight_shaft1_09" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 -155 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_10" name="navlight_shaft1_10" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 -175 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft1_11" name="navlight_shaft1_11" type="NODE">
+        <matrix sid="transform">1 0 0 146.6274 0 1 0 29.166 0 0 1 -195 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_01" name="navlight_shaft2_01" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 25 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_02" name="navlight_shaft2_02" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 5 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_03" name="navlight_shaft2_03" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 -35 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_04" name="navlight_shaft2_04" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 -55 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_05" name="navlight_shaft2_05" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 -75 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_06" name="navlight_shaft2_06" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 -95 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_07" name="navlight_shaft2_07" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 -115 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_08" name="navlight_shaft2_08" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 -135 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_09" name="navlight_shaft2_09" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 -155 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_10" name="navlight_shaft2_10" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 -175 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft2_11" name="navlight_shaft2_11" type="NODE">
+        <matrix sid="transform">1 0 0 -29.166 0 1 0 146.6274 0 0 1 -195 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_01" name="navlight_shaft3_01" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 25 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_02" name="navlight_shaft3_02" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 5 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_03" name="navlight_shaft3_03" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 -35 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_04" name="navlight_shaft3_04" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 -55 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_05" name="navlight_shaft3_05" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 -75 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_06" name="navlight_shaft3_06" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 -95 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_07" name="navlight_shaft3_07" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 -115 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_08" name="navlight_shaft3_08" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 -135 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_09" name="navlight_shaft3_09" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 -155 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_10" name="navlight_shaft3_10" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 -175 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft3_11" name="navlight_shaft3_11" type="NODE">
+        <matrix sid="transform">1 0 0 -146.6274 0 1 0 -29.166 0 0 1 -195 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_01" name="navlight_shaft4_01" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 25 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_02" name="navlight_shaft4_02" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 5 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_03" name="navlight_shaft4_03" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 -35 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_04" name="navlight_shaft4_04" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 -55 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_05" name="navlight_shaft4_05" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 -75 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_06" name="navlight_shaft4_06" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 -95 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_07" name="navlight_shaft4_07" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 -115 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_08" name="navlight_shaft4_08" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 -135 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_09" name="navlight_shaft4_09" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 -155 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_10" name="navlight_shaft4_10" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 -175 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_shaft4_11" name="navlight_shaft4_11" type="NODE">
+        <matrix sid="transform">1 0 0 29.166 0 1 0 -146.6274 0 0 1 -195 0 0 0 1</matrix>
+      </node>
+      <node id="entrance_port01" name="entrance_port01" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 -4.371139e-08 -1 0 0 1 -4.371139e-08 -270 0 0 0 1</matrix>
+      </node>
+      <node id="tag_turntable" name="tag_turntable" type="NODE">
+        <matrix sid="transform">1 0 0 225 0 1 0 0 0 0 1 -270 0 0 0 1</matrix>
+      </node>
+      <node id="loc_S001_p01_s0_120_b01" name="loc_S001_p01_s0_120_b01" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 -4.371139e-08 -1 2.755455e-14 0 1 -4.371139e-08 -270 0 0 0 1</matrix>
+      </node>
+      <node id="loc_S002_p01_s0_120_b02" name="loc_S002_p01_s0_120_b02" type="NODE">
+        <matrix sid="transform">1 0 0 225 0 -4.371139e-08 -1 -225 0 1 -4.371139e-08 -270 0 0 0 1</matrix>
+      </node>
+      <node id="loc_S003_p01_s0_120_b03" name="loc_S003_p01_s0_120_b03" type="NODE">
+        <matrix sid="transform">1 0 0 450 0 -4.371139e-08 -1 0 0 1 -4.371139e-08 -270 0 0 0 1</matrix>
+      </node>
+      <node id="loc_S004_p01_s0_120_b04" name="loc_S004_p01_s0_120_b04" type="NODE">
+        <matrix sid="transform">1 0 0 225 0 -4.371139e-08 -1 225 0 1 -4.371139e-08 -270 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interior_shaft_a" name="tag_interior_shaft_a" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -250 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interior_shaft_b" name="tag_interior_shaft_b" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -90 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interior_hangar_x_a" name="tag_interior_hangar_x_a" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 -245 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interior_hangar_x_b" name="tag_interior_hangar_x_b" type="NODE">
+        <matrix sid="transform">1 0 0 450 0 1 0 0 0 0 1 -245 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interior_hangar_y_a" name="tag_interior_hangar_y_a" type="NODE">
+        <matrix sid="transform">1 0 0 225 0 1 0 -225 0 0 1 -245 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interior_hangar_y_b" name="tag_interior_hangar_y_b" type="NODE">
+        <matrix sid="transform">1 0 0 225 0 1 0 225 0 0 1 -245 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom01" name="navlight_green_shaftbottom01" type="NODE">
+        <matrix sid="transform">1 0 0 145.6466 0 1 0 28.97091 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom02" name="navlight_green_shaftbottom02" type="NODE">
+        <matrix sid="transform">1 0 0 123.4732 0 1 0 82.50218 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom03" name="navlight_green_shaftbottom03" type="NODE">
+        <matrix sid="transform">1 0 0 82.50218 0 1 0 123.4732 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom04" name="navlight_green_shaftbottom04" type="NODE">
+        <matrix sid="transform">1 0 0 28.97091 0 1 0 145.6466 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom05" name="navlight_green_shaftbottom05" type="NODE">
+        <matrix sid="transform">1 0 0 -28.97091 0 1 0 145.6466 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom06" name="navlight_green_shaftbottom06" type="NODE">
+        <matrix sid="transform">1 0 0 -82.50218 0 1 0 123.4732 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom07" name="navlight_green_shaftbottom07" type="NODE">
+        <matrix sid="transform">1 0 0 -123.4732 0 1 0 82.50218 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom08" name="navlight_green_shaftbottom08" type="NODE">
+        <matrix sid="transform">1 0 0 -145.6466 0 1 0 28.97091 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom09" name="navlight_green_shaftbottom09" type="NODE">
+        <matrix sid="transform">1 0 0 -145.6466 0 1 0 -28.97091 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom10" name="navlight_green_shaftbottom10" type="NODE">
+        <matrix sid="transform">1 0 0 -123.4732 0 1 0 -82.50218 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom11" name="navlight_green_shaftbottom11" type="NODE">
+        <matrix sid="transform">1 0 0 -82.50218 0 1 0 -123.4732 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom12" name="navlight_green_shaftbottom12" type="NODE">
+        <matrix sid="transform">1 0 0 -28.97091 0 1 0 -145.6466 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom13" name="navlight_green_shaftbottom13" type="NODE">
+        <matrix sid="transform">1 0 0 28.97091 0 1 0 -145.6466 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom14" name="navlight_green_shaftbottom14" type="NODE">
+        <matrix sid="transform">1 0 0 82.50218 0 1 0 -123.4732 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom15" name="navlight_green_shaftbottom15" type="NODE">
+        <matrix sid="transform">1 0 0 123.4732 0 1 0 -82.50218 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="navlight_green_shaftbottom16" name="navlight_green_shaftbottom16" type="NODE">
+        <matrix sid="transform">1 0 0 145.6466 0 1 0 -28.97091 0 0 1 -201 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_hangar01" name="tag_interiorlight_warm_hangar01" type="NODE">
+        <matrix sid="transform">2 0 0 555 0 2 0 0 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_hangar02" name="tag_interiorlight_hangar02" type="NODE">
+        <matrix sid="transform">2 0 0 510.7884 0 2 0 165 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_hangar03" name="tag_interiorlight_warm_hangar03" type="NODE">
+        <matrix sid="transform">2 0 0 390 0 2 0 285.7884 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_hangar04" name="tag_interiorlight_hangar04" type="NODE">
+        <matrix sid="transform">2 0 0 225 0 2 0 330 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_hangar05" name="tag_interiorlight_warm_hangar05" type="NODE">
+        <matrix sid="transform">2 0 0 60 0 2 0 285.7884 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_hangar06" name="tag_interiorlight_hangar06" type="NODE">
+        <matrix sid="transform">2 0 0 -60.78838 0 2 0 165 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_hangar07" name="tag_interiorlight_warm_hangar07" type="NODE">
+        <matrix sid="transform">2 0 0 -60.78838 0 2 0 -165 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_hangar08" name="tag_interiorlight_hangar08" type="NODE">
+        <matrix sid="transform">2 0 0 60 0 2 0 -285.7884 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_hangar09" name="tag_interiorlight_warm_hangar09" type="NODE">
+        <matrix sid="transform">2 0 0 225 0 2 0 -330 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_hangar10" name="tag_interiorlight_hangar10" type="NODE">
+        <matrix sid="transform">2 0 0 390 0 2 0 -285.7884 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_hangar11" name="tag_interiorlight_warm_hangar11" type="NODE">
+        <matrix sid="transform">2 0 0 510.7884 0 2 0 -165 0 0 2 -206 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_shaft1_1" name="tag_interiorlight_warm_shaft1_1" type="NODE">
+        <matrix sid="transform">1.5 0 0 140 0 1.5 0 0 0 0 1.5 -22 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_shaft1_2" name="tag_interiorlight_warm_shaft1_2" type="NODE">
+        <matrix sid="transform">1.5 0 0 43.26238 0 1.5 0 133.1479 0 0 1.5 -22 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_shaft1_3" name="tag_interiorlight_warm_shaft1_3" type="NODE">
+        <matrix sid="transform">1.5 0 0 -113.2624 0 1.5 0 82.28993 0 0 1.5 -22 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_shaft1_4" name="tag_interiorlight_warm_shaft1_4" type="NODE">
+        <matrix sid="transform">1.5 0 0 -113.2624 0 1.5 0 -82.28993 0 0 1.5 -22 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_shaft1_5" name="tag_interiorlight_warm_shaft1_5" type="NODE">
+        <matrix sid="transform">1.5 0 0 43.26238 0 1.5 0 -133.1479 0 0 1.5 -22 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_shaft2_1" name="tag_interiorlight_shaft2_1" type="NODE">
+        <matrix sid="transform">1.5 0 0 127.8964 0 1.5 0 56.94313 0 0 1.5 -90 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_shaft2_2" name="tag_interiorlight_shaft2_2" type="NODE">
+        <matrix sid="transform">1.5 0 0 -14.63398 0 1.5 0 139.2331 0 0 1.5 -90 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_shaft2_3" name="tag_interiorlight_shaft2_3" type="NODE">
+        <matrix sid="transform">1.5 0 0 -136.9407 0 1.5 0 29.10764 0 0 1.5 -90 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_shaft2_4" name="tag_interiorlight_shaft2_4" type="NODE">
+        <matrix sid="transform">1.5 0 0 -70 0 1.5 0 -121.2436 0 0 1.5 -90 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_shaft2_5" name="tag_interiorlight_shaft2_5" type="NODE">
+        <matrix sid="transform">1.5 0 0 93.67828 0 1.5 0 -104.0403 0 0 1.5 -90 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_shaft3_1" name="tag_interiorlight_warm_shaft3_1" type="NODE">
+        <matrix sid="transform">1.5 0 0 93.67828 0 1.5 0 104.0403 0 0 1.5 -160 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_shaft3_2" name="tag_interiorlight_warm_shaft3_2" type="NODE">
+        <matrix sid="transform">1.5 0 0 -70 0 1.5 0 121.2436 0 0 1.5 -160 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_shaft3_3" name="tag_interiorlight_warm_shaft3_3" type="NODE">
+        <matrix sid="transform">1.5 0 0 -136.9407 0 1.5 0 -29.10764 0 0 1.5 -160 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_shaft3_4" name="tag_interiorlight_warm_shaft3_4" type="NODE">
+        <matrix sid="transform">1.5 0 0 -14.63398 0 1.5 0 -139.2331 0 0 1.5 -160 0 0 0 1</matrix>
+      </node>
+      <node id="tag_interiorlight_warm_shaft3_5" name="tag_interiorlight_warm_shaft3_5" type="NODE">
+        <matrix sid="transform">1.5 0 0 127.8964 0 1.5 0 -56.94313 0 0 1.5 -160 0 0 0 1</matrix>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene" />
+  </scene>
+</COLLADA>

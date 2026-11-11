@@ -100,6 +100,26 @@ public:
 
 	DockStage PivotStage(DockStage s) const;
 
+	// A ground station whose landing spots sit on a turning floor under one
+	// shaft, closed by a lid (the model's "doors" animation): "revolver" in the
+	// station definition. One ship at a time uses the shaft: the floor turns
+	// the ship's spot under it, the lid opens, the ship lands, or is lifted
+	// up the shaft by the station when it leaves (SpaceStation's Revolver*).
+	struct Revolver {
+		bool enabled = false;
+		float turnSpeed = 9.0f;		 // degrees per second
+		float liftSpeed = 20.0f;	 // m/s, the average speed of a ship lifted out
+		float liftHeight = 345.0f;	 // m from the pad up to where a lifted ship is let go
+		float lidTime = 3.3f;		 // seconds the lid takes to open, or to close
+		float holdDistance = 800.0f; // m out from the shaft where ships wait for their turn
+		float holdHeight = 500.0f;	 // m above the station's origin where they wait
+		float holeRadius = 0.0f;	 // m, the hole cut in the ground over the shaft (none: 0)
+		float holeDepth = 0.0f;		 // m, how far below the ground that hole goes for collisions
+		vector3d hub;				 // the floor's centre (tag_turntable), station space
+		vector3d shaft;				 // the pad point under the shaft (entrance_port01), station space
+		std::vector<double> bayAngles; // per bay (from 0): the floor's angle that puts it under the shaft
+	};
+
 private:
 	std::string id;
 	SceneGraph::Model *model;
@@ -128,6 +148,7 @@ private:
 		double min, max;
 	};
 	std::vector<Condition> conditions;
+	Revolver m_revolver;
 
 	static std::vector<SpaceStationType *> surfaceTypes;
 	static std::vector<SpaceStationType *> orbitalTypes;
@@ -154,6 +175,7 @@ public:
 	const char *DockStageName(DockStage s) const;
 
 	void OnSetupComplete();
+	void SetUpRevolver();
 	const SPort *FindPortByBay(const int zeroBaseBayID) const;
 	SPort *GetPortByBay(const int zeroBaseBayID);
 
@@ -176,6 +198,8 @@ public:
 	// metres from the model's origin the ground is levelled for a surface station
 	float FlattenRadius() const { return flattenRadius; }
 	const TPorts &Ports() const { return m_ports; }
+	bool IsRevolver() const { return m_revolver.enabled; }
+	const Revolver &GetRevolver() const { return m_revolver; }
 	// whether sbody meets the conditions for a random pick of this type
 	bool Suits(const SystemBody *sbody) const;
 

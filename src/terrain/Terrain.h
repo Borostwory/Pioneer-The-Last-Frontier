@@ -78,6 +78,21 @@ public:
 	// stands on, replacing any earlier site of the same starport. Call before
 	// the terrain is drawn there.
 	void ProtectSite(const SystemBody *starport, const vector3d &p);
+	// The holes in the ground over the shafts of revolver starports
+	// (SpaceStationType::Revolver): straight down from the ground, out to
+	// their radius round the starport. The drawn ground leaves them out
+	// (GROUND_HOLES in the terrain shaders) and collisions go down to their
+	// floor (Planet::GetCollisionRadius); the heights themselves are not cut.
+	struct GroundHole {
+		vector3d dir;  // unit sphere, the starport's site
+		double chord;  // its radius, unit-sphere units
+		double floor;  // unit-sphere units, the height of its floor
+		double skirtChord; // out to here (the starport's levelled ground) the patches' skirts aren't drawn: they'd hang into the base
+	};
+	bool HasGroundHoles() const;
+	void GetGroundHoles(std::vector<GroundHole> &out) const;
+	// the floor of the hole p (unit sphere) is in, if it is in one
+	bool GroundHoleFloor(const vector3d &p, double &floorOut) const;
 	virtual vector3d GetColor(const vector3d &p, double height, const vector3d &norm) const = 0;
 	// The colour and material weights of a point, worked out together. By default
 	// the colour fractal's colour, with the weights read back from it.
@@ -335,6 +350,8 @@ protected:
 		double height; // unit-sphere units, the base height at pos
 		double flatChord;
 		double blendChord;
+		double holeChord = 0.0; // a revolver starport's hole in the ground (GroundHole), none: 0
+		double holeDepth = 0.0; // unit-sphere units below height
 	};
 	// replaced as a whole when a site changes, so height jobs on other
 	// threads keep a consistent copy

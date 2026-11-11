@@ -71,6 +71,10 @@ in vec3 waterSkyLight;
 
 void main(void)
 {
+#ifdef GROUND_HOLES
+	if (inGroundHole(varyingEyepos, skirtWeight > 0.0))
+		discard;
+#endif
 #ifdef TERRAIN_WITH_WATER
 	const bool hasWater = true;
 #else

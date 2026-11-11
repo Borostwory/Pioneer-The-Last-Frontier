@@ -1,0 +1,135 @@
+version 2
+
+material "pit_hull" {
+	shader "multi"
+	specular 0.45 0.45 0.45
+	shininess 40
+	texture diffuse "pit_hull_d.dds"
+	texture specular "pit_hull_s.dds"
+	texture glow "pit_hull_g.dds"
+	texture normal "pit_hull_n.dds"
+}
+
+material "pit_interior" {
+	shader "multi"
+	specular 0.4 0.4 0.4
+	shininess 30
+	texture diffuse "pit_interior_d.dds"
+	texture specular "pit_interior_s.dds"
+	texture glow "pit_interior_g.dds"
+	texture normal "pit_interior_n.dds"
+}
+
+material "pit_hangar_wall" {
+	shader "multi"
+	specular 0.4 0.4 0.4
+	shininess 40
+	texture diffuse "pit_hangar_wall_d.dds"
+	texture specular "pit_hangar_wall_s.dds"
+	texture glow "pit_hangar_wall_g.dds"
+	texture normal "pit_hangar_wall_n.dds"
+}
+
+material "pit_dark" {
+	shader "multi"
+	specular 0.3 0.3 0.3
+	shininess 10
+	texture diffuse "pit_dark_d.dds"
+	texture specular "pit_dark_s.dds"
+	texture glow "pit_dark_g.dds"
+	texture normal "pit_dark_n.dds"
+}
+
+material "pit_deck" {
+	shader "multi"
+	specular 0.5 0.5 0.5
+	shininess 60
+	texture diffuse "pit_deck_d.dds"
+	texture specular "pit_deck_s.dds"
+	texture glow "pit_deck_g.dds"
+	texture normal "pit_deck_n.dds"
+}
+
+material "pit_lid" {
+	shader "multi"
+	specular 0.5 0.5 0.5
+	shininess 50
+	texture diffuse "pit_lid_d.dds"
+	texture specular "pit_lid_s.dds"
+	texture glow "pit_lid_g.dds"
+	texture normal "pit_lid_n.dds"
+}
+
+material "pit_markings" {
+	shader "multi"
+	specular 0.2 0.2 0.2
+	shininess 20
+	texture diffuse "pit_markings_d.dds"
+	texture specular "pit_markings_s.dds"
+	texture glow "pit_markings_g.dds"
+	texture normal "pit_markings_n.dds"
+
+	alpha_test
+}
+
+material "pit_hazard" {
+	shader "multi"
+	specular 0.3 0.3 0.3
+	shininess 30
+	texture diffuse "pit_hazard_d.dds"
+	texture specular "pit_hazard_s.dds"
+	texture glow "pit_hazard_g.dds"
+	texture normal "pit_hazard_n.dds"
+}
+
+material "pit_roof" {
+	shader "multi"
+	specular 0.45 0.45 0.45
+	shininess 40
+	texture diffuse "pit_roof_d.dds"
+	texture specular "pit_roof_s.dds"
+	texture glow "pit_roof_g.dds"
+	texture normal "pit_roof_n.dds"
+}
+
+material "pit_shaft_above" {
+	shader "multi"
+	specular 0.4 0.4 0.4
+	shininess 30
+	texture diffuse "pit_roof_d.dds"
+	texture specular "pit_roof_s.dds"
+	texture glow "pit_roof_g.dds"
+	texture normal "pit_roof_n.dds"
+}
+
+material "pit_shaft_below" {
+	shader "multi"
+	specular 0.4 0.4 0.4
+	shininess 30
+	texture diffuse "pit_shaft_below_d.dds"
+	texture specular "pit_shaft_below_s.dds"
+	texture glow "pit_shaft_below_g.dds"
+	texture normal "pit_shaft_below_n.dds"
+}
+
+lod 1000 {
+	mesh "asteroid_pit_base_1000.dae"
+	mesh "asteroid_pit_base_landing.dae"
+}
+
+lod 300 {
+	mesh "asteroid_pit_base_300.dae"
+}
+
+lod 60 {
+	mesh "asteroid_pit_base_60.dae"
+}
+
+anim "doors" 0 80
+anim "turntable" 100 460
+
+bound capsule interior "tag_interior_shaft_a" "tag_interior_shaft_b" 60
+bound capsule interior "tag_interior_hangar_x_a" "tag_interior_hangar_x_b" 170
+bound capsule interior "tag_interior_hangar_y_a" "tag_interior_hangar_y_b" 170
+
+collision "asteroid_pit_base_collision.dae"

@@ -826,7 +826,8 @@
 			"averageTemp": 233,
 			"axialTilt": "f0/0",
 			"children": [
-				22
+				22,
+				75
 			],
 			"eccentricity": "f0/64854006",
 			"hasRings": false,
@@ -2864,6 +2865,43 @@
 			"semiMajorAxis": "f0/3727902",
 			"type": "PLANET_TERRESTRIAL",
 			"volatileIces": "f0/3650722201",
+			"volatileLiquid": "f0/0",
+			"volcanicity": "f0/0"
+		},
+		{
+			"agricultural": "f0/0",
+			"argOfPeriapsis": "f1/1681710547",
+			"aspectRatio": "f1/0",
+			"atmosColor": [
+				0,
+				0,
+				0,
+				0
+			],
+			"atmosDensity": "f0/0",
+			"atmosOxidizing": "f0/0",
+			"averageTemp": 0,
+			"axialTilt": "f0/0",
+			"eccentricity": "f0/0",
+			"hasRings": false,
+			"humanActivity": "f0/0",
+			"inclination": "f0/1503238554",
+			"life": "f0/0",
+			"mass": "f0/0",
+			"metallicity": "f0/0",
+			"name": "Phobos Pit",
+			"orbitalOffset": "f1/1717986918",
+			"orbitalPhase": "f3/1187163110",
+			"parent": 21,
+			"population": "f0/0",
+			"radius": "f0/0",
+			"rotationPeriod": "f0/0",
+			"rotationPhase": "f0/0",
+			"seed": 2611457213,
+			"semiMajorAxis": "f0/0",
+			"spaceStationType": "asteroid_pit_base",
+			"type": "STARPORT_SURFACE",
+			"volatileIces": "f0/0",
 			"volatileLiquid": "f0/0",
 			"volcanicity": "f0/0"
 		}

@@ -53,6 +53,7 @@ namespace Graphics {
 		HAS_ATMOSPHERE = 1 << 0,
 		HAS_ECLIPSES = 1 << 1,
 		HAS_HEAT_GRADIENT = 1 << 2,
+		HAS_GROUND_HOLES = 1 << 3, // the ground has holes cut in it (Terrain::GroundHole)
 		HAS_OCTAVES = 1 << 15
 	};
 

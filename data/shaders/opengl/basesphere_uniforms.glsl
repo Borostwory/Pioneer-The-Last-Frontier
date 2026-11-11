@@ -41,7 +41,32 @@ layout(std140) uniform BaseSphereData {
 	vec4 atmosHazeExtinction; // rgb: of Earth's haze, scattering and absorption
 	vec4 atmosHazeGlow;		  // rgb: the haze's forward scattering (g), per colour
 	vec4 atmosGasAbsorb;	  // rgb: colour the gas absorbs, in 1e-6 like betaR
+
+	// The holes cut in the ground over revolver starports' shafts (Terrain::GroundHole,
+	// BaseSphere::MAX_GROUND_HOLES): the ground drawn leaves them out (GROUND_HOLES).
+	vec4 groundHoles[4];	  // xyz: view-space direction from the planet's centre, w: radius in planet radii
+	vec4 groundHoleSkirts[4]; // x: radius in planet radii out to which the patches' skirts aren't drawn (the base)
+	vec4 groundHoleCount;	  // x: how many
 };
+
+#if defined(FRAGMENT_SHADER) && defined(GROUND_HOLES)
+// whether a point of the ground (view space) is in one of the holes: within
+// its radius of the line from the planet's centre through the hole; for a
+// point of a patch's skirt, within the whole base round it, where the skirts
+// would hang down into the shaft and the rooms under the ground
+bool inGroundHole(vec3 viewPos, bool skirt)
+{
+	vec3 q = viewPos * geosphereInvRadius - geosphereCenter;
+	int n = int(groundHoleCount.x);
+	for (int i = 0; i < n; i++) {
+		float along = dot(q, groundHoles[i].xyz);
+		float across = length(q - along * groundHoles[i].xyz);
+		if (along > 0.5 && across < (skirt ? max(groundHoles[i].w, groundHoleSkirts[i].x) : groundHoles[i].w))
+			return true;
+	}
+	return false;
+}
+#endif
 
 // The scattering tables hold the path through the air, not how dense the air is, so a trace
 // of air would redden the sun as much as Earth's does, and would count as air for the

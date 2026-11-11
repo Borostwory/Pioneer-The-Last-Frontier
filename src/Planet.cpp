@@ -70,6 +70,11 @@ double Planet::GetCollisionRadius(const vector3d &dir, double dist) const
 {
 	if (IsGasGiant())
 		return GAS_GIANT_FLOOR * GetSystemBody()->GetRadius();
+	// over a revolver starport's shaft the ground is cut away down to its hole's floor
+	double floor;
+	const Terrain *terrain = GetTerrain();
+	if (terrain && terrain->GroundHoleFloor(dir, floor))
+		return GetSystemBody()->GetRadius() * (1.0 + floor);
 	return GetTerrainHeightFrom(dir, dist);
 }
 
