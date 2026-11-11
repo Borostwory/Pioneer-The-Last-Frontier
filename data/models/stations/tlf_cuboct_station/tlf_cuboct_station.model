@@ -4,6 +4,7 @@ material "tlf_cuboct_station_hull" {
 	shader "multi"
 	specular 0.55 0.55 0.58
 	shininess 40
+	fill 0.333
 	texture diffuse "tlf_cuboct_hull_d.dds"
 	texture specular "tlf_cuboct_hull_s.dds"
 	texture glow "tlf_cuboct_hull_g.dds"
@@ -15,6 +16,7 @@ material "tlf_cuboct_station_hangar" {
 	shader "multi"
 	specular 0.45 0.45 0.47
 	shininess 25
+	fill 0.29
 	texture diffuse "tlf_cuboct_hangar_d.dds"
 	texture specular "tlf_cuboct_hangar_s.dds"
 	texture glow "tlf_cuboct_hangar_g.dds"
@@ -26,6 +28,7 @@ material "tlf_cuboct_station_frame" {
 	shader "multi"
 	specular 0.65 0.65 0.68
 	shininess 50
+	fill 0.33
 	texture diffuse "tlf_cuboct_frame_d.dds"
 	texture specular "tlf_cuboct_frame_s.dds"
 	texture glow "tlf_cuboct_frame_g.dds"
@@ -37,6 +40,7 @@ material "tlf_cuboct_station_greeble" {
 	shader "multi"
 	specular 0.5 0.5 0.52
 	shininess 35
+	fill 0.331
 	texture diffuse "tlf_cuboct_greeble_d.dds"
 	texture specular "tlf_cuboct_greeble_s.dds"
 	texture glow "tlf_cuboct_greeble_g.dds"
@@ -81,6 +85,7 @@ material "tlf_cuboct_station_barrier" {
 	shader "multi"
 	specular 0.8 0.8 0.8
 	shininess 60
+	fill 0.174
 	texture diffuse "tlf_cuboct_barrier_d.dds"
 	texture specular "tlf_cuboct_barrier_s.dds"
 	texture glow "tlf_cuboct_barrier_g.dds"
@@ -92,6 +97,7 @@ material "tlf_cuboct_station_pad" {
 	shader "multi"
 	specular 0.35 0.35 0.35
 	shininess 15
+	fill 0.171
 	texture diffuse "tlf_cuboct_pad_d.dds"
 	texture specular "tlf_cuboct_pad_s.dds"
 	texture glow "tlf_cuboct_pad_g.dds"
@@ -103,6 +109,7 @@ material "tlf_cuboct_station_padnum" {
 	shader "multi"
 	specular 0.35 0.35 0.35
 	shininess 15
+	fill 0.183
 	texture diffuse "tlf_cuboct_padnum_d.dds"
 	texture specular "tlf_cuboct_padnum_s.dds"
 	texture glow "tlf_cuboct_padnum_g.dds"

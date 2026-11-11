@@ -14,6 +14,7 @@ material "pit_interior" {
 	shader "multi"
 	specular 0.4 0.4 0.4
 	shininess 30
+	fill 0.213
 	texture diffuse "pit_interior_d.dds"
 	texture specular "pit_interior_s.dds"
 	texture glow "pit_interior_g.dds"
@@ -24,6 +25,7 @@ material "pit_hangar_wall" {
 	shader "multi"
 	specular 0.4 0.4 0.4
 	shininess 40
+	fill 0.085
 	texture diffuse "pit_hangar_wall_d.dds"
 	texture specular "pit_hangar_wall_s.dds"
 	texture glow "pit_hangar_wall_g.dds"
@@ -44,6 +46,7 @@ material "pit_deck" {
 	shader "multi"
 	specular 0.5 0.5 0.5
 	shininess 60
+	fill 0.172
 	texture diffuse "pit_deck_d.dds"
 	texture specular "pit_deck_s.dds"
 	texture glow "pit_deck_g.dds"
@@ -54,6 +57,7 @@ material "pit_lid" {
 	shader "multi"
 	specular 0.5 0.5 0.5
 	shininess 50
+	fill 0.171
 	texture diffuse "pit_lid_d.dds"
 	texture specular "pit_lid_s.dds"
 	texture glow "pit_lid_g.dds"
@@ -64,6 +68,7 @@ material "pit_markings" {
 	shader "multi"
 	specular 0.2 0.2 0.2
 	shininess 20
+	fill 0.15
 	texture diffuse "pit_markings_d.dds"
 	texture specular "pit_markings_s.dds"
 	texture glow "pit_markings_g.dds"
@@ -76,6 +81,7 @@ material "pit_hazard" {
 	shader "multi"
 	specular 0.3 0.3 0.3
 	shininess 30
+	fill 0.153
 	texture diffuse "pit_hazard_d.dds"
 	texture specular "pit_hazard_s.dds"
 	texture glow "pit_hazard_g.dds"
@@ -86,6 +92,7 @@ material "pit_roof" {
 	shader "multi"
 	specular 0.45 0.45 0.45
 	shininess 40
+	fill 0.278
 	texture diffuse "pit_roof_d.dds"
 	texture specular "pit_roof_s.dds"
 	texture glow "pit_roof_g.dds"
@@ -96,6 +103,7 @@ material "pit_shaft_above" {
 	shader "multi"
 	specular 0.4 0.4 0.4
 	shininess 30
+	fill 0.22
 	texture diffuse "pit_roof_d.dds"
 	texture specular "pit_roof_s.dds"
 	texture glow "pit_roof_g.dds"
@@ -106,6 +114,7 @@ material "pit_shaft_below" {
 	shader "multi"
 	specular 0.4 0.4 0.4
 	shininess 30
+	fill 0.127
 	texture diffuse "pit_shaft_below_d.dds"
 	texture specular "pit_shaft_below_s.dds"
 	texture glow "pit_shaft_below_g.dds"
