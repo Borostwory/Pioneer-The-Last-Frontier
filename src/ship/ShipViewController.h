@@ -4,6 +4,7 @@
 #pragma once
 
 #include "CameraController.h"
+#include "CinematicCamera.h"
 #include "Input.h"
 #include "InputBindings.h"
 #include "ViewController.h"
@@ -35,6 +36,11 @@ public:
 	// returns true if the active camera is an exterior view.
 	bool IsExteriorView() const;
 
+	// the debug cinematic camera: loose from the ship, flown with the keys and mouse
+	void SetCinematic(bool on);
+	bool IsCinematic() const { return m_cinematicCamera && m_cinematicCamera->IsOn(); }
+	CinematicCamera *GetCinematicCamera() const { return m_cinematicCamera.get(); }
+
 	sigc::signal<void> onChangeCamType;
 
 private:
@@ -54,6 +60,7 @@ private:
 	std::unique_ptr<SiderealCameraController> m_siderealCameraController;
 	std::unique_ptr<FlyByCameraController> m_flybyCameraController;
 	CameraController *m_activeCameraController; //one of the above
+	std::unique_ptr<CinematicCamera> m_cinematicCamera; // over the top of the above while it is on
 
 	bool headtracker_input_priority;
 	bool m_mouseActive;

@@ -277,6 +277,115 @@ static int l_dev_set_camera_offset(lua_State *l)
 }
 
 /*
+ * The cinematic camera (The Last Frontier debug): the camera comes loose from
+ * the ship and is flown with the keys and the mouse.
+ *
+ * > state = Dev.GetCinematicCamera()
+ *
+ * Returns nil when there is no game, else a table:
+ *   on, available (false while walking outside the ship), keysMoveCamera,
+ *   lookAtShip, travelWithShip, levelHorizon, hideHud, rideWithStation, stopAtGround - booleans
+ *   speed (m/s), smoothing (s), fov (degrees) - the settings
+ *   currentSpeed (m/s), distance (m, to the ship), frame (name of the frame it is in)
+ *
+ * > Dev.SetCinematicCamera(changes)
+ *
+ * Takes a table with any of: on and the settings above.
+ */
+static ShipViewController *cinematic_ship_view()
+{
+	if (!Pi::game || !Pi::game->GetWorldView() || !Pi::game->GetWorldView()->shipView)
+		return nullptr;
+	return Pi::game->GetWorldView()->shipView.get();
+}
+
+// only from the ship's own view while it is on screen: not from the station's
+// screen or a map, not while walking outside the ship, not in hyperspace
+static bool cinematic_can_start(ShipViewController *view)
+{
+	return Pi::GetView() == Pi::game->GetWorldView() &&
+		Pi::game->GetWorldView()->GetViewController() == view &&
+		!Pi::game->IsHyperspace();
+}
+
+static int l_dev_get_cinematic_camera(lua_State *l)
+{
+	ShipViewController *view = cinematic_ship_view();
+	if (!view || !view->GetCinematicCamera()) {
+		lua_pushnil(l);
+		return 1;
+	}
+	const CinematicCamera *cam = view->GetCinematicCamera();
+	const CinematicCamera::Settings &s = cam->settings;
+
+	lua_newtable(l);
+	auto setBool = [l](const char *name, bool v) { lua_pushboolean(l, v); lua_setfield(l, -2, name); };
+	auto setNum = [l](const char *name, double v) { lua_pushnumber(l, v); lua_setfield(l, -2, name); };
+
+	setBool("on", cam->IsOn());
+	setBool("available", cinematic_can_start(view));
+	setBool("keysMoveCamera", s.keysMoveCamera);
+	setBool("lookAtShip", s.lookAtShip);
+	setBool("travelWithShip", s.travelWithShip);
+	setBool("levelHorizon", s.levelHorizon);
+	setBool("hideHud", s.hideHud);
+	setBool("rideWithStation", s.rideWithStation);
+	setBool("stopAtGround", s.stopAtGround);
+	setNum("speed", s.speed);
+	setNum("smoothing", s.smoothing);
+	setNum("fov", s.fov);
+	setNum("currentSpeed", cam->GetCurrentSpeed());
+	setNum("distance", cam->GetDistanceToShip());
+	lua_pushstring(l, cam->GetFrameLabel().c_str());
+	lua_setfield(l, -2, "frame");
+	return 1;
+}
+
+static int l_dev_set_cinematic_camera(lua_State *l)
+{
+	ShipViewController *view = cinematic_ship_view();
+	if (!view || !view->GetCinematicCamera())
+		return luaL_error(l, "Dev.SetCinematicCamera only works when there is a game running");
+	luaL_checktype(l, 1, LUA_TTABLE);
+	CinematicCamera::Settings &s = view->GetCinematicCamera()->settings;
+
+	auto getBool = [l](const char *name, bool &v) {
+		lua_getfield(l, 1, name);
+		if (!lua_isnil(l, -1)) v = lua_toboolean(l, -1);
+		lua_pop(l, 1);
+	};
+	auto getNum = [l](const char *name, double &v) {
+		lua_getfield(l, 1, name);
+		if (lua_isnumber(l, -1)) v = lua_tonumber(l, -1);
+		lua_pop(l, 1);
+	};
+
+	getBool("keysMoveCamera", s.keysMoveCamera);
+	getBool("lookAtShip", s.lookAtShip);
+	getBool("travelWithShip", s.travelWithShip);
+	getBool("levelHorizon", s.levelHorizon);
+	getBool("hideHud", s.hideHud);
+	getBool("rideWithStation", s.rideWithStation);
+	getBool("stopAtGround", s.stopAtGround);
+	getNum("speed", s.speed);
+	s.speed = Clamp(s.speed, 0.1, 1e9);
+	getNum("smoothing", s.smoothing);
+	s.smoothing = Clamp(s.smoothing, 0.0, 5.0);
+	double fov = s.fov;
+	getNum("fov", fov);
+	s.fov = Clamp(float(fov), 5.0f, 150.0f);
+
+	lua_getfield(l, 1, "on");
+	if (!lua_isnil(l, -1)) {
+		const bool on = lua_toboolean(l, -1);
+		if (!on || cinematic_can_start(view))
+			view->SetCinematic(on);
+	}
+	lua_pop(l, 1);
+	return 0;
+}
+
+/*
  * Find the systems nearest to a system that have a star of the given type,
  * searching outwards in shells of sectors. Only the sector data is generated,
  * so this is cheap per system, but large radii still take a moment.
@@ -943,6 +1052,8 @@ void LuaDev::Register()
 	static const luaL_Reg methods[] = {
 		{ "GalaxyStats", l_dev_galaxy_stats },
 		{ "SetCameraOffset", l_dev_set_camera_offset },
+		{ "GetCinematicCamera", l_dev_get_cinematic_camera },
+		{ "SetCinematicCamera", l_dev_set_cinematic_camera },
 		{ "FindSystemsWithStarType", l_dev_find_systems_with_star_type },
 		{ "TeleportNearBody", l_dev_teleport_near_body },
 		{ "PlaceOnSurface", l_dev_place_on_surface },

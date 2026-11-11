@@ -109,6 +109,7 @@ void ShipViewController::Init()
 	m_externalCameraController.reset(new ExternalCameraController(m_cameraContext, Pi::player));
 	m_siderealCameraController.reset(new SiderealCameraController(m_cameraContext, Pi::player));
 	m_flybyCameraController.reset(new FlyByCameraController(m_cameraContext, Pi::player));
+	m_cinematicCamera.reset(new CinematicCamera(m_cameraContext, Pi::player));
 	SetCamType(m_camType); //set the active camera
 
 	// setup camera smoothing
@@ -131,14 +132,42 @@ void ShipViewController::Activated()
 
 	Pi::player->GetPlayerController()->SetMouseForRearView(GetCamType() == CAM_INTERNAL && m_internalCameraController->GetMode() == InternalCameraController::MODE_REAR);
 	Pi::player->SetFlag(Body::FLAG_DRAW_EXCLUDE, !IsExteriorView());
+
+	// after our own keys, so it sits above them and takes them while it flies
+	m_cinematicCamera->OnActivated();
 }
 
 void ShipViewController::Deactivated()
 {
+	m_cinematicCamera->OnDeactivated();
+
 	Pi::player->SetFlag(Body::FLAG_DRAW_EXCLUDE, false);
 	Pi::input->RemoveInputFrame(&InputBindings);
 
 	m_onMouseWheelCon.disconnect();
+}
+
+void ShipViewController::SetCinematic(bool on)
+{
+	if (on) {
+		if (IsCinematic())
+			return;
+		// place the game's camera where the ship's camera is right now, so the
+		// cinematic camera starts there and not where it was last drawn
+		// (which can be long ago if another screen, e.g. the station's, was up)
+		m_activeCameraController->Update();
+		m_cinematicCamera->Start();
+		// let go of the outside camera's mouse look
+		if (m_mouseActive) {
+			m_mouseActive = false;
+			Pi::input->SetCapturingMouse(false);
+		}
+	} else {
+		m_cinematicCamera->Stop();
+	}
+
+	Pi::player->SetFlag(Body::FLAG_DRAW_EXCLUDE, !IsExteriorView());
+	onChangeCamType.emit();
 }
 
 void ShipViewController::SetCamType(enum CamType c)
@@ -183,7 +212,7 @@ void ShipViewController::SetCamType(enum CamType c)
 
 bool ShipViewController::IsExteriorView() const
 {
-	return m_camType != CAM_INTERNAL;
+	return m_camType != CAM_INTERNAL || IsCinematic();
 }
 
 void ShipViewController::ChangeInternalCameraMode(InternalCameraController::Mode m)
@@ -201,6 +230,14 @@ void ShipViewController::Update()
 	auto frameTime = Pi::GetFrameTime();
 
 	m_headtrackingManager->Update();
+
+	// the cinematic camera places the game's camera itself
+	if (IsCinematic()) {
+		if (m_cinematicCamera->Update(frameTime))
+			return;
+		// it stopped by itself (a new star system): back to the ship's camera
+		SetCinematic(false);
+	}
 
 	if (!InputBindings.active) {
 		m_activeCameraController->Update();
@@ -304,6 +341,13 @@ void ShipViewController::Draw(Camera *camera)
 
 void ShipViewController::MouseWheel(bool up)
 {
+	// the wheel sets how fast the cinematic camera flies
+	if (IsCinematic()) {
+		if (m_cinematicCamera->settings.keysMoveCamera)
+			m_cinematicCamera->ChangeSpeed(up);
+		return;
+	}
+
 	MoveableCameraController *cam = static_cast<MoveableCameraController *>(m_activeCameraController);
 
 	if (!up) // Zoom out

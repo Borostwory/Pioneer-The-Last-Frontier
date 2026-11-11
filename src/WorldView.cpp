@@ -248,14 +248,16 @@ void WorldView::Draw3D()
 
 	// the ship's 3D HUD is not shown out of the ship
 	const bool offShip = m_game->GetExcursion()->IsOffShip();
+	// nor from the loose cinematic camera, whose view is for filming
+	const bool cinematic = m_viewController == shipView.get() && shipView->IsCinematic();
 
 	// Draw 3D HUD
 	// Speed lines
-	if (Pi::AreSpeedLinesDisplayed() && !offShip)
+	if (Pi::AreSpeedLinesDisplayed() && !offShip && !cinematic)
 		m_speedLines->Render(m_renderer);
 
 	// Contact trails
-	if (Pi::AreHudTrailsDisplayed() && !offShip) {
+	if (Pi::AreHudTrailsDisplayed() && !offShip && !cinematic) {
 		for (auto it = Pi::player->GetSensors()->GetContacts().begin(); it != Pi::player->GetSensors()->GetContacts().end(); ++it)
 			it->trail->Render(m_renderer);
 	}
@@ -268,7 +270,7 @@ void WorldView::Draw3D()
 	m_cameraContext->EndFrame();
 
 	// don't draw crosshairs etc in hyperspace or out of the ship
-	if (Pi::player->GetFlightState() == Ship::HYPERSPACE || offShip) return;
+	if (Pi::player->GetFlightState() == Ship::HYPERSPACE || offShip || cinematic) return;
 
 	// setup orthographic projection the indicator coordinate system expects
 	// (could also draw this using ImGui methods in DrawPiGui, but this is a quick patch for release)
