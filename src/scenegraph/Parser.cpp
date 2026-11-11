@@ -240,6 +240,11 @@ namespace SceneGraph {
 						ss >> shininess;
 						m_curMat->shininess = Clamp(shininess, 0, 128);
 						return true;
+					} else if (match(token, "fill")) {
+						float fill;
+						ss >> fill;
+						m_curMat->fill = Clamp(fill, 0.0f, 1.0f);
+						return true;
 					} else if (match(token, "opacity")) {
 						int opacity;
 						ss >> opacity;
@@ -428,6 +433,8 @@ namespace SceneGraph {
 				return parseFloat(mat->shininess, parser, 0, 128);
 			} else if (tok.isKeyword("opacity")) {
 				return parseFloat(mat->opacity, parser, 0, 100);
+			} else if (tok.isKeyword("fill")) {
+				return parseFloat(mat->fill, parser, 0, 1);
 			} else if (tok.isKeyword("use_patterns")) {
 				mat->use_patterns = true;
 				return Result::Parsed;

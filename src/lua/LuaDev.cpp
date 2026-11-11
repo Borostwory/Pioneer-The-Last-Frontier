@@ -4,7 +4,10 @@
 #include "LuaDev.h"
 #include "FrontierLog.h"
 #include "Frame.h"
+#include "FileSystem.h"
 #include "Game.h"
+#include "ModelBody.h"
+#include "core/Log.h"
 #include "LuaConstants.h"
 #include "LuaObject.h"
 #include "MathUtil.h"
@@ -21,6 +24,7 @@
 #include "galaxy/SystemBody.h"
 #include "graphics/Renderer.h"
 #include "graphics/Texture.h"
+#include "scenegraph/Model.h"
 #include "surface/Excursion.h"
 #include "terrain/PlanetPhysics.h"
 #include "terrain/Terrain.h"
@@ -28,6 +32,10 @@
 #include "terrain/TerrainPhysicalHydro.h"
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
+#include <map>
+#include <fstream>
+#include <regex>
 #include <cmath>
 #include <cstdio>
 #include <sstream>
@@ -786,6 +794,146 @@ static int l_dev_planet_surface(lua_State *l)
 	return 1;
 }
 
+/*
+ * The fill light of a body's model's materials (Material::fill, "fill" in
+ * the .model): { model = name, materials = { { name =, fill = }, ... } }.
+ *
+ * > info = Dev.GetModelFills(body)
+ */
+static int l_dev_get_model_fills(lua_State *l)
+{
+	ModelBody *body = LuaObject<ModelBody>::CheckFromLua(1);
+	SceneGraph::Model *model = body->GetModel();
+	if (!model)
+		return 0;
+	lua_newtable(l);
+	lua_pushstring(l, model->GetName().c_str());
+	lua_setfield(l, -2, "model");
+	lua_newtable(l);
+	for (unsigned int i = 0; i < model->GetNumMaterials(); i++) {
+		lua_newtable(l);
+		lua_pushstring(l, model->GetMaterialNameByIndex(i).c_str());
+		lua_setfield(l, -2, "name");
+		lua_pushnumber(l, model->GetMaterialByIndex(i)->fill);
+		lua_setfield(l, -2, "fill");
+		lua_rawseti(l, -2, i + 1);
+	}
+	lua_setfield(l, -2, "materials");
+	return 1;
+}
+
+/*
+ * Set the fill light of one of a body's model's materials, 0..1. Every
+ * instance of the model shares its materials, so all of them change.
+ *
+ * > Dev.SetModelFill(body, materialName, fill)
+ */
+static int l_dev_set_model_fill(lua_State *l)
+{
+	ModelBody *body = LuaObject<ModelBody>::CheckFromLua(1);
+	const std::string name = luaL_checkstring(l, 2);
+	const float fill = Clamp(float(luaL_checknumber(l, 3)), 0.0f, 1.0f);
+	SceneGraph::Model *model = body->GetModel();
+	if (!model)
+		return 0;
+	for (unsigned int i = 0; i < model->GetNumMaterials(); i++)
+		if (model->GetMaterialNameByIndex(i) == name)
+			model->GetMaterialByIndex(i)->fill = fill;
+	return 0;
+}
+
+// a .model's text with each material's "fill" line set to fills (none for 0),
+// keeping its line ends
+static std::string SetFillLines(const std::string &text, const std::map<std::string, float> &fills)
+{
+	const bool crlf = text.find("\r\n") != std::string::npos;
+	std::string s = std::regex_replace(text, std::regex("\r\n"), "\n");
+	for (const auto &[name, fill] : fills) {
+		const std::string head = "material \"" + name + "\" {";
+		const size_t start = s.find(head);
+		if (start == std::string::npos)
+			continue;
+		const size_t end = s.find('}', start);
+		if (end == std::string::npos)
+			continue;
+		std::string block = s.substr(start, end - start);
+		block = std::regex_replace(block, std::regex("\n[ \t]*fill [^\n]*"), "");
+		if (fill > 0.0005f) {
+			char line[32];
+			snprintf(line, sizeof(line), "\n\tfill %.3g", fill);
+			// after the shininess line, else at the block's top
+			size_t at = block.find("\n\tshininess");
+			at = at == std::string::npos ? block.find('\n') : block.find('\n', at + 1);
+			block.insert(at == std::string::npos ? block.size() : at, line);
+		}
+		s.replace(start, end - start, block);
+	}
+	return crlf ? std::regex_replace(s, std::regex("\n"), "\r\n") : s;
+}
+
+/*
+ * Write the fill light of a body's model's materials into its .model: the
+ * game's copy and, if there is one, the source tree's (../pioneer/data next
+ * to the game's folder, which the build copies from). Drops the compiled
+ * copies (.sgm) so the next load reads the .model. Returns the files written.
+ *
+ * > files = Dev.SaveModelFills(body)
+ */
+static int l_dev_save_model_fills(lua_State *l)
+{
+	namespace fs = std::filesystem;
+	ModelBody *body = LuaObject<ModelBody>::CheckFromLua(1);
+	SceneGraph::Model *model = body->GetModel();
+	if (!model)
+		return luaL_error(l, "Dev.SaveModelFills: the body has no model");
+	const std::string name = model->GetName();
+
+	std::map<std::string, float> fills;
+	for (unsigned int i = 0; i < model->GetNumMaterials(); i++)
+		fills[model->GetMaterialNameByIndex(i)] = model->GetMaterialByIndex(i)->fill;
+
+	// the .model's path within the game data
+	std::string rel;
+	for (FileSystem::FileEnumerator files(FileSystem::gameDataFiles, "models", FileSystem::FileEnumerator::Recurse); !files.Finished(); files.Next()) {
+		const FileSystem::FileInfo &info = files.Current();
+		if (info.IsFile() && info.GetName() == name + ".model") {
+			rel = info.GetPath();
+			break;
+		}
+	}
+	if (rel.empty())
+		return luaL_error(l, "Dev.SaveModelFills: no %s.model found", name.c_str());
+
+	const fs::path dataDir = fs::u8path(FileSystem::GetDataDir());
+	std::vector<fs::path> targets = { dataDir / fs::u8path(rel) };
+	const fs::path source = dataDir.parent_path().parent_path() / "pioneer" / "data" / fs::u8path(rel);
+	std::error_code ec;
+	if (fs::exists(source, ec) && !fs::equivalent(source, targets[0], ec))
+		targets.push_back(source);
+
+	lua_newtable(l);
+	int n = 0;
+	for (const fs::path &path : targets) {
+		std::ifstream in(path, std::ios::binary);
+		if (!in)
+			continue;
+		const std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+		in.close();
+		std::ofstream out(path, std::ios::binary | std::ios::trunc);
+		out << SetFillLines(text, fills);
+		if (!out)
+			continue;
+		out.close();
+		fs::remove(path.parent_path() / (name + ".sgm"), ec);
+		lua_pushstring(l, path.u8string().c_str());
+		lua_rawseti(l, -2, ++n);
+	}
+	// the compiled copy in the user's folder
+	fs::remove(fs::u8path(FileSystem::GetUserDir()) / "binarymodels" / fs::u8path(rel).parent_path() / (name + ".sgm"), ec);
+	Log::Info("Dev.SaveModelFills: {} written to {} file(s)", name, n);
+	return 1;
+}
+
 void LuaDev::Register()
 {
 	lua_State *l = Lua::manager->GetLuaState();
@@ -806,6 +954,9 @@ void LuaDev::Register()
 		{ "SetNoonAt", l_dev_set_noon_at },
 		{ "LogNote", l_dev_log_note },
 		{ "PlanetSurface", l_dev_planet_surface },
+		{ "GetModelFills", l_dev_get_model_fills },
+		{ "SetModelFill", l_dev_set_model_fill },
+		{ "SaveModelFills", l_dev_save_model_fills },
 		{ 0, 0 }
 	};
 

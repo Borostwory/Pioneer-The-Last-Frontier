@@ -352,6 +352,7 @@ void BinaryConverter::SaveMaterials(Serializer::Writer &wr, Model *model)
 		wr.Color4UB(m.emissive);
 		wr.Int16(m.shininess);
 		wr.Int16(m.opacity);
+		wr.Float(m.fill);
 		wr.Bool(m.alpha_test);
 		wr.Bool(m.unlit);
 		wr.Bool(m.use_patterns);
@@ -387,6 +388,7 @@ void BinaryConverter::LoadMaterials(Serializer::Reader &rd)
 		m.emissive = rd.Color4UB();
 		m.shininess = rd.Int16();
 		m.opacity = rd.Int16();
+		m.fill = rd.Float();
 		m.alpha_test = rd.Bool();
 		m.unlit = rd.Bool();
 		m.use_patterns = rd.Bool();

@@ -98,6 +98,12 @@ void getSurface(inout Surface surf)
 #else
 	surf.emissive = material.emission.xyz; //just emissive parameter
 #endif
+
+#ifdef FILL_LIGHT
+	// fill light: the surface's own colour, a share of it (Material::fill), as
+	// if softly lit from all round; less in its sheltered spots
+	surf.emissive += material.emission.w * surf.color.xyz * surf.ambientOcclusion;
+#endif
 }
 
 void main(void)

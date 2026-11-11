@@ -84,7 +84,9 @@ RefCountedPtr<Graphics::Material> BaseLoader::ConvertMaterialDefinition(const Ma
 			matDesc.normalMap = true;
 	}
 
-	matDesc.quality = Graphics::HAS_HEAT_GRADIENT;
+	// every model material can take a fill light, 0 unless its definition gives one
+	// (so the debug Fill tab can set it on any material while playing)
+	matDesc.quality = Graphics::HAS_HEAT_GRADIENT | Graphics::HAS_FILL_LIGHT;
 
 	//Create material and set parameters
 	RefCountedPtr<Graphics::Material> mat(m_renderer->CreateMaterial(mdef.shader, matDesc, mdef.renderState, vtxFormat));
@@ -92,6 +94,7 @@ RefCountedPtr<Graphics::Material> BaseLoader::ConvertMaterialDefinition(const Ma
 	mat->specular = mdef.specular;
 	mat->emissive = mdef.emissive;
 	mat->shininess = mdef.shininess;
+	mat->fill = mdef.fill;
 
 	//semitransparent material
 	//the node must be marked transparent when using this material

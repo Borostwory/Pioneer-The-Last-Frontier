@@ -233,6 +233,8 @@ std::string Shader::GetProgramDefines(const MaterialDescriptor &desc)
 		ss << "#define ECLIPSE\n";
 	if (desc.quality & HAS_GROUND_HOLES)
 		ss << "#define GROUND_HOLES\n";
+	if (desc.quality & HAS_FILL_LIGHT)
+		ss << "#define FILL_LIGHT\n";
 	// HACK: pass the number of FBM noise octaves from the high sixteen bits as a compile-time constant to the shader
 	// This (and the entire function) is a hack in need of a more generic decoupled system to generate shader variants.
 	// 95% of these defines are only used by one or two specific shaders, and even then rarely.

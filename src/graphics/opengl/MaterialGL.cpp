@@ -221,6 +221,9 @@ namespace Graphics {
 				dataBlock->specular = this->specular.ToColor4f();
 				dataBlock->specular.a = this->shininess;
 				dataBlock->emission = this->emissive.ToColor4f();
+				// the fill light's share rides in the emission's alpha (multi.frag, FILL_LIGHT)
+				if (GetDescriptor().quality & HAS_FILL_LIGHT)
+					dataBlock->emission.a = this->fill;
 				dataBlock->ambient = m_renderer->GetAmbientColor().ToColor4f();
 
 				// We handle the normal matrix by transposing the orientation part of the inverse view matrix in the shader
@@ -246,6 +249,7 @@ namespace Graphics {
 			mat->specular = specular;
 			mat->emissive = emissive;
 			mat->shininess = shininess;
+			mat->fill = fill;
 
 			for (auto &texBinding : m_shader->GetTextureBindings()) {
 				mat->SetTexture(texBinding.name, m_textureBindings.get()[texBinding.index]);

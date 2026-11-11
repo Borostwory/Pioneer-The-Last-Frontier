@@ -54,6 +54,7 @@ namespace Graphics {
 		HAS_ECLIPSES = 1 << 1,
 		HAS_HEAT_GRADIENT = 1 << 2,
 		HAS_GROUND_HOLES = 1 << 3, // the ground has holes cut in it (Terrain::GroundHole)
+		HAS_FILL_LIGHT = 1 << 4,   // the material glows a little with its own colour (Material::fill)
 		HAS_OCTAVES = 1 << 15
 	};
 
@@ -158,6 +159,9 @@ namespace Graphics {
 		Color specular;
 		Color emissive;
 		float shininess; //specular power 0-128
+		// fill light: the surface glows with this share of its own colour, as
+		// if softly lit from all round (multi shader, with HAS_FILL_LIGHT)
+		float fill = 0.0f;
 
 		//XXX may not be necessary. Used by newmodel to check if a material uses patterns
 		const MaterialDescriptor &GetDescriptor() const { return m_descriptor; }

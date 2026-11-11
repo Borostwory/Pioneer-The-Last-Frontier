@@ -41,7 +41,7 @@ namespace SceneGraph {
 	// 7:   Added discrete Tag node, tags are registered in the model hierarchy instead of at the root.
 	// 8:	Save model bound metadata
 	// 9:	Improved material handling
-	constexpr Uint32 SGM_VERSION = 9;
+	constexpr Uint32 SGM_VERSION = 10; // 10: materials' fill light
 
 	class BinaryConverter : public BaseLoader {
 	public:

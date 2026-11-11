@@ -76,6 +76,7 @@ namespace SceneGraph {
 		Color emissive = Color::BLANK;
 		float shininess = 100;
 		float opacity = 100;
+		float fill = 0; // fill light, 0..1 (Graphics::Material::fill)
 		Graphics::RenderStateDesc renderState;
 		bool unlit = false;
 		bool use_patterns = false;
