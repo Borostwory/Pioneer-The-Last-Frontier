@@ -58,7 +58,7 @@ namespace Graphics {
 		matrix4x4f viewToCity; // view space -> city space (the station's frame, metres, y up)
 		float mapRect[4];	   // x, z of the light map's corner in city space, 1 / map size, grid cell size (m)
 		float grid[4];		   // grid width and height (cells), first index texel, first light texel
-		float state[4];		   // x: strength (0: no city lights), y: distance (m) out to which lights are evaluated one by one, z: height range (m)
+		float state[4];		   // x: strength of the night lights (0: none), y: distance (m) out to which lights are evaluated one by one, z: height range (m), w: strength of the interior lamps (0: none)
 	};
 	static_assert(sizeof(CityLightDataBlock) == 112, "CityLightDataBlock must match the std140 layout of CityLightData");
 

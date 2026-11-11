@@ -66,9 +66,14 @@ public:
 		float radius;	 // reach, m
 		vector3f colour; // brightness included
 		float height;	 // above the ground, m
+		// a lamp inside the station (tag_interiorlight_*): on day and night, lighting
+		// only what is below it or a little above (not through the roof to the
+		// ground), and left out of the ground's light map
+		bool interior = false;
 	};
 
 	bool HasLights() const { return m_lightMap.Valid(); }
+	bool HasInteriorLights() const { return m_hasInteriorLights && m_lightGrid.Valid(); }
 	// the city's part of the scene's light data: all but the view transform and the strength
 	void GetLightData(Graphics::CityLightDataBlock &out) const;
 	Graphics::Texture *GetLightMap() const { return m_lightMap.Get(); }
@@ -284,6 +289,7 @@ private:
 	// night lights: city space is the station's frame around its position
 	matrix3x3d m_stationOrient;
 	std::vector<Light> m_fixedLights; // street lamps, spaceport floodlights
+	bool m_hasInteriorLights = false; // some of them are the station's interior lamps
 	float m_lightRect[4] = {};		  // as CityLightDataBlock::mapRect
 	float m_lightGridInfo[4] = {};	  // as CityLightDataBlock::grid
 	RefCountedPtr<Graphics::Texture> m_lightMap;

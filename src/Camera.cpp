@@ -654,15 +654,19 @@ void Camera::SetCityLights() const
 	const matrix4x4d cityToView = nearest->viewTransform * matrix4x4d(station->GetInterpOrient(), station->GetInterpPosition());
 
 	const vector3d up = cityToView.ApplyRotationOnly(vector3d(0.0, 1.0, 0.0));
-	const double strength = CityDarkness(station, up) * CityOnPlanet::LightsFade(nearest->camDist) * (brightness / 100.0);
-	if (strength <= 0.0)
+	const CityOnPlanet *city = station->GetAdjacentCity();
+	// night lights only in the dark, the station's interior lamps always
+	const double fade = CityOnPlanet::LightsFade(nearest->camDist) * (brightness / 100.0);
+	const double strength = CityDarkness(station, up) * fade;
+	const double interior = city->HasInteriorLights() ? fade : 0.0;
+	if (strength <= 0.0 && interior <= 0.0)
 		return;
 
-	const CityOnPlanet *city = station->GetAdjacentCity();
 	Graphics::CityLightDataBlock data;
 	city->GetLightData(data);
 	data.viewToCity = matrix4x4f(cityToView.Inverse());
 	data.state[0] = float(strength);
+	data.state[3] = float(interior);
 	m_renderer->SetCityLightData(&data, city->GetLightMap(), city->GetLightGrid());
 }
 

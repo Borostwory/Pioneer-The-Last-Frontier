@@ -17,7 +17,7 @@ layout(std140) uniform CityLightData {
 	mat4 cityViewToCity; // view space -> city space
 	vec4 cityMapRect;	 // xy: x, z of the map's corner in city space, z: 1 / map size, w: grid cell size [m]
 	vec4 cityGrid;		 // xy: grid size [cells], z: first index texel, w: first light texel
-	vec4 cityState;		 // x: strength (0: no city lights), y: distance [m] out to which lights are evaluated one by one, z: height range [m]
+	vec4 cityState;		 // x: strength of the night lights (0: none), y: distance [m] out to which lights are evaluated one by one, z: height range [m], w: strength of the station's interior lamps (0: none)
 };
 
 uniform sampler2D cityLightMap;
@@ -29,7 +29,11 @@ uniform sampler2D cityLightGrid;
 // - the light indices, four to a texel
 // - per light, two texels: position and radius, colour and height above the ground
 #define CITY_ATLAS_WIDTH 1024
-#define CITY_CELL_MAX_LIGHTS 16
+#define CITY_CELL_MAX_LIGHTS 24
+// the station's interior lamps (a height below zero) light what is below them,
+// and above them less and less, nothing from this far over them [m]
+// (INTERIOR_LIGHT_ABOVE in CityOnPlanet.cpp)
+#define CITY_INTERIOR_LIGHT_ABOVE 15.0
 
 // the map's light on surfaces: walls get this share of the ground's light,
 // and it fades over this height above the ground [m]
@@ -103,7 +107,18 @@ void cityGridLights(vec3 pos, vec3 n, vec3 V, float shininess, inout vec3 diffus
 		float d2 = dot(l, l);
 		if (d2 >= a.w * a.w)
 			continue;
-		vec3 colour = cityAtlasTexel(light + 1).rgb * cityLightFalloff(d2, a.w);
+		vec4 b = cityAtlasTexel(light + 1);
+		// night lights in the dark; interior lamps always, not through the roof
+		float strength = cityState.x;
+		if (b.w < 0.0) {
+			float above = pos.y - a.y;
+			if (above >= CITY_INTERIOR_LIGHT_ABOVE)
+				continue;
+			strength = cityState.w * (1.0 - smoothstep(0.0, CITY_INTERIOR_LIGHT_ABOVE, above));
+		}
+		if (strength <= 0.0)
+			continue;
+		vec3 colour = b.rgb * (strength * cityLightFalloff(d2, a.w));
 		vec3 L = l * inversesqrt(max(d2, 1e-4));
 		diffuse += colour * max(dot(n, L), 0.0);
 		if (shininess > 0.0)
@@ -116,7 +131,7 @@ void cityGridLights(vec3 pos, vec3 n, vec3 V, float shininess, inout vec3 diffus
 // Blinn-Phong highlights of the nearby lights to specular when shininess > 0.
 vec3 cityLightAt(vec3 viewPos, vec3 viewN, float shininess, inout vec3 specular)
 {
-	if (cityState.x <= 0.0)
+	if (cityState.x <= 0.0 && cityState.w <= 0.0)
 		return vec3(0.0);
 
 	vec3 pos = (cityViewToCity * vec4(viewPos, 1.0)).xyz;
@@ -129,14 +144,18 @@ vec3 cityLightAt(vec3 viewPos, vec3 viewN, float shininess, inout vec3 specular)
 	vec3 n = mat3(cityViewToCity) * viewN;
 	float nearShare = 1.0 - smoothstep(0.6 * cityState.y, cityState.y, length(viewPos));
 
-	vec3 E = vec3(0.0);
+	// the lights one by one, each with its own strength (night or interior)
+	vec3 lamps = vec3(0.0);
 	if (nearShare > 0.0) {
 		vec3 V = mat3(cityViewToCity) * normalize(-viewPos);
 		vec3 d = vec3(0.0), s = vec3(0.0);
 		cityGridLights(pos, n, V, shininess, d, s);
-		E += nearShare * d;
-		specular += nearShare * cityState.x * s;
+		lamps = nearShare * d;
+		specular += nearShare * s;
 	}
+
+	// the map: night lights only
+	vec3 E = vec3(0.0);
 
 	vec4 m = textureGrad(cityLightMap, uv, uvDx, uvDy);
 	// the map holds the light on the ground and, weighted by it, the ground's height
@@ -146,6 +165,9 @@ vec3 cityLightAt(vec3 viewPos, vec3 viewN, float shininess, inout vec3 specular)
 		E += (1.0 - nearShare) * m.rgb * exp(-h / CITY_MAP_HEIGHT) * mix(CITY_MAP_WALL, 1.0, max(n.y, 0.0));
 	E += m.rgb * CITY_GROUND_BOUNCE * max(-n.y, 0.0) * exp(-h / CITY_BOUNCE_HEIGHT);
 	E += m.rgb * CITY_WALL_FILL * (1.0 - abs(n.y)) * exp(-h / CITY_WALL_FILL_HEIGHT);
+	// not underground, inside a station below the lit ground
+	float below = lum > 1e-6 ? max(m.a / lum - pos.y, 0.0) : 0.0;
+	E *= exp(-below / CITY_MAP_HEIGHT);
 
-	return E * cityState.x;
+	return lamps + E * cityState.x;
 }

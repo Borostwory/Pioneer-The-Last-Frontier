@@ -87,12 +87,15 @@ static constexpr float PAD_LIGHT_HEIGHT = 30.0f;
 static constexpr float PAD_LIGHT_RADIUS = 110.0f;
 static constexpr float PAD_LIGHT_BRIGHTNESS = 700.0f;
 static constexpr float FLOOD_SPACING = 60.0f;
+// the station's interior lamps (tag_interiorlight_*) light what is below them,
+// and above them less and less, nothing from this far over them (m;
+// CITY_INTERIOR_LIGHT_ABOVE in city-lights.glsl, where it is used)
 // the light map's texels are at least this size (m), and at most this many across
 static constexpr float LIGHT_MAP_TEXEL = 16.0f;
 static constexpr uint32_t LIGHT_MAP_MAX = 1024;
 // the light grid: cell size (m), lights per cell and texture width (as in city-lights.glsl)
 static constexpr float LIGHT_GRID_CELL = 40.0f;
-static constexpr uint32_t LIGHT_CELL_MAX = 16;
+static constexpr uint32_t LIGHT_CELL_MAX = 24;
 static constexpr uint32_t LIGHT_ATLAS_WIDTH = 1024;
 // indices are stored as floats, exact below 2^24
 static constexpr uint32_t LIGHT_MAX_INDICES = 1 << 24;
@@ -949,6 +952,7 @@ void CityOnPlanet::GenerateFixedLights(const SpaceStation *station)
 {
 	PROFILE_SCOPED()
 	m_fixedLights.clear();
+	m_hasInteriorLights = false;
 
 	// one kind of street lamp per city: sodium, warm or cool white
 	static const vector3f lampColours[] = {
@@ -1054,13 +1058,18 @@ void CityOnPlanet::GenerateFixedLights(const SpaceStation *station)
 		}
 	}
 
-	// floodlights over the landing pads, where docked ships stand
+	// floodlights over the landing pads, where docked ships stand; over pads
+	// underground (an underground hangar) they are interior lamps, always on
 	const vector3f padColour = vector3f(0.92f, 0.96f, 1.0f) * PAD_LIGHT_BRIGHTNESS;
 	for (int bay = 0; bay < station->GetDockingPortCount(); bay++) {
 		const vector3f pad = station->GetStationType()->GetStageTransform(bay, DockStage::DOCKED).GetTranslate();
+		const bool underground = pad.y + PAD_LIGHT_HEIGHT < 0.0f;
 		for (int i = 0; i < 4; i++) {
 			const vector3f offset((i & 1 ? 1.0f : -1.0f) * PAD_LIGHT_OFFSET, PAD_LIGHT_HEIGHT, (i & 2 ? 1.0f : -1.0f) * PAD_LIGHT_OFFSET);
-			m_fixedLights.push_back({ pad + offset, PAD_LIGHT_RADIUS, padColour, PAD_LIGHT_HEIGHT });
+			Light light{ pad + offset, PAD_LIGHT_RADIUS, padColour, PAD_LIGHT_HEIGHT };
+			light.interior = underground;
+			m_fixedLights.push_back(light);
+			m_hasInteriorLights = m_hasInteriorLights || underground;
 		}
 	}
 
@@ -1077,6 +1086,24 @@ void CityOnPlanet::GenerateFixedLights(const SpaceStation *station)
 		const bool warm = starts_with(tag->GetName(), "tag_floodlight_warm_");
 		m_fixedLights.push_back({ pos, FLOOD_RADIUS * scale, (warm ? warmColour : floodColour) * (scale * scale), std::max(1.0f, pos.y) });
 	}
+
+	// lamps inside the station: tag_interiorlight_* empties, on day and night,
+	// cool white (tag_interiorlight_warm_* warm), reach and brightness as a
+	// floodlight's times the empty's scale; they light only what is below
+	// them, fading out a little above them (city-lights.glsl)
+	std::vector<SceneGraph::Tag *> interiorTags;
+	station->GetModel()->FindTagsByStartOfName("tag_interiorlight_", interiorTags);
+	for (const SceneGraph::Tag *tag : interiorTags) {
+		const matrix4x4f &m = tag->GetGlobalTransform();
+		const float scale = std::max(0.1f, m.GetOrient().VectorX().Length());
+		const bool warm = starts_with(tag->GetName(), "tag_interiorlight_warm_");
+		Light light{ m.GetTranslate(), FLOOD_RADIUS * scale, (warm ? warmColour : floodColour) * (scale * scale), 1.0f };
+		light.interior = true;
+		m_fixedLights.push_back(light);
+		m_hasInteriorLights = true;
+	}
+	if (!interiorTags.empty())
+		Log::Verbose("	CityOnPlanet: {} interior lamps", interiorTags.size());
 
 	Log::Verbose("\tCityOnPlanet: {} street lamps and floodlights", m_fixedLights.size());
 }
@@ -1141,7 +1168,8 @@ void CityOnPlanet::BakeLightMap(const std::vector<Light> &lights)
 	std::vector<float> map(size_t(n) * n * 4, 0.0f);
 	for (const Light &light : lights) {
 		const float h = light.height;
-		if (light.radius <= h)
+		// interior lamps light the station's inside, not the ground
+		if (light.interior || light.radius <= h)
 			continue;
 		const float reach = std::sqrt(light.radius * light.radius - h * h);
 		const float ground = light.pos.y - h;
@@ -1275,7 +1303,8 @@ void CityOnPlanet::BuildLightGrid(const std::vector<Light> &lights)
 		*texel++ = light.colour.x;
 		*texel++ = light.colour.y;
 		*texel++ = light.colour.z;
-		*texel++ = light.height;
+		// below zero: an interior lamp (city-lights.glsl)
+		*texel++ = light.interior ? -1.0f : light.height;
 	}
 
 	m_lightGridInfo[0] = float(width);
